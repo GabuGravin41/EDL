@@ -1,0 +1,55 @@
+// Reusable EDL Electronics Module Library (v0.4)
+// Import with: import "./lib/elec_blocks.edl"
+
+module DecoupledLDO(
+  vin_min = 4.5V,
+  vin_max = 12V,
+  vout = 3.3V,
+  part = "AMS1117-3.3",
+  cap = 10uF
+) {
+  component U: regulator {
+    value: part
+    pin IN: power_in (vin_min..vin_max) side: west
+    pin OUT: power_out (vout) side: east
+    pin GND: ground (0V) side: south
+  }
+  component C_IN: capacitor {
+    value: cap
+    pin POS: passive side: north
+    pin NEG: ground (0V) side: south
+  }
+  component C_OUT: capacitor {
+    value: cap
+    pin POS: passive side: north
+    pin NEG: ground (0V) side: south
+  }
+
+  // Internal decoupling nets — automatically merged with parent nets when bound!
+  net _IN  { connect: [U.IN, C_IN.POS] }
+  net _OUT { connect: [U.OUT, C_OUT.POS] }
+  net _GND { connect: [U.GND, C_IN.NEG, C_OUT.NEG] }
+
+  bind IN  -> U.IN
+  bind OUT -> U.OUT
+  bind GND -> U.GND
+}
+
+module LedIndicator(r = 470ohm, color = "Green") {
+  component R: resistor {
+    value: r
+    pin P1: passive side: west
+    pin P2: passive side: east
+  }
+  component D: led {
+    value: color
+    pin A: passive side: west
+    pin K: ground (0V) side: south
+  }
+
+  // Purely internal midpoint net (remains scoped as <Inst>__MID)
+  net _MID { connect: [R.P2, D.A] }
+
+  bind IN  -> R.P1
+  bind GND -> D.K
+}

@@ -1,4 +1,4 @@
-use crate::ir::*;
+use crate::core::ir::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 

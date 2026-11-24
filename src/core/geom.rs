@@ -2,6 +2,26 @@ use serde::{Deserialize, Serialize};
 
 pub const EPS_MM: f64 = 1e-6;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Side {
+    West,
+    East,
+    South,
+    North,
+}
+
+impl Side {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Side::West => "west",
+            Side::East => "east",
+            Side::South => "south",
+            Side::North => "north",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Point2 {
     pub x: f64,

@@ -1,5 +1,5 @@
-use crate::geom::Rect2;
-use crate::ir::*;
+use crate::core::geom::Rect2;
+use crate::core::ir::*;
 use std::fmt::Write;
 
 /// Export a clean, standards-compliant AutoCAD R12 ASCII DXF with dedicated layers:

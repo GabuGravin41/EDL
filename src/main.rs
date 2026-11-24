@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
-use edl::{compile_source, diff, export_dxf, export_kicad, render_svg};
+use edl::core::diff;
+use edl::{compile_file, export_dxf, export_kicad_sch, render_svg};
 use std::fs;
 use std::path::PathBuf;
 use std::process;
@@ -8,7 +9,7 @@ use std::process;
 #[command(
     name = "edl",
     version,
-    about = "Engineering Description Language (EDL) v0.1 compiler"
+    about = "Engineering Description Language (EDL) v0.4 compiler"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -17,7 +18,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Parse, type-check, solve, validate, and emit Canonical IR + evidence + diagnostics
+    /// Parse, elaborate modules/imports, type-check, solve/route, validate, and emit Canonical IR
     Build {
         /// Path to .edl project file
         file: PathBuf,
@@ -25,14 +26,14 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
-    /// Render an architectural SVG preview (with optional entity/violation annotations)
+    /// Render an architectural or schematic SVG preview (with optional annotations)
     Preview {
         /// Path to .edl project file
         file: PathBuf,
         /// Output SVG file path
         #[arg(short, long)]
         output: PathBuf,
-        /// Show entity ID badges on openings even when all checks pass
+        /// Show entity/pin annotations even when all checks pass
         #[arg(long)]
         annotated: bool,
     },
@@ -59,13 +60,8 @@ enum Commands {
     },
 }
 
-fn load_and_compile(path: &PathBuf) -> edl::ir::CanonicalIr {
-    let file_str = path.display().to_string();
-    let src = fs::read_to_string(path).unwrap_or_else(|e| {
-        eprintln!("error: failed to read '{file_str}': {e}");
-        process::exit(2);
-    });
-    match compile_source(&file_str, &src) {
+fn load_and_compile(path: &PathBuf) -> edl::core::ir::CanonicalIr {
+    match compile_file(path) {
         Ok(ir) => ir,
         Err(diag) => {
             eprintln!("{}", serde_json::to_string_pretty(&diag).unwrap());
@@ -116,7 +112,10 @@ fn main() {
                 if !ir.diagnostics.is_empty() {
                     println!("  Diagnostics:");
                     for d in &ir.diagnostics {
-                        println!("    [{:?}] {} ({}) — {}", d.severity, d.code, d.category, d.message);
+                        println!(
+                            "    [{:?}] {} ({}) — {}",
+                            d.severity, d.code, d.category, d.message
+                        );
                         if let Some(ref sug) = d.suggestion {
                             println!("      hint: {sug}");
                         }
@@ -133,7 +132,7 @@ fn main() {
             annotated,
         } => {
             let ir = load_and_compile(&file);
-            let svg = render_svg::render_svg(&ir, annotated);
+            let svg = render_svg(&ir, annotated);
             if let Some(parent) = output.parent() {
                 if !parent.as_os_str().is_empty() {
                     let _ = fs::create_dir_all(parent);
@@ -159,7 +158,7 @@ fn main() {
                 if ir.project.has_errors {
                     eprintln!("warning: exporting DXF despite verification error(s)");
                 }
-                let content = export_dxf::export_dxf(&ir);
+                let content = export_dxf(&ir);
                 if let Some(parent) = dxf_path.parent() {
                     if !parent.as_os_str().is_empty() {
                         let _ = fs::create_dir_all(parent);
@@ -175,7 +174,7 @@ fn main() {
                 if ir.project.has_errors {
                     eprintln!("warning: exporting KiCad schematic despite ERC error(s)");
                 }
-                let content = export_kicad::export_kicad_sch(&ir);
+                let content = export_kicad_sch(&ir);
                 if let Some(parent) = kicad_path.parent() {
                     if !parent.as_os_str().is_empty() {
                         let _ = fs::create_dir_all(parent);

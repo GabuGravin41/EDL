@@ -1,0 +1,132 @@
+// Modular 2-Bedroom Apartment composed from imported architectural room modules
+import "./lib/arch_units.edl"
+
+project "Modular_2BR_Apartment" {
+  units: mm
+  frame Plan: Frame2
+
+  architecture.defaults {
+    measurement_basis: clear_interior
+    exterior_wall: 200mm
+    interior_wall: 120mm
+  }
+
+  // Reusable room modules instantiated with custom parameters
+  use Bath1 = StandardBath(w: 2200mm, d: 2400mm)
+  use Bed1  = StandardBedroom(w: 3600mm, d: 3400mm, bed_w: 1600mm, win_w: 1600mm)
+  use Bed2  = StandardBedroom(w: 3200mm, d: 3400mm, bed_w: 1200mm, win_w: 1400mm)
+
+  room Living {
+    role: habitable
+    clear_size: (4600mm, 4200mm)
+    anchor: southwest at Plan.origin
+  }
+
+  room Hall {
+    role: circulation
+  }
+
+  layout Plan {
+    // Bath1 sits east of Living, aligned at south
+    require Bath1.west == Living.east + interior_wall
+    require Bath1.south == Living.south
+
+    // Hall spans north of Bath1, flush with Living's north edge
+    require Hall.west == Bath1.west
+    require Hall.east == Bath1.east
+    require Hall.south == Bath1.north + interior_wall
+    require Hall.north == Living.north
+
+    // Bed1 & Bed2 form the north sleeping wing spanning Living + Hall
+    require Bed1.west == Living.west
+    require Bed1.south == Living.north + interior_wall
+
+    require Bed2.west == Bed1.east + interior_wall
+    require Bed2.south == Bed1.south
+  }
+
+  // Doors & Passages
+  opening EntryDoor: door {
+    host: exterior(Living, south)
+    width: 900mm
+    offset: 300mm from start
+    hinge: start
+    swing: into Living
+  }
+
+  opening LivingToHall: passage {
+    host: shared_wall(Living, Hall)
+    width: 1200mm
+    align: center
+  }
+
+  opening BathDoor: door {
+    host: shared_wall(Hall, Bath1)
+    width: 800mm
+    offset: 200mm from end
+    hinge: end
+    swing: into Bath1
+  }
+
+  opening Bed1Door: door {
+    host: shared_wall(Living, Bed1)
+    width: 800mm
+    offset: 300mm from end
+    hinge: end
+    swing: into Bed1
+  }
+
+  opening Bed2Door: door {
+    host: shared_wall(Hall, Bed2)
+    width: 800mm
+    align: center
+    hinge: start
+    swing: into Bed2
+  }
+
+  // Living room windows
+  opening LivingWinS: window {
+    host: exterior(Living, south)
+    width: 2000mm
+    offset: 400mm from end
+  }
+
+  opening LivingWinW: window {
+    host: exterior(Living, west)
+    width: 1600mm
+    align: center
+  }
+
+  // Living room furniture
+  fixture Sofa: sofa {
+    room: Living
+    size: (2200mm, 900mm)
+    against: west
+    offset: 200mm from end
+    clearance_front: 700mm
+  }
+
+  fixture DiningTable: table {
+    room: Living
+    size: (1200mm, 800mm)
+    at: (2600mm, 1400mm)
+    clearance_all: 500mm
+  }
+
+  verify {
+    require no_room_overlap
+    require opening_jamb_margin >= 100mm
+    require no_door_swing_collision
+    require all_rooms_reachable
+    require no_fixture_collision
+    require habitable_rooms_have_window
+  }
+
+  view PlanView: plan {
+    frame: Plan
+    sheet: A3 landscape
+    scale: 1:50
+    show_dimensions: true
+    show_labels: true
+  }
+}

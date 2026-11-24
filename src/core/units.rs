@@ -244,3 +244,10 @@ impl Quantity {
         Ok(self.raw_value * self.unit.to_canonical_factor())
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum VoltageSpec {
+    Exact { volts: f64 },
+    Range { min_v: f64, max_v: f64 },
+}

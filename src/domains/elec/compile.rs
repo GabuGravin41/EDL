@@ -1,7 +1,9 @@
-use crate::ast::*;
-use crate::geom::{Point2, Rect2, Segment2, EPS_MM};
-use crate::ir::*;
-use crate::span::{Diagnostic, Severity};
+use crate::core::geom::{Point2, Rect2, Segment2, Side, EPS_MM};
+use crate::core::ir::*;
+use crate::core::span::{Diagnostic, Severity};
+use crate::core::units::VoltageSpec;
+use crate::domains::elec::ast::*;
+use crate::syntax::ast::{ProjectAst, VerifyRule};
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -54,7 +56,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     let mut comp_order: Vec<String> = Vec::new();
     let mut all_nets: Vec<&NetDecl> = Vec::new();
 
-    for circuit in &project.circuits {
+    for circuit in &project.elec.circuits {
         for comp in &circuit.components {
             if comp_map.insert(comp.id.clone(), comp).is_some() {
                 diagnostics.push(
@@ -457,7 +459,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     }
 
     // 3. Resolve routing policies per net (layered: per-net override > category policy > smart default)
-    let schem = project.schematics.first();
+    let schem = project.elec.schematics.first();
     let routing_cfg = schem.and_then(|s| s.routing.as_ref());
     let mut net_override_map: BTreeMap<String, NetRoutingStyle> = BTreeMap::new();
     if let Some(rcfg) = routing_cfg {
@@ -531,7 +533,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             || n.name.to_uppercase().starts_with('V');
         resolve_style(&n.name, is_g, is_p) == NetRoutingStyle::Symbol
     });
-    let min_member_gap = if any_symbol_mode { 17.78 } else { 12.70 };
+    let min_member_gap = if any_symbol_mode { 20.32 } else { 12.70 };
     let member_gap_mm = snap_grid(
         schem
             .and_then(|s| s.layout.as_ref())
@@ -639,6 +641,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         col_idx: usize,
         col_left_x: f64,
         col_right_x: f64,
+        body_min_y: f64,
         is_top_in_col: bool,
         is_bottom_in_col: bool,
     }
@@ -690,6 +693,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         col_idx,
                         col_left_x: local_left,
                         col_right_x: local_right,
+                        body_min_y: body.min_y,
                         is_top_in_col: m_idx == 0,
                         is_bottom_in_col: m_idx + 1 == members.len(),
                     },
@@ -709,6 +713,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 kind: "elec.component".to_string(),
                 frame: default_frame.clone(),
                 span: Some(comp.span.clone()),
+                provenance: comp.provenance.clone(),
                 props,
                 geometry: EntityGeometryIr::Component {
                     category: comp.category.clone(),
@@ -901,41 +906,65 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         if style == NetRoutingStyle::Direct && !is_gnd {
             let cols: BTreeSet<usize> = net_endpoints.iter().map(|rp| rp.col_idx).collect();
 
-            // Subcase C1: Single-column net (e.g., LED_A: R2.B -> D1.A) -> tight local right lane!
+            // Subcase C1: Single-column net (e.g., LED_A: R2.B -> D1.A) -> tight local gutter lane!
             if cols.len() == 1 {
                 let col = *cols.iter().next().unwrap();
-                let lane = *right_lane_next.entry(col).or_insert(0);
-                *right_lane_next.get_mut(&col).unwrap() += 1;
-                let gx = snap_grid(net_endpoints[0].col_right_x + (lane as f64) * GRID_MM);
+                let all_west = net_endpoints.iter().all(|rp| rp.pin.side == Side::West);
 
-                let mut segments = Vec::new();
-                let mut ys = Vec::new();
-                for rp in &net_endpoints {
-                    let tip = rp.pin.tip_point;
-                    match rp.pin.side {
-                        Side::East => {
-                            add_ortho_seg(&mut segments, tip, Point2::new(gx, tip.y));
-                            ys.push(tip.y);
-                        }
-                        Side::North => {
-                            let sy = snap_grid(tip.y - GRID_MM);
-                            add_ortho_seg(&mut segments, tip, Point2::new(tip.x, sy));
-                            add_ortho_seg(&mut segments, Point2::new(tip.x, sy), Point2::new(gx, sy));
-                            ys.push(sy);
-                        }
-                        Side::South => {
-                            let sy = snap_grid(tip.y + GRID_MM);
-                            add_ortho_seg(&mut segments, tip, Point2::new(tip.x, sy));
-                            add_ortho_seg(&mut segments, Point2::new(tip.x, sy), Point2::new(gx, sy));
-                            ys.push(sy);
-                        }
-                        Side::West => {
-                            let sy = snap_grid(tip.y - GRID_MM);
-                            add_ortho_seg(&mut segments, tip, Point2::new(gx, tip.y));
-                            ys.push(sy);
+                let (gx, mut segments, mut ys) = if all_west {
+                    let lane = *left_lane_next.entry(col).or_insert(0);
+                    *left_lane_next.get_mut(&col).unwrap() += 1;
+                    let lx = snap_grid(net_endpoints[0].col_left_x - (lane as f64) * GRID_MM);
+                    let mut segs = Vec::new();
+                    let mut ylist = Vec::new();
+                    for rp in &net_endpoints {
+                        let tip = rp.pin.tip_point;
+                        add_ortho_seg(&mut segs, tip, Point2::new(lx, tip.y));
+                        ylist.push(tip.y);
+                    }
+                    (lx, segs, ylist)
+                } else {
+                    let lane = *right_lane_next.entry(col).or_insert(0);
+                    *right_lane_next.get_mut(&col).unwrap() += 1;
+                    let rx = snap_grid(net_endpoints[0].col_right_x + (lane as f64) * GRID_MM);
+
+                    let mut segs = Vec::new();
+                    let mut ylist = Vec::new();
+                    for rp in &net_endpoints {
+                        let tip = rp.pin.tip_point;
+                        match rp.pin.side {
+                            Side::East => {
+                                add_ortho_seg(&mut segs, tip, Point2::new(rx, tip.y));
+                                ylist.push(tip.y);
+                            }
+                            Side::North => {
+                                let sy = snap_grid(tip.y - GRID_MM);
+                                add_ortho_seg(&mut segs, tip, Point2::new(tip.x, sy));
+                                add_ortho_seg(&mut segs, Point2::new(tip.x, sy), Point2::new(rx, sy));
+                                ylist.push(sy);
+                            }
+                            Side::South => {
+                                let sy = snap_grid(tip.y + GRID_MM);
+                                add_ortho_seg(&mut segs, tip, Point2::new(tip.x, sy));
+                                add_ortho_seg(&mut segs, Point2::new(tip.x, sy), Point2::new(rx, sy));
+                                ylist.push(sy);
+                            }
+                            Side::West => {
+                                // Route cleanly out the left gutter, up into the inter-component clearance channel,
+                                // and across to the right lane without ever crossing a component body!
+                                let llane = *left_lane_next.entry(col).or_insert(0);
+                                *left_lane_next.get_mut(&col).unwrap() += 1;
+                                let wx = snap_grid(rp.col_left_x - (llane as f64) * GRID_MM);
+                                let by = snap_grid(rp.body_min_y - 3.0 * GRID_MM);
+                                add_ortho_seg(&mut segs, tip, Point2::new(wx, tip.y));
+                                add_ortho_seg(&mut segs, Point2::new(wx, tip.y), Point2::new(wx, by));
+                                add_ortho_seg(&mut segs, Point2::new(wx, by), Point2::new(rx, by));
+                                ylist.push(by);
+                            }
                         }
                     }
-                }
+                    (rx, segs, ylist)
+                };
                 ys.sort_by(|a, b| a.partial_cmp(b).unwrap());
                 ys.dedup_by(|a, b| (*a - *b).abs() <= EPS_MM);
                 let mut junctions = Vec::new();

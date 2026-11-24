@@ -1,21 +1,11 @@
-use crate::ast::*;
-use crate::geom::Rect2;
-use crate::span::{Diagnostic, Span};
-use serde::{Deserialize, Serialize};
+use crate::core::geom::{Rect2, Side};
+use crate::core::ir::{ConstraintStrength, EquationRecord};
+use crate::core::span::{Diagnostic, Span};
+use crate::domains::arch::ast::*;
+use crate::syntax::ast::ProjectAst;
 use std::collections::{BTreeMap, BTreeSet};
 
 const SOLVE_EPS: f64 = 1e-7;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EquationRecord {
-    pub id: String,
-    pub tier: u8,
-    pub strength: ConstraintStrength,
-    pub expr: String,
-    pub span: Option<Span>,
-    pub status: String, // "EXACTLY_CHECKED" | "REDUNDANT" | "VIOLATED" | "UNVERIFIED"
-    pub residual_mm: Option<f64>,
-}
 
 #[derive(Debug, Clone)]
 pub struct SolveOutput {
@@ -46,7 +36,7 @@ pub fn solve_rooms(project: &ProjectAst) -> SolveOutput {
     let mut room_index: BTreeMap<String, usize> = BTreeMap::new();
     let mut var_names: Vec<String> = Vec::new();
 
-    for (idx, r) in project.rooms.iter().enumerate() {
+    for (idx, r) in project.arch.rooms.iter().enumerate() {
         if room_index.insert(r.id.clone(), idx).is_some() {
             diagnostics.push(Diagnostic::error(
                 "E_DUP_ROOM",
@@ -78,7 +68,7 @@ pub fn solve_rooms(project: &ProjectAst) -> SolveOutput {
     };
 
     // 1. Equations from room clear_size and anchor
-    for r in &project.rooms {
+    for r in &project.arch.rooms {
         if let Some((w_q, d_q)) = r.clear_size {
             match w_q.to_mm() {
                 Ok(w_mm) => {
@@ -203,10 +193,10 @@ pub fn solve_rooms(project: &ProjectAst) -> SolveOutput {
 
     // Build parameter lookup map (built-in wall thicknesses + declared parameters)
     let mut params_mm: BTreeMap<String, f64> = BTreeMap::new();
-    if let Ok(v) = project.arch_defaults.interior_wall.to_mm() {
+    if let Ok(v) = project.arch.defaults.interior_wall.to_mm() {
         params_mm.insert("interior_wall".to_string(), v);
     }
-    if let Ok(v) = project.arch_defaults.exterior_wall.to_mm() {
+    if let Ok(v) = project.arch.defaults.exterior_wall.to_mm() {
         params_mm.insert("exterior_wall".to_string(), v);
     }
     for p in &project.parameters {
@@ -226,7 +216,7 @@ pub fn solve_rooms(project: &ProjectAst) -> SolveOutput {
     }
 
     // 2. Equations from layout blocks
-    for layout in &project.layouts {
+    for layout in &project.arch.layouts {
         if !project.frames.iter().any(|f| f.name == layout.frame) {
             diagnostics.push(Diagnostic::error(
                 "E_FRAME_UNKNOWN",
@@ -407,7 +397,7 @@ pub fn solve_rooms(project: &ProjectAst) -> SolveOutput {
     }
 
     let mut room_rects = BTreeMap::new();
-    for r in &project.rooms {
+    for r in &project.arch.rooms {
         let base = room_index[&r.id] * 4;
         if let (Some(w), Some(e), Some(s), Some(n)) = (
             solved_vals[base],

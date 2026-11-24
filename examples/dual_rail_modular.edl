@@ -1,0 +1,92 @@
+// Modular 5V -> 3.3V MCU Power & Dual-LED Board using imported EDL modules
+import "./lib/elec_blocks.edl"
+
+project "Dual_Rail_Modular" {
+  units: mm
+
+  circuit MainBoard {
+    component J_USB: connector {
+      value: "USB_5V_IN"
+      pin VBUS: power_out (5V) side: east
+      pin GND: ground (0V) side: south
+    }
+
+    // Reusable LDO + decoupling caps from elec_blocks.edl
+    use Reg3V3 = DecoupledLDO(
+      vin_min: 4.5V,
+      vin_max: 12V,
+      vout: 3.3V,
+      part: "AMS1117-3.3",
+      cap: 10uF
+    )
+
+    component U_MCU: ic {
+      value: "STM32C011"
+      pin VDD: power_in (2.0V..3.6V) side: west
+      pin GND: ground (0V) side: south
+      pin PA0_STAT: output (3.3V) side: east
+      pin SWDIO: bidir (3.3V) side: east
+      pin SWCLK: input (3.3V) side: east
+    }
+
+    component J_DBG: connector {
+      value: "SWD_1x3"
+      pin SWDIO: bidir (3.3V) side: west
+      pin SWCLK: output (3.3V) side: west
+      pin GND: ground (0V) side: south
+    }
+
+    // Two parameterized instances of LedIndicator from elec_blocks.edl
+    use PwrLed  = LedIndicator(r: 1kohm, color: "Green_PWR")
+    use StatLed = LedIndicator(r: 470ohm, color: "Blue_STAT")
+
+    // Parent nets connect cleanly to module ports (internal _IN/_OUT/_GND auto-merge!)
+    net VBUS {
+      connect: [J_USB.VBUS, Reg3V3.IN]
+    }
+    net V3V3 {
+      connect: [Reg3V3.OUT, U_MCU.VDD, PwrLed.IN]
+    }
+    net STAT_SIG {
+      connect: [U_MCU.PA0_STAT, StatLed.IN]
+    }
+    net SWDIO {
+      connect: [U_MCU.SWDIO, J_DBG.SWDIO]
+    }
+    net SWCLK {
+      connect: [U_MCU.SWCLK, J_DBG.SWCLK]
+    }
+    net GND {
+      connect: [J_USB.GND, Reg3V3.GND, U_MCU.GND, J_DBG.GND, PwrLed.GND, StatLed.GND]
+    }
+  }
+
+  schematic MainSheet {
+    sheet: A3 landscape
+
+    group Input      { members: [J_USB] }
+    group Regulator  { members: [Reg3V3] }
+    group Controller { members: [U_MCU] }
+    group Indicators { members: [PwrLed, StatLed, J_DBG] }
+
+    layout {
+      arrange: [Input, Regulator, Controller, Indicators] left_to_right
+      group_gap: 35.56mm
+      member_gap: 17.78mm
+    }
+
+    routing {
+      default: direct
+      power_nets: symbol
+      ground_nets: symbol
+    }
+  }
+
+  verify {
+    require all_required_pins_connected
+    require no_power_ground_short
+    require no_multiple_power_drivers
+    require voltage_compatibility
+    require no_single_pin_nets
+  }
+}

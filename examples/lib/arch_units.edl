@@ -1,0 +1,62 @@
+// Reusable EDL Architectural Room Module Library (v0.4)
+// Import with: import "./lib/arch_units.edl"
+
+module StandardBath(w = 2200mm, d = 2400mm) {
+  room Bath {
+    role: wet
+    clear_size: (w, d)
+  }
+
+  fixture Shower: shower {
+    room: Bath
+    size: (900mm, 900mm)
+    against: north
+    offset: 100mm from start
+    clearance_front: 500mm
+  }
+
+  fixture Vanity: vanity {
+    room: Bath
+    size: (800mm, 500mm)
+    against: east
+    offset: 150mm from start
+    clearance_front: 500mm
+  }
+
+  fixture Toilet: toilet {
+    room: Bath
+    size: (450mm, 650mm)
+    against: west
+    offset: 150mm from start
+    clearance_front: 500mm
+  }
+}
+
+module StandardBedroom(w = 3400mm, d = 3200mm, bed_w = 1600mm, win_w = 1400mm) {
+  room Bed {
+    role: habitable
+    clear_size: (w, d)
+  }
+
+  opening Win: window {
+    host: exterior(Bed, north)
+    width: win_w
+    align: center
+  }
+
+  fixture BedUnit: bed {
+    room: Bed
+    size: (bed_w, 2000mm)
+    against: west
+    offset: 150mm from end
+    clearance_front: 500mm
+  }
+
+  fixture Wardrobe: wardrobe {
+    room: Bed
+    size: (1400mm, 600mm)
+    against: east
+    offset: 150mm from end
+    clearance_front: 500mm
+  }
+}

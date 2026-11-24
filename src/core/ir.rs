@@ -1,9 +1,54 @@
-use crate::ast::{PinRole, Side, VoltageSpec};
-use crate::geom::{Arc2, Point2, Rect2, Segment2};
-use crate::solver::EquationRecord;
-use crate::span::{Diagnostic, Span};
+use crate::core::geom::{Arc2, Point2, Rect2, Segment2, Side};
+use crate::core::span::{Diagnostic, Span};
+use crate::core::units::VoltageSpec;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ConstraintStrength {
+    Require,
+    Prefer,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EquationRecord {
+    pub id: String,
+    pub tier: u8,
+    pub strength: ConstraintStrength,
+    pub expr: String,
+    pub span: Option<Span>,
+    pub status: String, // "EXACTLY_CHECKED" | "REDUNDANT" | "VIOLATED" | "UNVERIFIED"
+    pub residual_mm: Option<f64>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PortRole {
+    PowerOut,
+    PowerIn,
+    Ground,
+    Input,
+    Output,
+    Bidir,
+    Passive,
+    Nc,
+}
+
+impl PortRole {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            PortRole::PowerOut => "power_out",
+            PortRole::PowerIn => "power_in",
+            PortRole::Ground => "ground",
+            PortRole::Input => "input",
+            PortRole::Output => "output",
+            PortRole::Bidir => "bidir",
+            PortRole::Passive => "passive",
+            PortRole::Nc => "nc",
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -36,10 +81,16 @@ pub struct FrameIr {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModuleProvenanceIr {
+    pub module: String,
+    pub instance: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlacedPinIr {
     pub name: String,
     pub number: usize,
-    pub role: PinRole,
+    pub role: PortRole,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voltage: Option<VoltageSpec>,
     pub side: Side,
@@ -98,6 +149,8 @@ pub struct EntityIr {
     pub frame: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub span: Option<Span>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provenance: Option<ModuleProvenanceIr>,
     pub props: BTreeMap<String, serde_json::Value>,
     pub geometry: EntityGeometryIr,
 }

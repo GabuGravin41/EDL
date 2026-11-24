@@ -1,8 +1,9 @@
-use crate::ast::*;
-use crate::geom::{Arc2, Point2, QuarterDisk2, Rect2, Segment2, EPS_MM};
-use crate::ir::*;
-use crate::solver::solve_rooms;
-use crate::span::{Diagnostic, Severity};
+use crate::core::geom::{Arc2, Point2, QuarterDisk2, Rect2, Segment2, Side, EPS_MM};
+use crate::core::ir::*;
+use crate::core::span::{Diagnostic, Severity};
+use crate::domains::arch::ast::*;
+use crate::domains::arch::solver::solve_rooms;
+use crate::syntax::ast::{ProjectAst, VerifyRule};
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
@@ -42,14 +43,14 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
         })
         .collect();
 
-    let ext_wall_mm = match project.arch_defaults.exterior_wall.to_mm() {
+    let ext_wall_mm = match project.arch.defaults.exterior_wall.to_mm() {
         Ok(v) if v > 0.0 => v,
         Ok(v) => {
             diagnostics.push(Diagnostic::error(
                 "E_WALL_THICKNESS",
                 "semantics",
                 format!("exterior_wall thickness must be > 0mm (got {v}mm)"),
-                project.arch_defaults.span.clone(),
+                project.arch.defaults.span.clone(),
             ));
             200.0
         }
@@ -58,20 +59,20 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                 "E_UNIT_MISMATCH",
                 "units",
                 format!("exterior_wall: {msg}"),
-                project.arch_defaults.span.clone(),
+                project.arch.defaults.span.clone(),
             ));
             200.0
         }
     };
 
-    let int_wall_mm = match project.arch_defaults.interior_wall.to_mm() {
+    let int_wall_mm = match project.arch.defaults.interior_wall.to_mm() {
         Ok(v) if v > 0.0 => v,
         Ok(v) => {
             diagnostics.push(Diagnostic::error(
                 "E_WALL_THICKNESS",
                 "semantics",
                 format!("interior_wall thickness must be > 0mm (got {v}mm)"),
-                project.arch_defaults.span.clone(),
+                project.arch.defaults.span.clone(),
             ));
             120.0
         }
@@ -80,7 +81,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                 "E_UNIT_MISMATCH",
                 "units",
                 format!("interior_wall: {msg}"),
-                project.arch_defaults.span.clone(),
+                project.arch.defaults.span.clone(),
             ));
             120.0
         }
@@ -100,7 +101,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
         status: solver_status,
         method: "rref_linear_solver_with_provenance_v0.1".to_string(),
         tolerance_mm: Some(1e-7),
-        subjects: project.rooms.iter().map(|r| r.id.clone()).collect(),
+        subjects: project.arch.rooms.iter().map(|r| r.id.clone()).collect(),
         details: if solve.remaining_dof.is_empty() && solver_status == VerificationStatus::ExactlyChecked {
             format!(
                 "All {} room(s) uniquely determined (0 remaining DOF, {} equations)",
@@ -121,13 +122,13 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
     // 3. Build room entities
     let mut entities: Vec<EntityIr> = Vec::new();
     let mut total_clear_area_m2 = 0.0;
-    for r in &project.rooms {
+    for r in &project.arch.rooms {
         if let Some(&rect) = solve.room_rects.get(&r.id) {
             total_clear_area_m2 += rect.area_m2();
             let mut props = BTreeMap::new();
             props.insert(
                 "measurement_basis".to_string(),
-                json!(project.arch_defaults.measurement_basis),
+                json!(project.arch.defaults.measurement_basis),
             );
             props.insert("area_m2".to_string(), json!(round4(rect.area_m2())));
             if let Some(role) = r.role {
@@ -138,6 +139,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                 kind: "arch.room".to_string(),
                 frame: default_frame.clone(),
                 span: Some(r.span.clone()),
+                provenance: r.provenance.clone(),
                 props,
                 geometry: EntityGeometryIr::Rect {
                     min: [round4(rect.min_x), round4(rect.min_y)],
@@ -171,7 +173,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
         id: String,
         kind: OpeningKind,
         host: WallHost,
-        span: crate::span::Span,
+        span: crate::core::span::Span,
         host_wall_id: String,
         start_margin_mm: f64,
         end_margin_mm: f64,
@@ -183,7 +185,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
     let mut resolved_openings: Vec<ResolvedOpening> = Vec::new();
     let mut opening_cutouts: Vec<Rect2> = Vec::new();
 
-    for op in &project.openings {
+    for op in &project.arch.openings {
         let width_mm = match op.width.to_mm() {
             Ok(v) if v > 0.0 => v,
             Ok(v) => {
@@ -288,6 +290,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                     kind: "arch.window".to_string(),
                     frame: default_frame.clone(),
                     span: Some(op.span.clone()),
+                    provenance: op.provenance.clone(),
                     props,
                     geometry: EntityGeometryIr::Window {
                         cutout_rect,
@@ -313,6 +316,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                     kind: "arch.passage".to_string(),
                     frame: default_frame.clone(),
                     span: Some(op.span.clone()),
+                    provenance: op.provenance.clone(),
                     props,
                     geometry: EntityGeometryIr::Passage {
                         cutout_rect,
@@ -400,6 +404,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                     kind: "arch.door".to_string(),
                     frame: default_frame.clone(),
                     span: Some(op.span.clone()),
+                    provenance: op.provenance.clone(),
                     props,
                     geometry: EntityGeometryIr::Door {
                         cutout_rect,
@@ -429,13 +434,13 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
     struct ResolvedFixture {
         id: String,
         room: String,
-        span: crate::span::Span,
+        span: crate::core::span::Span,
         body_rect: Rect2,
         clearance_rect: Option<Rect2>,
     }
 
     let mut resolved_fixtures: Vec<ResolvedFixture> = Vec::new();
-    for fx in &project.fixtures {
+    for fx in &project.arch.fixtures {
         let Some(&room_rect) = solve.room_rects.get(&fx.room) else {
             diagnostics.push(
                 Diagnostic::error(
@@ -689,6 +694,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
             kind: "arch.fixture".to_string(),
             frame: default_frame.clone(),
             span: Some(fx.span.clone()),
+            provenance: fx.provenance.clone(),
             props,
             geometry: EntityGeometryIr::Fixture {
                 category: fx.category.clone(),
@@ -1235,6 +1241,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
 
             VerifyRule::HabitableRoomsHaveWindow { span } => {
                 let habitable_rooms: Vec<String> = project
+                    .arch
                     .rooms
                     .iter()
                     .filter(|r| r.role == Some(RoomRole::Habitable))

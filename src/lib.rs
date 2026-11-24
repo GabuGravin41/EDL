@@ -1,33 +1,65 @@
-pub mod arch;
-pub mod ast;
-pub mod diff;
-pub mod elec;
-pub mod export_dxf;
-pub mod export_kicad;
-pub mod geom;
-pub mod ir;
-pub mod parser;
-pub mod render_svg;
-pub mod solver;
-pub mod span;
-pub mod units;
+pub mod core;
+pub mod domains;
+pub mod syntax;
 
-use ir::CanonicalIr;
-use span::Diagnostic;
+use crate::core::ir::CanonicalIr;
+use crate::core::span::Diagnostic;
+use std::fs;
+use std::path::Path;
 
+/// Compile an in-memory `.edl` source string (elaborates local modules; no filesystem imports).
 pub fn compile_source(file: &str, src: &str) -> Result<CanonicalIr, Diagnostic> {
-    let ast = parser::parse_project(file, src)?;
-    if !ast.circuits.is_empty() && ast.rooms.is_empty() {
-        Ok(elec::compile_electronics(&ast))
+    let mut ast = syntax::parser::parse_project(file, src)?;
+    syntax::elaborate::elaborate_project(&mut ast, None)?;
+    Ok(compile_ast(&ast))
+}
+
+/// Compile an `.edl` file on disk, resolving relative `import "..."` libraries and `module`/`use` blocks.
+pub fn compile_file(path: &Path) -> Result<CanonicalIr, Diagnostic> {
+    let file_str = path.display().to_string();
+    let src = fs::read_to_string(path).map_err(|e| {
+        Diagnostic::error(
+            "E_IO_READ",
+            "io",
+            format!("Failed to read '{file_str}': {e}"),
+            None,
+        )
+    })?;
+    let mut ast = syntax::parser::parse_project(&file_str, &src)?;
+    syntax::elaborate::elaborate_project(&mut ast, path.parent())?;
+    Ok(compile_ast(&ast))
+}
+
+fn compile_ast(ast: &syntax::ast::ProjectAst) -> CanonicalIr {
+    if !ast.elec.circuits.is_empty() && ast.arch.rooms.is_empty() {
+        domains::elec::compile::compile_electronics(ast)
     } else {
-        Ok(arch::compile_project(&ast))
+        domains::arch::compile::compile_project(ast)
     }
+}
+
+/// Domain-dispatched SVG preview renderer.
+pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
+    if ir.project.domain == "electronics" {
+        domains::elec::svg::render_svg(ir, annotated)
+    } else {
+        domains::arch::svg::render_svg(ir, annotated)
+    }
+}
+
+pub fn export_dxf(ir: &CanonicalIr) -> String {
+    domains::arch::dxf::export_dxf(ir)
+}
+
+pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
+    domains::elec::kicad::export_kicad_sch(ir)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ir::VerificationStatus;
+    use crate::core::diff;
+    use crate::core::ir::VerificationStatus;
 
     #[test]
     fn studio_a_solves_and_verifies_cleanly() {
@@ -39,10 +71,9 @@ mod tests {
         assert_eq!(ir.project.exterior_footprint_mm, Some([8020.0, 4400.0]));
         assert!(ir.project.remaining_dof.is_empty());
 
-        // Check derived Bath geometry: (4620, 2520) -> (7620, 4000) => 3000 x 1480
         let bath = ir.entities.iter().find(|e| e.id == "Bath").unwrap();
         match bath.geometry {
-            ir::EntityGeometryIr::Rect {
+            crate::core::ir::EntityGeometryIr::Rect {
                 min,
                 max,
                 width_mm,
@@ -57,11 +88,10 @@ mod tests {
             _ => panic!("expected rect"),
         }
 
-        // Check SVG & DXF contain analytical arcs
-        let svg = render_svg::render_svg(&ir, true);
+        let svg = render_svg(&ir, true);
         assert!(svg.contains("<path id=\"door-arc-D_Entry\""));
         assert!(svg.contains(" A "));
-        let dxf = export_dxf::export_dxf(&ir);
+        let dxf = export_dxf(&ir);
         assert!(dxf.contains("\nARC\n"));
         assert!(dxf.contains("WALLS_EXT"));
     }
@@ -73,13 +103,11 @@ mod tests {
         assert!(!ir.project.has_errors, "unexpected errors: {:?}", ir.diagnostics);
         assert_eq!(ir.project.room_count, 4);
         assert_eq!(ir.project.opening_count, 5);
-        // Hall 1500 + 120 + Living 4200 = 5820 (+ 400 ext = 6220)
-        // Hall/Living 3600 + 120 + Bedroom 3000 = 6720 (+ 400 ext = 7120)
         assert_eq!(ir.project.exterior_footprint_mm, Some([6220.0, 7120.0]));
 
         let bath = ir.entities.iter().find(|e| e.id == "Bath").unwrap();
         match bath.geometry {
-            ir::EntityGeometryIr::Rect {
+            crate::core::ir::EntityGeometryIr::Rect {
                 width_mm, depth_mm, ..
             } => {
                 assert_eq!(width_mm, 2300.0);
@@ -94,10 +122,7 @@ mod tests {
         let src = include_str!("../examples/studio_a_invalid.edl");
         let ir = compile_source("examples/studio_a_invalid.edl", src).expect("parse invalid");
         assert!(ir.project.has_errors);
-        assert!(ir
-            .diagnostics
-            .iter()
-            .any(|d| d.code == "E_VERIFY_JAMB_MARGIN"));
+        assert!(ir.diagnostics.iter().any(|d| d.code == "E_VERIFY_JAMB_MARGIN"));
         assert!(ir
             .diagnostics
             .iter()
@@ -197,7 +222,6 @@ mod tests {
                 hinge: start
                 swing: into Bed1
             }
-            // Bed placed directly in D_Bed1's swing arc!
             fixture BedMain: bed {
                 room: Bed1
                 size: (1600mm, 2000mm)
@@ -292,7 +316,7 @@ mod tests {
         "#;
         let ir = compile_source("lshape.edl", lshape).unwrap();
         assert!(!ir.project.has_errors, "unexpected errors: {:?}", ir.diagnostics);
-        assert_eq!(ir.evidence.len(), 7); // T2 + V1..V6
+        assert_eq!(ir.evidence.len(), 7);
     }
 
     #[test]
@@ -317,11 +341,11 @@ mod tests {
         assert_eq!(ir.evidence.len(), 5);
         assert!(ir.evidence.iter().all(|e| e.status == VerificationStatus::ExactlyChecked));
 
-        let svg = render_svg::render_svg(&ir, true);
+        let svg = render_svg(&ir, true);
         assert!(svg.contains("EDL Schematic: Power_Regulator_5V"));
         assert!(svg.contains("LM7805"));
 
-        let kicad = export_kicad::export_kicad_sch(&ir);
+        let kicad = export_kicad_sch(&ir);
         assert!(kicad.contains("(kicad_sch"));
         assert!(kicad.contains("(lib_id \"EDL:U1\")"));
         assert!(kicad.contains("(wire "));
@@ -346,7 +370,6 @@ mod tests {
         assert_eq!(ir.project.component_count, 10);
         assert_eq!(ir.project.net_count, 8);
 
-        // Verify no net label sits on any segment of another net (prevents KiCad label shorts!)
         for (i, r_i) in ir.schematic_routes.iter().enumerate() {
             if let Some(lp) = r_i.label_pos {
                 for (j, r_j) in ir.schematic_routes.iter().enumerate() {
@@ -361,16 +384,11 @@ mod tests {
                         assert!(
                             !(lp.x >= min_x && lp.x <= max_x && lp.y >= min_y && lp.y <= max_y),
                             "Label '{}' at ({:.2}, {:.2}) collides with net '{}' segment {:?}",
-                            r_i.net_id,
-                            lp.x,
-                            lp.y,
-                            r_j.net_id,
-                            seg
+                            r_i.net_id, lp.x, lp.y, r_j.net_id, seg
                         );
                     }
                 }
             }
-            // Also verify no segment endpoint of net i touches any segment of net j (prevents KiCad T-shorts!)
             for seg_i in &r_i.segments {
                 for ep in [seg_i.p0, seg_i.p1] {
                     for (j, r_j) in ir.schematic_routes.iter().enumerate() {
@@ -385,11 +403,7 @@ mod tests {
                             assert!(
                                 !(ep.x >= min_x && ep.x <= max_x && ep.y >= min_y && ep.y <= max_y),
                                 "Net '{}' endpoint ({:.2}, {:.2}) shorts onto net '{}' segment {:?}",
-                                r_i.net_id,
-                                ep.x,
-                                ep.y,
-                                r_j.net_id,
-                                seg_j
+                                r_i.net_id, ep.x, ep.y, r_j.net_id, seg_j
                             );
                         }
                     }
@@ -411,5 +425,154 @@ mod tests {
         let nrst = ir.schematic_routes.iter().find(|r| r.net_id == "NRST").unwrap();
         assert_eq!(nrst.style, "label_stub");
         assert_eq!(nrst.terminals.len(), 4);
+    }
+
+    #[test]
+    fn dual_rail_modular_imports_elaborates_and_tracks_provenance() {
+        use crate::core::ir::VerificationStatus;
+        let ir = compile_file(std::path::Path::new("examples/dual_rail_modular.edl")).unwrap();
+        assert!(!ir.project.has_errors, "diagnostics: {:?}", ir.diagnostics);
+        assert_eq!(ir.project.domain, "electronics");
+        assert_eq!(ir.entities.len(), 10);
+        // 6 parent nets (with Reg3V3's internal _IN/_OUT/_GND cleanly merged) + 2 internal _MID nets
+        assert_eq!(ir.relations.len(), 8);
+        assert!(ir.evidence.iter().all(|e| e.status == VerificationStatus::ExactlyChecked));
+
+        // Verify module provenance on elaborated components
+        let reg_u = ir.entities.iter().find(|e| e.id == "Reg3V3_U").expect("Reg3V3_U");
+        let prov = reg_u.provenance.as_ref().expect("provenance on Reg3V3_U");
+        assert_eq!(prov.module, "DecoupledLDO");
+        assert_eq!(prov.instance, "Reg3V3");
+
+        let pwr_r = ir.entities.iter().find(|e| e.id == "PwrLed_R").expect("PwrLed_R");
+        assert_eq!(pwr_r.provenance.as_ref().unwrap().module, "LedIndicator");
+        assert_eq!(pwr_r.provenance.as_ref().unwrap().instance, "PwrLed");
+        assert_eq!(pwr_r.props["value"], "1kohm");
+
+        let stat_d = ir.entities.iter().find(|e| e.id == "StatLed_D").expect("StatLed_D");
+        assert_eq!(stat_d.provenance.as_ref().unwrap().instance, "StatLed");
+        assert_eq!(stat_d.props["value"], "Blue_STAT");
+
+        // Verify internal _GND was merged into parent GND (all 8 ground pins in GND)
+        let gnd = ir.relations.iter().find(|r| r.id == "GND").expect("GND net");
+        assert_eq!(gnd.connects.len(), 8);
+        assert!(gnd.connects.contains(&"Reg3V3_C_IN.NEG".to_string()));
+        assert!(gnd.connects.contains(&"Reg3V3_C_OUT.NEG".to_string()));
+
+        // Verify KiCad export succeeds cleanly
+        let kicad = crate::domains::elec::kicad::export_kicad_sch(&ir);
+        assert!(kicad.contains("(kicad_sch"));
+        assert!(kicad.contains("PwrLed__MID"));
+    }
+
+    #[test]
+    fn duplex_modular_imports_elaborates_arch_modules_and_verifies() {
+        use crate::core::ir::{EntityGeometryIr, VerificationStatus};
+        let ir = compile_file(std::path::Path::new("examples/duplex_modular.edl")).unwrap();
+        assert!(!ir.project.has_errors, "diagnostics: {:?}", ir.diagnostics);
+        assert_eq!(ir.project.domain, "architecture");
+        assert_eq!(ir.evidence.len(), 7);
+        assert!(ir.evidence.iter().all(|e| e.status == VerificationStatus::ExactlyChecked));
+
+        let bed1 = ir.entities.iter().find(|e| e.id == "Bed1").expect("Bed1");
+        let bed2 = ir.entities.iter().find(|e| e.id == "Bed2").expect("Bed2");
+        assert_eq!(bed1.provenance.as_ref().unwrap().module, "StandardBedroom");
+        assert_eq!(bed2.provenance.as_ref().unwrap().module, "StandardBedroom");
+        if let EntityGeometryIr::Rect { width_mm, .. } = bed1.geometry {
+            assert!((width_mm - 3600.0).abs() < 1e-6);
+        } else {
+            panic!("Bed1 must be Rect");
+        }
+        if let EntityGeometryIr::Rect { width_mm, .. } = bed2.geometry {
+            assert!((width_mm - 3200.0).abs() < 1e-6);
+        } else {
+            panic!("Bed2 must be Rect");
+        }
+
+        let bath_shower = ir.entities.iter().find(|e| e.id == "Bath1_Shower").expect("Bath1_Shower");
+        assert_eq!(bath_shower.provenance.as_ref().unwrap().module, "StandardBath");
+        assert_eq!(bath_shower.provenance.as_ref().unwrap().instance, "Bath1");
+    }
+
+    #[test]
+    fn module_error_diagnostics_catch_unknown_missing_and_bad_args() {
+        let unknown_mod = r#"
+project "Bad1" {
+  units: mm
+  circuit C { use X = DoesNotExist() }
+}
+"#;
+        let err1 = compile_source("bad1.edl", unknown_mod).unwrap_err();
+        assert_eq!(err1.code, "E_MODULE_UNKNOWN");
+
+        let missing_arg = r#"
+module Res(r) {
+  component R: resistor { value: r pin A: passive pin B: passive }
+}
+project "Bad2" {
+  units: mm
+  circuit C { use R1 = Res() }
+}
+"#;
+        let err2 = compile_source("bad2.edl", missing_arg).unwrap_err();
+        assert_eq!(err2.code, "E_MODULE_MISSING_ARG");
+
+        let bad_arg = r#"
+module Res(r = 1kohm) {
+  component R: resistor { value: r pin A: passive pin B: passive }
+}
+project "Bad3" {
+  units: mm
+  circuit C { use R1 = Res(bogus: 10ohm) }
+}
+"#;
+        let err3 = compile_source("bad3.edl", bad_arg).unwrap_err();
+        assert_eq!(err3.code, "E_MODULE_UNKNOWN_ARG");
+    }
+
+    #[test]
+    fn inline_module_without_import_works_for_in_memory_compile() {
+        let src = r#"
+module PullUp(r = 10kohm) {
+  component R: resistor {
+    value: r
+    pin TOP: passive side: north
+    pin BOT: passive side: south
+  }
+  bind VCC -> R.TOP
+  bind SIG -> R.BOT
+}
+
+project "InlineMod" {
+  units: mm
+  circuit Main {
+    component U1: ic {
+      value: "MCU"
+      pin VDD: power_out (3.3V) side: east
+      pin IO: input (3.3V) side: east
+      pin GND: ground (0V) side: south
+    }
+    component J1: connector {
+      value: "BTN"
+      pin SIG: passive side: west
+      pin GND: ground (0V) side: south
+    }
+    use PU1 = PullUp(r: 4.7kohm)
+    net V3V3 { connect: [U1.VDD, PU1.VCC] }
+    net BTN  { connect: [U1.IO, PU1.SIG, J1.SIG] }
+    net GND  { connect: [U1.GND, J1.GND] }
+  }
+  verify {
+    require all_required_pins_connected
+    require no_power_ground_short
+    require no_single_pin_nets
+  }
+}
+"#;
+        let ir = compile_source("inline_mod.edl", src).unwrap();
+        assert!(!ir.project.has_errors, "diagnostics: {:?}", ir.diagnostics);
+        let r = ir.entities.iter().find(|e| e.id == "PU1_R").expect("PU1_R");
+        assert_eq!(r.props["value"], "4.7kohm");
+        assert_eq!(r.provenance.as_ref().unwrap().module, "PullUp");
     }
 }
