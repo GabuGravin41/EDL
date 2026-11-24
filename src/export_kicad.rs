@@ -257,6 +257,24 @@ pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
                 lp.y
             );
         }
+        // Emit KiCad net labels on every local terminal (GND symbol, power flag, or named stub)
+        // so KiCad 9 natively connects all matching terminals electrically and validates full ERC!
+        for (t_idx, term) in route.terminals.iter().enumerate() {
+            let lu = det_uuid("term_lbl", &format!("{r_idx}_{t_idx}_{}", term.label));
+            let (rot, justify) = match term.dir {
+                Side::West => (0, "right bottom"),
+                Side::East => (0, "left bottom"),
+                Side::North => (0, "left bottom"),
+                Side::South => (0, "left top"),
+            };
+            let _ = writeln!(
+                out,
+                "  (label \"{}\" (at {:.2} {:.2} {rot}) (effects (font (size 1.27 1.27)) (justify {justify})) (uuid \"{lu}\"))",
+                escape_sexpr(&term.label),
+                term.pos.x,
+                term.pos.y
+            );
+        }
     }
 
     let _ = writeln!(out, "  (sheet_instances");

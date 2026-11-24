@@ -594,7 +594,7 @@ fn render_schematic_svg(ir: &CanonicalIr, annotated: bool) -> String {
       .junc-sig {{ fill: #1d4ed8; }}
       .junc-pwr {{ fill: #dc2626; }}
       .junc-gnd {{ fill: #15803d; }}
-      .net-lbl {{ font-family: monospace; font-size: 10px; font-weight: 700; text-anchor: middle; }}
+      .net-lbl {{ font-family: monospace; font-size: 10px; font-weight: 700; }}
       .net-lbl-pwr {{ fill: #b91c1c; }}
       .net-lbl-gnd {{ fill: #15803d; }}
       .net-lbl-sig {{ fill: #1d4ed8; }}
@@ -686,11 +686,54 @@ fn render_schematic_svg(ir: &CanonicalIr, annotated: bool) -> String {
             let y_off = if route.is_ground { 13.0 } else { -5.0 };
             let _ = writeln!(
                 out,
-                r#"    <text class="{l_cls}" x="{:.2}" y="{:.2}">{}</text>"#,
+                r#"    <text class="{l_cls}" x="{:.2}" y="{:.2}" text-anchor="middle">{}</text>"#,
                 sx(lp.x),
                 sy(lp.y) + y_off,
                 escape_xml(&route.net_id)
             );
+        }
+        // Render local terminals (GND triangles, upward power bars, or named net-label flags)
+        for term in &route.terminals {
+            let tx = sx(term.pos.x);
+            let ty = sy(term.pos.y);
+            match term.kind.as_str() {
+                "gnd_symbol" => {
+                    // Classic 3-bar EDA ground symbol + small GND label
+                    let _ = writeln!(out, r#"    <line class="wire-gnd" x1="{:.2}" y1="{ty:.2}" x2="{:.2}" y2="{ty:.2}"/>"#, tx - 8.0, tx + 8.0);
+                    let _ = writeln!(out, r#"    <line class="wire-gnd" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#, tx - 5.0, ty + 3.5, tx + 5.0, ty + 3.5);
+                    let _ = writeln!(out, r#"    <line class="wire-gnd" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#, tx - 2.2, ty + 7.0, tx + 2.2, ty + 7.0);
+                    let _ = writeln!(
+                        out,
+                        r#"    <text class="net-lbl net-lbl-gnd" x="{tx:.2}" y="{:.2}" text-anchor="middle">{}</text>"#,
+                        ty + 17.0,
+                        escape_xml(&term.label)
+                    );
+                }
+                "power_symbol" => {
+                    // Classic upward power rail bar + label
+                    let _ = writeln!(out, r#"    <line class="wire-pwr" x1="{:.2}" y1="{ty:.2}" x2="{:.2}" y2="{ty:.2}"/>"#, tx - 8.0, tx + 8.0);
+                    let _ = writeln!(
+                        out,
+                        r#"    <text class="net-lbl net-lbl-pwr" x="{tx:.2}" y="{:.2}" text-anchor="middle">{}</text>"#,
+                        ty - 4.0,
+                        escape_xml(&term.label)
+                    );
+                }
+                _ => {
+                    // Named net-label stub badge (clean horizontal flag)
+                    let (lx, ly, anchor) = match term.dir {
+                        Side::West => (tx - 3.0, ty + 3.0, "end"),
+                        Side::East => (tx + 3.0, ty + 3.0, "start"),
+                        Side::North => (tx, ty - 4.0, "middle"),
+                        Side::South => (tx, ty + 11.0, "middle"),
+                    };
+                    let _ = writeln!(
+                        out,
+                        r#"    <text class="{l_cls}" x="{lx:.2}" y="{ly:.2}" text-anchor="{anchor}">{}</text>"#,
+                        escape_xml(&term.label)
+                    );
+                }
+            }
         }
     }
     let _ = writeln!(out, r#"  </g>"#);

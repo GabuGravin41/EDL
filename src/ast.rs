@@ -282,6 +282,7 @@ pub struct PinDecl {
     pub name: String,
     pub role: PinRole,
     pub voltage: Option<VoltageSpec>,
+    pub side: Option<Side>,
     pub span: Span,
 }
 
@@ -333,12 +334,40 @@ pub struct SchematicLayoutDecl {
     pub span: Span,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NetRoutingStyle {
+    Direct,
+    Bus,
+    Rail,
+    Symbol,
+    LabelStub,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct SchematicRoutingDecl {
+    pub default_style: Option<NetRoutingStyle>,
+    pub power_style: Option<NetRoutingStyle>,
+    pub ground_style: Option<NetRoutingStyle>,
+    pub net_overrides: Vec<(String, NetRoutingStyle, Span)>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExplicitPlacementDecl {
+    pub component: String,
+    pub x: Quantity,
+    pub y: Quantity,
+    pub span: Span,
+}
+
 #[derive(Debug, Clone)]
 pub struct SchematicDecl {
     pub name: String,
     pub sheet: String,
     pub groups: Vec<SchematicGroupDecl>,
     pub layout: Option<SchematicLayoutDecl>,
+    pub routing: Option<SchematicRoutingDecl>,
+    pub placements: Vec<ExplicitPlacementDecl>,
     pub span: Span,
 }
 

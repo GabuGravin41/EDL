@@ -123,14 +123,26 @@ pub struct SchematicGroupIr {
     pub bbox: Rect2,
 }
 
-/// Presentation-layer orthogonal wire route for a functional net.
+/// Local schematic terminal graphics (GND triangle, upward power bar, or named net-label stub).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NetTerminalIr {
+    pub kind: String, // "gnd_symbol" | "power_symbol" | "label_stub"
+    pub pos: Point2,
+    pub dir: Side,
+    pub label: String,
+}
+
+/// Presentation-layer orthogonal wire route (or symbol/label-stub termination) for a functional net.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SchematicRouteIr {
     pub net_id: String,
+    pub style: String, // "direct" | "bus" | "rail" | "symbol" | "label_stub"
     pub is_power: bool,
     pub is_ground: bool,
     pub segments: Vec<Segment2>,
     pub junctions: Vec<Point2>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub terminals: Vec<NetTerminalIr>,
     pub label_pos: Option<Point2>,
 }
 

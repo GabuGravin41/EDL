@@ -1297,10 +1297,21 @@ impl Parser {
                         }
                         pend = self.expect(TokenKind::RParen, "')'")?.span(&self.file);
                     }
+                    let mut side = None;
+                    if let TokenKind::Ident(ref s) = self.peek().kind {
+                        if s == "side" {
+                            self.bump();
+                            self.expect(TokenKind::Colon, "':'")?;
+                            let (side_s, sspan) = self.expect_ident("pin side (north/south/east/west)")?;
+                            pend = sspan.clone();
+                            side = Some(parse_side(&side_s, sspan)?);
+                        }
+                    }
                     pins.push(PinDecl {
                         name: pin_name,
                         role,
                         voltage,
+                        side,
                         span: kspan.merge(&pend),
                     });
                 }
@@ -1378,9 +1389,11 @@ impl Parser {
         let mut sheet = "A4 landscape".to_string();
         let mut groups = Vec::new();
         let mut layout = None;
+        let mut routing = None;
+        let mut placements = Vec::new();
 
         while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
-            let (kw, kspan) = self.expect_ident("sheet, group, or layout")?;
+            let (kw, kspan) = self.expect_ident("sheet, group, layout, routing, or place")?;
             match kw.as_str() {
                 "sheet" => {
                     self.expect(TokenKind::Colon, "':'")?;
@@ -1478,6 +1491,63 @@ impl Parser {
                         span: kspan.merge(&lend),
                     });
                 }
+                "routing" => {
+                    self.expect(TokenKind::LBrace, "'{'")?;
+                    let mut rdecl = SchematicRoutingDecl::default();
+                    while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+                        let (rk, rspan) = self.expect_ident("default, power_nets, ground_nets, or net")?;
+                        match rk.as_str() {
+                            "default" => {
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (st, sspan) = self.expect_ident("routing style")?;
+                                rdecl.default_style = Some(parse_routing_style(&st, sspan)?);
+                            }
+                            "power_nets" => {
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (st, sspan) = self.expect_ident("routing style")?;
+                                rdecl.power_style = Some(parse_routing_style(&st, sspan)?);
+                            }
+                            "ground_nets" => {
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (st, sspan) = self.expect_ident("routing style")?;
+                                rdecl.ground_style = Some(parse_routing_style(&st, sspan)?);
+                            }
+                            "net" => {
+                                let (net_name, _) = self.expect_ident("net name")?;
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (st, sspan) = self.expect_ident("routing style")?;
+                                let style = parse_routing_style(&st, sspan.clone())?;
+                                rdecl.net_overrides.push((net_name, style, rspan.merge(&sspan)));
+                            }
+                            other => {
+                                return Err(Diagnostic::error(
+                                    "E_PARSE_ROUTING",
+                                    "syntax",
+                                    format!("Unknown routing property '{other}' (expected default, power_nets, ground_nets, or net)"),
+                                    Some(rspan),
+                                ))
+                            }
+                        }
+                    }
+                    self.expect(TokenKind::RBrace, "'}'")?;
+                    routing = Some(rdecl);
+                }
+                "place" => {
+                    let (comp, _) = self.expect_ident("component id")?;
+                    self.expect_keyword("at")?;
+                    self.expect(TokenKind::Colon, "':'")?;
+                    self.expect(TokenKind::LParen, "'('")?;
+                    let (x, _) = self.parse_quantity()?;
+                    self.expect(TokenKind::Comma, "','")?;
+                    let (y, _) = self.parse_quantity()?;
+                    let pend = self.expect(TokenKind::RParen, "')'")?.span(&self.file);
+                    placements.push(ExplicitPlacementDecl {
+                        component: comp,
+                        x,
+                        y,
+                        span: kspan.merge(&pend),
+                    });
+                }
                 other => {
                     return Err(Diagnostic::error(
                         "E_PARSE_SCHEMATIC",
@@ -1494,6 +1564,8 @@ impl Parser {
             sheet,
             groups,
             layout,
+            routing,
+            placements,
             span: start.merge(&end),
         })
     }
@@ -1522,6 +1594,22 @@ fn parse_wall_end(s: &str, span: Span) -> Result<WallEnd, Diagnostic> {
             "E_PARSE_END",
             "syntax",
             format!("Unknown wall endpoint '{s}' (expected start or end)"),
+            Some(span),
+        )),
+    }
+}
+
+fn parse_routing_style(s: &str, span: Span) -> Result<NetRoutingStyle, Diagnostic> {
+    match s {
+        "direct" => Ok(NetRoutingStyle::Direct),
+        "bus" => Ok(NetRoutingStyle::Bus),
+        "rail" => Ok(NetRoutingStyle::Rail),
+        "symbol" => Ok(NetRoutingStyle::Symbol),
+        "label_stub" => Ok(NetRoutingStyle::LabelStub),
+        _ => Err(Diagnostic::error(
+            "E_PARSE_ROUTING_STYLE",
+            "syntax",
+            format!("Unknown routing style '{s}' (expected direct, bus, rail, symbol, or label_stub)"),
             Some(span),
         )),
     }

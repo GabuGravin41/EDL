@@ -95,9 +95,10 @@ project "<Name>" {
             value: "LM7805"                 // string OR dimensional quantity (e.g. 10uF, 330ohm)
             footprint: "Package:Name"       // optional KiCad footprint string
             pin <PinName>: power_out | power_in | ground | input | output | bidir | passive | nc
-            // Optional voltage spec in parentheses after role:
+            // Optional voltage spec and/or explicit pin-side override:
             //   pin VIN: power_out (12V)
             //   pin IN:  power_in (7V..35V)
+            //   pin SWDIO: bidir side: west
             //   pin GND: ground (0V)
         }
 
@@ -111,10 +112,24 @@ project "<Name>" {
 
         group <GroupName> { members: [<Ref1>, <Ref2>] }
 
+        // Optional explicit placement override for custom/nuanced layouts:
+        // place U2 at: (140mm, 90mm)
+
         layout {
             arrange: [<Group1>, <Group2>, ...] left_to_right
             group_gap: 25.4mm               // optional (snapped to 2.54mm KiCad grid)
-            member_gap: 17.78mm             // optional
+            member_gap: 15.24mm             // optional
+        }
+
+        // Optional presentation routing styles (never alters functional circuit or ERC):
+        // Styles: direct | bus | rail | symbol | label_stub
+        routing {
+            default: direct                 // direct adjacent pin-to-pin wires + tight local lanes
+            power_nets: direct              // OR: symbol (local power bars) | bus | label_stub
+            ground_nets: rail               // OR: symbol (local 3-bar GND symbols) | label_stub
+            // Optional per-net overrides:
+            // net V3V3: symbol
+            // net SWDIO: label_stub
         }
     }
 

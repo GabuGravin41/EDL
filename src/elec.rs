@@ -18,6 +18,16 @@ fn round4(v: f64) -> f64 {
     (v * 10_000.0).round() / 10_000.0
 }
 
+fn style_name(s: NetRoutingStyle) -> &'static str {
+    match s {
+        NetRoutingStyle::Direct => "direct",
+        NetRoutingStyle::Bus => "bus",
+        NetRoutingStyle::Rail => "rail",
+        NetRoutingStyle::Symbol => "symbol",
+        NetRoutingStyle::LabelStub => "label_stub",
+    }
+}
+
 pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     let mut diagnostics: Vec<Diagnostic> = Vec::new();
     let mut evidence: Vec<EvidenceRecord> = Vec::new();
@@ -39,7 +49,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         })
         .collect();
 
-    // Collect all components & nets across circuit blocks
+    // Collect components & nets across circuit blocks
     let mut comp_map: BTreeMap<String, &ComponentDecl> = BTreeMap::new();
     let mut comp_order: Vec<String> = Vec::new();
     let mut all_nets: Vec<&NetDecl> = Vec::new();
@@ -66,7 +76,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     }
 
     // 1. Validate pin references & build functional connectivity graph
-    // Map pin key "Comp.Pin" -> list of net names it belongs to
     let mut pin_to_nets: BTreeMap<(String, String), Vec<String>> = BTreeMap::new();
     let mut net_pins: BTreeMap<String, Vec<(String, String, &PinDecl)>> = BTreeMap::new();
     let mut ground_nets: BTreeSet<String> = BTreeSet::new();
@@ -118,7 +127,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         }
     }
 
-    // Check if any pin was accidentally attached to two different nets (net merge conflict)
     for ((cid, pid), nets) in &pin_to_nets {
         let unique: BTreeSet<&str> = nets.iter().map(|s| s.as_str()).collect();
         if unique.len() > 1 {
@@ -137,7 +145,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         }
     }
 
-    // Build functional relations (strictly separate from drawn routes)
     let mut relations: Vec<RelationIr> = Vec::new();
     let mut net_driven_voltage: BTreeMap<String, Vec<(String, f64)>> = BTreeMap::new();
 
@@ -167,7 +174,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         });
     }
 
-    // 2. Run Electrical Rule Checks (ERC) -> Evidence Ledger
+    // 2. Run Electrical Rule Checks (ERC) — 100% invariant to presentation/routing style!
     let mut rules = project.verifications.clone();
     if rules.is_empty() {
         rules.push(VerifyRule::AllRequiredPinsConnected {
@@ -262,10 +269,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             Diagnostic::error(
                                 "E_ERC_POWER_GROUND_SHORT",
                                 "erc",
-                                format!(
-                                    "Net '{}' shorts power and ground pins together!",
-                                    net.name
-                                ),
+                                format!("Net '{}' shorts power and ground pins together!", net.name),
                                 Some(net.span.clone()),
                             )
                             .with_entities([vec![net.name.clone()], affected].concat())
@@ -359,7 +363,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         checked_rails += 1;
                         let (ok, min_v, max_v) = match spec {
                             VoltageSpec::Exact { volts } => {
-                                // Allow +/- 5% standard supply tolerance on exact nominal ratings
                                 let tol = (volts.abs() * 0.05).max(0.05);
                                 ((v_supply - volts).abs() <= tol, volts - tol, volts + tol)
                             }
@@ -453,8 +456,64 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         }
     }
 
-    // 3. Deterministic Grouped Schematic Layout (KiCad 2.54mm grid)
+    // 3. Resolve routing policies per net (layered: per-net override > category policy > smart default)
     let schem = project.schematics.first();
+    let routing_cfg = schem.and_then(|s| s.routing.as_ref());
+    let mut net_override_map: BTreeMap<String, NetRoutingStyle> = BTreeMap::new();
+    if let Some(rcfg) = routing_cfg {
+        for (nname, st, span) in &rcfg.net_overrides {
+            if !all_nets.iter().any(|n| n.name == *nname) {
+                diagnostics.push(Diagnostic::error(
+                    "E_REF_UNKNOWN_NET",
+                    "semantics",
+                    format!("Routing override references undeclared net '{nname}'"),
+                    Some(span.clone()),
+                ));
+            }
+            net_override_map.insert(nname.clone(), *st);
+        }
+    }
+
+    let resolve_style = |net_name: &str, is_gnd: bool, is_pwr: bool| -> NetRoutingStyle {
+        if let Some(&ov) = net_override_map.get(net_name) {
+            return ov;
+        }
+        if is_gnd {
+            return routing_cfg
+                .and_then(|r| r.ground_style)
+                .unwrap_or(NetRoutingStyle::Rail);
+        }
+        if is_pwr {
+            return routing_cfg
+                .and_then(|r| r.power_style)
+                .unwrap_or(NetRoutingStyle::Direct);
+        }
+        routing_cfg
+            .and_then(|r| r.default_style)
+            .unwrap_or(NetRoutingStyle::Direct)
+    };
+
+    // Explicit placement overrides (`place <Comp> at: (x, y)`)
+    let mut explicit_pos: BTreeMap<String, (f64, f64)> = BTreeMap::new();
+    if let Some(s) = schem {
+        for pl in &s.placements {
+            match (pl.x.to_mm(), pl.y.to_mm()) {
+                (Ok(x), Ok(y)) => {
+                    explicit_pos.insert(pl.component.clone(), (snap_grid(x), snap_grid(y)));
+                }
+                (Err(m), _) | (_, Err(m)) => {
+                    diagnostics.push(Diagnostic::error(
+                        "E_UNIT_MISMATCH",
+                        "units",
+                        format!("Explicit placement for '{}': {m}", pl.component),
+                        Some(pl.span.clone()),
+                    ));
+                }
+            }
+        }
+    }
+
+    // 4. Deterministic Grouped Schematic Layout (KiCad 2.54mm grid)
     let group_gap_mm = snap_grid(
         schem
             .and_then(|s| s.layout.as_ref())
@@ -463,18 +522,25 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             .unwrap_or(25.4),
     )
     .max(15.24);
-    // Minimum vertical body-to-body clearance: upper South pin (5.08) + elbow (2.54)
-    // + 2.54 air gap + lower North pin (5.08) + elbow (2.54) = 17.78mm => member_gap >= 12.70mm
+    let any_symbol_mode = all_nets.iter().any(|n| {
+        let is_g = ground_nets.contains(&n.name);
+        let is_p = net_driven_voltage
+            .get(&n.name)
+            .map(|v| !v.is_empty())
+            .unwrap_or(false)
+            || n.name.to_uppercase().starts_with('V');
+        resolve_style(&n.name, is_g, is_p) == NetRoutingStyle::Symbol
+    });
+    let min_member_gap = if any_symbol_mode { 17.78 } else { 12.70 };
     let member_gap_mm = snap_grid(
         schem
             .and_then(|s| s.layout.as_ref())
             .and_then(|l| l.member_gap)
             .and_then(|q| q.to_mm().ok())
-            .unwrap_or(15.24),
+            .unwrap_or(min_member_gap),
     )
-    .max(12.70);
+    .max(min_member_gap);
 
-    // Order groups
     let mut ordered_groups: Vec<(String, Vec<String>)> = Vec::new();
     let mut assigned: BTreeSet<String> = BTreeSet::new();
 
@@ -502,7 +568,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             }
         }
     }
-    // Any unassigned components go in a fallback column
     let leftover: Vec<String> = comp_order
         .iter()
         .filter(|id| !assigned.contains(*id))
@@ -512,24 +577,66 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         ordered_groups.push(("Components".to_string(), leftover));
     }
 
-    let non_gnd_nets: Vec<&NetDecl> = all_nets
-        .iter()
-        .copied()
-        .filter(|n| !ground_nets.contains(&n.name))
-        .collect();
-    // Guarantee inter-column channel is wide enough so Col[k] right gutters NEVER touch Col[k+1] left gutters
-    let min_channel_mm = snap_grid(((non_gnd_nets.len() + 2) as f64) * 2.0 * GRID_MM + 5.08);
-    let effective_group_gap = group_gap_mm.max(min_channel_mm);
-    let bus_top_y = snap_grid(30.48);
-    let bus_tracks_h = (non_gnd_nets.len().max(1) as f64) * 5.08;
-    let comp_start_y = snap_grid(bus_top_y + bus_tracks_h + 15.24);
-    let mut cur_x = snap_grid(35.56 + (non_gnd_nets.len() as f64) * GRID_MM);
+    // Build comp -> col_idx map so we can predict how many nets actually need the overhead bus
+    let mut comp_col_map: BTreeMap<String, usize> = BTreeMap::new();
+    for (c_idx, (_, members)) in ordered_groups.iter().enumerate() {
+        for m in members {
+            comp_col_map.insert(m.clone(), c_idx);
+        }
+    }
+
+    // Pre-assign pin sides for every component (honoring explicit `pin ... side:` overrides!)
+    let mut comp_pin_sides: BTreeMap<String, Vec<(&PinDecl, Side)>> = BTreeMap::new();
+    for cid in &comp_order {
+        let comp = comp_map[cid];
+        comp_pin_sides.insert(cid.clone(), assign_pin_sides(comp, &pin_to_nets, &ground_nets));
+    }
+
+    // Count how many nets will actually use the top bus so we only reserve exact space needed!
+    let mut predicted_bus_nets = 0usize;
+    for net in &all_nets {
+        let is_gnd = ground_nets.contains(&net.name);
+        let is_pwr = net_driven_voltage
+            .get(&net.name)
+            .map(|v| !v.is_empty())
+            .unwrap_or(false)
+            || net.name.to_uppercase().starts_with('V');
+        let st = resolve_style(&net.name, is_gnd, is_pwr);
+        if matches!(st, NetRoutingStyle::Bus) {
+            predicted_bus_nets += 1;
+        } else if st == NetRoutingStyle::Direct && !is_gnd {
+            let cols: BTreeSet<usize> = net
+                .connects
+                .iter()
+                .filter_map(|p| comp_col_map.get(&p.component).copied())
+                .collect();
+            if cols.len() > 2 || (cols.len() == 2 && !can_direct_bridge_gap(net, &comp_col_map, &comp_pin_sides)) {
+                predicted_bus_nets += 1;
+            }
+        }
+    }
+
+    // Compact inter-column gap: wide enough for direct local lanes & any bus risers without bloating!
+    let local_gutter_budget = snap_grid(((predicted_bus_nets + 3).min(7) as f64) * 2.0 * GRID_MM);
+    let effective_group_gap = group_gap_mm.max(local_gutter_budget);
+
+    let bus_top_y = snap_grid(25.4);
+    let bus_tracks_h = if predicted_bus_nets == 0 {
+        0.0
+    } else {
+        (predicted_bus_nets as f64) * 5.08 + 7.62
+    };
+    let comp_start_y = snap_grid(bus_top_y + bus_tracks_h + 12.70);
+    let mut cur_x = snap_grid(30.48 + ((predicted_bus_nets.min(4) + 1) as f64) * GRID_MM);
 
     let mut entities: Vec<EntityIr> = Vec::new();
     let mut schematic_groups: Vec<SchematicGroupIr> = Vec::new();
-    // Keep pin lookup for orthogonal routing: (comp_id, pin_name) -> (PlacedPinIr, col_index, member_idx, col_len)
+    let mut col_bounds: Vec<(f64, f64)> = Vec::new(); // (col_x0, col_x1)
+
+    #[derive(Clone)]
     struct RoutablePin {
         pin: PlacedPinIr,
+        col_idx: usize,
         col_left_x: f64,
         col_right_x: f64,
         is_top_in_col: bool,
@@ -539,39 +646,50 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     let mut max_comp_y = comp_start_y + 25.4;
     let mut max_comp_x = cur_x + 50.8;
 
-    for (gname, members) in &ordered_groups {
-        // Compute max body width in this column so all components align cleanly
+    for (col_idx, (gname, members)) in ordered_groups.iter().enumerate() {
         let mut col_body_w = 15.24_f64;
-        let mut sizes: Vec<(f64, f64, Vec<(&PinDecl, Side)>)> = Vec::new();
+        let mut sizes: Vec<(f64, f64)> = Vec::new();
         for cid in members {
             let comp = comp_map[cid];
-            let assigned_sides = assign_pin_sides(comp, &pin_to_nets, &ground_nets);
-            let (bw, bh) = compute_symbol_size(comp, &assigned_sides);
+            let assigned_sides = &comp_pin_sides[cid];
+            let (bw, bh) = compute_symbol_size(comp, assigned_sides);
             col_body_w = col_body_w.max(bw);
-            sizes.push((bw, bh, assigned_sides));
+            sizes.push((bw, bh));
         }
 
         let col_x0 = snap_grid(cur_x);
         let col_x1 = snap_grid(col_x0 + col_body_w);
+        col_bounds.push((col_x0, col_x1));
+
         let mut cur_y = comp_start_y;
         let g_min_x = col_x0 - PIN_LEN_MM - 5.08;
         let g_max_x = col_x1 + PIN_LEN_MM + 5.08;
-        let g_min_y = cur_y - PIN_LEN_MM - 5.08;
+        let mut g_min_y = cur_y - PIN_LEN_MM - 5.08;
+        let mut g_max_y = cur_y + 20.32;
 
-        for (m_idx, (cid, (bw, bh, assigned_sides))) in members.iter().zip(sizes.into_iter()).enumerate() {
+        for (m_idx, (cid, (bw, bh))) in members.iter().zip(sizes.into_iter()).enumerate() {
             let comp = comp_map[cid];
-            let bx0 = snap_grid(col_x0 + (col_body_w - bw) * 0.5);
-            let by0 = snap_grid(cur_y);
-            let body = Rect2::new(bx0, by0, snap_grid(bx0 + bw), snap_grid(by0 + bh));
+            let assigned_sides = &comp_pin_sides[cid];
 
-            let placed = place_pins_on_body(comp, &assigned_sides, body);
+            let (bx0, by0) = if let Some(&(ex, ey)) = explicit_pos.get(cid) {
+                (ex, ey)
+            } else {
+                (snap_grid(col_x0 + (col_body_w - bw) * 0.5), snap_grid(cur_y))
+            };
+            let body = Rect2::new(bx0, by0, snap_grid(bx0 + bw), snap_grid(by0 + bh));
+            let placed = place_pins_on_body(comp, assigned_sides, body);
+
+            let local_left = snap_grid(col_x0.min(bx0) - PIN_LEN_MM - 2.54);
+            let local_right = snap_grid(col_x1.max(body.max_x) + PIN_LEN_MM + 2.54);
+
             for p in &placed {
                 placed_pins.insert(
                     (cid.clone(), p.name.clone()),
                     RoutablePin {
                         pin: p.clone(),
-                        col_left_x: snap_grid(col_x0 - PIN_LEN_MM - 5.08),
-                        col_right_x: snap_grid(col_x1 + PIN_LEN_MM + 5.08),
+                        col_idx,
+                        col_left_x: local_left,
+                        col_right_x: local_right,
                         is_top_in_col: m_idx == 0,
                         is_bottom_in_col: m_idx + 1 == members.len(),
                     },
@@ -601,27 +719,43 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 },
             });
 
-            cur_y = snap_grid(body.max_y + member_gap_mm + PIN_LEN_MM);
+            if !explicit_pos.contains_key(cid) {
+                cur_y = snap_grid(body.max_y + member_gap_mm + PIN_LEN_MM);
+            }
+            g_min_y = g_min_y.min(body.min_y - PIN_LEN_MM - 5.08);
+            g_max_y = g_max_y.max(body.max_y + PIN_LEN_MM + 5.08);
             max_comp_y = max_comp_y.max(body.max_y + PIN_LEN_MM);
+            max_comp_x = max_comp_x.max(body.max_x + PIN_LEN_MM + 12.70);
         }
 
-        let g_max_y = cur_y - member_gap_mm + 5.08;
         schematic_groups.push(SchematicGroupIr {
             name: gname.clone(),
             members: members.clone(),
             bbox: Rect2::new(g_min_x, g_min_y, g_max_x, g_max_y),
         });
 
-        max_comp_x = max_comp_x.max(col_x1 + PIN_LEN_MM + ((non_gnd_nets.len() + 3) as f64) * GRID_MM);
         cur_x = snap_grid(col_x1 + effective_group_gap + 2.0 * PIN_LEN_MM);
     }
 
-    // 4. Orthogonal Manhattan Wire Routing (strictly zero wire-body crossings, 2.54mm grid!)
-    let gnd_rail_y = snap_grid(max_comp_y + 15.24);
+    // 5. Layered Multi-Style Router (direct | rail | bus | symbol | label_stub)
+    // Per-column local lane allocators so lanes stay tight and NEVER collide across nets!
+    let mut left_lane_next: BTreeMap<usize, usize> = BTreeMap::new();
+    let mut right_lane_next: BTreeMap<usize, usize> = BTreeMap::new();
+    // Reserve lane 0 on left gutters for GND rail drops whenever ground uses rail
+    let any_gnd_rail = all_nets.iter().any(|n| {
+        let is_g = ground_nets.contains(&n.name);
+        is_g && resolve_style(&n.name, true, false) == NetRoutingStyle::Rail
+    });
+    if any_gnd_rail {
+        for c in 0..ordered_groups.len() {
+            left_lane_next.insert(c, 1); // lane 0 reserved exclusively for GND rail drops
+        }
+    }
+
+    let gnd_rail_y = snap_grid(max_comp_y + 12.70);
     let mut schematic_routes: Vec<SchematicRouteIr> = Vec::new();
-    let mut track_idx = 0usize;
-    let mut gnd_track_idx = 0usize;
-    let mut sig_net_idx = 0usize;
+    let mut top_bus_track = 0usize;
+    let mut gnd_rail_track = 0usize;
 
     for net in &all_nets {
         let is_gnd = ground_nets.contains(&net.name);
@@ -630,6 +764,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             .map(|v| !v.is_empty())
             .unwrap_or(false)
             || net.name.to_uppercase().starts_with('V');
+
+        let style = resolve_style(&net.name, is_gnd, is_pwr);
 
         let mut net_endpoints: Vec<&RoutablePin> = Vec::new();
         for pref in &net.connects {
@@ -641,66 +777,346 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             continue;
         }
 
-        let trunk_y = if is_gnd {
-            let y = snap_grid(gnd_rail_y + (gnd_track_idx as f64) * 5.08);
-            gnd_track_idx += 1;
+        // --- MODE A: Local Symbol (GND triangles / upward power flags) ---
+        if style == NetRoutingStyle::Symbol {
+            let mut segments = Vec::new();
+            let mut terminals = Vec::new();
+            for rp in &net_endpoints {
+                let tip = rp.pin.tip_point;
+                if is_gnd {
+                    let end = match rp.pin.side {
+                        Side::South => {
+                            let e = Point2::new(tip.x, snap_grid(tip.y + GRID_MM));
+                            add_ortho_seg(&mut segments, tip, e);
+                            e
+                        }
+                        Side::West => {
+                            let mid = Point2::new(snap_grid(tip.x - GRID_MM), tip.y);
+                            let e = Point2::new(mid.x, snap_grid(mid.y + GRID_MM));
+                            add_ortho_seg(&mut segments, tip, mid);
+                            add_ortho_seg(&mut segments, mid, e);
+                            e
+                        }
+                        Side::East => {
+                            let mid = Point2::new(snap_grid(tip.x + GRID_MM), tip.y);
+                            let e = Point2::new(mid.x, snap_grid(mid.y + GRID_MM));
+                            add_ortho_seg(&mut segments, tip, mid);
+                            add_ortho_seg(&mut segments, mid, e);
+                            e
+                        }
+                        Side::North => {
+                            let e = Point2::new(tip.x, snap_grid(tip.y - GRID_MM));
+                            add_ortho_seg(&mut segments, tip, e);
+                            e
+                        }
+                    };
+                    terminals.push(NetTerminalIr {
+                        kind: "gnd_symbol".to_string(),
+                        pos: end,
+                        dir: Side::South,
+                        label: net.name.clone(),
+                    });
+                } else {
+                    let end = match rp.pin.side {
+                        Side::North => {
+                            let e = Point2::new(tip.x, snap_grid(tip.y - GRID_MM));
+                            add_ortho_seg(&mut segments, tip, e);
+                            e
+                        }
+                        Side::West => {
+                            let mid = Point2::new(snap_grid(tip.x - GRID_MM), tip.y);
+                            let e = Point2::new(mid.x, snap_grid(mid.y - GRID_MM));
+                            add_ortho_seg(&mut segments, tip, mid);
+                            add_ortho_seg(&mut segments, mid, e);
+                            e
+                        }
+                        Side::East => {
+                            let mid = Point2::new(snap_grid(tip.x + GRID_MM), tip.y);
+                            let e = Point2::new(mid.x, snap_grid(mid.y - GRID_MM));
+                            add_ortho_seg(&mut segments, tip, mid);
+                            add_ortho_seg(&mut segments, mid, e);
+                            e
+                        }
+                        Side::South => {
+                            let e = Point2::new(tip.x, snap_grid(tip.y + GRID_MM));
+                            add_ortho_seg(&mut segments, tip, e);
+                            e
+                        }
+                    };
+                    terminals.push(NetTerminalIr {
+                        kind: "power_symbol".to_string(),
+                        pos: end,
+                        dir: Side::North,
+                        label: net.name.clone(),
+                    });
+                }
+            }
+            schematic_routes.push(SchematicRouteIr {
+                net_id: net.name.clone(),
+                style: style_name(style).to_string(),
+                is_power: is_pwr,
+                is_ground: is_gnd,
+                segments,
+                junctions: Vec::new(),
+                terminals,
+                label_pos: None,
+            });
+            continue;
+        }
+
+        // --- MODE B: Local Named Net-Label Stubs (zero cross-sheet wires!) ---
+        if style == NetRoutingStyle::LabelStub {
+            let mut segments = Vec::new();
+            let mut terminals = Vec::new();
+            for rp in &net_endpoints {
+                let tip = rp.pin.tip_point;
+                let end = match rp.pin.side {
+                    Side::West => Point2::new(snap_grid(tip.x - 5.08), tip.y),
+                    Side::East => Point2::new(snap_grid(tip.x + 5.08), tip.y),
+                    Side::North => Point2::new(tip.x, snap_grid(tip.y - 5.08)),
+                    Side::South => Point2::new(tip.x, snap_grid(tip.y + 5.08)),
+                };
+                add_ortho_seg(&mut segments, tip, end);
+                terminals.push(NetTerminalIr {
+                    kind: "label_stub".to_string(),
+                    pos: end,
+                    dir: rp.pin.side,
+                    label: net.name.clone(),
+                });
+            }
+            schematic_routes.push(SchematicRouteIr {
+                net_id: net.name.clone(),
+                style: style_name(style).to_string(),
+                is_power: is_pwr,
+                is_ground: is_gnd,
+                segments,
+                junctions: Vec::new(),
+                terminals,
+                label_pos: None,
+            });
+            continue;
+        }
+
+        // --- MODE C: Direct Local Routing (single column OR adjacent-column facing gap!) ---
+        if style == NetRoutingStyle::Direct && !is_gnd {
+            let cols: BTreeSet<usize> = net_endpoints.iter().map(|rp| rp.col_idx).collect();
+
+            // Subcase C1: Single-column net (e.g., LED_A: R2.B -> D1.A) -> tight local right lane!
+            if cols.len() == 1 {
+                let col = *cols.iter().next().unwrap();
+                let lane = *right_lane_next.entry(col).or_insert(0);
+                *right_lane_next.get_mut(&col).unwrap() += 1;
+                let gx = snap_grid(net_endpoints[0].col_right_x + (lane as f64) * GRID_MM);
+
+                let mut segments = Vec::new();
+                let mut ys = Vec::new();
+                for rp in &net_endpoints {
+                    let tip = rp.pin.tip_point;
+                    match rp.pin.side {
+                        Side::East => {
+                            add_ortho_seg(&mut segments, tip, Point2::new(gx, tip.y));
+                            ys.push(tip.y);
+                        }
+                        Side::North => {
+                            let sy = snap_grid(tip.y - GRID_MM);
+                            add_ortho_seg(&mut segments, tip, Point2::new(tip.x, sy));
+                            add_ortho_seg(&mut segments, Point2::new(tip.x, sy), Point2::new(gx, sy));
+                            ys.push(sy);
+                        }
+                        Side::South => {
+                            let sy = snap_grid(tip.y + GRID_MM);
+                            add_ortho_seg(&mut segments, tip, Point2::new(tip.x, sy));
+                            add_ortho_seg(&mut segments, Point2::new(tip.x, sy), Point2::new(gx, sy));
+                            ys.push(sy);
+                        }
+                        Side::West => {
+                            let sy = snap_grid(tip.y - GRID_MM);
+                            add_ortho_seg(&mut segments, tip, Point2::new(gx, tip.y));
+                            ys.push(sy);
+                        }
+                    }
+                }
+                ys.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                ys.dedup_by(|a, b| (*a - *b).abs() <= EPS_MM);
+                let mut junctions = Vec::new();
+                let label_pos = if ys.len() == 1 {
+                    let stub_y = snap_grid(ys[0] - 5.08);
+                    add_ortho_seg(&mut segments, Point2::new(gx, ys[0]), Point2::new(gx, stub_y));
+                    Some(Point2::new(gx, stub_y))
+                } else {
+                    for pair in ys.windows(2) {
+                        add_ortho_seg(&mut segments, Point2::new(gx, pair[0]), Point2::new(gx, pair[1]));
+                    }
+                    for &ym in &ys[1..ys.len() - 1] {
+                        junctions.push(Point2::new(gx, ym));
+                    }
+                    Some(Point2::new(gx, snap_grid(0.5 * (ys[0] + *ys.last().unwrap()))))
+                };
+
+                schematic_routes.push(SchematicRouteIr {
+                    net_id: net.name.clone(),
+                    style: "direct".to_string(),
+                    is_power: is_pwr,
+                    is_ground: false,
+                    segments,
+                    junctions,
+                    terminals: Vec::new(),
+                    label_pos,
+                });
+                continue;
+            }
+
+            // Subcase C2: Adjacent-column direct bridge! (e.g. VBUS: J1.VBUS + C1.POS -> U1.IN, or GPIO_LED: U2 -> R2)
+            if cols.len() == 2 && can_direct_bridge_gap(net, &comp_col_map, &comp_pin_sides) {
+                let mut it = cols.iter().copied();
+                let c_left = it.next().unwrap();
+                let lane = *right_lane_next.entry(c_left).or_insert(0);
+                *right_lane_next.get_mut(&c_left).unwrap() += 1;
+                let left_anchor_x = net_endpoints
+                    .iter()
+                    .find(|rp| rp.col_idx == c_left)
+                    .unwrap()
+                    .col_right_x;
+                let gx = snap_grid(left_anchor_x + (lane as f64) * GRID_MM);
+
+                let mut segments = Vec::new();
+                let mut ys: Vec<f64> = Vec::new();
+                let mut y_counts: BTreeMap<i64, usize> = BTreeMap::new();
+
+                for rp in &net_endpoints {
+                    let tip = rp.pin.tip_point;
+                    let y_entry = match rp.pin.side {
+                        Side::East | Side::West => {
+                            add_ortho_seg(&mut segments, tip, Point2::new(gx, tip.y));
+                            tip.y
+                        }
+                        Side::North => {
+                            let sy = snap_grid(tip.y - GRID_MM);
+                            add_ortho_seg(&mut segments, tip, Point2::new(tip.x, sy));
+                            add_ortho_seg(&mut segments, Point2::new(tip.x, sy), Point2::new(gx, sy));
+                            sy
+                        }
+                        Side::South => {
+                            let sy = snap_grid(tip.y + GRID_MM);
+                            add_ortho_seg(&mut segments, tip, Point2::new(tip.x, sy));
+                            add_ortho_seg(&mut segments, Point2::new(tip.x, sy), Point2::new(gx, sy));
+                            sy
+                        }
+                    };
+                    ys.push(y_entry);
+                    *y_counts.entry((y_entry * 100.0).round() as i64).or_insert(0) += 1;
+                }
+
+                ys.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                ys.dedup_by(|a, b| (*a - *b).abs() <= EPS_MM);
+                let mut junctions = Vec::new();
+                for pair in ys.windows(2) {
+                    add_ortho_seg(&mut segments, Point2::new(gx, pair[0]), Point2::new(gx, pair[1]));
+                }
+                // Any y on `gx` that has >= 3 incident segments gets a clean junction dot!
+                for (idx, &y_val) in ys.iter().enumerate() {
+                    let key = (y_val * 100.0).round() as i64;
+                    let horiz_deg = y_counts.get(&key).copied().unwrap_or(0);
+                    let vert_deg = if ys.len() == 1 {
+                        0
+                    } else if idx == 0 || idx + 1 == ys.len() {
+                        1
+                    } else {
+                        2
+                    };
+                    if horiz_deg + vert_deg >= 3 {
+                        junctions.push(Point2::new(gx, y_val));
+                    }
+                }
+
+                // Prefer placing label on the longest horizontal segment of this direct bridge
+                let label_pos = segments
+                    .iter()
+                    .filter(|s| (s.p0.y - s.p1.y).abs() <= EPS_MM)
+                    .max_by(|a, b| a.length().partial_cmp(&b.length()).unwrap())
+                    .map(|s| Point2::new(snap_grid(0.5 * (s.p0.x + s.p1.x)), s.p0.y))
+                    .or_else(|| Some(Point2::new(gx, ys[0])));
+
+                schematic_routes.push(SchematicRouteIr {
+                    net_id: net.name.clone(),
+                    style: "direct".to_string(),
+                    is_power: is_pwr,
+                    is_ground: false,
+                    segments,
+                    junctions,
+                    terminals: Vec::new(),
+                    label_pos,
+                });
+                continue;
+            }
+        }
+
+        // --- MODE D: Bus / Bottom Rail Routing (uses per-column local lanes!) ---
+        let trunk_y = if is_gnd || style == NetRoutingStyle::Rail {
+            let y = snap_grid(gnd_rail_y + (gnd_rail_track as f64) * 5.08);
+            gnd_rail_track += 1;
             y
         } else {
-            let y = snap_grid(bus_top_y + (track_idx as f64) * 5.08);
-            track_idx += 1;
+            let y = snap_grid(bus_top_y + (top_bus_track as f64) * 5.08);
+            top_bus_track += 1;
             y
         };
 
-        // Strictly unique per-net gutter lane:
-        // - GND exclusively owns lane 0 (`col_left_x`)
-        // - Each non-GND net exclusively owns lane `1 + sig_net_idx` (never wraps, never collides!)
-        let gutter_stagger = if is_gnd {
-            0.0
-        } else {
-            let lane = (sig_net_idx + 1) as f64;
-            sig_net_idx += 1;
-            lane * GRID_MM
-        };
+        // Allocate at most one local left lane and one local right lane per column touched by THIS net
+        let mut net_left_x: BTreeMap<usize, f64> = BTreeMap::new();
+        let mut net_right_x: BTreeMap<usize, f64> = BTreeMap::new();
 
-        // Collect all vertical risers grouped by column gutter X so multiple taps on the same X
-        // connect cleanly without overshooting unnecessarily.
         let mut segments: Vec<Segment2> = Vec::new();
-        let mut risers: Vec<(f64, f64)> = Vec::new(); // (x, y_entry_on_riser)
+        let mut risers: Vec<(f64, f64)> = Vec::new();
 
         for rp in &net_endpoints {
             let tip = rp.pin.tip_point;
             match rp.pin.side {
-                Side::South if is_gnd && rp.is_bottom_in_col => {
+                Side::South if (is_gnd || style == NetRoutingStyle::Rail) && rp.is_bottom_in_col => {
                     risers.push((tip.x, tip.y));
                 }
                 Side::North if !is_gnd && rp.is_top_in_col => {
                     risers.push((tip.x, tip.y));
                 }
                 Side::West => {
-                    let gx = snap_grid(rp.col_left_x - gutter_stagger);
+                    let gx = *net_left_x.entry(rp.col_idx).or_insert_with(|| {
+                        let lane = *left_lane_next.entry(rp.col_idx).or_insert(0);
+                        *left_lane_next.get_mut(&rp.col_idx).unwrap() += 1;
+                        snap_grid(rp.col_left_x - (lane as f64) * GRID_MM)
+                    });
                     add_ortho_seg(&mut segments, tip, Point2::new(gx, tip.y));
                     risers.push((gx, tip.y));
                 }
                 Side::East => {
-                    let gx = snap_grid(rp.col_right_x + gutter_stagger);
+                    let gx = *net_right_x.entry(rp.col_idx).or_insert_with(|| {
+                        let lane = *right_lane_next.entry(rp.col_idx).or_insert(0);
+                        *right_lane_next.get_mut(&rp.col_idx).unwrap() += 1;
+                        snap_grid(rp.col_right_x + (lane as f64) * GRID_MM)
+                    });
                     add_ortho_seg(&mut segments, tip, Point2::new(gx, tip.y));
                     risers.push((gx, tip.y));
                 }
                 Side::North => {
                     let step_y = snap_grid(tip.y - GRID_MM);
-                    let gx = snap_grid(rp.col_right_x + gutter_stagger);
+                    let gx = *net_right_x.entry(rp.col_idx).or_insert_with(|| {
+                        let lane = *right_lane_next.entry(rp.col_idx).or_insert(0);
+                        *right_lane_next.get_mut(&rp.col_idx).unwrap() += 1;
+                        snap_grid(rp.col_right_x + (lane as f64) * GRID_MM)
+                    });
                     add_ortho_seg(&mut segments, tip, Point2::new(tip.x, step_y));
                     add_ortho_seg(&mut segments, Point2::new(tip.x, step_y), Point2::new(gx, step_y));
                     risers.push((gx, step_y));
                 }
                 Side::South => {
-                    // Upper member GND drop exclusively uses lane 0 (`col_left_x`);
-                    // non-GND drops use their unique right gutter lane.
                     let step_y = snap_grid(tip.y + GRID_MM);
                     let gx = if is_gnd {
-                        snap_grid(rp.col_left_x)
+                        snap_grid(rp.col_left_x) // lane 0 reserved exclusively for GND rail!
                     } else {
-                        snap_grid(rp.col_right_x + gutter_stagger)
+                        *net_right_x.entry(rp.col_idx).or_insert_with(|| {
+                            let lane = *right_lane_next.entry(rp.col_idx).or_insert(0);
+                            *right_lane_next.get_mut(&rp.col_idx).unwrap() += 1;
+                            snap_grid(rp.col_right_x + (lane as f64) * GRID_MM)
+                        })
                     };
                     add_ortho_seg(&mut segments, tip, Point2::new(tip.x, step_y));
                     add_ortho_seg(&mut segments, Point2::new(tip.x, step_y), Point2::new(gx, step_y));
@@ -709,7 +1125,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             }
         }
 
-        // Group risers by distinct X (exact grid columns)
         let mut by_x: BTreeMap<i64, (f64, Vec<f64>)> = BTreeMap::new();
         for (rx, ry) in risers {
             let key = (rx * 100.0).round() as i64;
@@ -721,13 +1136,10 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         let label_pos: Option<Point2>;
 
         if by_x.len() == 1 {
-            // All pins of this net live on a single vertical line (e.g. R1.B -> D1.A):
-            // connect them directly with zero overshoot up to the top bus!
             let (_, (x, mut ys)) = by_x.into_iter().next().unwrap();
             ys.sort_by(|a, b| a.partial_cmp(b).unwrap());
             ys.dedup_by(|a, b| (*a - *b).abs() <= EPS_MM);
             if ys.len() == 1 {
-                // Single-pin dangling net: short stub toward trunk_y so it's visible
                 let stub_y = if is_gnd {
                     snap_grid(ys[0] + 10.16)
                 } else {
@@ -745,7 +1157,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 label_pos = Some(Point2::new(x, snap_grid(0.5 * (ys[0] + *ys.last().unwrap()))));
             }
         } else {
-            // Multiple columns: route each column vertically to `trunk_y` and join along `trunk_y`
             let mut trunk_xs: Vec<f64> = Vec::new();
             for (_, (x, mut ys)) in by_x {
                 ys.push(trunk_y);
@@ -754,7 +1165,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 for pair in ys.windows(2) {
                     add_ortho_seg(&mut segments, Point2::new(x, pair[0]), Point2::new(x, pair[1]));
                 }
-                // Interior T-taps along this vertical riser get explicit junction dots!
                 for &y_mid in &ys[1..ys.len() - 1] {
                     if (y_mid - trunk_y).abs() > EPS_MM {
                         junctions.push(Point2::new(x, y_mid));
@@ -779,23 +1189,31 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             ));
         }
 
+        let effective_style_str = if is_gnd || style == NetRoutingStyle::Rail {
+            "rail"
+        } else {
+            "bus"
+        };
         schematic_routes.push(SchematicRouteIr {
             net_id: net.name.clone(),
+            style: effective_style_str.to_string(),
             is_power: is_pwr,
             is_ground: is_gnd,
             segments,
             junctions,
+            terminals: Vec::new(),
             label_pos,
         });
     }
 
-    // 4b. Post-pass: guarantee NO net label ever sits on a perpendicular crossing of another net!
-    // (In KiCad, placing a `(label ...)` on an orthogonal wire intersection shorts both nets.)
+    // 5b. Post-pass: guarantee NO net label ever lands on a perpendicular crossing of another net!
     let route_count = schematic_routes.len();
     for i in 0..route_count {
+        if schematic_routes[i].label_pos.is_none() {
+            continue;
+        }
         let mut chosen: Option<Point2> = None;
         let segs_i = schematic_routes[i].segments.clone();
-        // Prefer horizontal segments first (cleanest label placement), then vertical segments
         let mut candidates: Vec<Point2> = Vec::new();
         if let Some(lp) = schematic_routes[i].label_pos {
             candidates.push(lp);
@@ -806,12 +1224,10 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 if (pass == 0 && !is_horiz) || (pass == 1 && is_horiz) {
                     continue;
                 }
-                let len = seg.length();
-                let steps = (len / GRID_MM).round() as i64;
+                let steps = (seg.length() / GRID_MM).round() as i64;
                 if steps <= 0 {
                     continue;
                 }
-                // Try center-out grid points along the segment
                 let mid = steps / 2;
                 for delta in 0..=steps {
                     for s in [mid + delta, mid - delta] {
@@ -819,16 +1235,14 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             continue;
                         }
                         let t = (s as f64) / (steps as f64);
-                        let pt = Point2::new(
+                        candidates.push(Point2::new(
                             snap_grid(seg.p0.x + t * (seg.p1.x - seg.p0.x)),
                             snap_grid(seg.p0.y + t * (seg.p1.y - seg.p0.y)),
-                        );
-                        candidates.push(pt);
+                        ));
                     }
                 }
             }
         }
-
         for cand in candidates {
             let collides_other = (0..route_count).any(|j| {
                 if j == i {
@@ -849,9 +1263,20 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         }
     }
 
-    let sheet_w = max_comp_x.max(254.0);
-    let sheet_h = (gnd_rail_y + (gnd_track_idx as f64) * 5.08 + 20.32).max(177.8);
-    let sheet_bounds = Rect2::new(0.0, 0.0, snap_grid(sheet_w), snap_grid(sheet_h));
+    // Compute tight actual sheet bounds from all routed coordinates
+    let mut max_x = max_comp_x;
+    let mut max_y = max_comp_y + 15.24;
+    for r in &schematic_routes {
+        for s in &r.segments {
+            max_x = max_x.max(s.p0.x.max(s.p1.x) + 15.24);
+            max_y = max_y.max(s.p0.y.max(s.p1.y) + 15.24);
+        }
+        for t in &r.terminals {
+            max_x = max_x.max(t.pos.x + 15.24);
+            max_y = max_y.max(t.pos.y + 15.24);
+        }
+    }
+    let sheet_bounds = Rect2::new(0.0, 0.0, snap_grid(max_x.max(228.6)), snap_grid(max_y.max(152.4)));
 
     let views = vec![ViewIr {
         id: schem.map(|s| s.name.clone()).unwrap_or_else(|| "Main".to_string()),
@@ -866,9 +1291,10 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     }];
 
     let has_errors = diagnostics.iter().any(|d| d.severity == Severity::Error);
+    let _ = col_bounds;
 
     CanonicalIr {
-        ir_version: "0.3.0".to_string(),
+        ir_version: "0.3.2".to_string(),
         project: ProjectSummaryIr {
             name: project.name.clone(),
             domain: "electronics".to_string(),
@@ -898,6 +1324,46 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     }
 }
 
+/// True iff all pins of `net` live in two adjacent columns (c, c+1) and face each other across the gap
+/// between c and c+1 (col c uses East/North/South; col c+1 uses West).
+fn can_direct_bridge_gap(
+    net: &NetDecl,
+    comp_col: &BTreeMap<String, usize>,
+    comp_pin_sides: &BTreeMap<String, Vec<(&PinDecl, Side)>>,
+) -> bool {
+    let mut cols: Vec<usize> = net
+        .connects
+        .iter()
+        .filter_map(|p| comp_col.get(&p.component).copied())
+        .collect();
+    cols.sort();
+    cols.dedup();
+    if cols.len() != 2 || cols[1] != cols[0] + 1 {
+        return false;
+    }
+    let c_left = cols[0];
+    let c_right = cols[1];
+
+    for pref in &net.connects {
+        let Some(&col) = comp_col.get(&pref.component) else {
+            return false;
+        };
+        let Some(sides) = comp_pin_sides.get(&pref.component) else {
+            return false;
+        };
+        let Some((_, side)) = sides.iter().find(|(p, _)| p.name == pref.pin) else {
+            return false;
+        };
+        if col == c_left && *side == Side::West {
+            return false;
+        }
+        if col == c_right && *side != Side::West {
+            return false;
+        }
+    }
+    true
+}
+
 fn point_on_ortho_segment(p: Point2, seg: Segment2) -> bool {
     let min_x = seg.p0.x.min(seg.p1.x) - 0.1;
     let max_x = seg.p0.x.max(seg.p1.x) + 0.1;
@@ -917,8 +1383,10 @@ fn assign_pin_sides<'a>(
     pin_to_nets: &BTreeMap<(String, String), Vec<String>>,
     ground_nets: &BTreeSet<String>,
 ) -> Vec<(&'a PinDecl, Side)> {
-    // Check 2-pin passives first: if one pin is connected to a GND net, orient vertically (TOP + BOTTOM)!
-    if comp.pins.len() == 2 && comp.pins.iter().all(|p| p.role == PinRole::Passive) {
+    // If ALL pins are 2-pin passives with no explicit side override, orient vertically when 1 pin is GND
+    if comp.pins.len() == 2
+        && comp.pins.iter().all(|p| p.role == PinRole::Passive && p.side.is_none())
+    {
         let p0_gnd = pin_to_nets
             .get(&(comp.id.clone(), comp.pins[0].name.clone()))
             .map(|ns| ns.iter().any(|n| ground_nets.contains(n)))
@@ -939,6 +1407,11 @@ fn assign_pin_sides<'a>(
     let mut out = Vec::new();
     let mut passive_idx = 0usize;
     for pin in &comp.pins {
+        // Explicit `side:` override ALWAYS wins!
+        if let Some(explicit_side) = pin.side {
+            out.push((pin, explicit_side));
+            continue;
+        }
         let on_gnd = pin_to_nets
             .get(&(comp.id.clone(), pin.name.clone()))
             .map(|ns| ns.iter().any(|n| ground_nets.contains(n)))
@@ -969,7 +1442,6 @@ fn compute_symbol_size(comp: &ComponentDecl, assigned: &[(&PinDecl, Side)]) -> (
     let max_lr = n_west.max(n_east).max(1);
     let max_tb = n_north.max(n_south).max(1);
 
-    // Compact sizing for 2-pin passives, wider boxes for ICs/regulators/connectors
     let is_small_passive = comp.pins.len() <= 2
         && matches!(
             comp.category.as_str(),

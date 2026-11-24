@@ -397,4 +397,19 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn mcu_board_3v3_symbols_mode_passes_erc_and_emits_clean_terminals() {
+        let src = include_str!("../examples/mcu_board_3v3_symbols.edl");
+        let ir = compile_source("examples/mcu_board_3v3_symbols.edl", src).expect("parse symbols mode");
+        assert!(!ir.project.has_errors, "unexpected errors: {:?}", ir.diagnostics);
+        let gnd = ir.schematic_routes.iter().find(|r| r.net_id == "GND").unwrap();
+        assert_eq!(gnd.style, "symbol");
+        assert_eq!(gnd.terminals.len(), 8);
+        let vbus = ir.schematic_routes.iter().find(|r| r.net_id == "VBUS").unwrap();
+        assert_eq!(vbus.style, "direct");
+        let nrst = ir.schematic_routes.iter().find(|r| r.net_id == "NRST").unwrap();
+        assert_eq!(nrst.style, "label_stub");
+        assert_eq!(nrst.terminals.len(), 4);
+    }
 }
