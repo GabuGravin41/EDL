@@ -460,17 +460,19 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             .and_then(|s| s.layout.as_ref())
             .and_then(|l| l.group_gap)
             .and_then(|q| q.to_mm().ok())
-            .unwrap_or(30.48),
+            .unwrap_or(25.4),
     )
-    .max(25.4);
+    .max(15.24);
+    // Minimum vertical body-to-body clearance: upper South pin (5.08) + elbow (2.54)
+    // + 2.54 air gap + lower North pin (5.08) + elbow (2.54) = 17.78mm => member_gap >= 12.70mm
     let member_gap_mm = snap_grid(
         schem
             .and_then(|s| s.layout.as_ref())
             .and_then(|l| l.member_gap)
             .and_then(|q| q.to_mm().ok())
-            .unwrap_or(20.32),
+            .unwrap_or(15.24),
     )
-    .max(15.24);
+    .max(12.70);
 
     // Order groups
     let mut ordered_groups: Vec<(String, Vec<String>)> = Vec::new();
@@ -510,16 +512,18 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         ordered_groups.push(("Components".to_string(), leftover));
     }
 
-    // Reserve top channel area for horizontal signal/power buses
     let non_gnd_nets: Vec<&NetDecl> = all_nets
         .iter()
         .copied()
         .filter(|n| !ground_nets.contains(&n.name))
         .collect();
+    // Guarantee inter-column channel is wide enough so Col[k] right gutters NEVER touch Col[k+1] left gutters
+    let min_channel_mm = snap_grid(((non_gnd_nets.len() + 2) as f64) * 2.0 * GRID_MM + 5.08);
+    let effective_group_gap = group_gap_mm.max(min_channel_mm);
     let bus_top_y = snap_grid(30.48);
     let bus_tracks_h = (non_gnd_nets.len().max(1) as f64) * 5.08;
     let comp_start_y = snap_grid(bus_top_y + bus_tracks_h + 15.24);
-    let mut cur_x = snap_grid(35.56);
+    let mut cur_x = snap_grid(35.56 + (non_gnd_nets.len() as f64) * GRID_MM);
 
     let mut entities: Vec<EntityIr> = Vec::new();
     let mut schematic_groups: Vec<SchematicGroupIr> = Vec::new();
@@ -608,8 +612,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             bbox: Rect2::new(g_min_x, g_min_y, g_max_x, g_max_y),
         });
 
-        max_comp_x = max_comp_x.max(col_x1 + PIN_LEN_MM + 10.16);
-        cur_x = snap_grid(col_x1 + group_gap_mm + 2.0 * PIN_LEN_MM);
+        max_comp_x = max_comp_x.max(col_x1 + PIN_LEN_MM + ((non_gnd_nets.len() + 3) as f64) * GRID_MM);
+        cur_x = snap_grid(col_x1 + effective_group_gap + 2.0 * PIN_LEN_MM);
     }
 
     // 4. Orthogonal Manhattan Wire Routing (strictly zero wire-body crossings, 2.54mm grid!)
@@ -647,13 +651,15 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             y
         };
 
-        // Unique per-net stagger so two distinct nets never share a vertical gutter line
+        // Strictly unique per-net gutter lane:
+        // - GND exclusively owns lane 0 (`col_left_x`)
+        // - Each non-GND net exclusively owns lane `1 + sig_net_idx` (never wraps, never collides!)
         let gutter_stagger = if is_gnd {
             0.0
         } else {
-            let s = ((sig_net_idx % 5) as f64) * GRID_MM;
+            let lane = (sig_net_idx + 1) as f64;
             sig_net_idx += 1;
-            s
+            lane * GRID_MM
         };
 
         // Collect all vertical risers grouped by column gutter X so multiple taps on the same X
@@ -688,10 +694,11 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     risers.push((gx, step_y));
                 }
                 Side::South => {
-                    // Upper member GND drop uses LEFT gutter so it never crosses right-gutter signal/power lines!
+                    // Upper member GND drop exclusively uses lane 0 (`col_left_x`);
+                    // non-GND drops use their unique right gutter lane.
                     let step_y = snap_grid(tip.y + GRID_MM);
                     let gx = if is_gnd {
-                        snap_grid(rp.col_left_x - GRID_MM)
+                        snap_grid(rp.col_left_x)
                     } else {
                         snap_grid(rp.col_right_x + gutter_stagger)
                     };
@@ -782,6 +789,66 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         });
     }
 
+    // 4b. Post-pass: guarantee NO net label ever sits on a perpendicular crossing of another net!
+    // (In KiCad, placing a `(label ...)` on an orthogonal wire intersection shorts both nets.)
+    let route_count = schematic_routes.len();
+    for i in 0..route_count {
+        let mut chosen: Option<Point2> = None;
+        let segs_i = schematic_routes[i].segments.clone();
+        // Prefer horizontal segments first (cleanest label placement), then vertical segments
+        let mut candidates: Vec<Point2> = Vec::new();
+        if let Some(lp) = schematic_routes[i].label_pos {
+            candidates.push(lp);
+        }
+        for pass in 0..2 {
+            for seg in &segs_i {
+                let is_horiz = (seg.p0.y - seg.p1.y).abs() <= EPS_MM;
+                if (pass == 0 && !is_horiz) || (pass == 1 && is_horiz) {
+                    continue;
+                }
+                let len = seg.length();
+                let steps = (len / GRID_MM).round() as i64;
+                if steps <= 0 {
+                    continue;
+                }
+                // Try center-out grid points along the segment
+                let mid = steps / 2;
+                for delta in 0..=steps {
+                    for s in [mid + delta, mid - delta] {
+                        if s < 0 || s > steps {
+                            continue;
+                        }
+                        let t = (s as f64) / (steps as f64);
+                        let pt = Point2::new(
+                            snap_grid(seg.p0.x + t * (seg.p1.x - seg.p0.x)),
+                            snap_grid(seg.p0.y + t * (seg.p1.y - seg.p0.y)),
+                        );
+                        candidates.push(pt);
+                    }
+                }
+            }
+        }
+
+        for cand in candidates {
+            let collides_other = (0..route_count).any(|j| {
+                if j == i {
+                    return false;
+                }
+                schematic_routes[j]
+                    .segments
+                    .iter()
+                    .any(|s| point_on_ortho_segment(cand, *s))
+            });
+            if !collides_other {
+                chosen = Some(cand);
+                break;
+            }
+        }
+        if let Some(pt) = chosen {
+            schematic_routes[i].label_pos = Some(pt);
+        }
+    }
+
     let sheet_w = max_comp_x.max(254.0);
     let sheet_h = (gnd_rail_y + (gnd_track_idx as f64) * 5.08 + 20.32).max(177.8);
     let sheet_bounds = Rect2::new(0.0, 0.0, snap_grid(sheet_w), snap_grid(sheet_h));
@@ -829,6 +896,14 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         evidence,
         diagnostics,
     }
+}
+
+fn point_on_ortho_segment(p: Point2, seg: Segment2) -> bool {
+    let min_x = seg.p0.x.min(seg.p1.x) - 0.1;
+    let max_x = seg.p0.x.max(seg.p1.x) + 0.1;
+    let min_y = seg.p0.y.min(seg.p1.y) - 0.1;
+    let max_y = seg.p0.y.max(seg.p1.y) + 0.1;
+    p.x >= min_x && p.x <= max_x && p.y >= min_y && p.y <= max_y
 }
 
 fn add_ortho_seg(segs: &mut Vec<Segment2>, a: Point2, b: Point2) {
@@ -901,7 +976,30 @@ fn compute_symbol_size(comp: &ComponentDecl, assigned: &[(&PinDecl, Side)]) -> (
             "resistor" | "capacitor" | "inductor" | "diode" | "led"
         );
 
-    let min_w = if is_small_passive { 10.16 } else { 20.32 };
+    let max_west_len = assigned
+        .iter()
+        .filter(|(_, s)| *s == Side::West)
+        .map(|(p, _)| p.name.len())
+        .max()
+        .unwrap_or(0);
+    let max_east_len = assigned
+        .iter()
+        .filter(|(_, s)| *s == Side::East)
+        .map(|(p, _)| p.name.len())
+        .max()
+        .unwrap_or(0);
+
+    let min_w = if is_small_passive {
+        if comp.value.len() >= 7 {
+            15.24
+        } else {
+            12.70
+        }
+    } else {
+        let pin_text_w = ((max_west_len + max_east_len) as f64) * 1.6 + 10.16;
+        let val_w = (comp.value.len() as f64) * 1.8 + 7.62;
+        pin_text_w.max(val_w).max(20.32)
+    };
     let min_h = if is_small_passive { 10.16 } else { 15.24 };
 
     let w = snap_grid(((max_tb as f64 + 1.0) * PIN_STEP_MM).max(min_w));

@@ -1,0 +1,129 @@
+project "MCU_Board_3V3" {
+    units: mm
+    frame Sheet: Frame2
+
+    circuit MCU_Board_3V3 {
+        component J1: connector {
+            value: "USB_5V"
+            pin VBUS: power_out (5V)
+            pin GND: ground (0V)
+        }
+
+        component C1: capacitor {
+            value: 10uF
+            pin POS: passive
+            pin NEG: passive
+        }
+
+        component U1: regulator {
+            value: "AMS1117-3.3"
+            pin IN: power_in (4.5V..12V)
+            pin GND: ground (0V)
+            pin OUT: power_out (3.3V)
+        }
+
+        component C2: capacitor {
+            value: 10uF
+            pin POS: passive
+            pin NEG: passive
+        }
+
+        component R1: resistor {
+            value: 10kohm
+            pin A: passive
+            pin B: passive
+        }
+
+        component C3: capacitor {
+            value: 100nF
+            pin POS: passive
+            pin NEG: passive
+        }
+
+        component U2: ic {
+            value: "STM32G030"
+            pin VDD: power_in (3.0V..3.6V)
+            pin GND: ground (0V)
+            pin NRST: input
+            pin SWDIO: bidir
+            pin SWCLK: input
+            pin GPIO_LED: output
+        }
+
+        component R2: resistor {
+            value: 470ohm
+            pin A: passive
+            pin B: passive
+        }
+
+        component D1: led {
+            value: "LED_Blue"
+            pin A: passive
+            pin K: passive
+        }
+
+        component J2: connector {
+            value: "SWD_HDR"
+            pin VDD: power_in (3.3V)
+            pin SWDIO: bidir
+            pin SWCLK: output
+            pin NRST: output
+            pin GND: ground (0V)
+        }
+
+        net VBUS {
+            connect: [J1.VBUS, C1.POS, U1.IN]
+        }
+
+        net V3V3 {
+            connect: [U1.OUT, C2.POS, R1.A, U2.VDD, J2.VDD]
+        }
+
+        net GND {
+            connect: [J1.GND, C1.NEG, U1.GND, C2.NEG, C3.NEG, U2.GND, D1.K, J2.GND]
+        }
+
+        net NRST {
+            connect: [R1.B, C3.POS, U2.NRST, J2.NRST]
+        }
+
+        net GPIO_LED {
+            connect: [U2.GPIO_LED, R2.A]
+        }
+
+        net SWCLK {
+            connect: [U2.SWCLK, J2.SWCLK]
+        }
+
+        net SWDIO {
+            connect: [U2.SWDIO, J2.SWDIO]
+        }
+
+        net LED_A {
+            connect: [R2.B, D1.A]
+        }
+    }
+
+    schematic MainSheet {
+        sheet: A4 landscape
+
+        group PowerIn { members: [J1, C1] }
+        group Regulator { members: [U1, C2] }
+        group MCU { members: [U2, R1, C3] }
+        group Debug_IO { members: [J2, R2, D1] }
+
+        layout {
+            arrange: [PowerIn, Regulator, MCU, Debug_IO] left_to_right
+            group_gap: 25.4mm
+            member_gap: 10.16mm
+        }
+    }
+
+    verify {
+        require all_required_pins_connected
+        require no_power_ground_short
+        require no_multiple_power_drivers
+        require voltage_compatibility
+        require no_single_pin_nets
+    }
+}

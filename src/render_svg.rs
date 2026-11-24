@@ -580,8 +580,8 @@ fn render_schematic_svg(ir: &CanonicalIr, annotated: bool) -> String {
       .grp-title {{ font-family: 'Inter', system-ui, sans-serif; font-size: 11px; font-weight: 700; fill: #64748b; text-anchor: middle; }}
       .sym-body {{ fill: #fef9c3; stroke: #854d0e; stroke-width: 1.6; }}
       .sym-body-err {{ fill: #fee2e2; stroke: #dc2626; stroke-width: 2.2; }}
-      .sym-ref {{ font-family: monospace; font-size: 12px; font-weight: 700; fill: #0f172a; text-anchor: middle; }}
-      .sym-val {{ font-family: 'Inter', system-ui, sans-serif; font-size: 10.5px; fill: #334155; text-anchor: middle; }}
+      .sym-ref {{ font-family: monospace; font-size: 11px; font-weight: 700; fill: #0f172a; }}
+      .sym-val {{ font-family: 'Inter', system-ui, sans-serif; font-size: 10px; fill: #334155; }}
       .pin-line {{ stroke: #475569; stroke-width: 1.5; }}
       .pin-line-err {{ stroke: #dc2626; stroke-width: 2.2; }}
       .pin-dot {{ fill: #ffffff; stroke: #334155; stroke-width: 1.1; }}
@@ -719,18 +719,28 @@ fn render_schematic_svg(ir: &CanonicalIr, annotated: bool) -> String {
             r#"    <rect id="comp-{id}" class="{b_cls}" x="{x:.2}" y="{y:.2}" width="{w:.2}" height="{h:.2}" rx="3"/>"#,
             id = e.id
         );
+        let has_north = pins.iter().any(|p| p.side == Side::North);
+        let has_south = pins.iter().any(|p| p.side == Side::South);
+        let (rx, r_anchor) = if has_north {
+            (x + w * 0.5 + 8.0, "start")
+        } else {
+            (x + w * 0.5, "middle")
+        };
+        let (vx, v_anchor) = if has_south {
+            (x + w * 0.5 + 8.0, "start")
+        } else {
+            (x + w * 0.5, "middle")
+        };
         let _ = writeln!(
             out,
-            r#"    <text class="sym-ref" x="{:.2}" y="{:.2}">{}</text>"#,
-            x + w * 0.5,
-            y + h * 0.5 - 2.0,
+            r#"    <text class="sym-ref" x="{rx:.2}" y="{:.2}" text-anchor="{r_anchor}">{}</text>"#,
+            y - 4.0,
             escape_xml(&e.id)
         );
         let _ = writeln!(
             out,
-            r#"    <text class="sym-val" x="{:.2}" y="{:.2}">{}</text>"#,
-            x + w * 0.5,
-            y + h * 0.5 + 11.0,
+            r#"    <text class="sym-val" x="{vx:.2}" y="{:.2}" text-anchor="{v_anchor}">{}</text>"#,
+            y + h + 11.0,
             escape_xml(value)
         );
 

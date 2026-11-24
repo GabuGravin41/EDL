@@ -337,4 +337,64 @@ mod tests {
         assert!(ir.diagnostics.iter().any(|d| d.code == "E_ERC_VOLTAGE_MISMATCH"));
         assert!(ir.diagnostics.iter().any(|d| d.code == "E_ERC_SINGLE_PIN_NET"));
     }
+
+    #[test]
+    fn mcu_board_3v3_passes_erc_and_has_zero_label_wire_crossings() {
+        let src = include_str!("../examples/mcu_board_3v3.edl");
+        let ir = compile_source("examples/mcu_board_3v3.edl", src).expect("parse mcu_board_3v3");
+        assert!(!ir.project.has_errors, "unexpected errors: {:?}", ir.diagnostics);
+        assert_eq!(ir.project.component_count, 10);
+        assert_eq!(ir.project.net_count, 8);
+
+        // Verify no net label sits on any segment of another net (prevents KiCad label shorts!)
+        for (i, r_i) in ir.schematic_routes.iter().enumerate() {
+            if let Some(lp) = r_i.label_pos {
+                for (j, r_j) in ir.schematic_routes.iter().enumerate() {
+                    if i == j {
+                        continue;
+                    }
+                    for seg in &r_j.segments {
+                        let min_x = seg.p0.x.min(seg.p1.x) - 0.1;
+                        let max_x = seg.p0.x.max(seg.p1.x) + 0.1;
+                        let min_y = seg.p0.y.min(seg.p1.y) - 0.1;
+                        let max_y = seg.p0.y.max(seg.p1.y) + 0.1;
+                        assert!(
+                            !(lp.x >= min_x && lp.x <= max_x && lp.y >= min_y && lp.y <= max_y),
+                            "Label '{}' at ({:.2}, {:.2}) collides with net '{}' segment {:?}",
+                            r_i.net_id,
+                            lp.x,
+                            lp.y,
+                            r_j.net_id,
+                            seg
+                        );
+                    }
+                }
+            }
+            // Also verify no segment endpoint of net i touches any segment of net j (prevents KiCad T-shorts!)
+            for seg_i in &r_i.segments {
+                for ep in [seg_i.p0, seg_i.p1] {
+                    for (j, r_j) in ir.schematic_routes.iter().enumerate() {
+                        if i == j {
+                            continue;
+                        }
+                        for seg_j in &r_j.segments {
+                            let min_x = seg_j.p0.x.min(seg_j.p1.x) - 0.1;
+                            let max_x = seg_j.p0.x.max(seg_j.p1.x) + 0.1;
+                            let min_y = seg_j.p0.y.min(seg_j.p1.y) - 0.1;
+                            let max_y = seg_j.p0.y.max(seg_j.p1.y) + 0.1;
+                            assert!(
+                                !(ep.x >= min_x && ep.x <= max_x && ep.y >= min_y && ep.y <= max_y),
+                                "Net '{}' endpoint ({:.2}, {:.2}) shorts onto net '{}' segment {:?}",
+                                r_i.net_id,
+                                ep.x,
+                                ep.y,
+                                r_j.net_id,
+                                seg_j
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
