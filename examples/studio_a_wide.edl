@@ -1,0 +1,76 @@
+project "Studio_A_Wide" {
+    units: mm
+    frame FloorPlan: Frame2
+
+    architecture.defaults {
+        measurement_basis: clear_interior
+        exterior_wall: 200mm
+        interior_wall: 120mm
+    }
+
+    room Living {
+        clear_size: (5200mm, 4000mm)
+        anchor: southwest at FloorPlan.origin
+    }
+
+    room Kitchen {
+        clear_size: (3000mm, 2400mm)
+    }
+
+    room Bath {
+    }
+
+    layout FloorPlan {
+        require Kitchen.west == Living.east + 120mm
+        require Kitchen.south == Living.south
+
+        require Bath.west == Kitchen.west
+        require Bath.east == Kitchen.east
+        require Bath.south == Kitchen.north + 120mm
+        require Bath.north == Living.north
+    }
+
+    opening D_Entry: door {
+        host: exterior(Living, south)
+        width: 900mm
+        offset: 600mm from start
+        hinge: start
+        swing: into Living
+    }
+
+    opening D_Kitchen: door {
+        host: shared_wall(Living, Kitchen)
+        width: 800mm
+        align: center
+        hinge: start
+        swing: into Kitchen
+    }
+
+    opening D_Bath: door {
+        host: shared_wall(Living, Bath)
+        width: 750mm
+        offset: 300mm from start
+        hinge: start
+        swing: into Living
+    }
+
+    opening W_Living: window {
+        host: exterior(Living, north)
+        width: 2200mm
+        align: center
+    }
+
+    verify {
+        require no_room_overlap
+        require opening_jamb_margin >= 100mm
+        require no_door_swing_collision
+    }
+
+    view GroundPlan: PlanView {
+        frame: FloorPlan
+        sheet: A3 landscape
+        scale: 1:50
+        show_dimensions: true
+        show_labels: true
+    }
+}

@@ -1,0 +1,10 @@
+[package]
+name = "edl"
+version = "0.1.0"
+edition = "2021"
+description = "Engineering Description Language (EDL) v0.1 compiler — 2D architectural floor plans"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

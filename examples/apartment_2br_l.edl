@@ -1,0 +1,238 @@
+project "Apartment_2BR_L" {
+    units: mm
+    frame FloorPlan: Frame2
+
+    architecture.defaults {
+        measurement_basis: clear_interior
+        exterior_wall: 200mm
+        interior_wall: 120mm
+    }
+
+    room Bath {
+        role: wet
+        clear_size: (2200mm, 2600mm)
+        anchor: southwest at FloorPlan.origin
+    }
+
+    room Kitchen {
+        role: service
+        clear_size: (2800mm, 2600mm)
+    }
+
+    room Living {
+        role: habitable
+        clear_size: (4400mm, 4400mm)
+    }
+
+    room Hall {
+        role: circulation
+    }
+
+    room Bedroom1 {
+        role: habitable
+        clear_size: (3600mm, 3800mm)
+    }
+
+    room Bedroom2 {
+        role: habitable
+        clear_size: (3200mm, 3800mm)
+    }
+
+    layout FloorPlan {
+        // Kitchen east of Bath, aligned at south
+        require Kitchen.west == Bath.east + 120mm
+        require Kitchen.south == Bath.south
+
+        // Living east of Kitchen, aligned at south
+        require Living.west == Kitchen.east + 120mm
+        require Living.south == Kitchen.south
+
+        // Hall spans north of Bath & Kitchen, flush with Living's north edge
+        require Hall.west == Bath.west
+        require Hall.east == Kitchen.east
+        require Hall.south == Bath.north + 120mm
+        require Hall.north == Living.north
+
+        // Bedrooms north of Hall, forming the North-West wing of the L
+        require Bedroom1.west == Hall.west
+        require Bedroom1.south == Hall.north + 120mm
+
+        require Bedroom2.west == Bedroom1.east + 120mm
+        require Bedroom2.south == Bedroom1.south
+    }
+
+    // Exterior Entry & Interior Doors
+    opening EntryDoor: door {
+        host: exterior(Hall, west)
+        width: 900mm
+        align: center
+        hinge: end
+        swing: into Hall
+    }
+
+    opening Bed1Door: door {
+        host: shared_wall(Hall, Bedroom1)
+        width: 800mm
+        offset: 200mm from end
+        hinge: end
+        swing: into Bedroom1
+    }
+
+    opening Bed2Door: door {
+        host: shared_wall(Hall, Bedroom2)
+        width: 800mm
+        align: center
+        hinge: start
+        swing: into Bedroom2
+    }
+
+    opening BathDoor: door {
+        host: shared_wall(Hall, Bath)
+        width: 800mm
+        offset: 200mm from end
+        hinge: end
+        swing: into Bath
+    }
+
+    // Open-plan Passages
+    opening HallToLiving: passage {
+        host: shared_wall(Hall, Living)
+        width: 1300mm
+        align: center
+    }
+
+    opening KitchenToLiving: passage {
+        host: shared_wall(Kitchen, Living)
+        width: 1500mm
+        offset: 200mm from start
+    }
+
+    // Exterior Windows
+    opening LivingWinS: window {
+        host: exterior(Living, south)
+        width: 2200mm
+        offset: 400mm from start
+    }
+
+    opening LivingWinE: window {
+        host: exterior(Living, east)
+        width: 1600mm
+        offset: 300mm from end
+    }
+
+    opening Bed1Win: window {
+        host: exterior(Bedroom1, north)
+        width: 1600mm
+        align: center
+    }
+
+    opening Bed2Win: window {
+        host: exterior(Bedroom2, north)
+        width: 1400mm
+        align: center
+    }
+
+    opening KitchenWin: window {
+        host: exterior(Kitchen, south)
+        width: 1400mm
+        align: center
+    }
+
+    // Fixtures (with front clearances)
+    fixture MasterBed: bed {
+        room: Bedroom1
+        size: (1600mm, 2000mm)
+        against: west
+        offset: 100mm from end
+        clearance_front: 600mm
+    }
+
+    fixture Wardrobe: wardrobe {
+        room: Bedroom1
+        size: (1600mm, 600mm)
+        against: south
+        offset: 200mm from start
+        clearance_front: 600mm
+    }
+
+    fixture Bed2: bed {
+        room: Bedroom2
+        size: (1200mm, 2000mm)
+        against: east
+        offset: 250mm from end
+        clearance_front: 600mm
+    }
+
+    fixture Desk: desk {
+        room: Bedroom2
+        size: (1200mm, 600mm)
+        against: south
+        offset: 200mm from end
+        clearance_front: 600mm
+    }
+
+    fixture Sofa: sofa {
+        room: Living
+        size: (2200mm, 900mm)
+        against: north
+        align: center
+        clearance_front: 700mm
+    }
+
+    fixture DiningTable: table {
+        room: Living
+        size: (1400mm, 800mm)
+        against: east
+        offset: 300mm from start
+        clearance_front: 600mm
+    }
+
+    fixture Counter: counter {
+        room: Kitchen
+        size: (2400mm, 600mm)
+        against: north
+        align: center
+        clearance_front: 900mm
+    }
+
+    fixture Shower: shower {
+        room: Bath
+        size: (900mm, 900mm)
+        against: west
+        offset: 100mm from start
+        clearance_front: 600mm
+    }
+
+    fixture Vanity: vanity {
+        room: Bath
+        size: (800mm, 500mm)
+        against: west
+        offset: 1300mm from start
+        clearance_front: 600mm
+    }
+
+    fixture Toilet: toilet {
+        room: Bath
+        size: (400mm, 700mm)
+        against: south
+        offset: 200mm from end
+        clearance_front: 600mm
+    }
+
+    verify {
+        require no_room_overlap
+        require opening_jamb_margin >= 100mm
+        require no_door_swing_collision
+        require all_rooms_reachable
+        require no_fixture_collision
+        require habitable_rooms_have_window
+    }
+
+    view GroundPlan: PlanView {
+        frame: FloorPlan
+        sheet: A3 landscape
+        scale: 1:50
+        show_dimensions: true
+        show_labels: true
+    }
+}
