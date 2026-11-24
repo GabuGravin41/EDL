@@ -1,0 +1,56 @@
+project "Power_Regulator_Invalid" {
+    units: mm
+    frame Sheet: Frame2
+
+    circuit Power {
+        component J1: connector {
+            value: "DC_IN_12V"
+            pin VIN: power_out (12V)
+            pin GND: ground (0V)
+        }
+
+        component U1: regulator {
+            value: "LM7805"
+            pin IN:  power_in (7V..35V)
+            pin GND: ground (0V)
+            pin OUT: power_out (5V)
+        }
+
+        component C1: capacitor {
+            value: 10uF
+            pin POS: passive
+            pin NEG: passive
+        }
+
+        component J2: connector {
+            value: "OUT_5V"
+            pin VOUT: power_in (5V)
+            pin GND:  ground (0V)
+        }
+
+        // BUG 1: J2.VOUT (rated 5V) accidentally wired to 12V VIN rail!
+        net VIN  { connect: [J1.VIN, U1.IN, C1.POS, J2.VOUT] }
+        // BUG 2: U1.OUT is on a dangling single-pin net!
+        net V5   { connect: [U1.OUT] }
+        // BUG 3: J2.GND forgotten (unconnected required ground pin — classic Example B bug!)
+        net GND  { connect: [J1.GND, U1.GND, C1.NEG] }
+    }
+
+    schematic Main {
+        sheet: A4 landscape
+        group Input  { members: [J1, C1] }
+        group Reg    { members: [U1] }
+        group Output { members: [J2] }
+        layout {
+            arrange: [Input, Reg, Output] left_to_right
+        }
+    }
+
+    verify {
+        require all_required_pins_connected
+        require no_power_ground_short
+        require no_multiple_power_drivers
+        require voltage_compatibility
+        require no_single_pin_nets
+    }
+}

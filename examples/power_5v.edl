@@ -1,0 +1,84 @@
+project "Power_Regulator_5V" {
+    units: mm
+    frame Sheet: Frame2
+
+    circuit Power {
+        component J1: connector {
+            value: "DC_IN_12V"
+            footprint: "Connector_BarrelJack:BarrelJack_Horizontal"
+            pin VIN: power_out (12V)
+            pin GND: ground (0V)
+        }
+
+        component C1: capacitor {
+            value: 10uF
+            footprint: "Capacitor_SMD:C_0805_2012Metric"
+            pin POS: passive
+            pin NEG: passive
+        }
+
+        component U1: regulator {
+            value: "LM7805"
+            footprint: "Package_TO_SOT_THT:TO-220-3_Vertical"
+            pin IN:  power_in (7V..35V)
+            pin GND: ground (0V)
+            pin OUT: power_out (5V)
+        }
+
+        component C2: capacitor {
+            value: 100nF
+            footprint: "Capacitor_SMD:C_0805_2012Metric"
+            pin POS: passive
+            pin NEG: passive
+        }
+
+        component R1: resistor {
+            value: 330ohm
+            footprint: "Resistor_SMD:R_0805_2012Metric"
+            pin A: passive
+            pin B: passive
+        }
+
+        component D1: led {
+            value: "LED_Green"
+            footprint: "LED_SMD:LED_0805_2012Metric"
+            pin A: passive
+            pin K: passive
+        }
+
+        component J2: connector {
+            value: "OUT_5V"
+            footprint: "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+            pin VOUT: power_in (5V)
+            pin GND:  ground (0V)
+        }
+
+        net VIN   { connect: [J1.VIN, C1.POS, U1.IN] }
+        net V5    { connect: [U1.OUT, C2.POS, R1.A, J2.VOUT] }
+        net LED_A { connect: [R1.B, D1.A] }
+        net GND   { connect: [J1.GND, C1.NEG, U1.GND, C2.NEG, D1.K, J2.GND] }
+    }
+
+    schematic Main {
+        sheet: A4 landscape
+
+        group Input  { members: [J1, C1] }
+        group Reg    { members: [U1, C2] }
+        group Status { members: [R1, D1] }
+        group Output { members: [J2] }
+
+        layout {
+            arrange: [Input, Reg, Status, Output] left_to_right
+            group_gap: 25.4mm
+            member_gap: 17.78mm
+        }
+    }
+
+    verify {
+        require all_required_pins_connected
+        require no_power_ground_short
+        require no_multiple_power_drivers
+        require voltage_compatibility
+        require no_single_pin_nets
+    }
+}

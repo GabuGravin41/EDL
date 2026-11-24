@@ -1295,6 +1295,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                     },
                 });
             }
+            _ => {}
         }
     }
 
@@ -1320,9 +1321,10 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
     let exterior_footprint_mm = exterior_bounds.map(|b| [round4(b.width()), round4(b.depth())]);
 
     CanonicalIr {
-        ir_version: "0.2.0".to_string(),
+        ir_version: "0.3.0".to_string(),
         project: ProjectSummaryIr {
             name: project.name.clone(),
+            domain: "architecture".to_string(),
             default_unit: project.default_unit.to_string(),
             exterior_footprint_mm,
             exterior_bounds,
@@ -1330,13 +1332,18 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
             room_count: solve.room_rects.len(),
             opening_count: resolved_openings.len(),
             fixture_count: resolved_fixtures.len(),
+            component_count: 0,
+            net_count: 0,
             remaining_dof: solve.remaining_dof,
             has_errors,
         },
         frames,
         entities,
+        relations: Vec::new(),
         derived_walls,
         wall_solids,
+        schematic_groups: Vec::new(),
+        schematic_routes: Vec::new(),
         constraints: solve.equations,
         views,
         evidence,

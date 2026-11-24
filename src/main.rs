@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use edl::{compile_source, diff, export_dxf, render_svg};
+use edl::{compile_source, diff, export_dxf, export_kicad, render_svg};
 use std::fs;
 use std::path::PathBuf;
 use std::process;
@@ -36,13 +36,16 @@ enum Commands {
         #[arg(long)]
         annotated: bool,
     },
-    /// Export a layered CAD DXF file (exact LINE + ARC + TEXT entities)
+    /// Export to a native CAD/EDA format (DXF for floor plans, KiCad .kicad_sch for schematics)
     Export {
         /// Path to .edl project file
         file: PathBuf,
-        /// Output DXF file path
+        /// Output DXF file path (architecture)
         #[arg(long)]
-        dxf: PathBuf,
+        dxf: Option<PathBuf>,
+        /// Output KiCad schematic (.kicad_sch) file path (electronics)
+        #[arg(long)]
+        kicad: Option<PathBuf>,
     },
     /// Compute a semantic diff between two .edl revisions by stable entity ID
     Diff {
@@ -79,24 +82,33 @@ fn main() {
             if json {
                 println!("{}", serde_json::to_string_pretty(&ir).unwrap());
             } else {
-                println!("EDL Project: {}", ir.project.name);
-                if let Some([w, d]) = ir.project.exterior_footprint_mm {
+                println!("EDL Project: {} [{}]", ir.project.name, ir.project.domain);
+                if ir.project.domain == "electronics" {
                     println!(
-                        "  Exterior footprint : {:.0} mm x {:.0} mm ({:.2} m x {:.2} m)",
-                        w,
-                        d,
-                        w / 1000.0,
-                        d / 1000.0
+                        "  Components: {} | Nets: {} | Routes: {}",
+                        ir.project.component_count,
+                        ir.project.net_count,
+                        ir.schematic_routes.len()
+                    );
+                } else {
+                    if let Some([w, d]) = ir.project.exterior_footprint_mm {
+                        println!(
+                            "  Exterior footprint : {:.0} mm x {:.0} mm ({:.2} m x {:.2} m)",
+                            w,
+                            d,
+                            w / 1000.0,
+                            d / 1000.0
+                        );
+                    }
+                    println!(
+                        "  Rooms: {} | Openings: {} | Fixtures: {} | Clear area: {:.2} m² | Remaining DOF: {}",
+                        ir.project.room_count,
+                        ir.project.opening_count,
+                        ir.project.fixture_count,
+                        ir.project.total_clear_area_m2,
+                        ir.project.remaining_dof.len()
                     );
                 }
-                println!(
-                    "  Rooms: {} | Openings: {} | Fixtures: {} | Clear area: {:.2} m² | Remaining DOF: {}",
-                    ir.project.room_count,
-                    ir.project.opening_count,
-                    ir.project.fixture_count,
-                    ir.project.total_clear_area_m2,
-                    ir.project.remaining_dof.len()
-                );
                 println!("  Evidence:");
                 for ev in &ir.evidence {
                     println!("    [{:?}] {} — {}", ev.status, ev.check_id, ev.details);
@@ -137,22 +149,44 @@ fn main() {
                 ir.project.has_errors
             );
         }
-        Commands::Export { file, dxf } => {
+        Commands::Export { file, dxf, kicad } => {
             let ir = load_and_compile(&file);
-            if ir.project.has_errors {
-                eprintln!("warning: exporting DXF despite verification error(s)");
-            }
-            let content = export_dxf::export_dxf(&ir);
-            if let Some(parent) = dxf.parent() {
-                if !parent.as_os_str().is_empty() {
-                    let _ = fs::create_dir_all(parent);
-                }
-            }
-            fs::write(&dxf, content).unwrap_or_else(|e| {
-                eprintln!("error: failed to write '{}': {e}", dxf.display());
+            if dxf.is_none() && kicad.is_none() {
+                eprintln!("error: specify --dxf <path> or --kicad <path>");
                 process::exit(2);
-            });
-            println!("Exported layered DXF -> {}", dxf.display());
+            }
+            if let Some(dxf_path) = dxf {
+                if ir.project.has_errors {
+                    eprintln!("warning: exporting DXF despite verification error(s)");
+                }
+                let content = export_dxf::export_dxf(&ir);
+                if let Some(parent) = dxf_path.parent() {
+                    if !parent.as_os_str().is_empty() {
+                        let _ = fs::create_dir_all(parent);
+                    }
+                }
+                fs::write(&dxf_path, content).unwrap_or_else(|e| {
+                    eprintln!("error: failed to write '{}': {e}", dxf_path.display());
+                    process::exit(2);
+                });
+                println!("Exported layered DXF -> {}", dxf_path.display());
+            }
+            if let Some(kicad_path) = kicad {
+                if ir.project.has_errors {
+                    eprintln!("warning: exporting KiCad schematic despite ERC error(s)");
+                }
+                let content = export_kicad::export_kicad_sch(&ir);
+                if let Some(parent) = kicad_path.parent() {
+                    if !parent.as_os_str().is_empty() {
+                        let _ = fs::create_dir_all(parent);
+                    }
+                }
+                fs::write(&kicad_path, content).unwrap_or_else(|e| {
+                    eprintln!("error: failed to write '{}': {e}", kicad_path.display());
+                    process::exit(2);
+                });
+                println!("Exported KiCad schematic -> {}", kicad_path.display());
+            }
         }
         Commands::Diff {
             before,

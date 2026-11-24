@@ -6,6 +6,12 @@ use std::fmt;
 pub enum Dimension {
     Length,
     Angle,
+    Voltage,
+    Current,
+    Resistance,
+    Capacitance,
+    Frequency,
+    Power,
     Scalar,
 }
 
@@ -14,21 +20,54 @@ impl fmt::Display for Dimension {
         match self {
             Dimension::Length => write!(f, "length"),
             Dimension::Angle => write!(f, "angle"),
+            Dimension::Voltage => write!(f, "voltage"),
+            Dimension::Current => write!(f, "current"),
+            Dimension::Resistance => write!(f, "resistance"),
+            Dimension::Capacitance => write!(f, "capacitance"),
+            Dimension::Frequency => write!(f, "frequency"),
+            Dimension::Power => write!(f, "power"),
             Dimension::Scalar => write!(f, "scalar"),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
 pub enum Unit {
+    // Length (canonical: mm)
     Mm,
     Cm,
     M,
     In,
     Ft,
+    // Angle (canonical: deg)
     Deg,
     Rad,
+    // Voltage (canonical: V)
+    V,
+    Mv,
+    Kv,
+    // Current (canonical: A)
+    A,
+    Ma,
+    Ua,
+    // Resistance (canonical: ohm)
+    Ohm,
+    Kohm,
+    Mohm,
+    // Capacitance (canonical: F)
+    F,
+    Mf,
+    Uf,
+    Nf,
+    Pf,
+    // Frequency (canonical: Hz)
+    Hz,
+    Khz,
+    Mhz,
+    // Power (canonical: W)
+    W,
+    Mw,
+    // Dimensionless
     None,
 }
 
@@ -42,6 +81,25 @@ impl Unit {
             "ft" => Some(Unit::Ft),
             "deg" => Some(Unit::Deg),
             "rad" => Some(Unit::Rad),
+            "V" => Some(Unit::V),
+            "mV" => Some(Unit::Mv),
+            "kV" => Some(Unit::Kv),
+            "A" => Some(Unit::A),
+            "mA" => Some(Unit::Ma),
+            "uA" => Some(Unit::Ua),
+            "ohm" | "Ohm" => Some(Unit::Ohm),
+            "kohm" | "kOhm" => Some(Unit::Kohm),
+            "Mohm" | "MOhm" => Some(Unit::Mohm),
+            "F" => Some(Unit::F),
+            "mF" => Some(Unit::Mf),
+            "uF" => Some(Unit::Uf),
+            "nF" => Some(Unit::Nf),
+            "pF" => Some(Unit::Pf),
+            "Hz" => Some(Unit::Hz),
+            "kHz" => Some(Unit::Khz),
+            "MHz" => Some(Unit::Mhz),
+            "W" => Some(Unit::W),
+            "mW" => Some(Unit::Mw),
             "" => Some(Unit::None),
             _ => None,
         }
@@ -51,11 +109,17 @@ impl Unit {
         match self {
             Unit::Mm | Unit::Cm | Unit::M | Unit::In | Unit::Ft => Dimension::Length,
             Unit::Deg | Unit::Rad => Dimension::Angle,
+            Unit::V | Unit::Mv | Unit::Kv => Dimension::Voltage,
+            Unit::A | Unit::Ma | Unit::Ua => Dimension::Current,
+            Unit::Ohm | Unit::Kohm | Unit::Mohm => Dimension::Resistance,
+            Unit::F | Unit::Mf | Unit::Uf | Unit::Nf | Unit::Pf => Dimension::Capacitance,
+            Unit::Hz | Unit::Khz | Unit::Mhz => Dimension::Frequency,
+            Unit::W | Unit::Mw => Dimension::Power,
             Unit::None => Dimension::Scalar,
         }
     }
 
-    /// Factor to convert this unit into canonical base unit (mm for length, deg for angle).
+    /// Factor to convert into canonical base unit (mm, deg, V, A, ohm, F, Hz, W).
     pub fn to_canonical_factor(self) -> f64 {
         match self {
             Unit::Mm => 1.0,
@@ -65,6 +129,25 @@ impl Unit {
             Unit::Ft => 304.8,
             Unit::Deg => 1.0,
             Unit::Rad => 180.0 / std::f64::consts::PI,
+            Unit::V => 1.0,
+            Unit::Mv => 1e-3,
+            Unit::Kv => 1e3,
+            Unit::A => 1.0,
+            Unit::Ma => 1e-3,
+            Unit::Ua => 1e-6,
+            Unit::Ohm => 1.0,
+            Unit::Kohm => 1e3,
+            Unit::Mohm => 1e6,
+            Unit::F => 1.0,
+            Unit::Mf => 1e-3,
+            Unit::Uf => 1e-6,
+            Unit::Nf => 1e-9,
+            Unit::Pf => 1e-12,
+            Unit::Hz => 1.0,
+            Unit::Khz => 1e3,
+            Unit::Mhz => 1e6,
+            Unit::W => 1.0,
+            Unit::Mw => 1e-3,
             Unit::None => 1.0,
         }
     }
@@ -72,20 +155,40 @@ impl Unit {
 
 impl fmt::Display for Unit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Unit::Mm => write!(f, "mm"),
-            Unit::Cm => write!(f, "cm"),
-            Unit::M => write!(f, "m"),
-            Unit::In => write!(f, "in"),
-            Unit::Ft => write!(f, "ft"),
-            Unit::Deg => write!(f, "deg"),
-            Unit::Rad => write!(f, "rad"),
-            Unit::None => write!(f, ""),
-        }
+        let s = match self {
+            Unit::Mm => "mm",
+            Unit::Cm => "cm",
+            Unit::M => "m",
+            Unit::In => "in",
+            Unit::Ft => "ft",
+            Unit::Deg => "deg",
+            Unit::Rad => "rad",
+            Unit::V => "V",
+            Unit::Mv => "mV",
+            Unit::Kv => "kV",
+            Unit::A => "A",
+            Unit::Ma => "mA",
+            Unit::Ua => "uA",
+            Unit::Ohm => "ohm",
+            Unit::Kohm => "kohm",
+            Unit::Mohm => "Mohm",
+            Unit::F => "F",
+            Unit::Mf => "mF",
+            Unit::Uf => "uF",
+            Unit::Nf => "nF",
+            Unit::Pf => "pF",
+            Unit::Hz => "Hz",
+            Unit::Khz => "kHz",
+            Unit::Mhz => "MHz",
+            Unit::W => "W",
+            Unit::Mw => "mW",
+            Unit::None => "",
+        };
+        write!(f, "{s}")
     }
 }
 
-/// Strongly-typed dimensional quantity stored with its original unit and canonical value.
+/// Strongly-typed dimensional quantity stored with its original unit and canonical conversion.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Quantity {
     pub raw_value: f64,
@@ -108,7 +211,6 @@ impl Quantity {
         self.unit.dimension()
     }
 
-    /// Convert length quantity to canonical millimeters, rejecting non-length units.
     pub fn to_mm(self) -> Result<f64, String> {
         if self.dimension() != Dimension::Length {
             return Err(format!(
@@ -120,7 +222,17 @@ impl Quantity {
         Ok(self.raw_value * self.unit.to_canonical_factor())
     }
 
-    /// Convert angle quantity to degrees, rejecting non-angle units.
+    pub fn to_volts(self) -> Result<f64, String> {
+        if self.dimension() != Dimension::Voltage {
+            return Err(format!(
+                "Expected a voltage quantity (V/mV/kV), got {} ({})",
+                self.dimension(),
+                self.unit
+            ));
+        }
+        Ok(self.raw_value * self.unit.to_canonical_factor())
+    }
+
     pub fn to_deg(self) -> Result<f64, String> {
         if self.dimension() != Dimension::Angle {
             return Err(format!(
@@ -130,25 +242,5 @@ impl Quantity {
             ));
         }
         Ok(self.raw_value * self.unit.to_canonical_factor())
-    }
-
-    pub fn add(self, other: Quantity) -> Result<Quantity, String> {
-        if self.dimension() != other.dimension() {
-            return Err(format!(
-                "Dimension mismatch: cannot add {} ({}) and {} ({})",
-                self.dimension(),
-                self.unit,
-                other.dimension(),
-                other.unit
-            ));
-        }
-        let canon = self.raw_value * self.unit.to_canonical_factor()
-            + other.raw_value * other.unit.to_canonical_factor();
-        let target_unit = match self.dimension() {
-            Dimension::Length => Unit::Mm,
-            Dimension::Angle => Unit::Deg,
-            Dimension::Scalar => Unit::None,
-        };
-        Ok(Quantity::new(canon, target_unit))
     }
 }

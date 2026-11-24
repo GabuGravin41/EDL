@@ -21,6 +21,8 @@ pub struct ProjectAst {
     pub layouts: Vec<LayoutBlock>,
     pub openings: Vec<OpeningDecl>,
     pub fixtures: Vec<FixtureDecl>,
+    pub circuits: Vec<CircuitDecl>,
+    pub schematics: Vec<SchematicDecl>,
     pub verifications: Vec<VerifyRule>,
     pub views: Vec<ViewDecl>,
 }
@@ -221,12 +223,123 @@ pub struct FixtureDecl {
 
 #[derive(Debug, Clone)]
 pub enum VerifyRule {
+    // Architectural rules
     NoRoomOverlap { span: Span },
     OpeningJambMarginMin { min: Quantity, span: Span },
     NoDoorSwingCollision { span: Span },
     AllRoomsReachable { span: Span },
     NoFixtureCollision { span: Span },
     HabitableRoomsHaveWindow { span: Span },
+    // Electrical ERC rules
+    AllRequiredPinsConnected { span: Span },
+    NoPowerGroundShort { span: Span },
+    NoMultiplePowerDrivers { span: Span },
+    VoltageCompatibility { span: Span },
+    NoSinglePinNets { span: Span },
+}
+
+// =========================================================================
+// Electronics Domain AST (Vertical Slice 2)
+// =========================================================================
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PinRole {
+    PowerOut,
+    PowerIn,
+    Ground,
+    Input,
+    Output,
+    Bidir,
+    Passive,
+    Nc,
+}
+
+impl PinRole {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            PinRole::PowerOut => "power_out",
+            PinRole::PowerIn => "power_in",
+            PinRole::Ground => "ground",
+            PinRole::Input => "input",
+            PinRole::Output => "output",
+            PinRole::Bidir => "bidir",
+            PinRole::Passive => "passive",
+            PinRole::Nc => "nc",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum VoltageSpec {
+    Exact { volts: f64 },
+    Range { min_v: f64, max_v: f64 },
+}
+
+#[derive(Debug, Clone)]
+pub struct PinDecl {
+    pub name: String,
+    pub role: PinRole,
+    pub voltage: Option<VoltageSpec>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct ComponentDecl {
+    pub id: String,
+    pub category: String, // connector, regulator, ic, resistor, capacitor, inductor, diode, led, switch, crystal, transistor
+    pub value: String,
+    pub footprint: Option<String>,
+    pub pins: Vec<PinDecl>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct PinRef {
+    pub component: String,
+    pub pin: String,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct NetDecl {
+    pub name: String,
+    pub connects: Vec<PinRef>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct CircuitDecl {
+    pub name: String,
+    pub components: Vec<ComponentDecl>,
+    pub nets: Vec<NetDecl>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct SchematicGroupDecl {
+    pub name: String,
+    pub members: Vec<String>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct SchematicLayoutDecl {
+    pub arrange: Vec<String>,
+    pub direction: String, // "left_to_right" | "top_to_bottom"
+    pub group_gap: Option<Quantity>,
+    pub member_gap: Option<Quantity>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct SchematicDecl {
+    pub name: String,
+    pub sheet: String,
+    pub groups: Vec<SchematicGroupDecl>,
+    pub layout: Option<SchematicLayoutDecl>,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone)]

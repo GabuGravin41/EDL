@@ -1,7 +1,9 @@
 pub mod arch;
 pub mod ast;
 pub mod diff;
+pub mod elec;
 pub mod export_dxf;
+pub mod export_kicad;
 pub mod geom;
 pub mod ir;
 pub mod parser;
@@ -15,7 +17,11 @@ use span::Diagnostic;
 
 pub fn compile_source(file: &str, src: &str) -> Result<CanonicalIr, Diagnostic> {
     let ast = parser::parse_project(file, src)?;
-    Ok(arch::compile_project(&ast))
+    if !ast.circuits.is_empty() && ast.rooms.is_empty() {
+        Ok(elec::compile_electronics(&ast))
+    } else {
+        Ok(arch::compile_project(&ast))
+    }
 }
 
 #[cfg(test)]
@@ -298,5 +304,37 @@ mod tests {
         assert_eq!(ir.project.opening_count, 11);
         assert_eq!(ir.project.fixture_count, 10);
         assert!(ir.project.remaining_dof.is_empty());
+    }
+
+    #[test]
+    fn power_5v_schematic_passes_all_erc_and_exports_kicad() {
+        let src = include_str!("../examples/power_5v.edl");
+        let ir = compile_source("examples/power_5v.edl", src).expect("parse power_5v");
+        assert_eq!(ir.project.domain, "electronics");
+        assert!(!ir.project.has_errors, "unexpected errors: {:?}", ir.diagnostics);
+        assert_eq!(ir.project.component_count, 7);
+        assert_eq!(ir.project.net_count, 4);
+        assert_eq!(ir.evidence.len(), 5);
+        assert!(ir.evidence.iter().all(|e| e.status == VerificationStatus::ExactlyChecked));
+
+        let svg = render_svg::render_svg(&ir, true);
+        assert!(svg.contains("EDL Schematic: Power_Regulator_5V"));
+        assert!(svg.contains("LM7805"));
+
+        let kicad = export_kicad::export_kicad_sch(&ir);
+        assert!(kicad.contains("(kicad_sch"));
+        assert!(kicad.contains("(lib_id \"EDL:U1\")"));
+        assert!(kicad.contains("(wire "));
+        assert!(kicad.contains("(label \"VIN\""));
+    }
+
+    #[test]
+    fn power_5v_invalid_catches_unconnected_voltage_and_single_pin_erc() {
+        let src = include_str!("../examples/power_5v_invalid.edl");
+        let ir = compile_source("examples/power_5v_invalid.edl", src).expect("parse invalid power");
+        assert!(ir.project.has_errors);
+        assert!(ir.diagnostics.iter().any(|d| d.code == "E_ERC_UNCONNECTED_PIN"));
+        assert!(ir.diagnostics.iter().any(|d| d.code == "E_ERC_VOLTAGE_MISMATCH"));
+        assert!(ir.diagnostics.iter().any(|d| d.code == "E_ERC_SINGLE_PIN_NET"));
     }
 }

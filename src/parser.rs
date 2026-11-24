@@ -11,9 +11,12 @@ enum TokenKind {
     RBrace,
     LParen,
     RParen,
+    LBracket,
+    RBracket,
     Colon,
     Comma,
     Dot,
+    DotDot,
     Plus,
     Minus,
     Star,
@@ -184,6 +187,18 @@ fn lex(file: &str, src: &str) -> Result<Vec<Token>, Diagnostic> {
         }
 
         // Two-char operators
+        if ch == '.' && i + 1 < n && chars[i + 1] == '.' {
+            i += 2;
+            col += 2;
+            tokens.push(Token {
+                kind: TokenKind::DotDot,
+                line: start_line,
+                col: start_col,
+                end_line: line,
+                end_col: col,
+            });
+            continue;
+        }
         if ch == '=' && i + 1 < n && chars[i + 1] == '=' {
             i += 2;
             col += 2;
@@ -215,6 +230,8 @@ fn lex(file: &str, src: &str) -> Result<Vec<Token>, Diagnostic> {
             '}' => TokenKind::RBrace,
             '(' => TokenKind::LParen,
             ')' => TokenKind::RParen,
+            '[' => TokenKind::LBracket,
+            ']' => TokenKind::RBracket,
             ':' => TokenKind::Colon,
             ',' => TokenKind::Comma,
             '.' => TokenKind::Dot,
@@ -398,6 +415,8 @@ impl Parser {
         let mut layouts = Vec::new();
         let mut openings = Vec::new();
         let mut fixtures = Vec::new();
+        let mut circuits = Vec::new();
+        let mut schematics = Vec::new();
         let mut verifications = Vec::new();
         let mut views = Vec::new();
 
@@ -434,6 +453,8 @@ impl Parser {
                 "layout" => layouts.push(self.parse_layout()?),
                 "opening" => openings.push(self.parse_opening()?),
                 "fixture" => fixtures.push(self.parse_fixture()?),
+                "circuit" => circuits.push(self.parse_circuit()?),
+                "schematic" => schematics.push(self.parse_schematic()?),
                 "verify" => verifications.extend(self.parse_verify()?),
                 "view" => views.push(self.parse_view()?),
                 other => {
@@ -467,6 +488,8 @@ impl Parser {
             layouts,
             openings,
             fixtures,
+            circuits,
+            schematics,
             verifications,
             views,
         })
@@ -1045,6 +1068,21 @@ impl Parser {
                 "habitable_rooms_have_window" => rules.push(VerifyRule::HabitableRoomsHaveWindow {
                     span: rstart.merge(&rspan),
                 }),
+                "all_required_pins_connected" => rules.push(VerifyRule::AllRequiredPinsConnected {
+                    span: rstart.merge(&rspan),
+                }),
+                "no_power_ground_short" => rules.push(VerifyRule::NoPowerGroundShort {
+                    span: rstart.merge(&rspan),
+                }),
+                "no_multiple_power_drivers" => rules.push(VerifyRule::NoMultiplePowerDrivers {
+                    span: rstart.merge(&rspan),
+                }),
+                "voltage_compatibility" => rules.push(VerifyRule::VoltageCompatibility {
+                    span: rstart.merge(&rspan),
+                }),
+                "no_single_pin_nets" => rules.push(VerifyRule::NoSinglePinNets {
+                    span: rstart.merge(&rspan),
+                }),
                 other => {
                     return Err(Diagnostic::error(
                         "E_VERIFY_UNKNOWN",
@@ -1128,6 +1166,334 @@ impl Parser {
             scale,
             show_dimensions,
             show_labels,
+            span: start.merge(&end),
+        })
+    }
+
+    fn expect_string(&mut self, label: &str) -> Result<(String, Span), Diagnostic> {
+        let tok = self.peek().clone();
+        let sp = tok.span(&self.file);
+        match tok.kind {
+            TokenKind::Str(s) => {
+                self.bump();
+                Ok((s, sp))
+            }
+            _ => Err(self.err(
+                "E_PARSE_STRING",
+                format!("Expected {label} string literal, found {:?}", tok.kind),
+                &tok,
+            )),
+        }
+    }
+
+    fn parse_circuit(&mut self) -> Result<CircuitDecl, Diagnostic> {
+        let start = self.expect_keyword("circuit")?;
+        let (name, _) = self.expect_ident("circuit name")?;
+        self.expect(TokenKind::LBrace, "'{'")?;
+        let mut components = Vec::new();
+        let mut nets = Vec::new();
+
+        while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+            let tok = self.peek().clone();
+            let kw = match &tok.kind {
+                TokenKind::Ident(s) => s.as_str(),
+                _ => {
+                    return Err(self.err(
+                        "E_PARSE_CIRCUIT",
+                        format!("Expected 'component' or 'net' inside circuit, found {:?}", tok.kind),
+                        &tok,
+                    ))
+                }
+            };
+            match kw {
+                "component" => components.push(self.parse_component()?),
+                "net" => nets.push(self.parse_net()?),
+                other => {
+                    return Err(self.err(
+                        "E_PARSE_CIRCUIT",
+                        format!("Unknown declaration '{other}' inside circuit (expected 'component' or 'net')"),
+                        &tok,
+                    ))
+                }
+            }
+        }
+        let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+        Ok(CircuitDecl {
+            name,
+            components,
+            nets,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_component(&mut self) -> Result<ComponentDecl, Diagnostic> {
+        let start = self.expect_keyword("component")?;
+        let (id, _) = self.expect_ident("component designator (e.g. U1, R1)")?;
+        self.expect(TokenKind::Colon, "':'")?;
+        let (category, _) = self.expect_ident("component category (regulator/ic/resistor/capacitor/connector/led/diode/inductor/switch)")?;
+        self.expect(TokenKind::LBrace, "'{'")?;
+
+        let mut value = String::new();
+        let mut footprint = None;
+        let mut pins = Vec::new();
+
+        while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+            let (key, kspan) = self.expect_ident("component property or 'pin'")?;
+            match key.as_str() {
+                "value" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    if matches!(self.peek().kind, TokenKind::Str(_)) {
+                        let (s, _) = self.expect_string("component value")?;
+                        value = s;
+                    } else {
+                        let (q, _) = self.parse_quantity()?;
+                        value = format!("{}{}", q.raw_value, q.unit);
+                    }
+                }
+                "footprint" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let (s, _) = self.expect_string("footprint")?;
+                    footprint = Some(s);
+                }
+                "pin" => {
+                    let (pin_name, _) = self.expect_ident("pin name")?;
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let (role_s, rspan) = self.expect_ident("pin role (power_out/power_in/ground/input/output/bidir/passive/nc)")?;
+                    let role = match role_s.as_str() {
+                        "power_out" => PinRole::PowerOut,
+                        "power_in" => PinRole::PowerIn,
+                        "ground" => PinRole::Ground,
+                        "input" => PinRole::Input,
+                        "output" => PinRole::Output,
+                        "bidir" => PinRole::Bidir,
+                        "passive" => PinRole::Passive,
+                        "nc" => PinRole::Nc,
+                        _ => {
+                            return Err(Diagnostic::error(
+                                "E_PARSE_PIN_ROLE",
+                                "syntax",
+                                format!("Unknown pin role '{role_s}'"),
+                                Some(rspan),
+                            ))
+                        }
+                    };
+                    let mut voltage = None;
+                    let mut pend = rspan.clone();
+                    if self.peek().kind == TokenKind::LParen {
+                        self.bump();
+                        let (q1, q1span) = self.parse_quantity()?;
+                        let v1 = q1.to_volts().map_err(|msg| {
+                            Diagnostic::error("E_UNIT_MISMATCH", "units", format!("Pin '{id}.{pin_name}': {msg}"), Some(q1span))
+                        })?;
+                        if self.peek().kind == TokenKind::DotDot {
+                            self.bump();
+                            let (q2, q2span) = self.parse_quantity()?;
+                            let v2 = q2.to_volts().map_err(|msg| {
+                                Diagnostic::error("E_UNIT_MISMATCH", "units", format!("Pin '{id}.{pin_name}': {msg}"), Some(q2span))
+                            })?;
+                            voltage = Some(VoltageSpec::Range { min_v: v1, max_v: v2 });
+                        } else {
+                            voltage = Some(VoltageSpec::Exact { volts: v1 });
+                        }
+                        pend = self.expect(TokenKind::RParen, "')'")?.span(&self.file);
+                    }
+                    pins.push(PinDecl {
+                        name: pin_name,
+                        role,
+                        voltage,
+                        span: kspan.merge(&pend),
+                    });
+                }
+                other => {
+                    return Err(Diagnostic::error(
+                        "E_PARSE_PROP",
+                        "syntax",
+                        format!("Unknown component property '{other}'"),
+                        Some(kspan),
+                    ))
+                }
+            }
+        }
+        let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+        if value.is_empty() {
+            value = category.clone();
+        }
+        Ok(ComponentDecl {
+            id,
+            category,
+            value,
+            footprint,
+            pins,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_net(&mut self) -> Result<NetDecl, Diagnostic> {
+        let start = self.expect_keyword("net")?;
+        let (name, _) = self.expect_ident("net name")?;
+        self.expect(TokenKind::LBrace, "'{'")?;
+        let mut connects = Vec::new();
+        while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+            let (key, kspan) = self.expect_ident("connect")?;
+            if key != "connect" {
+                return Err(Diagnostic::error(
+                    "E_PARSE_NET",
+                    "syntax",
+                    format!("Expected 'connect' inside net '{name}', found '{key}'"),
+                    Some(kspan),
+                ));
+            }
+            self.expect(TokenKind::Colon, "':'")?;
+            self.expect(TokenKind::LBracket, "'['")?;
+            while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
+                let (comp, cspan) = self.expect_ident("component id")?;
+                self.expect(TokenKind::Dot, "'.'")?;
+                let (pin, pspan) = self.expect_ident("pin name")?;
+                connects.push(PinRef {
+                    component: comp,
+                    pin,
+                    span: cspan.merge(&pspan),
+                });
+                if self.peek().kind == TokenKind::Comma {
+                    self.bump();
+                } else {
+                    break;
+                }
+            }
+            self.expect(TokenKind::RBracket, "']'")?;
+        }
+        let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+        Ok(NetDecl {
+            name,
+            connects,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_schematic(&mut self) -> Result<SchematicDecl, Diagnostic> {
+        let start = self.expect_keyword("schematic")?;
+        let (name, _) = self.expect_ident("schematic name")?;
+        self.expect(TokenKind::LBrace, "'{'")?;
+
+        let mut sheet = "A4 landscape".to_string();
+        let mut groups = Vec::new();
+        let mut layout = None;
+
+        while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+            let (kw, kspan) = self.expect_ident("sheet, group, or layout")?;
+            match kw.as_str() {
+                "sheet" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let (size, _) = self.expect_ident("sheet size (e.g. A4)")?;
+                    let orient = if let TokenKind::Ident(s) = &self.peek().kind {
+                        if s == "landscape" || s == "portrait" {
+                            let o = s.clone();
+                            self.bump();
+                            format!(" {o}")
+                        } else {
+                            String::new()
+                        }
+                    } else {
+                        String::new()
+                    };
+                    sheet = format!("{size}{orient}");
+                }
+                "group" => {
+                    let (gname, _) = self.expect_ident("group name")?;
+                    self.expect(TokenKind::LBrace, "'{'")?;
+                    self.expect_keyword("members")?;
+                    self.expect(TokenKind::Colon, "':'")?;
+                    self.expect(TokenKind::LBracket, "'['")?;
+                    let mut members = Vec::new();
+                    while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
+                        let (m, _) = self.expect_ident("component id")?;
+                        members.push(m);
+                        if self.peek().kind == TokenKind::Comma {
+                            self.bump();
+                        } else {
+                            break;
+                        }
+                    }
+                    self.expect(TokenKind::RBracket, "']'")?;
+                    let gend = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+                    groups.push(SchematicGroupDecl {
+                        name: gname,
+                        members,
+                        span: kspan.merge(&gend),
+                    });
+                }
+                "layout" => {
+                    self.expect(TokenKind::LBrace, "'{'")?;
+                    let mut arrange = Vec::new();
+                    let mut direction = "left_to_right".to_string();
+                    let mut group_gap = None;
+                    let mut member_gap = None;
+                    while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+                        let (lk, lspan) = self.expect_ident("schematic layout property")?;
+                        self.expect(TokenKind::Colon, "':'")?;
+                        match lk.as_str() {
+                            "arrange" => {
+                                self.expect(TokenKind::LBracket, "'['")?;
+                                while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
+                                    let (g, _) = self.expect_ident("group name")?;
+                                    arrange.push(g);
+                                    if self.peek().kind == TokenKind::Comma {
+                                        self.bump();
+                                    } else {
+                                        break;
+                                    }
+                                }
+                                self.expect(TokenKind::RBracket, "']'")?;
+                                if let TokenKind::Ident(ref dir) = self.peek().kind {
+                                    if dir == "left_to_right" || dir == "top_to_bottom" {
+                                        direction = dir.clone();
+                                        self.bump();
+                                    }
+                                }
+                            }
+                            "group_gap" => {
+                                let (q, _) = self.parse_quantity()?;
+                                group_gap = Some(q);
+                            }
+                            "member_gap" => {
+                                let (q, _) = self.parse_quantity()?;
+                                member_gap = Some(q);
+                            }
+                            other => {
+                                return Err(Diagnostic::error(
+                                    "E_PARSE_PROP",
+                                    "syntax",
+                                    format!("Unknown schematic layout property '{other}'"),
+                                    Some(lspan),
+                                ))
+                            }
+                        }
+                    }
+                    let lend = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+                    layout = Some(SchematicLayoutDecl {
+                        arrange,
+                        direction,
+                        group_gap,
+                        member_gap,
+                        span: kspan.merge(&lend),
+                    });
+                }
+                other => {
+                    return Err(Diagnostic::error(
+                        "E_PARSE_SCHEMATIC",
+                        "syntax",
+                        format!("Unknown declaration '{other}' inside schematic"),
+                        Some(kspan),
+                    ))
+                }
+            }
+        }
+        let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+        Ok(SchematicDecl {
+            name,
+            sheet,
+            groups,
+            layout,
             span: start.merge(&end),
         })
     }
