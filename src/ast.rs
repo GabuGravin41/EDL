@@ -3,11 +3,19 @@ use crate::units::{Quantity, Unit};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
+pub struct ParamDecl {
+    pub name: String,
+    pub value: Quantity,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
 pub struct ProjectAst {
     pub name: String,
     pub span: Span,
     pub default_unit: Unit,
     pub frames: Vec<FrameDecl>,
+    pub parameters: Vec<ParamDecl>,
     pub arch_defaults: ArchDefaults,
     pub rooms: Vec<RoomDecl>,
     pub layouts: Vec<LayoutBlock>,
@@ -138,6 +146,7 @@ pub struct LinearConstraintAst {
 pub enum LinearExprAst {
     RoomEdge { room: String, side: Side, span: Span },
     RoomDim { room: String, dim: RoomDimKind, span: Span },
+    Param { name: String, span: Span },
     Quantity(Quantity, Span),
     Add(Box<LinearExprAst>, Box<LinearExprAst>),
     Sub(Box<LinearExprAst>, Box<LinearExprAst>),
@@ -191,15 +200,22 @@ pub struct OpeningDecl {
 }
 
 #[derive(Debug, Clone)]
+pub enum FixturePos {
+    AgainstWall { side: Side, placement: OpeningPlacement },
+    FreestandingCenter,
+    FreestandingAt { x: Quantity, y: Quantity },
+}
+
+#[derive(Debug, Clone)]
 pub struct FixtureDecl {
     pub id: String,
     pub category: String, // bed, sofa, counter, table, toilet, vanity, shower, wardrobe, desk, etc.
     pub room: String,
-    /// (width along anchored wall, depth projecting into room)
+    /// (width along anchored wall or X, depth projecting into room or Y)
     pub size: (Quantity, Quantity),
-    pub against: Side,
-    pub placement: OpeningPlacement,
+    pub position: FixturePos,
     pub clearance_front: Option<Quantity>,
+    pub clearance_all: Option<Quantity>,
     pub span: Span,
 }
 

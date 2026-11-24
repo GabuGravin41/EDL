@@ -288,4 +288,15 @@ mod tests {
         assert!(!ir.project.has_errors, "unexpected errors: {:?}", ir.diagnostics);
         assert_eq!(ir.evidence.len(), 7); // T2 + V1..V6
     }
+
+    #[test]
+    fn apartment_2br_l_with_interior_wall_param_and_freestanding_table() {
+        let src = include_str!("../examples/apartment_2br_l.edl");
+        let ir = compile_source("examples/apartment_2br_l.edl", src).expect("parse 2br");
+        assert!(!ir.project.has_errors, "unexpected errors: {:?}", ir.diagnostics);
+        assert_eq!(ir.project.room_count, 6);
+        assert_eq!(ir.project.opening_count, 11);
+        assert_eq!(ir.project.fixture_count, 10);
+        assert!(ir.project.remaining_dof.is_empty());
+    }
 }

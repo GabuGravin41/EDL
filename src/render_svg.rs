@@ -170,18 +170,19 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
 
             // Subtle architectural detail line by category
             if category == "bed" {
-                // Draw headboard/pillow strip along the anchored wall
-                let p_thick = (w.min(h) * 0.22).min(24.0);
-                let (px, py, pw, ph) = match against {
-                    Side::North => (x + 4.0, y + 4.0, (w - 8.0).max(2.0), p_thick),
-                    Side::South => (x + 4.0, y + h - p_thick - 4.0, (w - 8.0).max(2.0), p_thick),
-                    Side::West => (x + 4.0, y + 4.0, p_thick, (h - 8.0).max(2.0)),
-                    Side::East => (x + w - p_thick - 4.0, y + 4.0, p_thick, (h - 8.0).max(2.0)),
-                };
-                let _ = writeln!(
-                    out,
-                    r#"    <rect class="fx-detail" x="{px:.2}" y="{py:.2}" width="{pw:.2}" height="{ph:.2}" rx="2"/>"#
-                );
+                if let Some(wall_side) = against {
+                    let p_thick = (w.min(h) * 0.22).min(24.0);
+                    let (px, py, pw, ph) = match wall_side {
+                        Side::North => (x + 4.0, y + 4.0, (w - 8.0).max(2.0), p_thick),
+                        Side::South => (x + 4.0, y + h - p_thick - 4.0, (w - 8.0).max(2.0), p_thick),
+                        Side::West => (x + 4.0, y + 4.0, p_thick, (h - 8.0).max(2.0)),
+                        Side::East => (x + w - p_thick - 4.0, y + 4.0, p_thick, (h - 8.0).max(2.0)),
+                    };
+                    let _ = writeln!(
+                        out,
+                        r#"    <rect class="fx-detail" x="{px:.2}" y="{py:.2}" width="{pw:.2}" height="{ph:.2}" rx="2"/>"#
+                    );
+                }
             } else if category == "shower" {
                 let _ = writeln!(
                     out,
@@ -261,7 +262,8 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
                     let (lx, ly) = if is_horiz {
                         (sx(cutout_rect.center().x), sy(cutout_rect.max_y) - 6.0)
                     } else {
-                        (sx(cutout_rect.max_x) + 32.0, sy(cutout_rect.center().y) + 3.0)
+                        // Place vertical window badge cleanly inside the room side to avoid outer dim line
+                        (sx(cutout_rect.min_x) - 28.0, sy(cutout_rect.center().y) + 3.0)
                     };
                     let cls = if is_violated { "badge-err" } else { "badge" };
                     let _ = writeln!(out, r#"    <text class="{cls}" x="{lx:.2}" y="{ly:.2}">{}</text>"#, e.id);

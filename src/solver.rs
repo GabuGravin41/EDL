@@ -201,6 +201,30 @@ pub fn solve_rooms(project: &ProjectAst) -> SolveOutput {
         }
     }
 
+    // Build parameter lookup map (built-in wall thicknesses + declared parameters)
+    let mut params_mm: BTreeMap<String, f64> = BTreeMap::new();
+    if let Ok(v) = project.arch_defaults.interior_wall.to_mm() {
+        params_mm.insert("interior_wall".to_string(), v);
+    }
+    if let Ok(v) = project.arch_defaults.exterior_wall.to_mm() {
+        params_mm.insert("exterior_wall".to_string(), v);
+    }
+    for p in &project.parameters {
+        match p.value.to_mm() {
+            Ok(v) => {
+                params_mm.insert(p.name.clone(), v);
+            }
+            Err(msg) => {
+                diagnostics.push(Diagnostic::error(
+                    "E_UNIT_MISMATCH",
+                    "units",
+                    format!("Parameter '{}': {msg}", p.name),
+                    Some(p.span.clone()),
+                ));
+            }
+        }
+    }
+
     // 2. Equations from layout blocks
     for layout in &project.layouts {
         if !project.frames.iter().any(|f| f.name == layout.frame) {
@@ -218,6 +242,7 @@ pub fn solve_rooms(project: &ProjectAst) -> SolveOutput {
                 &c.lhs,
                 1.0,
                 &room_index,
+                &params_mm,
                 &mut coeffs,
                 &mut constant,
                 &mut diagnostics,
@@ -226,6 +251,7 @@ pub fn solve_rooms(project: &ProjectAst) -> SolveOutput {
                 &c.rhs,
                 -1.0,
                 &room_index,
+                &params_mm,
                 &mut coeffs,
                 &mut constant,
                 &mut diagnostics,
@@ -422,11 +448,28 @@ fn eval_linear_expr(
     expr: &LinearExprAst,
     sign: f64,
     room_index: &BTreeMap<String, usize>,
+    params_mm: &BTreeMap<String, f64>,
     coeffs: &mut [f64],
     constant: &mut f64,
     diagnostics: &mut Vec<Diagnostic>,
 ) -> bool {
     match expr {
+        LinearExprAst::Param { name, span } => {
+            if let Some(&mm) = params_mm.get(name) {
+                *constant += sign * mm;
+                true
+            } else {
+                diagnostics.push(Diagnostic::error(
+                    "E_REF_UNKNOWN_PARAM",
+                    "semantics",
+                    format!(
+                        "Constraint references undeclared parameter '{name}' (built-ins: interior_wall, exterior_wall)"
+                    ),
+                    Some(span.clone()),
+                ));
+                false
+            }
+        }
         LinearExprAst::RoomEdge { room, side, span } => {
             let Some(&idx) = room_index.get(room) else {
                 diagnostics.push(Diagnostic::error(
@@ -484,17 +527,17 @@ fn eval_linear_expr(
             }
         },
         LinearExprAst::Add(a, b) => {
-            let ok_a = eval_linear_expr(a, sign, room_index, coeffs, constant, diagnostics);
-            let ok_b = eval_linear_expr(b, sign, room_index, coeffs, constant, diagnostics);
+            let ok_a = eval_linear_expr(a, sign, room_index, params_mm, coeffs, constant, diagnostics);
+            let ok_b = eval_linear_expr(b, sign, room_index, params_mm, coeffs, constant, diagnostics);
             ok_a && ok_b
         }
         LinearExprAst::Sub(a, b) => {
-            let ok_a = eval_linear_expr(a, sign, room_index, coeffs, constant, diagnostics);
-            let ok_b = eval_linear_expr(b, -sign, room_index, coeffs, constant, diagnostics);
+            let ok_a = eval_linear_expr(a, sign, room_index, params_mm, coeffs, constant, diagnostics);
+            let ok_b = eval_linear_expr(b, -sign, room_index, params_mm, coeffs, constant, diagnostics);
             ok_a && ok_b
         }
         LinearExprAst::Scale(k, inner) => {
-            eval_linear_expr(inner, sign * k, room_index, coeffs, constant, diagnostics)
+            eval_linear_expr(inner, sign * k, room_index, params_mm, coeffs, constant, diagnostics)
         }
     }
 }

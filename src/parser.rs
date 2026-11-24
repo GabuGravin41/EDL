@@ -392,6 +392,7 @@ impl Parser {
 
         let mut default_unit = Unit::Mm;
         let mut frames = Vec::new();
+        let mut parameters = Vec::new();
         let mut arch_defaults = ArchDefaults::default();
         let mut rooms = Vec::new();
         let mut layouts = Vec::new();
@@ -427,6 +428,7 @@ impl Parser {
                     })?;
                 }
                 "frame" => frames.push(self.parse_frame()?),
+                "parameter" => parameters.push(self.parse_param()?),
                 "architecture" => arch_defaults = self.parse_arch_defaults()?,
                 "room" => rooms.push(self.parse_room()?),
                 "layout" => layouts.push(self.parse_layout()?),
@@ -459,6 +461,7 @@ impl Parser {
             span: start.merge(&end),
             default_unit,
             frames,
+            parameters,
             arch_defaults,
             rooms,
             layouts,
@@ -466,6 +469,18 @@ impl Parser {
             fixtures,
             verifications,
             views,
+        })
+    }
+
+    fn parse_param(&mut self) -> Result<ParamDecl, Diagnostic> {
+        let start = self.expect_keyword("parameter")?;
+        let (name, _) = self.expect_ident("parameter name")?;
+        self.expect(TokenKind::Colon, "':'")?;
+        let (value, end) = self.parse_quantity()?;
+        Ok(ParamDecl {
+            name,
+            value,
+            span: start.merge(&end),
         })
     }
 
@@ -683,8 +698,19 @@ impl Parser {
         let tok = self.peek().clone();
         match tok.kind {
             TokenKind::Ident(_) => {
-                let (room, rspan) = self.expect_ident("room name")?;
-                self.expect(TokenKind::Dot, "'.'")?;
+                let (ident, rspan) = self.expect_ident("room or parameter name")?;
+                if self.peek().kind != TokenKind::Dot {
+                    return Ok((
+                        LinearExprAst::Param {
+                            name: ident.clone(),
+                            span: rspan.clone(),
+                        },
+                        ident,
+                        rspan,
+                    ));
+                }
+                self.bump(); // '.'
+                let room = ident;
                 let (prop, pspan) = self.expect_ident("edge or dimension (west/east/south/north/width/depth)")?;
                 let full_span = rspan.merge(&pspan);
                 let txt = format!("{room}.{prop}");
@@ -863,7 +889,10 @@ impl Parser {
         let mut size = None;
         let mut against = None;
         let mut placement = None;
+        let mut freestanding_center = false;
+        let mut freestanding_at = None;
         let mut clearance_front = None;
+        let mut clearance_all = None;
 
         while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
             let (key, pspan) = self.expect_ident("fixture property")?;
@@ -885,6 +914,28 @@ impl Parser {
                     let (s_str, sspan) = self.expect_ident("wall side (north/south/east/west)")?;
                     against = Some(parse_side(&s_str, sspan)?);
                 }
+                "at" => {
+                    if let TokenKind::Ident(ref s) = self.peek().kind {
+                        if s == "center" {
+                            self.bump();
+                            freestanding_center = true;
+                        } else {
+                            return Err(Diagnostic::error(
+                                "E_PARSE_PROP",
+                                "syntax",
+                                format!("Expected 'center' or '(x, y)' after 'at:', found '{s}'"),
+                                Some(pspan),
+                            ));
+                        }
+                    } else {
+                        self.expect(TokenKind::LParen, "'('")?;
+                        let (x, _) = self.parse_quantity()?;
+                        self.expect(TokenKind::Comma, "','")?;
+                        let (y, _) = self.parse_quantity()?;
+                        self.expect(TokenKind::RParen, "')'")?;
+                        freestanding_at = Some((x, y));
+                    }
+                }
                 "align" => {
                     self.expect_keyword("center")?;
                     placement = Some(OpeningPlacement::Center);
@@ -899,6 +950,10 @@ impl Parser {
                 "clearance_front" => {
                     let (q, _) = self.parse_quantity()?;
                     clearance_front = Some(q);
+                }
+                "clearance_all" => {
+                    let (q, _) = self.parse_quantity()?;
+                    clearance_all = Some(q);
                 }
                 other => {
                     return Err(Diagnostic::error(
@@ -929,24 +984,32 @@ impl Parser {
                 Some(full_span.clone()),
             )
         })?;
-        let against = against.ok_or_else(|| {
-            Diagnostic::error(
-                "E_FIXTURE_MISSING_WALL",
+        let position = if let Some(side) = against {
+            FixturePos::AgainstWall {
+                side,
+                placement: placement.unwrap_or(OpeningPlacement::Center),
+            }
+        } else if let Some((x, y)) = freestanding_at {
+            FixturePos::FreestandingAt { x, y }
+        } else if freestanding_center || matches!(placement, Some(OpeningPlacement::Center)) {
+            FixturePos::FreestandingCenter
+        } else {
+            return Err(Diagnostic::error(
+                "E_FIXTURE_MISSING_POS",
                 "semantics",
-                format!("Fixture '{id}' is missing required 'against: north|south|east|west' property"),
+                format!("Fixture '{id}' requires either 'against: north|south|east|west' or 'at: center' / 'at: (x, y)'"),
                 Some(full_span.clone()),
-            )
-        })?;
-        let placement = placement.unwrap_or(OpeningPlacement::Center);
+            ));
+        };
 
         Ok(FixtureDecl {
             id,
             category,
             room,
             size,
-            against,
-            placement,
+            position,
             clearance_front,
+            clearance_all,
             span: full_span,
         })
     }

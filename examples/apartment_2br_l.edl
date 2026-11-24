@@ -39,25 +39,25 @@ project "Apartment_2BR_L" {
     }
 
     layout FloorPlan {
-        // Kitchen east of Bath, aligned at south
-        require Kitchen.west == Bath.east + 120mm
+        // Kitchen east of Bath, aligned at south (using built-in interior_wall parameter!)
+        require Kitchen.west == Bath.east + interior_wall
         require Kitchen.south == Bath.south
 
         // Living east of Kitchen, aligned at south
-        require Living.west == Kitchen.east + 120mm
+        require Living.west == Kitchen.east + interior_wall
         require Living.south == Kitchen.south
 
         // Hall spans north of Bath & Kitchen, flush with Living's north edge
         require Hall.west == Bath.west
         require Hall.east == Kitchen.east
-        require Hall.south == Bath.north + 120mm
+        require Hall.south == Bath.north + interior_wall
         require Hall.north == Living.north
 
         // Bedrooms north of Hall, forming the North-West wing of the L
         require Bedroom1.west == Hall.west
-        require Bedroom1.south == Hall.north + 120mm
+        require Bedroom1.south == Hall.north + interior_wall
 
-        require Bedroom2.west == Bedroom1.east + 120mm
+        require Bedroom2.west == Bedroom1.east + interior_wall
         require Bedroom2.south == Bedroom1.south
     }
 
@@ -182,9 +182,8 @@ project "Apartment_2BR_L" {
     fixture DiningTable: table {
         room: Living
         size: (1400mm, 800mm)
-        against: east
-        offset: 300mm from start
-        clearance_front: 600mm
+        at: (2200mm, 700mm)
+        clearance_all: 500mm
     }
 
     fixture Counter: counter {

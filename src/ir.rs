@@ -61,7 +61,8 @@ pub enum EntityGeometryIr {
     },
     Fixture {
         category: String,
-        against: Side,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        against: Option<Side>,
         body_rect: Rect2,
         #[serde(skip_serializing_if = "Option::is_none")]
         clearance_rect: Option<Rect2>,

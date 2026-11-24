@@ -516,88 +516,172 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
             },
         };
 
-        let wall_span_len = match fx.against {
-            Side::North | Side::South => room_rect.width(),
-            Side::East | Side::West => room_rect.depth(),
-        };
-        let off = match &fx.placement {
-            OpeningPlacement::Center => (wall_span_len - w_mm) * 0.5,
-            OpeningPlacement::Offset { distance, from } => match distance.to_mm() {
-                Ok(dist) => match from {
-                    WallEnd::Start => dist,
-                    WallEnd::End => wall_span_len - dist - w_mm,
-                },
+        let clear_all_mm = match fx.clearance_all {
+            None => 0.0,
+            Some(q) => match q.to_mm() {
+                Ok(v) if v >= 0.0 => v,
+                Ok(v) => {
+                    diagnostics.push(Diagnostic::error(
+                        "E_FIXTURE_CLEARANCE",
+                        "semantics",
+                        format!("Fixture '{}' clearance_all must be >= 0mm (got {v}mm)", fx.id),
+                        Some(fx.span.clone()),
+                    ));
+                    0.0
+                }
                 Err(msg) => {
                     diagnostics.push(Diagnostic::error(
                         "E_UNIT_MISMATCH",
                         "units",
-                        format!("Fixture '{}' offset: {msg}", fx.id),
+                        format!("Fixture '{}' clearance_all: {msg}", fx.id),
                         Some(fx.span.clone()),
                     ));
-                    continue;
+                    0.0
                 }
             },
         };
 
-        let (body_rect, clearance_rect) = match fx.against {
-            Side::North => {
-                let x0 = room_rect.min_x + off;
-                let x1 = x0 + w_mm;
-                let y1 = room_rect.max_y;
-                let y0 = y1 - d_mm;
-                let clr = if clear_mm > EPS_MM {
-                    Some(Rect2::new(x0, y0 - clear_mm, x1, y0))
-                } else {
-                    None
+        let (against_opt, body_rect, clearance_rect) = match &fx.position {
+            FixturePos::AgainstWall { side, placement } => {
+                let wall_span_len = match side {
+                    Side::North | Side::South => room_rect.width(),
+                    Side::East | Side::West => room_rect.depth(),
                 };
-                (Rect2::new(x0, y0, x1, y1), clr)
+                let off = match placement {
+                    OpeningPlacement::Center => (wall_span_len - w_mm) * 0.5,
+                    OpeningPlacement::Offset { distance, from } => match distance.to_mm() {
+                        Ok(dist) => match from {
+                            WallEnd::Start => dist,
+                            WallEnd::End => wall_span_len - dist - w_mm,
+                        },
+                        Err(msg) => {
+                            diagnostics.push(Diagnostic::error(
+                                "E_UNIT_MISMATCH",
+                                "units",
+                                format!("Fixture '{}' offset: {msg}", fx.id),
+                                Some(fx.span.clone()),
+                            ));
+                            continue;
+                        }
+                    },
+                };
+                let (b, c) = match side {
+                    Side::North => {
+                        let x0 = room_rect.min_x + off;
+                        let x1 = x0 + w_mm;
+                        let y1 = room_rect.max_y;
+                        let y0 = y1 - d_mm;
+                        let clr = if clear_mm > EPS_MM {
+                            Some(Rect2::new(x0, y0 - clear_mm, x1, y0))
+                        } else {
+                            None
+                        };
+                        (Rect2::new(x0, y0, x1, y1), clr)
+                    }
+                    Side::South => {
+                        let x0 = room_rect.min_x + off;
+                        let x1 = x0 + w_mm;
+                        let y0 = room_rect.min_y;
+                        let y1 = y0 + d_mm;
+                        let clr = if clear_mm > EPS_MM {
+                            Some(Rect2::new(x0, y1, x1, y1 + clear_mm))
+                        } else {
+                            None
+                        };
+                        (Rect2::new(x0, y0, x1, y1), clr)
+                    }
+                    Side::West => {
+                        let y0 = room_rect.min_y + off;
+                        let y1 = y0 + w_mm;
+                        let x0 = room_rect.min_x;
+                        let x1 = x0 + d_mm;
+                        let clr = if clear_mm > EPS_MM {
+                            Some(Rect2::new(x1, y0, x1 + clear_mm, y1))
+                        } else {
+                            None
+                        };
+                        (Rect2::new(x0, y0, x1, y1), clr)
+                    }
+                    Side::East => {
+                        let y0 = room_rect.min_y + off;
+                        let y1 = y0 + w_mm;
+                        let x1 = room_rect.max_x;
+                        let x0 = x1 - d_mm;
+                        let clr = if clear_mm > EPS_MM {
+                            Some(Rect2::new(x0 - clear_mm, y0, x0, y1))
+                        } else {
+                            None
+                        };
+                        (Rect2::new(x0, y0, x1, y1), clr)
+                    }
+                };
+                (Some(*side), b, c)
             }
-            Side::South => {
-                let x0 = room_rect.min_x + off;
-                let x1 = x0 + w_mm;
-                let y0 = room_rect.min_y;
-                let y1 = y0 + d_mm;
-                let clr = if clear_mm > EPS_MM {
-                    Some(Rect2::new(x0, y1, x1, y1 + clear_mm))
+            FixturePos::FreestandingCenter => {
+                let cx = room_rect.center().x;
+                let cy = room_rect.center().y;
+                let b = Rect2::new(cx - w_mm * 0.5, cy - d_mm * 0.5, cx + w_mm * 0.5, cy + d_mm * 0.5);
+                let pad = clear_all_mm.max(clear_mm);
+                let clr = if pad > EPS_MM {
+                    Some(Rect2::new(b.min_x - pad, b.min_y - pad, b.max_x + pad, b.max_y + pad))
                 } else {
                     None
                 };
-                (Rect2::new(x0, y0, x1, y1), clr)
+                (None, b, clr)
             }
-            Side::West => {
-                let y0 = room_rect.min_y + off;
-                let y1 = y0 + w_mm;
-                let x0 = room_rect.min_x;
-                let x1 = x0 + d_mm;
-                let clr = if clear_mm > EPS_MM {
-                    Some(Rect2::new(x1, y0, x1 + clear_mm, y1))
+            FixturePos::FreestandingAt { x, y } => {
+                let x_mm = match x.to_mm() {
+                    Ok(v) => v,
+                    Err(msg) => {
+                        diagnostics.push(Diagnostic::error(
+                            "E_UNIT_MISMATCH",
+                            "units",
+                            format!("Fixture '{}' at.x: {msg}", fx.id),
+                            Some(fx.span.clone()),
+                        ));
+                        continue;
+                    }
+                };
+                let y_mm = match y.to_mm() {
+                    Ok(v) => v,
+                    Err(msg) => {
+                        diagnostics.push(Diagnostic::error(
+                            "E_UNIT_MISMATCH",
+                            "units",
+                            format!("Fixture '{}' at.y: {msg}", fx.id),
+                            Some(fx.span.clone()),
+                        ));
+                        continue;
+                    }
+                };
+                let x0 = room_rect.min_x + x_mm;
+                let y0 = room_rect.min_y + y_mm;
+                let b = Rect2::new(x0, y0, x0 + w_mm, y0 + d_mm);
+                let pad = clear_all_mm.max(clear_mm);
+                let clr = if pad > EPS_MM {
+                    Some(Rect2::new(b.min_x - pad, b.min_y - pad, b.max_x + pad, b.max_y + pad))
                 } else {
                     None
                 };
-                (Rect2::new(x0, y0, x1, y1), clr)
-            }
-            Side::East => {
-                let y0 = room_rect.min_y + off;
-                let y1 = y0 + w_mm;
-                let x1 = room_rect.max_x;
-                let x0 = x1 - d_mm;
-                let clr = if clear_mm > EPS_MM {
-                    Some(Rect2::new(x0 - clear_mm, y0, x0, y1))
-                } else {
-                    None
-                };
-                (Rect2::new(x0, y0, x1, y1), clr)
+                (None, b, clr)
             }
         };
 
         let mut props = BTreeMap::new();
         props.insert("room".to_string(), json!(fx.room));
         props.insert("category".to_string(), json!(fx.category));
-        props.insert("against".to_string(), json!(fx.against.as_str()));
+        if let Some(side) = against_opt {
+            props.insert("against".to_string(), json!(side.as_str()));
+        } else {
+            props.insert("placement".to_string(), json!("freestanding"));
+        }
         props.insert("width_mm".to_string(), json!(round4(w_mm)));
         props.insert("depth_mm".to_string(), json!(round4(d_mm)));
         if clear_mm > EPS_MM {
             props.insert("clearance_front_mm".to_string(), json!(round4(clear_mm)));
+        }
+        if clear_all_mm > EPS_MM {
+            props.insert("clearance_all_mm".to_string(), json!(round4(clear_all_mm)));
         }
 
         entities.push(EntityIr {
@@ -608,7 +692,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
             props,
             geometry: EntityGeometryIr::Fixture {
                 category: fx.category.clone(),
-                against: fx.against,
+                against: against_opt,
                 body_rect,
                 clearance_rect,
             },
