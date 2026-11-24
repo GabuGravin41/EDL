@@ -620,6 +620,7 @@ impl Parser {
         let mut role = None;
         let mut clear_size = None;
         let mut anchor = None;
+        let mut notch = None;
 
         while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
             let (key, kspan) = self.expect_ident("room property")?;
@@ -678,6 +679,35 @@ impl Parser {
                         span: kspan.merge(&tspan),
                     });
                 }
+                "notch" => {
+                    self.expect(TokenKind::LParen, "'('")?;
+                    let (w, _) = self.parse_quantity()?;
+                    self.expect(TokenKind::Comma, "','")?;
+                    let (d, _) = self.parse_quantity()?;
+                    self.expect(TokenKind::RParen, "')'")?;
+                    self.expect_keyword("at")?;
+                    let (corner_s, cspan) = self.expect_ident("corner")?;
+                    let corner = match corner_s.as_str() {
+                        "southwest" => Corner::Southwest,
+                        "southeast" => Corner::Southeast,
+                        "northwest" => Corner::Northwest,
+                        "northeast" => Corner::Northeast,
+                        _ => {
+                            return Err(Diagnostic::error(
+                                "E_PARSE_CORNER",
+                                "syntax",
+                                format!("Unknown corner '{corner_s}'"),
+                                Some(cspan),
+                            ))
+                        }
+                    };
+                    notch = Some(RoomNotch {
+                        width: w,
+                        depth: d,
+                        corner,
+                        span: kspan.merge(&cspan),
+                    });
+                }
                 other => {
                     return Err(Diagnostic::error(
                         "E_PARSE_PROP",
@@ -694,6 +724,7 @@ impl Parser {
             role,
             clear_size,
             anchor,
+            notch,
             provenance: None,
             span: start.merge(&end),
         })

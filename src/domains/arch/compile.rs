@@ -119,18 +119,80 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
         },
     });
 
-    // 3. Build room entities
+    // 3. Build room entities (supporting optional corner notch for L-shaped rooms!)
     let mut entities: Vec<EntityIr> = Vec::new();
+    let mut room_notches: BTreeMap<String, Rect2> = BTreeMap::new();
+    let mut room_subrects: BTreeMap<String, Vec<Rect2>> = BTreeMap::new();
     let mut total_clear_area_m2 = 0.0;
     for r in &project.arch.rooms {
         if let Some(&rect) = solve.room_rects.get(&r.id) {
-            total_clear_area_m2 += rect.area_m2();
+            let mut notch_rect: Option<Rect2> = None;
+            if let Some(ref n) = r.notch {
+                match (n.width.to_mm(), n.depth.to_mm()) {
+                    (Ok(nw), Ok(nd))
+                        if nw > EPS_MM
+                            && nd > EPS_MM
+                            && nw < rect.width() - EPS_MM
+                            && nd < rect.depth() - EPS_MM =>
+                    {
+                        let nr = match n.corner {
+                            Corner::Northeast => {
+                                Rect2::new(rect.max_x - nw, rect.max_y - nd, rect.max_x, rect.max_y)
+                            }
+                            Corner::Northwest => {
+                                Rect2::new(rect.min_x, rect.max_y - nd, rect.min_x + nw, rect.max_y)
+                            }
+                            Corner::Southeast => {
+                                Rect2::new(rect.max_x - nw, rect.min_y, rect.max_x, rect.min_y + nd)
+                            }
+                            Corner::Southwest => {
+                                Rect2::new(rect.min_x, rect.min_y, rect.min_x + nw, rect.min_y + nd)
+                            }
+                        };
+                        notch_rect = Some(nr);
+                        room_notches.insert(r.id.clone(), nr);
+                    }
+                    (Ok(nw), Ok(nd)) => {
+                        diagnostics.push(
+                            Diagnostic::error(
+                                "E_ROOM_NOTCH_INVALID",
+                                "semantics",
+                                format!(
+                                    "Notch ({nw:.0}mm x {nd:.0}mm) in room '{}' must be strictly smaller than room clear size ({:.0}mm x {:.0}mm)",
+                                    r.id,
+                                    rect.width(),
+                                    rect.depth()
+                                ),
+                                Some(n.span.clone()),
+                            )
+                            .with_entities(vec![r.id.clone()]),
+                        );
+                    }
+                    (Err(m), _) | (_, Err(m)) => {
+                        diagnostics.push(Diagnostic::error(
+                            "E_UNIT_MISMATCH",
+                            "units",
+                            format!("Room '{}' notch: {m}", r.id),
+                            Some(n.span.clone()),
+                        ));
+                    }
+                }
+            }
+
+            let subrects = decompose_room_rect(rect, notch_rect);
+            let clear_area_m2: f64 = subrects.iter().map(|s| s.area_m2()).sum();
+            room_subrects.insert(r.id.clone(), subrects);
+            total_clear_area_m2 += clear_area_m2;
+
             let mut props = BTreeMap::new();
             props.insert(
                 "measurement_basis".to_string(),
                 json!(project.arch.defaults.measurement_basis),
             );
-            props.insert("area_m2".to_string(), json!(round4(rect.area_m2())));
+            props.insert("area_m2".to_string(), json!(round4(clear_area_m2)));
+            if notch_rect.is_some() {
+                props.insert("shape".to_string(), json!("notched_l"));
+            }
             if let Some(role) = r.role {
                 props.insert("role".to_string(), json!(role.as_str()));
             }
@@ -146,14 +208,21 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                     max: [round4(rect.max_x), round4(rect.max_y)],
                     width_mm: round4(rect.width()),
                     depth_mm: round4(rect.depth()),
-                    area_m2: round4(rect.area_m2()),
+                    area_m2: round4(clear_area_m2),
+                    notch_rect,
                 },
             });
         }
     }
 
-    // 4. Derive semantic walls (exterior + shared interior)
-    let wall_segments = derive_semantic_walls(&solve.room_rects, ext_wall_mm, int_wall_mm);
+    // 4. Derive semantic walls (exterior + shared interior, notch-aware!)
+    let wall_segments = derive_semantic_walls(
+        &solve.room_rects,
+        &room_subrects,
+        &room_notches,
+        ext_wall_mm,
+        int_wall_mm,
+    );
 
     let derived_walls: Vec<DerivedWallIr> = wall_segments
         .iter()
@@ -713,9 +782,9 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
         });
     }
 
-    // 7. Grid-CSG exact non-overlapping wall solids (handles rectangles & L-shapes!)
+    // 7. Grid-CSG exact non-overlapping wall solids (handles rectangles, L-shapes, and notched rooms!)
     let (wall_solids, exterior_bounds) = build_wall_solids(
-        &solve.room_rects,
+        &room_subrects,
         &opening_cutouts,
         ext_wall_mm,
         int_wall_mm,
@@ -736,23 +805,30 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                 let mut overlap_pairs = Vec::new();
                 for i in 0..names.len() {
                     for j in (i + 1)..names.len() {
-                        let a = solve.room_rects[&names[i]];
-                        let b = solve.room_rects[&names[j]];
-                        if a.overlaps_strict(b) {
-                            let area = a.overlap_area(b);
-                            overlap_pairs.push((names[i].clone(), names[j].clone(), area));
+                        let subs_a = room_subrects.get(&names[i]).map(|v| v.as_slice()).unwrap_or(&[]);
+                        let subs_b = room_subrects.get(&names[j]).map(|v| v.as_slice()).unwrap_or(&[]);
+                        let mut total_ov = 0.0_f64;
+                        for &a in subs_a {
+                            for &b in subs_b {
+                                if a.overlaps_strict(b) {
+                                    total_ov += a.overlap_area(b);
+                                }
+                            }
+                        }
+                        if total_ov > EPS_MM {
+                            overlap_pairs.push((names[i].clone(), names[j].clone(), total_ov));
                             diagnostics.push(
                                 Diagnostic::error(
                                     "E_VERIFY_ROOM_OVERLAP",
                                     "verification",
                                     format!(
                                         "Rooms '{}' and '{}' overlap by {:.0} mm^2",
-                                        names[i], names[j], area
+                                        names[i], names[j], total_ov
                                     ),
                                     Some(span.clone()),
                                 )
                                 .with_entities(vec![names[i].clone(), names[j].clone()])
-                                .with_measurement(area, 0.0, "mm^2"),
+                                .with_measurement(total_ov, 0.0, "mm^2"),
                             );
                         }
                     }
@@ -916,6 +992,27 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                                     )
                                     .with_entities(vec![d.id.clone(), room_id.clone()]),
                                 );
+                            }
+                            if let Some(&nr) = room_notches.get(room_id) {
+                                if qd.overlaps_rect(nr) {
+                                    collisions += 1;
+                                    diagnostics.push(
+                                        Diagnostic::error(
+                                            "E_VERIFY_DOOR_SWING_NOTCH",
+                                            "verification",
+                                            format!(
+                                                "Door '{}' swing arc collides with notched-out corner of room '{}'",
+                                                d.id, room_id
+                                            ),
+                                            Some(d.span.clone()),
+                                        )
+                                        .with_entities(vec![d.id.clone(), room_id.clone()])
+                                        .with_suggestion(format!(
+                                            "Reverse '{}' hinge/swing or shift opening clear of the corner notch",
+                                            d.id
+                                        )),
+                                    );
+                                }
                             }
                         }
                         // Check against fixture bodies in the target room
@@ -1120,6 +1217,43 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                                     )
                                     .with_entities(vec![fx.id.clone(), fx.room.clone()]),
                                 );
+                            }
+                        }
+                        if let Some(&nr) = room_notches.get(&fx.room) {
+                            if fx.body_rect.overlaps_strict(nr) {
+                                violations += 1;
+                                diagnostics.push(
+                                    Diagnostic::error(
+                                        "E_VERIFY_FIXTURE_IN_NOTCH",
+                                        "verification",
+                                        format!(
+                                            "Fixture '{}' overlaps notched-out corner of room '{}'",
+                                            fx.id, fx.room
+                                        ),
+                                        Some(fx.span.clone()),
+                                    )
+                                    .with_entities(vec![fx.id.clone(), fx.room.clone()])
+                                    .with_suggestion(format!(
+                                        "Move fixture '{}' outside the notched corner of '{}'",
+                                        fx.id, fx.room
+                                    )),
+                                );
+                            } else if let Some(clr) = fx.clearance_rect {
+                                if clr.overlaps_strict(nr) {
+                                    violations += 1;
+                                    diagnostics.push(
+                                        Diagnostic::error(
+                                            "E_VERIFY_FIXTURE_IN_NOTCH",
+                                            "verification",
+                                            format!(
+                                                "Fixture '{}' clearance zone extends into notched-out corner of room '{}'",
+                                                fx.id, fx.room
+                                            ),
+                                            Some(fx.span.clone()),
+                                        )
+                                        .with_entities(vec![fx.id.clone(), fx.room.clone()]),
+                                    );
+                                }
                             }
                         }
                     }
@@ -1359,76 +1493,89 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
 }
 
 /// Derive semantic exterior and shared interior wall segments from solved room rectangles.
-/// Cleanly handles both rectangular plans and L-shaped re-entrant exterior corners.
+/// Cleanly handles rectangular plans, L-shaped footprints, and rooms tucked inside notched rooms.
 fn derive_semantic_walls(
     rooms: &BTreeMap<String, Rect2>,
+    room_subrects: &BTreeMap<String, Vec<Rect2>>,
+    room_notches: &BTreeMap<String, Rect2>,
     ext_wall: f64,
     int_wall: f64,
 ) -> Vec<ResolvedWallSegment> {
     let mut walls = Vec::new();
     let names: Vec<String> = rooms.keys().cloned().collect();
 
-    // 1. Interior shared partitions between every pair of rooms
+    // 1. Interior shared partitions between every pair of rooms (using exact sub-rects for notched rooms)
     for i in 0..names.len() {
         for j in (i + 1)..names.len() {
             let a_id = &names[i];
             let b_id = &names[j];
-            let a = rooms[a_id];
-            let b = rooms[b_id];
+            let subs_a = room_subrects.get(a_id).map(|v| v.as_slice()).unwrap_or(&[]);
+            let subs_b = room_subrects.get(b_id).map(|v| v.as_slice()).unwrap_or(&[]);
 
-            for (west_id, west_r, east_id, east_r) in [(a_id, a, b_id, b), (b_id, b, a_id, a)] {
-                let gap = east_r.min_x - west_r.max_x;
-                if gap > EPS_MM && (gap - int_wall).abs() <= 2.0 * int_wall + EPS_MM && gap <= ext_wall * 2.0 {
-                    let y0 = west_r.min_y.max(east_r.min_y);
-                    let y1 = west_r.max_y.min(east_r.max_y);
-                    if y1 - y0 > EPS_MM {
-                        walls.push(ResolvedWallSegment {
-                            id: format!("W_Shared_{west_id}_{east_id}"),
-                            kind: "arch.wall.interior".to_string(),
-                            derived_from: vec![west_id.clone(), east_id.clone()],
-                            is_horizontal: false,
-                            clear_segment: Segment2::new(
-                                Point2::new(west_r.max_x, y0),
-                                Point2::new(west_r.max_x, y1),
-                            ),
-                            thickness_mm: gap,
-                            rect: Rect2::new(west_r.max_x, y0, east_r.min_x, y1),
-                            room_low: Some(west_id.clone()),
-                            room_high: Some(east_id.clone()),
-                        });
+            for &a in subs_a {
+                for &b in subs_b {
+                    for (west_id, west_r, east_id, east_r) in [(a_id, a, b_id, b), (b_id, b, a_id, a)] {
+                        let gap = east_r.min_x - west_r.max_x;
+                        if gap > EPS_MM && (gap - int_wall).abs() <= 2.0 * int_wall + EPS_MM && gap <= ext_wall * 2.0 {
+                            let y0 = west_r.min_y.max(east_r.min_y);
+                            let y1 = west_r.max_y.min(east_r.max_y);
+                            if y1 - y0 > EPS_MM {
+                                walls.push(ResolvedWallSegment {
+                                    id: format!("W_Shared_{west_id}_{east_id}"),
+                                    kind: "arch.wall.interior".to_string(),
+                                    derived_from: vec![west_id.clone(), east_id.clone()],
+                                    is_horizontal: false,
+                                    clear_segment: Segment2::new(
+                                        Point2::new(west_r.max_x, y0),
+                                        Point2::new(west_r.max_x, y1),
+                                    ),
+                                    thickness_mm: gap,
+                                    rect: Rect2::new(west_r.max_x, y0, east_r.min_x, y1),
+                                    room_low: Some(west_id.clone()),
+                                    room_high: Some(east_id.clone()),
+                                });
+                            }
+                        }
                     }
-                }
-            }
 
-            for (south_id, south_r, north_id, north_r) in [(a_id, a, b_id, b), (b_id, b, a_id, a)] {
-                let gap = north_r.min_y - south_r.max_y;
-                if gap > EPS_MM && (gap - int_wall).abs() <= 2.0 * int_wall + EPS_MM && gap <= ext_wall * 2.0 {
-                    let x0 = south_r.min_x.max(north_r.min_x);
-                    let x1 = south_r.max_x.min(north_r.max_x);
-                    if x1 - x0 > EPS_MM {
-                        walls.push(ResolvedWallSegment {
-                            id: format!("W_Shared_{south_id}_{north_id}"),
-                            kind: "arch.wall.interior".to_string(),
-                            derived_from: vec![south_id.clone(), north_id.clone()],
-                            is_horizontal: true,
-                            clear_segment: Segment2::new(
-                                Point2::new(x0, south_r.max_y),
-                                Point2::new(x1, south_r.max_y),
-                            ),
-                            thickness_mm: gap,
-                            rect: Rect2::new(x0, south_r.max_y, x1, north_r.min_y),
-                            room_low: Some(south_id.clone()),
-                            room_high: Some(north_id.clone()),
-                        });
+                    for (south_id, south_r, north_id, north_r) in [(a_id, a, b_id, b), (b_id, b, a_id, a)] {
+                        let gap = north_r.min_y - south_r.max_y;
+                        if gap > EPS_MM && (gap - int_wall).abs() <= 2.0 * int_wall + EPS_MM && gap <= ext_wall * 2.0 {
+                            let x0 = south_r.min_x.max(north_r.min_x);
+                            let x1 = south_r.max_x.min(north_r.max_x);
+                            if x1 - x0 > EPS_MM {
+                                walls.push(ResolvedWallSegment {
+                                    id: format!("W_Shared_{south_id}_{north_id}"),
+                                    kind: "arch.wall.interior".to_string(),
+                                    derived_from: vec![south_id.clone(), north_id.clone()],
+                                    is_horizontal: true,
+                                    clear_segment: Segment2::new(
+                                        Point2::new(x0, south_r.max_y),
+                                        Point2::new(x1, south_r.max_y),
+                                    ),
+                                    thickness_mm: gap,
+                                    rect: Rect2::new(x0, south_r.max_y, x1, north_r.min_y),
+                                    room_low: Some(south_id.clone()),
+                                    room_high: Some(north_id.clone()),
+                                });
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    // 2. Exterior walls: subtract any interval covered by an adjacent room OR an L-shape wing's exterior wall
+    // 2. Exterior walls: subtract any interval covered by an adjacent room OR the room's own notch
     for (room_id, &r) in rooms {
-        let covered_south = covered_intervals_horizontal(rooms, room_id, r, r.min_y, false, int_wall, ext_wall);
+        let notch = room_notches.get(room_id).copied();
+
+        let mut covered_south = covered_intervals_horizontal(rooms, room_id, r, r.min_y, false, int_wall, ext_wall);
+        if let Some(nr) = notch {
+            if (nr.min_y - r.min_y).abs() <= EPS_MM {
+                covered_south.push((nr.min_x, nr.max_x));
+            }
+        }
         for (idx, (x0, x1)) in subtract_intervals(r.min_x, r.max_x, &covered_south)
             .into_iter()
             .enumerate()
@@ -1447,7 +1594,12 @@ fn derive_semantic_walls(
             });
         }
 
-        let covered_north = covered_intervals_horizontal(rooms, room_id, r, r.max_y, true, int_wall, ext_wall);
+        let mut covered_north = covered_intervals_horizontal(rooms, room_id, r, r.max_y, true, int_wall, ext_wall);
+        if let Some(nr) = notch {
+            if (nr.max_y - r.max_y).abs() <= EPS_MM {
+                covered_north.push((nr.min_x, nr.max_x));
+            }
+        }
         for (idx, (x0, x1)) in subtract_intervals(r.min_x, r.max_x, &covered_north)
             .into_iter()
             .enumerate()
@@ -1466,7 +1618,12 @@ fn derive_semantic_walls(
             });
         }
 
-        let covered_west = covered_intervals_vertical(rooms, room_id, r, r.min_x, false, int_wall, ext_wall);
+        let mut covered_west = covered_intervals_vertical(rooms, room_id, r, r.min_x, false, int_wall, ext_wall);
+        if let Some(nr) = notch {
+            if (nr.min_x - r.min_x).abs() <= EPS_MM {
+                covered_west.push((nr.min_y, nr.max_y));
+            }
+        }
         for (idx, (y0, y1)) in subtract_intervals(r.min_y, r.max_y, &covered_west)
             .into_iter()
             .enumerate()
@@ -1485,7 +1642,12 @@ fn derive_semantic_walls(
             });
         }
 
-        let covered_east = covered_intervals_vertical(rooms, room_id, r, r.max_x, true, int_wall, ext_wall);
+        let mut covered_east = covered_intervals_vertical(rooms, room_id, r, r.max_x, true, int_wall, ext_wall);
+        if let Some(nr) = notch {
+            if (nr.max_x - r.max_x).abs() <= EPS_MM {
+                covered_east.push((nr.min_y, nr.max_y));
+            }
+        }
         for (idx, (y0, y1)) in subtract_intervals(r.min_y, r.max_y, &covered_east)
             .into_iter()
             .enumerate()
@@ -1635,7 +1797,7 @@ fn compute_door_arc(
     width_mm: f64,
     hinge: WallEnd,
     swing_room: &str,
-    target_rect: Rect2,
+    _target_rect: Rect2,
 ) -> Option<Arc2> {
     let is_high = wall.room_high.as_deref() == Some(swing_room);
     let is_low = wall.room_low.as_deref() == Some(swing_room);
@@ -1646,7 +1808,7 @@ fn compute_door_arc(
     if wall.is_horizontal {
         let x_lo = wall.clear_segment.p0.x + offset_from_start;
         let x_hi = x_lo + width_mm;
-        let y_face = if is_high { target_rect.min_y } else { target_rect.max_y };
+        let y_face = if is_high { wall.rect.max_y } else { wall.rect.min_y };
         let (hx, start_deg, sweep_deg) = match (is_high, hinge) {
             (true, WallEnd::Start) => (x_lo, 0.0, 90.0),
             (true, WallEnd::End) => (x_hi, 180.0, -90.0),
@@ -1662,7 +1824,7 @@ fn compute_door_arc(
     } else {
         let y_lo = wall.clear_segment.p0.y + offset_from_start;
         let y_hi = y_lo + width_mm;
-        let x_face = if is_high { target_rect.min_x } else { target_rect.max_x };
+        let x_face = if is_high { wall.rect.max_x } else { wall.rect.min_x };
         let (hy, start_deg, sweep_deg) = match (is_high, hinge) {
             (true, WallEnd::Start) => (y_lo, 90.0, -90.0),
             (true, WallEnd::End) => (y_hi, 270.0, 90.0),
@@ -1681,13 +1843,44 @@ fn compute_door_arc(
 /// Exact 2D grid-CSG wall solid derivation:
 /// Produces exact, non-overlapping exterior and interior wall poché rectangles with clean
 /// L-corners, re-entrant L-shape wings, T-junctions, and door/window/passage cutouts.
+/// Decompose an axis-aligned room rectangle minus an optional corner notch into 1 or 2 exact sub-rectangles.
+pub fn decompose_room_rect(rect: Rect2, notch: Option<Rect2>) -> Vec<Rect2> {
+    let Some(nr) = notch else {
+        return vec![rect];
+    };
+    let mut out = Vec::new();
+    // Horizontal strip outside the notch's Y range
+    if nr.min_y > rect.min_y + EPS_MM {
+        out.push(Rect2::new(rect.min_x, rect.min_y, rect.max_x, nr.min_y));
+    }
+    if nr.max_y < rect.max_y - EPS_MM {
+        out.push(Rect2::new(rect.min_x, nr.max_y, rect.max_x, rect.max_y));
+    }
+    // Remaining leg beside the notch within the notch's Y range
+    if nr.min_x > rect.min_x + EPS_MM {
+        out.push(Rect2::new(rect.min_x, nr.min_y, nr.min_x, nr.max_y));
+    }
+    if nr.max_x < rect.max_x - EPS_MM {
+        out.push(Rect2::new(nr.max_x, nr.min_y, rect.max_x, nr.max_y));
+    }
+    if out.is_empty() {
+        vec![rect]
+    } else {
+        out
+    }
+}
+
 fn build_wall_solids(
-    rooms: &BTreeMap<String, Rect2>,
+    room_subrects: &BTreeMap<String, Vec<Rect2>>,
     cutouts: &[Rect2],
     ext_wall: f64,
     int_wall: f64,
 ) -> (Vec<WallSolidCell>, Option<Rect2>) {
-    if rooms.is_empty() {
+    let tagged_rects: Vec<(&str, Rect2)> = room_subrects
+        .iter()
+        .flat_map(|(id, subs)| subs.iter().copied().map(move |r| (id.as_str(), r)))
+        .collect();
+    if tagged_rects.is_empty() {
         return (Vec::new(), None);
     }
 
@@ -1698,7 +1891,7 @@ fn build_wall_solids(
     let mut max_x = f64::NEG_INFINITY;
     let mut max_y = f64::NEG_INFINITY;
 
-    for &r in rooms.values() {
+    for &(_, r) in &tagged_rects {
         for x in [r.min_x - ext_wall, r.min_x, r.max_x, r.max_x + ext_wall] {
             xs.push(x);
         }
@@ -1722,11 +1915,9 @@ fn build_wall_solids(
     ys.sort_by(|a, b| a.partial_cmp(b).unwrap());
     ys.dedup_by(|a, b| (*a - *b).abs() <= EPS_MM);
 
-    let room_list: Vec<Rect2> = rooms.values().copied().collect();
-
-    // Helper: is point strictly inside any room's exterior shell?
+    // Helper: is point strictly inside any room sub-rect's exterior shell?
     let in_building_footprint = |p: Point2| -> bool {
-        room_list.iter().any(|r| {
+        tagged_rects.iter().any(|&(_, r)| {
             Rect2::new(
                 r.min_x - ext_wall,
                 r.min_y - ext_wall,
@@ -1753,7 +1944,7 @@ fn build_wall_solids(
             }
             let mid = Point2::new(0.5 * (x0 + x1), 0.5 * (y0 + y1));
 
-            if room_list.iter().any(|r| r.contains_point_strict(mid)) {
+            if tagged_rects.iter().any(|&(_, r)| r.contains_point_strict(mid)) {
                 continue;
             }
             if cutouts.iter().any(|c| c.contains_point_strict(mid)) {
@@ -1763,23 +1954,21 @@ fn build_wall_solids(
                 continue;
             }
 
-            // A wall cell is INTERIOR iff:
-            // (a) it lies within `int_wall` of >= 2 rooms, AND
-            // (b) stepping `ext_wall` in all 4 cardinal directions does not immediately expose it
-            //     as an outer exterior face — specifically, check whether the cell is strictly
-            //     between rooms along X or Y (or at a T/cross junction of interior partitions).
-            let near_rooms = room_list
-                .iter()
-                .filter(|r| {
-                    Rect2::new(
-                        r.min_x - int_wall,
-                        r.min_y - int_wall,
-                        r.max_x + int_wall,
-                        r.max_y + int_wall,
-                    )
-                    .contains_point_strict(mid)
-                })
-                .count();
+            // Count DISTINCT room IDs within int_wall (so two sub-rects of the same L-shaped room count as 1!)
+            let mut near_room_ids: BTreeSet<&str> = BTreeSet::new();
+            for &(rid, r) in &tagged_rects {
+                if Rect2::new(
+                    r.min_x - int_wall,
+                    r.min_y - int_wall,
+                    r.max_x + int_wall,
+                    r.max_y + int_wall,
+                )
+                .contains_point_strict(mid)
+                {
+                    near_room_ids.insert(rid);
+                }
+            }
+            let near_rooms = near_room_ids.len();
 
             // Check if this cell touches outside air (within ext_wall) on any cardinal side
             let step = ext_wall * 0.6;

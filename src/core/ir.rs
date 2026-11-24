@@ -109,6 +109,8 @@ pub enum EntityGeometryIr {
         width_mm: f64,
         depth_mm: f64,
         area_m2: f64,
+        #[serde(skip_serializing_if = "Option::is_none", default)]
+        notch_rect: Option<Rect2>,
     },
     Door {
         cutout_rect: Rect2,

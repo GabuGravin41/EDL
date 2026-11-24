@@ -1,6 +1,7 @@
 use crate::core::geom::Side;
 use crate::core::ir::*;
 use crate::domains::elec::ast::PinRole;
+use crate::domains::elec::symbols::{build_symbol_graphic, SymPrim};
 use std::collections::BTreeSet;
 use std::fmt::Write;
 
@@ -72,14 +73,18 @@ pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
         let sym_name = format!("EDL:{}", ent.id);
         let cx = snap254(body_rect.center().x);
         let cy = snap254(body_rect.center().y);
-        let lx0 = body_rect.min_x - cx;
-        let lx1 = body_rect.max_x - cx;
         // KiCad lib_symbol uses Y-up relative to symbol center
         let ly_bot = -(body_rect.max_y - cy);
         let ly_top = -(body_rect.min_y - cy);
 
+        let graphic = build_symbol_graphic(category, *body_rect, pins);
+
         let _ = writeln!(out, "    (symbol \"{sym_name}\"");
-        let _ = writeln!(out, "      (pin_names (offset 1.016))");
+        if graphic.hide_pin_names {
+            let _ = writeln!(out, "      (pin_names (offset 1.016) hide)");
+        } else {
+            let _ = writeln!(out, "      (pin_names (offset 1.016))");
+        }
         let _ = writeln!(out, "      (exclude_from_sim no)");
         let _ = writeln!(out, "      (in_bom yes)");
         let _ = writeln!(out, "      (on_board yes)");
@@ -109,13 +114,57 @@ pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
             escape_sexpr(category)
         );
 
-        // Symbol graphics sub-unit
+        // Symbol graphics sub-unit (real IEEE/IEC primitives in Y-up symbol-local mm)
         let _ = writeln!(out, "      (symbol \"{}_0_1\"", ent.id);
-        let _ = writeln!(
-            out,
-            "        (rectangle (start {:.2} {:.2}) (end {:.2} {:.2}) (stroke (width 0.254) (type default)) (fill (type background)))",
-            lx0, ly_top, lx1, ly_bot
-        );
+        for prim in &graphic.primitives {
+            match prim {
+                SymPrim::Rect { rect, filled, stroke_mm } => {
+                    let fill_ty = if *filled { "background" } else { "none" };
+                    let _ = writeln!(
+                        out,
+                        "        (rectangle (start {:.2} {:.2}) (end {:.2} {:.2}) (stroke (width {:.3}) (type default)) (fill (type {fill_ty})))",
+                        rect.min_x - cx,
+                        -(rect.min_y - cy),
+                        rect.max_x - cx,
+                        -(rect.max_y - cy),
+                        stroke_mm
+                    );
+                }
+                SymPrim::Polyline { pts, filled, stroke_mm } => {
+                    let fill_ty = if *filled { "background" } else { "none" };
+                    let pts_s = pts
+                        .iter()
+                        .map(|p| format!("(xy {:.2} {:.2})", p.x - cx, -(p.y - cy)))
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    let _ = writeln!(
+                        out,
+                        "        (polyline (pts {pts_s}) (stroke (width {:.3}) (type default)) (fill (type {fill_ty})))",
+                        stroke_mm
+                    );
+                }
+                SymPrim::Circle { center, radius, filled, stroke_mm } => {
+                    let fill_ty = if *filled { "background" } else { "none" };
+                    let _ = writeln!(
+                        out,
+                        "        (circle (center {:.2} {:.2}) (radius {:.2}) (stroke (width {:.3}) (type default)) (fill (type {fill_ty})))",
+                        center.x - cx,
+                        -(center.y - cy),
+                        radius,
+                        stroke_mm
+                    );
+                }
+                SymPrim::Mark { pos, text } => {
+                    let _ = writeln!(
+                        out,
+                        "        (text \"{}\" (at {:.2} {:.2} 0) (effects (font (size 1.27 1.27))))",
+                        escape_sexpr(text),
+                        pos.x - cx,
+                        -(pos.y - cy)
+                    );
+                }
+            }
+        }
         let _ = writeln!(out, "      )");
 
         // Symbol pins sub-unit

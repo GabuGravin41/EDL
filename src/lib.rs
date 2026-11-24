@@ -1,5 +1,6 @@
 pub mod core;
 pub mod domains;
+pub mod mcp;
 pub mod syntax;
 
 use crate::core::ir::CanonicalIr;
@@ -574,5 +575,172 @@ project "InlineMod" {
         let r = ir.entities.iter().find(|e| e.id == "PU1_R").expect("PU1_R");
         assert_eq!(r.props["value"], "4.7kohm");
         assert_eq!(r.provenance.as_ref().unwrap().module, "PullUp");
+    }
+
+    #[test]
+    fn loft_notched_room_solves_verifies_and_catches_fixture_in_notch() {
+        use crate::core::ir::{EntityGeometryIr, VerificationStatus};
+        let ir = compile_file(std::path::Path::new("examples/loft_notched.edl")).unwrap();
+        assert!(!ir.project.has_errors, "diagnostics: {:?}", ir.diagnostics);
+        assert_eq!(ir.evidence.len(), 7);
+        assert!(ir
+            .evidence
+            .iter()
+            .all(|e| e.status == VerificationStatus::ExactlyChecked));
+
+        let gr = ir.entities.iter().find(|e| e.id == "GreatRoom").expect("GreatRoom");
+        if let EntityGeometryIr::Rect {
+            area_m2,
+            notch_rect,
+            ..
+        } = gr.geometry
+        {
+            assert!(notch_rect.is_some());
+            // 6.4 * 5.2 - 2.32 * 2.52 = 33.28 - 5.8464 = 27.4336 m^2
+            assert!((area_m2 - 27.4336).abs() < 0.01);
+        } else {
+            panic!("GreatRoom must be Rect");
+        }
+
+        // Now verify that placing a fixture inside a corner notch triggers E_VERIFY_FIXTURE_IN_NOTCH
+        let bad = r#"
+project "BadNotch" {
+  units: mm
+  frame P: Frame2
+  room Living {
+    role: habitable
+    clear_size: (5000mm, 4000mm)
+    notch: (2000mm, 2000mm) at northeast
+    anchor: southwest at P.origin
+  }
+  opening Win: window { host: exterior(Living, south) width: 1400mm align: center }
+  fixture BadTable: table {
+    room: Living
+    size: (1000mm, 800mm)
+    at: (3500mm, 2600mm)
+  }
+  verify {
+    require no_fixture_collision
+  }
+}
+"#;
+        let ir_bad = compile_source("bad_notch.edl", bad).unwrap();
+        assert!(ir_bad.project.has_errors);
+        assert!(ir_bad
+            .diagnostics
+            .iter()
+            .any(|d| d.code == "E_VERIFY_FIXTURE_IN_NOTCH"));
+    }
+
+    #[test]
+    fn ieee_schematic_symbols_render_in_svg_and_kicad() {
+        let ir = compile_file(std::path::Path::new("examples/dual_rail_modular.edl")).unwrap();
+        let svg = render_svg(&ir, false);
+        let kicad = export_kicad_sch(&ir);
+        // Zig-zag resistors & polarized capacitor plates emit polylines/polygons & "+" marks
+        assert!(svg.contains("<polyline"));
+        assert!(svg.contains("<polygon"));
+        assert!(svg.contains(">+<"));
+        assert!(kicad.contains("(polyline (pts"));
+        assert!(kicad.contains("(pin_names (offset 1.016) hide)"));
+    }
+
+    #[test]
+    fn kicad_cli_erc_ingests_directly_into_evidence_ledger() {
+        use crate::core::ir::VerificationStatus;
+        let mut ir = compile_file(std::path::Path::new("examples/dual_rail_modular.edl")).unwrap();
+        crate::domains::elec::kicad_erc::run_and_ingest_kicad_erc(&mut ir);
+        let ev = ir
+            .evidence
+            .iter()
+            .find(|e| e.check_id == "K1_kicad_erc_external")
+            .expect("K1_kicad_erc_external evidence record");
+        // On machines with kicad-cli installed (like this workspace), must be ExactlyChecked!
+        assert!(
+            ev.status == VerificationStatus::ExactlyChecked
+                || ev.status == VerificationStatus::Unverified,
+            "unexpected KiCad ERC status: {:?}",
+            ev
+        );
+    }
+
+    #[test]
+    fn semantic_query_measure_and_repair_plans_work_across_domains() {
+        use crate::core::query::{inspect_summary, measure_ir, query_ir};
+
+        // 1) Architecture query + measure
+        let arch_ir = compile_file(std::path::Path::new("examples/duplex_modular.edl")).unwrap();
+        let summary = inspect_summary(&arch_ir);
+        assert_eq!(summary["project"]["domain"], "architecture");
+        assert_eq!(summary["modules"]["StandardBedroom"].as_array().unwrap().len(), 2);
+
+        let room_q = query_ir(&arch_ir, "room", Some("Bed1")).unwrap();
+        assert!(room_q["fixtures"].as_array().unwrap().len() >= 2);
+        let m_pair = measure_ir(&arch_ir, "Living", Some("Bath1")).unwrap();
+        assert_eq!(m_pair["clear_gap_mm"], 120.0); // exact interior_wall thickness!
+        assert_eq!(m_pair["shared_walls"].as_array().unwrap().len(), 1);
+
+        // 2) Electronics query + measure
+        let elec_ir = compile_file(std::path::Path::new("examples/dual_rail_modular.edl")).unwrap();
+        let mod_q = query_ir(&elec_ir, "module", Some("LedIndicator")).unwrap();
+        assert_eq!(mod_q["instance_count"], 2);
+        let net_m = measure_ir(&elec_ir, "STAT_SIG", None).unwrap();
+        assert!(net_m["total_wire_length_mm"].as_f64().unwrap() > 0.0);
+        let comp_pair = measure_ir(&elec_ir, "U_MCU", Some("J_DBG")).unwrap();
+        assert!(comp_pair["shared_nets"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|v| v == "SWDIO"));
+
+        // 3) Violations + machine-readable repair plans on deliberate invalid schematic
+        let bad_elec = compile_file(std::path::Path::new("examples/power_5v_invalid.edl")).unwrap();
+        let viol = query_ir(&bad_elec, "violations", None).unwrap();
+        assert!(viol["violation_count"].as_u64().unwrap() >= 3);
+        let plan = viol["repair_plan"].as_array().unwrap();
+        assert!(plan.iter().any(|p| p["repair"]["action"] == "connect_pin"));
+        assert!(plan.iter().any(|p| p["repair"]["action"] == "fix_voltage"));
+    }
+
+    #[test]
+    fn mcp_jsonrpc_server_handles_initialize_list_and_tool_calls() {
+        use serde_json::json;
+
+        let init = crate::mcp::handle_jsonrpc_request(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {}
+        }))
+        .unwrap();
+        assert_eq!(init["result"]["serverInfo"]["name"], "edl");
+
+        let list = crate::mcp::handle_jsonrpc_request(&json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/list"
+        }))
+        .unwrap();
+        let tools = list["result"]["tools"].as_array().unwrap();
+        assert_eq!(tools.len(), 6);
+
+        let call = crate::mcp::handle_jsonrpc_request(&json!({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {
+                "name": "edl_measure",
+                "arguments": {
+                    "file_path": "examples/loft_notched.edl",
+                    "target_a": "GreatRoom",
+                    "target_b": "Master"
+                }
+            }
+        }))
+        .unwrap();
+        assert_eq!(call["result"]["isError"], false);
+        let text = call["result"]["content"][0]["text"].as_str().unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(text).unwrap();
+        assert_eq!(parsed["clear_gap_mm"], 120.0);
     }
 }

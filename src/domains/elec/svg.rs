@@ -1,6 +1,7 @@
 use crate::core::geom::{Rect2, Side};
 use crate::core::ir::*;
 use crate::core::span::Severity;
+use crate::domains::elec::symbols::{build_symbol_graphic, SymPrim};
 use std::collections::BTreeSet;
 use std::fmt::Write;
 
@@ -47,6 +48,11 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
       .grp-title {{ font-family: 'Inter', system-ui, sans-serif; font-size: 11px; font-weight: 700; fill: #64748b; text-anchor: middle; }}
       .sym-body {{ fill: #fef9c3; stroke: #854d0e; stroke-width: 1.6; }}
       .sym-body-err {{ fill: #fee2e2; stroke: #dc2626; stroke-width: 2.2; }}
+      .sym-stroke {{ fill: none; stroke: #854d0e; stroke-linecap: round; stroke-linejoin: round; }}
+      .sym-stroke-err {{ fill: none; stroke: #dc2626; stroke-linecap: round; stroke-linejoin: round; }}
+      .sym-fill {{ fill: #fef08a; stroke: #854d0e; stroke-linejoin: round; }}
+      .sym-fill-err {{ fill: #fecaca; stroke: #dc2626; stroke-linejoin: round; }}
+      .sym-mark {{ font-family: monospace; font-size: 11px; font-weight: 700; fill: #854d0e; text-anchor: middle; }}
       .sym-ref {{ font-family: monospace; font-size: 11px; font-weight: 700; fill: #0f172a; }}
       .sym-val {{ font-family: 'Inter', system-ui, sans-serif; font-size: 10px; fill: #334155; }}
       .pin-line {{ stroke: #475569; stroke-width: 1.5; }}
@@ -209,6 +215,7 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
     let _ = writeln!(out, r#"  <g id="components">"#);
     for e in &ir.entities {
         let EntityGeometryIr::Component {
+            category,
             value,
             body_rect,
             pins,
@@ -219,16 +226,72 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
         };
         let is_err = violated_entities.contains(e.id.as_str());
         let b_cls = if is_err { "sym-body-err" } else { "sym-body" };
+        let s_cls = if is_err { "sym-stroke-err" } else { "sym-stroke" };
+        let f_cls = if is_err { "sym-fill-err" } else { "sym-fill" };
         let x = sx(body_rect.min_x);
         let y = sy(body_rect.min_y);
         let w = sl(body_rect.width());
         let h = sl(body_rect.depth());
 
-        let _ = writeln!(
-            out,
-            r#"    <rect id="comp-{id}" class="{b_cls}" x="{x:.2}" y="{y:.2}" width="{w:.2}" height="{h:.2}" rx="3"/>"#,
-            id = e.id
-        );
+        let graphic = build_symbol_graphic(category, *body_rect, pins);
+        let _ = writeln!(out, r#"    <g id="comp-{id}">"#, id = e.id);
+        for prim in &graphic.primitives {
+            match prim {
+                SymPrim::Rect { rect, filled, stroke_mm } => {
+                    let cls = if *filled { b_cls } else { s_cls };
+                    let _ = writeln!(
+                        out,
+                        r#"      <rect class="{cls}" x="{:.2}" y="{:.2}" width="{:.2}" height="{:.2}" rx="3" stroke-width="{:.2}"/>"#,
+                        sx(rect.min_x),
+                        sy(rect.min_y),
+                        sl(rect.width()),
+                        sl(rect.depth()),
+                        (stroke_mm * px_per_mm).clamp(1.2, 2.6)
+                    );
+                }
+                SymPrim::Polyline { pts, filled, stroke_mm } => {
+                    let cls = if *filled { f_cls } else { s_cls };
+                    let pts_str = pts
+                        .iter()
+                        .map(|p| format!("{:.2},{:.2}", sx(p.x), sy(p.y)))
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    let sw = (stroke_mm * px_per_mm).clamp(1.2, 2.8);
+                    if *filled {
+                        let _ = writeln!(
+                            out,
+                            r#"      <polygon class="{cls}" points="{pts_str}" stroke-width="{sw:.2}"/>"#
+                        );
+                    } else {
+                        let _ = writeln!(
+                            out,
+                            r#"      <polyline class="{cls}" points="{pts_str}" stroke-width="{sw:.2}"/>"#
+                        );
+                    }
+                }
+                SymPrim::Circle { center, radius, filled, stroke_mm } => {
+                    let cls = if *filled { f_cls } else { s_cls };
+                    let sw = (stroke_mm * px_per_mm).clamp(1.2, 2.6);
+                    let _ = writeln!(
+                        out,
+                        r#"      <circle class="{cls}" cx="{:.2}" cy="{:.2}" r="{:.2}" stroke-width="{sw:.2}"/>"#,
+                        sx(center.x),
+                        sy(center.y),
+                        sl(*radius)
+                    );
+                }
+                SymPrim::Mark { pos, text } => {
+                    let _ = writeln!(
+                        out,
+                        r#"      <text class="sym-mark" x="{:.2}" y="{:.2}">{}</text>"#,
+                        sx(pos.x),
+                        sy(pos.y),
+                        escape_xml(text)
+                    );
+                }
+            }
+        }
+        let _ = writeln!(out, r#"    </g>"#);
         let has_north = pins.iter().any(|p| p.side == Side::North);
         let has_south = pins.iter().any(|p| p.side == Side::South);
         let (rx, r_anchor) = if has_north {
@@ -274,7 +337,7 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
                 r#"    <circle class="{pd_cls}" cx="{tx:.2}" cy="{ty:.2}" r="{}"/>"#,
                 if p_err { "4.2" } else { "2.4" }
             );
-            if annotated || p_err {
+            if (!graphic.hide_pin_names || annotated) || p_err {
                 let (lx, ly, anchor) = match p.side {
                     Side::West => (bx + 3.0, by + 3.0, "start"),
                     Side::East => (bx - 3.0, by + 3.0, "end"),

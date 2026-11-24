@@ -46,6 +46,19 @@ pub enum Severity {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepairAction {
+    /// Machine-readable repair verb: e.g. "adjust_offset", "move_fixture", "reverse_swing",
+    /// "add_window", "add_opening", "connect_pin", "fix_voltage", "add_constraint", "split_net".
+    pub action: String,
+    pub target: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub field: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub suggested_value: Option<String>,
+    pub rationale: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Diagnostic {
     pub code: String,
     pub category: String,
@@ -63,6 +76,8 @@ pub struct Diagnostic {
     pub unit: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggestion: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub repair: Option<RepairAction>,
 }
 
 impl Diagnostic {
@@ -83,6 +98,7 @@ impl Diagnostic {
             required: None,
             unit: None,
             suggestion: None,
+            repair: None,
         }
     }
 
@@ -106,5 +122,111 @@ impl Diagnostic {
     pub fn with_suggestion(mut self, suggestion: impl Into<String>) -> Self {
         self.suggestion = Some(suggestion.into());
         self
+    }
+
+    pub fn with_repair(mut self, repair: RepairAction) -> Self {
+        self.repair = Some(repair);
+        self
+    }
+
+    /// Deterministically synthesize a machine-readable `RepairAction` from this diagnostic
+    /// if one was not explicitly attached yet.
+    pub fn inferred_repair(&self) -> RepairAction {
+        if let Some(ref r) = self.repair {
+            return r.clone();
+        }
+        let target = self
+            .entities
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "project".to_string());
+        let rationale = self
+            .suggestion
+            .clone()
+            .unwrap_or_else(|| self.message.clone());
+
+        match self.code.as_str() {
+            "E_VERIFY_JAMB_MARGIN" => RepairAction {
+                action: "adjust_offset".to_string(),
+                target,
+                field: Some("offset".to_string()),
+                suggested_value: self.required.map(|r| format!(">= {:.0}mm", r)),
+                rationale,
+            },
+            "E_VERIFY_DOOR_SWING_COLLISION" | "E_VERIFY_DOOR_SWING_WALL" | "E_VERIFY_DOOR_SWING_NOTCH" => {
+                RepairAction {
+                    action: "reverse_swing".to_string(),
+                    target,
+                    field: Some("hinge_or_swing".to_string()),
+                    suggested_value: Some("flip hinge or swing target room".to_string()),
+                    rationale,
+                }
+            }
+            "E_VERIFY_DOOR_SWING_FIXTURE" | "E_VERIFY_FIXTURE_BOUNDS"
+            | "E_VERIFY_FIXTURE_CLEARANCE" | "E_VERIFY_FIXTURE_OVERLAP"
+            | "E_VERIFY_FIXTURE_BLOCKS_OPENING" | "E_VERIFY_FIXTURE_IN_NOTCH" => RepairAction {
+                action: "move_fixture".to_string(),
+                target: self.entities.get(1).cloned().unwrap_or(target),
+                field: Some("offset_or_at".to_string()),
+                suggested_value: None,
+                rationale,
+            },
+            "E_VERIFY_UNREACHABLE_ROOM" => RepairAction {
+                action: "add_opening".to_string(),
+                target,
+                field: Some("host".to_string()),
+                suggested_value: Some("shared_wall(...) door or passage".to_string()),
+                rationale,
+            },
+            "E_VERIFY_NATURAL_LIGHT" => RepairAction {
+                action: "add_window".to_string(),
+                target,
+                field: Some("host".to_string()),
+                suggested_value: Some("exterior(<room>, <side>)".to_string()),
+                rationale,
+            },
+            "E_ERC_UNCONNECTED_PIN" => RepairAction {
+                action: "connect_pin".to_string(),
+                target,
+                field: Some("connect".to_string()),
+                suggested_value: Some("add pin to appropriate net".to_string()),
+                rationale,
+            },
+            "E_ERC_VOLTAGE_MISMATCH" => RepairAction {
+                action: "fix_voltage".to_string(),
+                target,
+                field: Some("net_or_regulator".to_string()),
+                suggested_value: self.required.map(|r| format!("{:.2}V", r)),
+                rationale,
+            },
+            "E_ERC_POWER_GROUND_SHORT" | "E_ERC_MULTIPLE_POWER_DRIVERS" => RepairAction {
+                action: "split_net".to_string(),
+                target,
+                field: Some("connect".to_string()),
+                suggested_value: Some("separate conflicting power/ground pins".to_string()),
+                rationale,
+            },
+            "E_ERC_SINGLE_PIN_NET" => RepairAction {
+                action: "connect_or_remove_net".to_string(),
+                target,
+                field: Some("connect".to_string()),
+                suggested_value: Some("connect >= 2 pins or mark pin nc".to_string()),
+                rationale,
+            },
+            "E_SOLVER_UNDERCONSTRAINED" => RepairAction {
+                action: "add_constraint".to_string(),
+                target,
+                field: Some("layout".to_string()),
+                suggested_value: Some("add require constraint for remaining DOF".to_string()),
+                rationale,
+            },
+            _ => RepairAction {
+                action: "edit_source".to_string(),
+                target,
+                field: None,
+                suggested_value: None,
+                rationale,
+            },
+        }
     }
 }

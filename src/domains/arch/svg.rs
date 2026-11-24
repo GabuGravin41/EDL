@@ -102,15 +102,11 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
         if let EntityGeometryIr::Rect {
             min,
             max,
-            width_mm,
-            depth_mm,
+            notch_rect,
             ..
         } = e.geometry
         {
-            let x = sx(min[0]);
-            let y = sy(max[1]);
-            let w = sl(width_mm);
-            let h = sl(depth_mm);
+            let full_r = Rect2::new(min[0], min[1], max[0], max[1]);
             let is_violated = violated_entities.contains(e.id.as_str());
             let role = e.props.get("role").and_then(|v| v.as_str()).unwrap_or("");
             let lower = e.id.to_lowercase();
@@ -125,11 +121,30 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
             } else {
                 "room-fill"
             };
-            let _ = writeln!(
-                out,
-                r#"    <rect id="room-{id}" class="{cls}" x="{x:.2}" y="{y:.2}" width="{w:.2}" height="{h:.2}"/>"#,
-                id = e.id
-            );
+            if let Some(nr) = notch_rect {
+                // Seamless 6-vertex L-shaped polygon (zero internal seam line!)
+                let poly = notched_room_polygon(full_r, nr);
+                let pts = poly
+                    .iter()
+                    .map(|p| format!("{:.2},{:.2}", sx(p.x), sy(p.y)))
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                let _ = writeln!(
+                    out,
+                    r#"    <polygon id="room-{id}" class="{cls}" points="{pts}"/>"#,
+                    id = e.id
+                );
+            } else {
+                let x = sx(full_r.min_x);
+                let y = sy(full_r.max_y);
+                let w = sl(full_r.width());
+                let h = sl(full_r.depth());
+                let _ = writeln!(
+                    out,
+                    r#"    <rect id="room-{id}" class="{cls}" x="{x:.2}" y="{y:.2}" width="{w:.2}" height="{h:.2}"/>"#,
+                    id = e.id
+                );
+            }
         }
     }
     let _ = writeln!(out, r#"  </g>"#);
@@ -398,6 +413,7 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
 
     // 5. Room labels & clear dimensions (rendered on top so never obscured)
     let _ = writeln!(out, r#"  <g id="room-labels">"#);
+    let mut room_rects_all: Vec<Rect2> = Vec::new();
     for e in &ir.entities {
         if e.kind != "arch.room" {
             continue;
@@ -408,14 +424,20 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
             width_mm,
             depth_mm,
             area_m2,
+            notch_rect,
         } = e.geometry
         {
-            let x = sx(min[0]);
-            let y = sy(max[1]);
-            let w = sl(width_mm);
-            let h = sl(depth_mm);
-            let cx = x + w * 0.5;
-            let cy = y + h * 0.5;
+            let full_r = Rect2::new(min[0], min[1], max[0], max[1]);
+            let subs = crate::domains::arch::compile::decompose_room_rect(full_r, notch_rect);
+            room_rects_all.extend(subs.iter().copied());
+            // Place room label centered in the largest sub-rectangle (avoids empty notch corners!)
+            let best = subs
+                .iter()
+                .max_by(|a, b| a.area_m2().partial_cmp(&b.area_m2()).unwrap())
+                .copied()
+                .unwrap_or(full_r);
+            let cx = sx(best.center().x);
+            let cy = sy(best.center().y);
             let _ = writeln!(
                 out,
                 r#"    <text class="room-title" x="{cx:.2}" y="{:.2}">{}</text>"#,
@@ -424,10 +446,11 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
             );
             let _ = writeln!(
                 out,
-                r#"    <text class="room-sub" x="{cx:.2}" y="{:.2}">{:.2}m × {:.2}m</text>"#,
+                r#"    <text class="room-sub" x="{cx:.2}" y="{:.2}">{:.2}m × {:.2}m{}</text>"#,
                 cy + 8.0,
                 width_mm / 1000.0,
-                depth_mm / 1000.0
+                depth_mm / 1000.0,
+                if notch_rect.is_some() { " (L)" } else { "" }
             );
             let _ = writeln!(
                 out,
@@ -439,39 +462,158 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
     }
     let _ = writeln!(out, r#"  </g>"#);
 
-    // 6. Overall exterior dimension lines (top + right)
+    // 6. Overall exterior + interior room dimension chains
+    let show_dims = ir.views.first().map(|v| v.show_dimensions).unwrap_or(true);
     let _ = writeln!(out, r#"  <g id="dimensions">"#);
-    let dim_off = 460.0;
-    let y_dim = sy(bounds.max_y + dim_off);
-    let x_l = sx(bounds.min_x);
-    let x_r = sx(bounds.max_x);
-    let _ = writeln!(out, r#"    <line class="dim-line" x1="{x_l:.2}" y1="{y_dim:.2}" x2="{x_r:.2}" y2="{y_dim:.2}"/>"#);
-    let _ = writeln!(out, r#"    <line class="dim-line" x1="{x_l:.2}" y1="{:.2}" x2="{x_l:.2}" y2="{:.2}"/>"#, y_dim - 6.0, sy(bounds.max_y) - 4.0);
-    let _ = writeln!(out, r#"    <line class="dim-line" x1="{x_r:.2}" y1="{:.2}" x2="{x_r:.2}" y2="{:.2}"/>"#, y_dim - 6.0, sy(bounds.max_y) - 4.0);
-    let _ = writeln!(
-        out,
-        r#"    <text class="dim-text" x="{:.2}" y="{:.2}">{:.0} mm ({:.2} m)</text>"#,
-        0.5 * (x_l + x_r),
-        y_dim - 6.0,
-        bounds.width(),
-        bounds.width() / 1000.0
-    );
+    if show_dims {
+        let dim_off = 560.0;
+        let chain_off = 250.0;
 
-    let x_dim = sx(bounds.max_x + dim_off);
-    let y_t = sy(bounds.max_y);
-    let y_b = sy(bounds.min_y);
-    let _ = writeln!(out, r#"    <line class="dim-line" x1="{x_dim:.2}" y1="{y_t:.2}" x2="{x_dim:.2}" y2="{y_b:.2}"/>"#);
-    let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{y_t:.2}" x2="{:.2}" y2="{y_t:.2}"/>"#, sx(bounds.max_x) + 4.0, x_dim + 6.0);
-    let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{y_b:.2}" x2="{:.2}" y2="{y_b:.2}"/>"#, sx(bounds.max_x) + 4.0, x_dim + 6.0);
-    let mid_y = 0.5 * (y_t + y_b);
-    let _ = writeln!(
-        out,
-        r#"    <text class="dim-text" x="{:.2}" y="{mid_y:.2}" transform="rotate(90 {:.2} {mid_y:.2})">{:.0} mm ({:.2} m)</text>"#,
-        x_dim + 14.0,
-        x_dim + 14.0,
-        bounds.depth(),
-        bounds.depth() / 1000.0
-    );
+        // Overall Top dimension
+        let y_dim = sy(bounds.max_y + dim_off);
+        let x_l = sx(bounds.min_x);
+        let x_r = sx(bounds.max_x);
+        let _ = writeln!(out, r#"    <line class="dim-line" x1="{x_l:.2}" y1="{y_dim:.2}" x2="{x_r:.2}" y2="{y_dim:.2}"/>"#);
+        let _ = writeln!(out, r#"    <line class="dim-line" x1="{x_l:.2}" y1="{:.2}" x2="{x_l:.2}" y2="{:.2}"/>"#, y_dim - 6.0, sy(bounds.max_y) - 4.0);
+        let _ = writeln!(out, r#"    <line class="dim-line" x1="{x_r:.2}" y1="{:.2}" x2="{x_r:.2}" y2="{:.2}"/>"#, y_dim - 6.0, sy(bounds.max_y) - 4.0);
+        let _ = writeln!(
+            out,
+            r#"    <text class="dim-text" x="{:.2}" y="{:.2}">{:.0} mm ({:.2} m)</text>"#,
+            0.5 * (x_l + x_r),
+            y_dim - 6.0,
+            bounds.width(),
+            bounds.width() / 1000.0
+        );
+
+        // Overall Right dimension
+        let x_dim = sx(bounds.max_x + dim_off);
+        let y_t = sy(bounds.max_y);
+        let y_b = sy(bounds.min_y);
+        let _ = writeln!(out, r#"    <line class="dim-line" x1="{x_dim:.2}" y1="{y_t:.2}" x2="{x_dim:.2}" y2="{y_b:.2}"/>"#);
+        let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{y_t:.2}" x2="{:.2}" y2="{y_t:.2}"/>"#, sx(bounds.max_x) + 4.0, x_dim + 6.0);
+        let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{y_b:.2}" x2="{:.2}" y2="{y_b:.2}"/>"#, sx(bounds.max_x) + 4.0, x_dim + 6.0);
+        let mid_y = 0.5 * (y_t + y_b);
+        let _ = writeln!(
+            out,
+            r#"    <text class="dim-text" x="{:.2}" y="{mid_y:.2}" transform="rotate(90 {:.2} {mid_y:.2})">{:.0} mm ({:.2} m)</text>"#,
+            x_dim + 14.0,
+            x_dim + 14.0,
+            bounds.depth(),
+            bounds.depth() / 1000.0
+        );
+
+        // Interior room dimension chains (top/bottom X-spans + right/left Y-spans)
+        if !room_rects_all.is_empty() {
+            let max_ry = room_rects_all.iter().map(|r| r.max_y).fold(f64::NEG_INFINITY, f64::max);
+            let min_ry = room_rects_all.iter().map(|r| r.min_y).fold(f64::INFINITY, f64::min);
+            let max_rx = room_rects_all.iter().map(|r| r.max_x).fold(f64::NEG_INFINITY, f64::max);
+            let min_rx = room_rects_all.iter().map(|r| r.min_x).fold(f64::INFINITY, f64::min);
+
+            let top_spans = collect_non_overlapping_spans(
+                room_rects_all
+                    .iter()
+                    .filter(|r| (r.max_y - max_ry).abs() < 2.0)
+                    .map(|r| (r.min_x, r.max_x))
+                    .collect(),
+            );
+            let bot_spans = collect_non_overlapping_spans(
+                room_rects_all
+                    .iter()
+                    .filter(|r| (r.min_y - min_ry).abs() < 2.0)
+                    .map(|r| (r.min_x, r.max_x))
+                    .collect(),
+            );
+            let right_spans = collect_non_overlapping_spans(
+                room_rects_all
+                    .iter()
+                    .filter(|r| (r.max_x - max_rx).abs() < 2.0)
+                    .map(|r| (r.min_y, r.max_y))
+                    .collect(),
+            );
+            let left_spans = collect_non_overlapping_spans(
+                room_rects_all
+                    .iter()
+                    .filter(|r| (r.min_x - min_rx).abs() < 2.0)
+                    .map(|r| (r.min_y, r.max_y))
+                    .collect(),
+            );
+
+            // Top interior chain
+            if top_spans.len() >= 1 {
+                let yc = sy(bounds.max_y + chain_off);
+                for &(a, b) in &top_spans {
+                    let xa = sx(a);
+                    let xb = sx(b);
+                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{xa:.2}" y1="{yc:.2}" x2="{xb:.2}" y2="{yc:.2}"/>"#);
+                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{xa:.2}" y1="{:.2}" x2="{xa:.2}" y2="{:.2}"/>"#, yc - 4.0, yc + 4.0);
+                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{xb:.2}" y1="{:.2}" x2="{xb:.2}" y2="{:.2}"/>"#, yc - 4.0, yc + 4.0);
+                    let _ = writeln!(
+                        out,
+                        r#"    <text class="dim-text" x="{:.2}" y="{:.2}">{:.2} m</text>"#,
+                        0.5 * (xa + xb),
+                        yc - 5.0,
+                        (b - a) / 1000.0
+                    );
+                }
+            }
+            // Bottom interior chain (only if partition differs from top!)
+            if !spans_equal(&top_spans, &bot_spans) && !bot_spans.is_empty() {
+                let yc = sy(bounds.min_y - chain_off);
+                for &(a, b) in &bot_spans {
+                    let xa = sx(a);
+                    let xb = sx(b);
+                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{xa:.2}" y1="{yc:.2}" x2="{xb:.2}" y2="{yc:.2}"/>"#);
+                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{xa:.2}" y1="{:.2}" x2="{xa:.2}" y2="{:.2}"/>"#, yc - 4.0, yc + 4.0);
+                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{xb:.2}" y1="{:.2}" x2="{xb:.2}" y2="{:.2}"/>"#, yc - 4.0, yc + 4.0);
+                    let _ = writeln!(
+                        out,
+                        r#"    <text class="dim-text" x="{:.2}" y="{:.2}">{:.2} m</text>"#,
+                        0.5 * (xa + xb),
+                        yc + 12.0,
+                        (b - a) / 1000.0
+                    );
+                }
+            }
+            // Right interior chain
+            if !right_spans.is_empty() {
+                let xc = sx(bounds.max_x + chain_off);
+                for &(a, b) in &right_spans {
+                    let ya = sy(a);
+                    let yb = sy(b);
+                    let my = 0.5 * (ya + yb);
+                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{xc:.2}" y1="{ya:.2}" x2="{xc:.2}" y2="{yb:.2}"/>"#);
+                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{ya:.2}" x2="{:.2}" y2="{ya:.2}"/>"#, xc - 4.0, xc + 4.0);
+                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{yb:.2}" x2="{:.2}" y2="{yb:.2}"/>"#, xc - 4.0, xc + 4.0);
+                    let _ = writeln!(
+                        out,
+                        r#"    <text class="dim-text" x="{:.2}" y="{my:.2}" transform="rotate(90 {:.2} {my:.2})">{:.2} m</text>"#,
+                        xc + 11.0,
+                        xc + 11.0,
+                        (b - a) / 1000.0
+                    );
+                }
+            }
+            // Left interior chain (only if partition differs from right!)
+            if !spans_equal(&right_spans, &left_spans) && !left_spans.is_empty() {
+                let xc = sx(bounds.min_x - chain_off);
+                for &(a, b) in &left_spans {
+                    let ya = sy(a);
+                    let yb = sy(b);
+                    let my = 0.5 * (ya + yb);
+                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{xc:.2}" y1="{ya:.2}" x2="{xc:.2}" y2="{yb:.2}"/>"#);
+                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{ya:.2}" x2="{:.2}" y2="{ya:.2}"/>"#, xc - 4.0, xc + 4.0);
+                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{yb:.2}" x2="{:.2}" y2="{yb:.2}"/>"#, xc - 4.0, xc + 4.0);
+                    let _ = writeln!(
+                        out,
+                        r#"    <text class="dim-text" x="{:.2}" y="{my:.2}" transform="rotate(-90 {:.2} {my:.2})">{:.2} m</text>"#,
+                        xc - 11.0,
+                        xc - 11.0,
+                        (b - a) / 1000.0
+                    );
+                }
+            }
+        }
+    }
     let _ = writeln!(out, r#"  </g>"#);
 
     // 7. Title block & verification status bar
@@ -541,6 +683,76 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
 
     let _ = writeln!(out, "</svg>");
     out
+}
+
+/// Compute the exact 6-vertex CCW polygon of a room rectangle minus a corner notch.
+fn notched_room_polygon(r: Rect2, n: Rect2) -> Vec<crate::core::geom::Point2> {
+    use crate::core::geom::Point2;
+    let eps = 1e-3;
+    let at_east = (n.max_x - r.max_x).abs() <= eps;
+    let at_north = (n.max_y - r.max_y).abs() <= eps;
+    match (at_east, at_north) {
+        // Northeast notch
+        (true, true) => vec![
+            Point2::new(r.min_x, r.min_y),
+            Point2::new(r.max_x, r.min_y),
+            Point2::new(r.max_x, n.min_y),
+            Point2::new(n.min_x, n.min_y),
+            Point2::new(n.min_x, r.max_y),
+            Point2::new(r.min_x, r.max_y),
+        ],
+        // Northwest notch
+        (false, true) => vec![
+            Point2::new(r.min_x, r.min_y),
+            Point2::new(r.max_x, r.min_y),
+            Point2::new(r.max_x, r.max_y),
+            Point2::new(n.max_x, r.max_y),
+            Point2::new(n.max_x, n.min_y),
+            Point2::new(r.min_x, n.min_y),
+        ],
+        // Southeast notch
+        (true, false) => vec![
+            Point2::new(r.min_x, r.min_y),
+            Point2::new(n.min_x, r.min_y),
+            Point2::new(n.min_x, n.max_y),
+            Point2::new(r.max_x, n.max_y),
+            Point2::new(r.max_x, r.max_y),
+            Point2::new(r.min_x, r.max_y),
+        ],
+        // Southwest notch
+        (false, false) => vec![
+            Point2::new(n.max_x, r.min_y),
+            Point2::new(r.max_x, r.min_y),
+            Point2::new(r.max_x, r.max_y),
+            Point2::new(r.min_x, r.max_y),
+            Point2::new(r.min_x, n.max_y),
+            Point2::new(n.max_x, n.max_y),
+        ],
+    }
+}
+
+fn collect_non_overlapping_spans(mut spans: Vec<(f64, f64)>) -> Vec<(f64, f64)> {
+    spans.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    let mut out: Vec<(f64, f64)> = Vec::new();
+    for (a, b) in spans {
+        if b - a < 100.0 {
+            continue;
+        }
+        if let Some(last) = out.last() {
+            if a < last.1 - 1.0 {
+                continue;
+            }
+        }
+        out.push((a, b));
+    }
+    out
+}
+
+fn spans_equal(a: &[(f64, f64)], b: &[(f64, f64)]) -> bool {
+    a.len() == b.len()
+        && a.iter()
+            .zip(b.iter())
+            .all(|(x, y)| (x.0 - y.0).abs() < 2.0 && (x.1 - y.1).abs() < 2.0)
 }
 
 fn escape_xml(s: &str) -> String {

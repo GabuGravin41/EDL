@@ -57,10 +57,19 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
                 width_mm,
                 depth_mm,
                 area_m2,
+                notch_rect,
             } if e.kind == "arch.room" => {
                 let r = Rect2::new(min[0], min[1], max[0], max[1]);
-                write_rect_lines(&mut out, "ROOMS", r);
-                let c = r.center();
+                let subs = crate::domains::arch::compile::decompose_room_rect(r, *notch_rect);
+                for sr in &subs {
+                    write_rect_lines(&mut out, "ROOMS", *sr);
+                }
+                let best = subs
+                    .iter()
+                    .max_by(|a, b| a.area_m2().partial_cmp(&b.area_m2()).unwrap())
+                    .copied()
+                    .unwrap_or(r);
+                let c = best.center();
                 write_text(&mut out, "ANNOTATIONS", c.x, c.y + 120.0, 160.0, &e.id);
                 write_text(
                     &mut out,

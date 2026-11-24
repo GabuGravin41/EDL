@@ -72,11 +72,20 @@ pub struct AnchorSpec {
 }
 
 #[derive(Debug, Clone)]
+pub struct RoomNotch {
+    pub width: Quantity,
+    pub depth: Quantity,
+    pub corner: Corner,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
 pub struct RoomDecl {
     pub id: String,
     pub role: Option<RoomRole>,
     pub clear_size: Option<(Quantity, Quantity)>,
     pub anchor: Option<AnchorSpec>,
+    pub notch: Option<RoomNotch>,
     pub provenance: Option<ModuleProvenanceIr>,
     pub span: Span,
 }

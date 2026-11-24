@@ -1,0 +1,108 @@
+// L-Shaped Notched Open-Plan Loft with tucked-in Bath inside the northeast notch!
+import "./lib/arch_units.edl"
+
+project "Loft_Notched_L" {
+  units: mm
+  frame Plan: Frame2
+
+  architecture.defaults {
+    measurement_basis: clear_interior
+    exterior_wall: 200mm
+    interior_wall: 120mm
+  }
+
+  // Open-plan L-shaped living/dining/kitchen wrapping around the Bath core
+  room GreatRoom {
+    role: habitable
+    clear_size: (6400mm, 5200mm)
+    notch: (2320mm, 2520mm) at northeast
+    anchor: southwest at Plan.origin
+  }
+
+  // Bath tucked neatly inside GreatRoom's northeast notch, separated by interior_wall (120mm)
+  use Bath = StandardBath(w: 2200mm, d: 2400mm)
+
+  // Private bedroom on the north side spanning the full width
+  use Master = StandardBedroom(w: 4200mm, d: 3400mm, bed_w: 1600mm, win_w: 1800mm)
+
+  layout Plan {
+    // Bath sits inside GreatRoom's northeast notch with 120mm interior partition walls on West & South
+    require Bath.east == GreatRoom.east
+    require Bath.north == GreatRoom.north
+
+    // Master bedroom north of GreatRoom, flush on West edge
+    require Master.west == GreatRoom.west
+    require Master.south == GreatRoom.north + interior_wall
+  }
+
+  // Doors
+  opening EntryDoor: door {
+    host: exterior(GreatRoom, south)
+    width: 900mm
+    offset: 300mm from start
+    hinge: start
+    swing: into GreatRoom
+  }
+
+  opening BathDoor: door {
+    host: shared_wall(GreatRoom, Bath)
+    width: 800mm
+    offset: 200mm from start
+    hinge: start
+    swing: into GreatRoom
+  }
+
+  opening MasterDoor: door {
+    host: shared_wall(GreatRoom, Master)
+    width: 800mm
+    offset: 200mm from end
+    hinge: end
+    swing: into Master
+  }
+
+  // Exterior Windows
+  opening GreatWinS: window {
+    host: exterior(GreatRoom, south)
+    width: 2400mm
+    offset: 600mm from end
+  }
+
+  opening GreatWinW: window {
+    host: exterior(GreatRoom, west)
+    width: 1800mm
+    align: center
+  }
+
+  // Fixtures inside GreatRoom (verified to stay clear of the northeast notch!)
+  fixture Sofa: sofa {
+    room: GreatRoom
+    size: (2200mm, 900mm)
+    against: west
+    offset: 250mm from end
+    clearance_front: 700mm
+  }
+
+  fixture DiningTable: table {
+    room: GreatRoom
+    size: (1400mm, 850mm)
+    at: (4400mm, 800mm)
+    clearance_all: 450mm
+  }
+
+  verify {
+    require no_room_overlap
+    require opening_jamb_margin >= 100mm
+    require no_door_swing_collision
+    require all_rooms_reachable
+    require no_fixture_collision
+    require habitable_rooms_have_window
+  }
+
+  view PlanView: plan {
+    frame: Plan
+    sheet: A3 landscape
+    scale: 1:50
+    show_dimensions: true
+    show_labels: true
+  }
+}

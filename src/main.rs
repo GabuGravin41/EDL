@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use edl::core::diff;
+use edl::core::query::{inspect_summary, measure_ir, query_ir};
 use edl::{compile_file, export_dxf, export_kicad_sch, render_svg};
 use std::fs;
 use std::path::PathBuf;
@@ -9,7 +10,7 @@ use std::process;
 #[command(
     name = "edl",
     version,
-    about = "Engineering Description Language (EDL) v0.4 compiler"
+    about = "Engineering Description Language (EDL) v0.5 compiler & MCP server"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -25,6 +26,9 @@ enum Commands {
         /// Emit machine-readable JSON Canonical IR
         #[arg(long)]
         json: bool,
+        /// Also invoke kicad-cli sch erc and ingest target-side ERC into the evidence ledger
+        #[arg(long)]
+        kicad_erc: bool,
     },
     /// Render an architectural or schematic SVG preview (with optional annotations)
     Preview {
@@ -58,6 +62,37 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// Emit a compact AI-friendly structural inspection summary (bounds, provenance, nets, evidence)
+    Inspect {
+        /// Path to .edl project file
+        file: PathBuf,
+        /// Also invoke kicad-cli sch erc for electronics projects
+        #[arg(long)]
+        kicad_erc: bool,
+    },
+    /// Run a targeted semantic query (summary | entity | net | room | module | violations)
+    Query {
+        /// Path to .edl project file
+        file: PathBuf,
+        /// Query kind: summary, entity, net, room, module, or violations
+        kind: String,
+        /// Optional target entity ID, net name, room ID, or module name
+        target: Option<String>,
+        /// Also invoke kicad-cli sch erc before querying (electronics)
+        #[arg(long)]
+        kicad_erc: bool,
+    },
+    /// Measure an entity, net route wire length, or pairwise clear gap / distance / shared wall
+    Measure {
+        /// Path to .edl project file
+        file: PathBuf,
+        /// First entity ID or schematic net name
+        target_a: String,
+        /// Optional second entity ID for pairwise measurements
+        target_b: Option<String>,
+    },
+    /// Start the Model Context Protocol (MCP) JSON-RPC 2.0 server over stdio
+    Mcp,
 }
 
 fn load_and_compile(path: &PathBuf) -> edl::core::ir::CanonicalIr {
@@ -73,8 +108,15 @@ fn load_and_compile(path: &PathBuf) -> edl::core::ir::CanonicalIr {
 fn main() {
     let cli = Cli::parse();
     match cli.command {
-        Commands::Build { file, json } => {
-            let ir = load_and_compile(&file);
+        Commands::Build {
+            file,
+            json,
+            kicad_erc,
+        } => {
+            let mut ir = load_and_compile(&file);
+            if kicad_erc {
+                edl::domains::elec::kicad_erc::run_and_ingest_kicad_erc(&mut ir);
+            }
             if json {
                 println!("{}", serde_json::to_string_pretty(&ir).unwrap());
             } else {
@@ -214,6 +256,52 @@ fn main() {
                 for vc in &d.verification_changes {
                     println!("  [verify] {}: {:?} -> {:?}", vc.check_id, vc.before, vc.after);
                 }
+            }
+        }
+        Commands::Inspect { file, kicad_erc } => {
+            let mut ir = load_and_compile(&file);
+            if kicad_erc {
+                edl::domains::elec::kicad_erc::run_and_ingest_kicad_erc(&mut ir);
+            }
+            let summary = inspect_summary(&ir);
+            println!("{}", serde_json::to_string_pretty(&summary).unwrap());
+        }
+        Commands::Query {
+            file,
+            kind,
+            target,
+            kicad_erc,
+        } => {
+            let mut ir = load_and_compile(&file);
+            if kicad_erc {
+                edl::domains::elec::kicad_erc::run_and_ingest_kicad_erc(&mut ir);
+            }
+            match query_ir(&ir, &kind, target.as_deref()) {
+                Ok(val) => println!("{}", serde_json::to_string_pretty(&val).unwrap()),
+                Err(msg) => {
+                    eprintln!("error: {msg}");
+                    process::exit(1);
+                }
+            }
+        }
+        Commands::Measure {
+            file,
+            target_a,
+            target_b,
+        } => {
+            let ir = load_and_compile(&file);
+            match measure_ir(&ir, &target_a, target_b.as_deref()) {
+                Ok(val) => println!("{}", serde_json::to_string_pretty(&val).unwrap()),
+                Err(msg) => {
+                    eprintln!("error: {msg}");
+                    process::exit(1);
+                }
+            }
+        }
+        Commands::Mcp => {
+            if let Err(e) = edl::mcp::run_stdio_server() {
+                eprintln!("MCP server error: {e}");
+                process::exit(1);
             }
         }
     }
