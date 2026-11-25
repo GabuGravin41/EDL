@@ -49,6 +49,9 @@ enum Commands {
         /// Render every sheet to `<output>/<sheet>.svg` (treats `-o` as a directory)
         #[arg(long)]
         all_sheets: bool,
+        /// Optional comma-separated discipline layers for multi-discipline plans (e.g. `arch`, `arch,elec`, `arch,plumbing`, `all`)
+        #[arg(long, value_delimiter = ',')]
+        layers: Option<Vec<String>>,
     },
     /// Export to a native CAD/EDA format (DXF, KiCad .kicad_sch, SPICE .cir, or BOM .csv)
     Export {
@@ -130,6 +133,14 @@ enum Commands {
         /// Path to .edl project file
         file: PathBuf,
         /// Emit CSV instead of JSON
+        #[arg(long)]
+        csv: bool,
+    },
+    /// Generate a Building Plumbing Pipe & Equipment Takeoff Schedule (table or CSV)
+    PlumbingSchedule {
+        /// Path to .edl project file
+        file: PathBuf,
+        /// Emit CSV instead of formatted table
         #[arg(long)]
         csv: bool,
     },
@@ -258,6 +269,15 @@ fn main() {
                             ir.mep_wires.len()
                         );
                     }
+                    let pl_models = edl::domains::mep_plumbing::render::extract_plumbing_models(&ir);
+                    if !pl_models.is_empty() {
+                        let nodes: usize = pl_models.iter().map(|m| m.nodes.len()).sum();
+                        let pipes: usize = pl_models.iter().map(|m| m.pipes.len()).sum();
+                        println!(
+                            "  Building Plumbing  : {} node(s)/valve(s) | {} pipe run(s)",
+                            nodes, pipes
+                        );
+                    }
                 }
                 println!("  Evidence:");
                 for ev in &ir.evidence {
@@ -286,6 +306,7 @@ fn main() {
             annotated,
             sheet,
             all_sheets,
+            layers,
         } => {
             let ir = load_and_compile(&file);
             if all_sheets && ir.views.len() > 1 {
@@ -300,7 +321,11 @@ fn main() {
                     println!("Rendered sheet '{}' -> {}", v.id, out_f.display());
                 }
             } else {
-                let svg = edl::render_svg_sheet(&ir, sheet.as_deref(), annotated);
+                let svg = if layers.is_some() && ir.project.domain != "electronics" {
+                    edl::render_svg_with_layers(&ir, annotated, layers.as_deref())
+                } else {
+                    edl::render_svg_sheet(&ir, sheet.as_deref(), annotated)
+                };
                 if let Some(parent) = output.parent() {
                     if !parent.as_os_str().is_empty() {
                         let _ = fs::create_dir_all(parent);
@@ -526,6 +551,10 @@ fn main() {
                 let sched = build_panel_schedule(&ir);
                 println!("{}", serde_json::to_string_pretty(&sched).unwrap());
             }
+        }
+        Commands::PlumbingSchedule { file, csv } => {
+            let ir = load_and_compile(&file);
+            print!("{}", edl::format_plumbing_schedule(&ir, csv));
         }
         Commands::Sync {
             file,

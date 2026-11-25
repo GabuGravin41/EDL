@@ -22,7 +22,7 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
     let _ = writeln!(out, "0\nSECTION\n2\nTABLES");
     // Registered XDATA application so AutoCAD preserves the EDL_ID tags through edits.
     let _ = writeln!(out, "0\nTABLE\n2\nAPPID\n70\n1\n0\nAPPID\n2\nEDL\n70\n0\n0\nENDTAB");
-    let _ = writeln!(out, "0\nTABLE\n2\nLAYER\n70\n14");
+    let _ = writeln!(out, "0\nTABLE\n2\nLAYER\n70\n19");
     for (name, color) in [
         ("WALLS_EXT", 7),
         ("WALLS_INT", 8),
@@ -37,6 +37,11 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
         ("ELEC_SWITCHES", 30),
         ("ELEC_POWER", 4),
         ("ELEC_WIRING", 6),
+        ("PLUMB_COLD", 5),
+        ("PLUMB_HOT", 1),
+        ("PLUMB_DRAIN", 32),
+        ("PLUMB_VENT", 3),
+        ("PLUMB_EQUIP", 4),
         ("EDL_ANCHORS", 8),
     ] {
         let _ = writeln!(
@@ -202,6 +207,8 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
             write_line(&mut out, layer, seg.p0.x, seg.p0.y, seg.p1.x, seg.p1.y);
         }
     }
+
+    crate::domains::mep_plumbing::render::append_plumbing_dxf(ir, &mut out);
 
     let _ = writeln!(out, "0\nENDSEC\n0\nEOF");
     out

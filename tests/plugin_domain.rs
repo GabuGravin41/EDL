@@ -203,7 +203,7 @@ fn plugin_domain_layers_on_arch_and_mep_with_evidence_overlay_and_export() {
     assert!(registry().export("pipes", &ir).unwrap().starts_with("pipe,run_mm\nF_Shower,"));
     assert!(registry().export("dxf", &ir).unwrap().contains("EDL_ANCHORS"));
     let info = registry().info();
-    assert_eq!(info.iter().map(|d| d.id).collect::<Vec<_>>(), ["arch", "elec", "elec.industrial", "mep.elec", "plumbing"]);
+    assert_eq!(info.iter().map(|d| d.id).collect::<Vec<_>>(), ["arch", "elec", "elec.industrial", "mep.elec", "mep.plumbing", "plumbing"]);
 }
 
 #[test]

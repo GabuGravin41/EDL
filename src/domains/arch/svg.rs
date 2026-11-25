@@ -10,6 +10,11 @@ use std::fmt::Write;
 /// - Renders walls (L-shapes & T-junctions), passages, windows, doors, fixtures + front clearances,
 ///   room dimensions, overall dimensions, and red verification violation overlays.
 pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
+    render_svg_filtered(ir, annotated, true)
+}
+
+/// Render an architectural floor plan with optional electrical overlay (`show_elec`).
+pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -> String {
     let bounds = ir
         .project
         .exterior_bounds
@@ -435,7 +440,7 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
         match &e.geometry {
             EntityGeometryIr::Fixture { body_rect, .. } => label_obstacles.push(*body_rect),
             // Electrical devices (esp. ceiling lights at room centers) must not collide with room titles
-            EntityGeometryIr::MepDevice { device_kind, pos, .. } => {
+            EntityGeometryIr::MepDevice { device_kind, pos, .. } if show_elec => {
                 let r = if device_kind == "light" { 650.0 } else { 300.0 };
                 label_obstacles.push(Rect2::new(pos.x - r, pos.y - r, pos.x + r, pos.y + r));
             }
@@ -498,11 +503,12 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
     let _ = writeln!(out, r#"  </g>"#);
 
     // 5b. Building Electrical Overlay (mep.elec) — layered directly on top of the floor plan!
-    let has_mep = !ir.mep_wires.is_empty()
-        || ir
-            .entities
-            .iter()
-            .any(|e| matches!(e.geometry, EntityGeometryIr::MepDevice { .. }));
+    let has_mep = show_elec
+        && (!ir.mep_wires.is_empty()
+            || ir
+                .entities
+                .iter()
+                .any(|e| matches!(e.geometry, EntityGeometryIr::MepDevice { .. })));
     if has_mep {
         let _ = writeln!(out, r#"  <g id="mep-electrical">"#);
         // Conduit / circuit runs & switch legs
@@ -626,6 +632,40 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
             }
         }
         let _ = writeln!(out, r#"  </g>"#);
+        // Compact Electrical Legend bar in top-right sheet header margin
+        let ex = svg_w - 392.0;
+        let ey = 33.0;
+        let _ = writeln!(
+            out,
+            r##"  <g id="electrical-legend">
+    <rect x="{:.1}" y="{:.1}" width="368" height="22" rx="4" fill="#ffffff" fill-opacity="0.93" stroke="#cbd5e1" stroke-width="1"/>
+    <line class="mep-wire-light" x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}"/>
+    <text class="meta-text" style="font-size:8.5px;font-weight:600;" x="{:.1}" y="{:.1}">Lighting</text>
+    <line class="mep-wire-power" x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}"/>
+    <text class="meta-text" style="font-size:8.5px;font-weight:600;" x="{:.1}" y="{:.1}">Power</text>
+    <line class="mep-wire-swleg" x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}"/>
+    <text class="meta-text" style="font-size:8.5px;font-weight:600;" x="{:.1}" y="{:.1}">Switch Leg</text>
+    <rect class="mep-panel" x="{:.1}" y="{:.1}" width="10" height="7" rx="1"/>
+    <text class="meta-text" style="font-size:8.5px;font-weight:600;" x="{:.1}" y="{:.1}">DB</text>
+    <circle class="mep-light" cx="{:.1}" cy="{:.1}" r="4.5"/>
+    <text class="meta-text" style="font-size:8.5px;font-weight:600;" x="{:.1}" y="{:.1}">Light</text>
+    <circle class="mep-outlet" cx="{:.1}" cy="{:.1}" r="4.0"/>
+    <text class="meta-text" style="font-size:8.5px;font-weight:600;" x="{:.1}" y="{:.1}">Socket</text>
+  </g>"##,
+            ex, ey - 13.0,
+            ex + 8.0, ey - 2.0, ex + 24.0, ey - 2.0,
+            ex + 28.0, ey + 1.0,
+            ex + 74.0, ey - 2.0, ex + 90.0, ey - 2.0,
+            ex + 94.0, ey + 1.0,
+            ex + 132.0, ey - 2.0, ex + 148.0, ey - 2.0,
+            ex + 152.0, ey + 1.0,
+            ex + 210.0, ey - 5.5,
+            ex + 224.0, ey + 1.0,
+            ex + 252.0, ey - 2.0,
+            ex + 260.0, ey + 1.0,
+            ex + 298.0, ey - 2.0,
+            ex + 306.0, ey + 1.0,
+        );
     }
 
     // 6. Overall exterior + interior room dimension chains

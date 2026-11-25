@@ -1,0 +1,315 @@
+// EDL v1.4.0 Multi-Discipline Flagship (Benchmarks D & E):
+// ONE shared 8-room Villa floor plan unifying THREE engineering domains:
+//   1. Architecture (`arch`): 8 constraint-solved rooms (0 DOF), doors, windows, furniture & wet fixtures (7 checks)
+//   2. Building Electrical (`mep.elec`): DB1 panel, 5 IEC 60364 circuits (lighting, sockets, wet RCD, water heater),
+//      ceiling lights, latch-side switches & wall sockets (6 checks: M1-M6)
+//   3. Building Plumbing (`mep.plumbing`): CWS cold main, 150L hot water heater WH1, vented Ø110 soil stacks,
+//      isolation valves, floor drains, CWS/HWS/DWV pipe runs (6 checks: P1-P6 incl. MEP clash verification!)
+//
+// Render separate industry sheets from this ONE source of truth:
+//   edl preview examples/villa_3br_arch_elec_plumbing.edl --layers arch          -o out/villa_arch.svg
+//   edl preview examples/villa_3br_arch_elec_plumbing.edl --layers arch,elec     -o out/villa_elec.svg
+//   edl preview examples/villa_3br_arch_elec_plumbing.edl --layers arch,plumbing -o out/villa_plumbing.svg
+//   edl preview examples/villa_3br_arch_elec_plumbing.edl --layers all           -o out/villa_all_mep.svg
+
+project "Villa_MultiDiscipline_Arch_Elec_Plumbing" {
+  units: mm
+  frame Plan: Frame2
+
+  architecture.defaults {
+    measurement_basis: clear_interior
+    exterior_wall: 200mm
+    interior_wall: 120mm
+  }
+
+  // =========================================================================
+  // LAYER 1: ARCHITECTURAL FLOOR PLAN (8 rooms, back-to-back wet core)
+  // =========================================================================
+  room Living {
+    role: habitable
+    clear_size: (5000mm, 4200mm)
+    anchor: southwest at Plan.origin
+  }
+  room Kitchen {
+    role: habitable
+    clear_size: (3400mm, 4200mm)
+  }
+  room Utility {
+    role: service
+    clear_size: (2400mm, 4200mm)
+  }
+  room Hallway {
+    role: circulation
+    clear_size: (11040mm, 1300mm)
+  }
+  room MasterBed {
+    role: habitable
+    clear_size: (3800mm, 3600mm)
+  }
+  room MasterBath {
+    role: wet
+    clear_size: (2000mm, 3600mm)
+  }
+  room SharedBath {
+    role: wet
+    clear_size: (2000mm, 3600mm)
+  }
+  room Bedroom2 {
+    role: habitable
+  }
+
+  layout Plan {
+    // South wing
+    require Kitchen.west == Living.east + interior_wall
+    require Kitchen.south == Living.south
+    require Utility.west == Kitchen.east + interior_wall
+    require Utility.south == Living.south
+
+    // Central circulation spine
+    require Hallway.west == Living.west
+    require Hallway.south == Living.north + interior_wall
+
+    // North wing (back-to-back MasterBath + SharedBath wet core!)
+    require MasterBed.west == Hallway.west
+    require MasterBed.south == Hallway.north + interior_wall
+    require MasterBath.west == MasterBed.east + interior_wall
+    require MasterBath.south == MasterBed.south
+    require SharedBath.west == MasterBath.east + interior_wall
+    require SharedBath.south == MasterBed.south
+    require Bedroom2.west == SharedBath.east + interior_wall
+    require Bedroom2.east == Utility.east
+    require Bedroom2.south == MasterBed.south
+    require Bedroom2.north == MasterBed.north
+  }
+
+  // Doors & Passages
+  opening EntryDoor: door {
+    host: exterior(Living, south)
+    width: 900mm
+    offset: 350mm from start
+    hinge: start
+    swing: into Living
+  }
+  opening LivingHallPass: passage {
+    host: shared_wall(Living, Hallway)
+    width: 1400mm
+    offset: 2800mm from start
+  }
+  opening KitchenPass: passage {
+    host: shared_wall(Kitchen, Hallway)
+    width: 1100mm
+    align: center
+  }
+  opening UtilityDoor: door {
+    host: shared_wall(Utility, Hallway)
+    width: 800mm
+    offset: 250mm from start
+    hinge: start
+    swing: into Utility
+  }
+  opening MasterBedDoor: door {
+    host: shared_wall(Hallway, MasterBed)
+    width: 850mm
+    offset: 300mm from end
+    hinge: end
+    swing: into MasterBed
+  }
+  opening MasterBathDoor: door {
+    host: shared_wall(MasterBed, MasterBath)
+    width: 800mm
+    offset: 250mm from start
+    hinge: start
+    swing: into MasterBath
+  }
+  opening SharedBathDoor: door {
+    host: shared_wall(Hallway, SharedBath)
+    width: 800mm
+    offset: 250mm from end
+    hinge: end
+    swing: into SharedBath
+  }
+  opening Bed2Door: door {
+    host: shared_wall(Hallway, Bedroom2)
+    width: 850mm
+    offset: 250mm from start
+    hinge: start
+    swing: into Bedroom2
+  }
+
+  // Exterior Windows (natural light for all habitable rooms)
+  opening LivingWinS: window { host: exterior(Living, south)    width: 2200mm offset: 500mm from end }
+  opening LivingWinW: window { host: exterior(Living, west)     width: 1600mm align: center }
+  opening KitchenWinS: window { host: exterior(Kitchen, south)  width: 1600mm align: center }
+  opening MasterWinN: window { host: exterior(MasterBed, north) width: 1800mm align: center }
+  opening Bed2WinN:   window { host: exterior(Bedroom2, north)  width: 1500mm align: center }
+  opening Bed2WinE:   window { host: exterior(Bedroom2, east)   width: 1200mm align: center }
+
+  // Architectural Furniture & Wet Fixtures
+  fixture Sofa: sofa {
+    room: Living  size: (2400mm, 900mm)  against: west  offset: 300mm from end  clearance_front: 700mm
+  }
+  fixture DiningTable: table {
+    room: Living  size: (1400mm, 900mm)  at: (3000mm, 1600mm)  clearance_all: 500mm
+  }
+  fixture Kitchen_Sink: sink {
+    room: Kitchen  size: (1000mm, 600mm)  against: east  offset: 400mm from end  clearance_front: 700mm
+  }
+  fixture Kitchen_Counter: counter {
+    room: Kitchen  size: (1800mm, 600mm)  against: south  offset: 300mm from start  clearance_front: 700mm
+  }
+  fixture Utility_Washer: washer {
+    room: Utility  size: (650mm, 650mm)  against: south  offset: 250mm from start  clearance_front: 700mm
+  }
+  fixture Master_Bed: bed {
+    room: MasterBed  size: (1800mm, 2000mm)  against: west  offset: 600mm from end  clearance_front: 600mm
+  }
+  fixture Bed2_Bed: bed {
+    room: Bedroom2  size: (1400mm, 2000mm)  against: east  offset: 400mm from end  clearance_front: 600mm
+  }
+
+  // En-suite MasterBath wet fixtures (all hosted along east chase / north wall!)
+  fixture Master_Shower: shower {
+    room: MasterBath  size: (900mm, 900mm)  against: north  offset: 100mm from end  clearance_front: 600mm
+  }
+  fixture Master_Toilet: toilet {
+    room: MasterBath  size: (450mm, 680mm)  against: east  offset: 1350mm from start  clearance_front: 600mm
+  }
+  fixture Master_Vanity: vanity {
+    room: MasterBath  size: (850mm, 500mm)  against: east  offset: 250mm from start  clearance_front: 600mm
+  }
+
+  // SharedBath wet fixtures (back-to-back along west chase / north wall!)
+  fixture Shared_Shower: shower {
+    room: SharedBath  size: (900mm, 900mm)  against: north  offset: 100mm from start  clearance_front: 600mm
+  }
+  fixture Shared_Toilet: toilet {
+    room: SharedBath  size: (450mm, 680mm)  against: west  offset: 1350mm from start  clearance_front: 600mm
+  }
+  fixture Shared_Vanity: vanity {
+    room: SharedBath  size: (850mm, 500mm)  against: west  offset: 250mm from start  clearance_front: 600mm
+  }
+
+  // =========================================================================
+  // LAYER 2: BUILDING ELECTRICAL INSTALLATION (IEC 60364)
+  // =========================================================================
+  building_electrical HomeElec {
+    supply: 230V 50Hz
+    ceiling_height: 2700mm
+
+    // Main Distribution Board on Utility east wall (well clear of plumbing on west/south walls!)
+    panel DB1 {
+      host: wall(Utility, east)
+      offset: 1800mm from start
+      main_breaker: 80A
+      height: 1500mm
+    }
+
+    breaker C1_Light_Day: lighting {
+      from: DB1  rating: 10A  cable: 1.5mm2  rcd: 30mA  max_voltage_drop: 3%
+    }
+    breaker C2_Light_Night: lighting {
+      from: DB1  rating: 10A  cable: 1.5mm2  rcd: 30mA  max_voltage_drop: 3%
+    }
+    breaker C3_Sockets_Living: socket {
+      from: DB1  rating: 20A  cable: 2.5mm2  rcd: 30mA  max_voltage_drop: 5%
+    }
+    breaker C4_Sockets_Kitchen: socket {
+      from: DB1  rating: 20A  cable: 2.5mm2  rcd: 30mA  max_voltage_drop: 5%
+    }
+    breaker C5_WaterHeater: appliance {
+      from: DB1  rating: 16A  cable: 2.5mm2  rcd: 30mA  max_voltage_drop: 5%
+    }
+
+    // Ceiling Lights
+    light L_Living:  ceiling { room: Living     at: center  load: 42W  circuit: C1_Light_Day }
+    light L_Kitchen: ceiling { room: Kitchen    at: center  load: 36W  circuit: C1_Light_Day }
+    light L_Utility: ceiling { room: Utility    at: center  load: 18W  circuit: C1_Light_Day }
+    light L_Hall:    ceiling { room: Hallway    at: center  load: 24W  circuit: C1_Light_Day }
+    light L_Master:  ceiling { room: MasterBed  at: center  load: 30W  circuit: C2_Light_Night }
+    light L_MBath:   ceiling { room: MasterBath at: center  load: 18W  circuit: C2_Light_Night  ip: IP44 }
+    light L_SBath:   ceiling { room: SharedBath at: center  load: 18W  circuit: C2_Light_Night  ip: IP44 }
+    light L_Bed2:    ceiling { room: Bedroom2   at: center  load: 24W  circuit: C2_Light_Night }
+
+    // Latch-side Wall Switches (bath switches safely outside wet rooms!)
+    switch SW_Entry:  2gang { host: beside(EntryDoor, latch_side, 180mm)     room: Living    controls: [L_Living, L_Hall]   circuit: C1_Light_Day }
+    switch SW_Util:   1gang { host: beside(UtilityDoor, latch_side, 180mm)   room: Utility   controls: [L_Utility, L_Kitchen] circuit: C1_Light_Day }
+    switch SW_Master: 1gang { host: beside(MasterBedDoor, latch_side, 180mm) room: MasterBed controls: [L_Master]           circuit: C2_Light_Night }
+    switch SW_MBath:  1gang { host: beside(MasterBathDoor, latch_side, 180mm) room: MasterBed controls: [L_MBath]           circuit: C2_Light_Night }
+    switch SW_SBath:  1gang { host: beside(SharedBathDoor, latch_side, 180mm) room: Hallway  controls: [L_SBath]            circuit: C2_Light_Night }
+    switch SW_Bed2:   1gang { host: beside(Bed2Door, latch_side, 180mm)      room: Bedroom2  controls: [L_Bed2]             circuit: C2_Light_Night }
+
+    // Wall Outlets / Sockets
+    outlet S_Liv_N:  duplex { host: wall(Living, north)   offset: 900mm from start  height: 300mm  load: 600W  circuit: C3_Sockets_Living }
+    outlet S_Liv_E:  duplex { host: wall(Living, east)    offset: 1200mm from start height: 300mm  load: 600W  circuit: C3_Sockets_Living }
+    outlet S_MBed_S: duplex { host: wall(MasterBed, south) offset: 700mm from start height: 300mm  load: 500W  circuit: C3_Sockets_Living }
+    outlet S_Bed2_S: duplex { host: wall(Bedroom2, south) offset: 600mm from end    height: 300mm  load: 500W  circuit: C3_Sockets_Living }
+
+    outlet S_Kit_W:  duplex { host: wall(Kitchen, west)   offset: 1200mm from start height: 1100mm load: 1200W circuit: C4_Sockets_Kitchen }
+    outlet S_Kit_N:  duplex { host: wall(Kitchen, north)  offset: 400mm from start  height: 1100mm load: 1000W circuit: C4_Sockets_Kitchen }
+    outlet S_Util_E: duplex { host: wall(Utility, east)   offset: 600mm from start  height: 1100mm load: 1000W circuit: C4_Sockets_Kitchen }
+
+    // Dedicated Water Heater Fused Spur in Utility (east wall, safely >400mm from plumbing nodes!)
+    outlet S_WH_Spur: appliance { host: wall(Utility, east) offset: 3100mm from start height: 1400mm load: 2400W circuit: C5_WaterHeater }
+  }
+
+  // =========================================================================
+  // LAYER 3: BUILDING PLUMBING INSTALLATION (EN 806 / EN 12056)
+  // =========================================================================
+  building_plumbing HomePlumbing {
+    standard: "EN 806 / EN 12056"
+    supply_pressure_bar: 3.0
+
+    // Risers, Hot Water Heater & Vented Ø110 Soil Stacks (all coordinated away from DB1!)
+    riser ColdMain: cold_water { host: Utility.west  at: 2600mm  dia: 25mm }
+    heater WH1: water_heater   { host: Utility.west  at: 3400mm  capacity_l: 150  cold_in: ColdMain  cold_dia: 20mm  hot_dia: 20mm }
+
+    stack SoilKitchen: soil_stack { host: Utility.west    at: 1600mm  dia: 110mm  vented: true }
+    stack SoilShared:  soil_stack { host: SharedBath.west at: 1850mm  dia: 110mm  vented: true }
+    stack SoilMaster:  soil_stack { host: MasterBath.east at: 2200mm  dia: 110mm  vented: true }
+
+    // Isolation Shutoff Valves
+    valve V_Main: isolation_valve { system: cold  host: Utility.west  at: 2950mm  serves: "Main Cold Supply" }
+    valve V_WH1:  isolation_valve { system: hot   host: Utility.west  at: 3750mm  serves: "Hot Water Heater" }
+
+    // Bathroom Floor Drains (positioned neatly outside shower trays, clear of ceiling lights!)
+    floor_drain FD_Shared { in: SharedBath  at: (1250mm, 2450mm)  dia: 50mm  to: SoilShared  slope: "1:40" }
+    floor_drain FD_Master { in: MasterBath  at: (750mm, 2450mm)   dia: 50mm  to: SoilMaster  slope: "1:40" }
+
+    // Semantic Wet-Fixture Connections (zero manual coordinates!)
+    connect Kitchen_Sink   { cold: ColdMain  cold_dia: 15mm  hot: WH1  hot_dia: 15mm  waste: SoilKitchen  drain_dia: 50mm  slope: "1:40" }
+    connect Utility_Washer { cold: ColdMain  cold_dia: 15mm  waste: SoilKitchen  drain_dia: 50mm  slope: "1:40" }
+
+    connect Shared_Toilet  { cold: ColdMain  cold_dia: 15mm  soil: SoilShared   drain_dia: 110mm  slope: "1:60" }
+    connect Shared_Vanity  { cold: ColdMain  cold_dia: 15mm  hot: WH1  hot_dia: 15mm  waste: SoilShared  drain_dia: 40mm  slope: "1:40" }
+    connect Shared_Shower  { cold: ColdMain  cold_dia: 15mm  hot: WH1  hot_dia: 15mm  waste: SoilShared  drain_dia: 50mm  slope: "1:40" }
+
+    connect Master_Toilet  { cold: ColdMain  cold_dia: 15mm  soil: SoilMaster   drain_dia: 110mm  slope: "1:60" }
+    connect Master_Vanity  { cold: ColdMain  cold_dia: 15mm  hot: WH1  hot_dia: 15mm  waste: SoilMaster  drain_dia: 40mm  slope: "1:40" }
+    connect Master_Shower  { cold: ColdMain  cold_dia: 15mm  hot: WH1  hot_dia: 15mm  waste: SoilMaster  drain_dia: 50mm  slope: "1:40" }
+  }
+
+  verify {
+    // 6 Architectural Rules (+ T2 linear layout solve)
+    require no_room_overlap
+    require opening_jamb_margin >= 100mm
+    require no_door_swing_collision
+    require all_rooms_reachable
+    require no_fixture_collision
+    require habitable_rooms_have_window
+    // 6 Building Electrical Rules (IEC 60364)
+    require breaker_load_ok
+    require voltage_drop_ok
+    require wet_zone_clearance
+    require switch_accessible
+    require electrical_device_clear
+    require wet_circuits_rcd_protected
+  }
+
+  view PlanView: plan {
+    frame: Plan
+    sheet: A3 landscape
+    scale: 1:50
+    show_dimensions: true
+    show_labels: true
+  }
+}

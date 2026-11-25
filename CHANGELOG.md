@@ -2,6 +2,31 @@
 
 All notable releases of **EDL (Engineering Description Language)** are documented here.
 
+## [1.4.0] — 2026-11-25
+### Added
+- **Built-In Building Plumbing Overlay (`mep.plumbing`):** `building_plumbing` layered on solved `arch` floor plans (and coordinated with `mep.elec`) via `DomainEngine`, supporting `riser`, `heater`, `stack`, `valve`, `floor_drain`, and semantic `connect <Fixture>` rules.
+- **6 Exact EN 806 / EN 12056 Plumbing Verification Rules (`P1`–`P6`):** wet fixture supply coverage, soil/waste pipe sizing & self-cleansing gravity slopes, unvented trap-arm distance limits, hydraulic supply velocity (`<= 2.0 m/s`), isolation valve checks, and **automated cross-discipline `mep.plumbing` <-> `mep.elec` clash detection**.
+- **Layer-Selectable Multi-Discipline Rendering (`--layers`):** Render ONE shared `.edl` project into pure Architecture (`--layers arch`), Architectural + Electrical (`--layers arch,elec`), Architectural + Plumbing (`--layers arch,plumbing`), or combined MEP Coordination (`--layers all`), plus 19-layer AutoCAD R12 DXF (`PLUMB_COLD/HOT/DRAIN/VENT/EQUIP`), `edl plumbing-schedule [--csv]`, and `edl_plumbing_schedule` MCP tool (14 MCP tools total).
+- **Multi-Discipline Benchmark (`examples/villa_3br_arch_elec_plumbing.edl`):** 8-room family villa unifying `arch` + `mep.elec` + `mep.plumbing` with 19/19 rules `EXACTLY_CHECKED`.
+
+## [1.3.0] — 2026-11-25
+### Added
+- **Industrial Electrical & Motor Control Domain (`elec.industrial`):** `industrial_control` blocks modeling split multi-unit IEC 60617 devices (`breaker`, `overload`, `contactor`, `pushbutton`, `motor`), 3-phase main power circuits with L1↔L3 phase reversal & Star-Delta starters, and vertical 220V control ladders with automatic coil↔contact cross-reference tables.
+- **Formal Safety Verification (`I1`–`I4`):** Exhaustive Boolean mutual-interlock proof (`I1_mutual_interlock`), E-Stop/overload cutset authority (`I2_estop_overload_authority`), coil↔contact cross-reference audit (`I3`), and 3-phase sequence swap verification (`I4`).
+- **Dual IEC 60617 SVG + 6-Layer AutoCAD R12 DXF Renderer** (`IEC_POWER_BUS`, `IEC_CONTROL_WIRE`, `IEC_SYMBOLS`, `IEC_MECH_LINK`, `IEC_TEXT`, `IEC_CROSSREF`) and Benchmark C (`examples/motor_forward_reverse_star_delta.edl`).
+
+## [1.2.0] — 2026-11-25
+### Added
+- **Multi-Sheet KiCad 9 Hierarchy (`--kicad-dir`, `--sheet`, `--all-sheets`):** Automatic root `.kicad_sch` + child sheets + `(global_label)` cross-sheet nets, verified with real `kicad-cli sch erc`.
+- **2D Recursive Relative Layout Combinators (`zone`/`group` with `hstack`/`vstack`/`subzone`/`note`)** and **obstacle-aware 2.54mm grid A* orthogonal schematic router** (`src/domains/elec/router.rs`).
+- **Ergonomic `use Inst = Mod(p = v) { PORT: NET }` port-binding blocks** + numeric/`+`/`-` pin references.
+- **Benchmarks A & B:** `examples/vectron_120_multisheet.edl` (121 components, 61 nets, 4 sheets, 0 KiCad 9 ERC errors) and `examples/smps_flyback_isolated.edl` (58 discrete components, galvanic isolation `E6`, 0 KiCad 9 ERC errors).
+
+## [1.1.0] — 2026-11-25
+### Added
+- **Native KiCad 9 `.kicad_sym` Library Engine (`src/domains/elec/kicad_sym.rs`):** Scans installed KiCad 9 symbol libraries (224 libs / ~20,000+ symbols) with `extends` inheritance resolution, multi-unit extraction, `orient`/`mirror`, explicit `no_connect` markers, `edl symbols search|inspect`, and MCP `edl_symbol_search`/`edl_symbol_inspect`.
+- **Galvanic Isolation Verification (`E6`):** `require galvanic_isolation(A, B)` proving transformer/optocoupler isolation boundaries between hot & cold grounds.
+
 ## [1.0.0] — 2026-11-25
 ### Added
 - **Native Host-Tool Adapters (`adapters/`):**

@@ -4,7 +4,7 @@ use crate::core::query::{inspect_summary, measure_ir, query_ir};
 use crate::domains::elec::kicad_erc::run_and_ingest_kicad_erc;
 use crate::{
     build_bom, build_panel_schedule, compile_file, compile_source, export_bom_csv, export_dxf,
-    export_kicad_sch, export_panel_schedule_csv, export_spice_netlist, render_svg,
+    export_kicad_sch, export_panel_schedule_csv, export_spice_netlist,
     simulate_dc_and_rc,
 };
 use serde_json::{json, Value};
@@ -197,6 +197,18 @@ fn mcp_tool_schemas() -> Value {
             }
         },
         {
+            "name": "edl_plumbing_schedule",
+            "description": "Generate a Building Plumbing (mep.plumbing) pipe & equipment takeoff schedule (CWS/HWS/DWV lengths, diameters, flow velocities, gravity slopes, and valves).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "file_path": { "type": "string" },
+                    "source": { "type": "string" },
+                    "csv": { "type": "boolean" }
+                }
+            }
+        },
+        {
             "name": "edl_sync",
             "description": "Bidirectional sync: diff an edited host-tool file (KiCad .kicad_sch or DXF exported by EDL) against the .edl source of truth and produce a minimal structured patch plan (component moves -> `place`, value/footprint edits, freestanding fixture moves -> `at:`). With apply=true the patches are written to the .edl file only after the patched source re-compiles without new errors. Unrepresentable edits are returned as report_only/unsupported with a reason.",
             "inputSchema": {
@@ -307,7 +319,11 @@ fn call_mcp_tool(name: &str, args: &Value) -> Result<Value, String> {
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| "Missing required 'output_path' parameter".to_string())?;
             let annotated = args.get("annotated").and_then(|v| v.as_bool()).unwrap_or(false);
-            let svg = render_svg(&ir, annotated);
+            let layers: Option<Vec<String>> = args
+                .get("layers")
+                .and_then(|v| v.as_array())
+                .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect());
+            let svg = crate::render_svg_with_layers(&ir, annotated, layers.as_deref());
             let p = Path::new(out_path);
             if let Some(parent) = p.parent() {
                 if !parent.as_os_str().is_empty() {
@@ -374,6 +390,15 @@ fn call_mcp_tool(name: &str, args: &Value) -> Result<Value, String> {
                 let sched = build_panel_schedule(&ir);
                 serde_json::to_value(&sched).map_err(|e| e.to_string())
             }
+        }
+        "edl_plumbing_schedule" => {
+            let ir = compile_from_args(args, "file_path", "source")?;
+            let csv = args.get("csv").and_then(|v| v.as_bool()).unwrap_or(false);
+            let models = crate::domains::mep_plumbing::render::extract_plumbing_models(&ir);
+            Ok(json!({
+                "schedule": crate::format_plumbing_schedule(&ir, csv),
+                "models": models,
+            }))
         }
         "edl_sync" => {
             let file = args

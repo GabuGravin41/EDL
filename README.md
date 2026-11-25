@@ -8,7 +8,7 @@ An AI-native, typed, declarative language, Rust compiler, and native MCP server 
 - **Honest verification + machine-readable repair plans:** Every check produces a typed evidence record (`EXACTLY_CHECKED`, `VIOLATED`, `UNVERIFIED`) plus structured `RepairAction` suggestions so AI agents can self-repair deterministically.
 - **Bidirectional host-tool sync + automated target-side validation:** `.edl` stays the typed source of truth while humans work visually in KiCad / AutoCAD; exports carry stable `EDL_ID` tags, `edl sync` turns visual edits into verified minimal `.edl` patches, and `--kicad-erc` ingests real `kicad-cli sch erc` results into EDL's evidence ledger.
 
-## What Works Today (v1.0.0 — 38 Rust Tests + 2 Host-Adapter Suites Passing, 6/6 KiCad 9 ERCs Passing)
+## What Works Today (v1.4.0 — 49 Rust Tests + 2 Host-Adapter Suites Passing, 5 Built-In Domains, 14 MCP Tools, Real KiCad 9 ERC Verified Across 120+ Component Multi-Sheet Boards)
 
 ### Cross-Domain Core, Composition & AI Tooling (`v0.4`–`v0.6`)
 - **Modular compiler architecture:** `src/core/` (spans + repair actions, SI units including `H/mH/uH/nH`, 2D analytical geometry, Canonical IR, semantic query/measure, semantic diff), `src/syntax/` (lexer, AST, parser, import/module elaborator), `src/domains/{arch,elec}/`, and `src/mcp.rs`.

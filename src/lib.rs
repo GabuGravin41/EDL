@@ -56,9 +56,22 @@ pub fn export_panel_schedule_csv(ir: &CanonicalIr) -> String {
     domains::mep_elec::schedule::export_panel_schedule_csv(ir)
 }
 
+pub fn format_plumbing_schedule(ir: &CanonicalIr, csv: bool) -> String {
+    domains::mep_plumbing::render::format_plumbing_schedule(ir, csv)
+}
+
 /// Domain-dispatched SVG preview renderer (base engine + overlay engines via the registry).
 pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
     domains::registry::DomainRegistry::builtin().render_svg(ir, annotated)
+}
+
+/// Domain-dispatched SVG renderer with layer selection (`arch`, `elec`, `plumbing`, `all`).
+pub fn render_svg_with_layers(
+    ir: &CanonicalIr,
+    annotated: bool,
+    layers: Option<&[String]>,
+) -> String {
+    domains::registry::DomainRegistry::builtin().render_svg_with_layers(ir, annotated, layers)
 }
 
 pub fn export_dxf(ir: &CanonicalIr) -> String {
@@ -767,7 +780,7 @@ project "BadNotch" {
         }))
         .unwrap();
         let tools = list["result"]["tools"].as_array().unwrap();
-        assert_eq!(tools.len(), 13);
+        assert_eq!(tools.len(), 14);
 
         let call = crate::mcp::handle_jsonrpc_request(&json!({
             "jsonrpc": "2.0",

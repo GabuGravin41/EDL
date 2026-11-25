@@ -125,13 +125,14 @@ impl DomainRegistry {
         DomainRegistry { engines: Vec::new() }
     }
 
-    /// The domains that ship with EDL: `arch`, `elec` (base) and `mep.elec` (overlay on `arch`).
+    /// The domains that ship with EDL: `arch`, `elec`, `elec.industrial` (base) and `mep.elec`, `mep.plumbing` (overlays on `arch`).
     pub fn builtin() -> Self {
         let mut r = Self::empty();
         r.register(Box::new(ArchDomain));
         r.register(Box::new(ElecDomain));
         r.register(Box::new(super::industrial::IndustrialControlDomain));
         r.register(Box::new(MepElecDomain));
+        r.register(Box::new(super::mep_plumbing::MepPlumbingDomain));
         r
     }
 
@@ -207,18 +208,62 @@ impl DomainRegistry {
 
     /// Render the preview: the base engine owning `ir.project.domain`, then every overlay's model-space fragment.
     pub fn render_svg(&self, ir: &CanonicalIr, annotated: bool) -> String {
-        let mut svg = self
-            .engines
-            .iter()
-            .rev()
-            .filter(|e| e.role() == DomainRole::Base)
-            .find_map(|e| e.render_svg(ir, annotated))
-            .unwrap_or_else(|| String::from("<svg xmlns=\"http://www.w3.org/2000/svg\"/>"));
+        self.render_svg_with_layers(ir, annotated, None)
+    }
+
+    /// Render the preview with optional discipline layer selection (`arch`, `elec`/`mep.elec`, `plumbing`/`mep.plumbing`, or `all`).
+    pub fn render_svg_with_layers(
+        &self,
+        ir: &CanonicalIr,
+        annotated: bool,
+        layers: Option<&[String]>,
+    ) -> String {
+        let want_all = layers
+            .map(|ls| ls.is_empty() || ls.iter().any(|s| s.eq_ignore_ascii_case("all")))
+            .unwrap_or(true);
+        let want_elec = want_all
+            || layers
+                .map(|ls| {
+                    ls.iter().any(|s| {
+                        let low = s.to_ascii_lowercase();
+                        low == "elec" || low == "mep.elec" || low == "electrical" || low == "mep"
+                    })
+                })
+                .unwrap_or(true);
+
+        let is_arch = ir.project.domain == "architecture"
+            || ir.project.domain.starts_with("arch")
+            || ir.project.domain.is_empty();
+
+        let mut svg = if is_arch {
+            super::arch::svg::render_svg_filtered(ir, annotated, want_elec)
+        } else {
+            self.engines
+                .iter()
+                .rev()
+                .filter(|e| e.role() == DomainRole::Base)
+                .find_map(|e| e.render_svg(ir, annotated))
+                .unwrap_or_else(|| String::from("<svg xmlns=\"http://www.w3.org/2000/svg\"/>"))
+        };
         if let Some(view) = ViewTransform::parse(&svg) {
             let frags: String = self
                 .engines
                 .iter()
                 .filter(|e| e.role() == DomainRole::Overlay)
+                .filter(|e| {
+                    if want_all {
+                        return true;
+                    }
+                    let id = e.id().to_ascii_lowercase();
+                    layers.map(|ls| {
+                        ls.iter().any(|s| {
+                            let low = s.to_ascii_lowercase();
+                            low == id
+                                || (id == "mep.plumbing" && (low == "plumbing" || low == "mep"))
+                                || (id == "mep.elec" && (low == "elec" || low == "electrical" || low == "mep"))
+                        })
+                    }).unwrap_or(true)
+                })
                 .filter_map(|e| {
                     e.render_overlay(ir, &view)
                         .map(|f| format!("  <g id=\"overlay-{}\">\n{}\n  </g>\n", e.id(), f))
