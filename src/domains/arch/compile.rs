@@ -1467,6 +1467,11 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
             scale: v.scale.clone(),
             show_dimensions: v.show_dimensions,
             show_labels: v.show_labels,
+            title: None,
+            rev: None,
+            author: None,
+            sheet_index: None,
+            sheet_total: None,
         })
         .collect();
 

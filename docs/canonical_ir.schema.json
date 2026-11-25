@@ -764,7 +764,7 @@
       "type": "object"
     },
     "NetTerminalIr": {
-      "description": "Local schematic terminal graphics (GND triangle, upward power bar, or named net-label stub).",
+      "description": "Local schematic terminal graphics (GND triangle, upward power bar, named net-label stub, or global flag).",
       "properties": {
         "dir": {
           "$ref": "#/definitions/Side"
@@ -1072,10 +1072,16 @@
       "type": "object"
     },
     "SchematicGroupIr": {
-      "description": "Presentation-layer schematic group container.",
+      "description": "Presentation-layer schematic group / zone container.",
       "properties": {
         "bbox": {
           "$ref": "#/definitions/Rect2"
+        },
+        "border": {
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "members": {
           "items": {
@@ -1085,6 +1091,30 @@
         },
         "name": {
           "type": "string"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "sheet": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subzones": {
+          "items": {
+            "$ref": "#/definitions/SchematicSubZoneIr"
+          },
+          "type": "array"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "required": [
@@ -1128,6 +1158,12 @@
           },
           "type": "array"
         },
+        "sheet": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "style": {
           "type": "string"
         },
@@ -1145,6 +1181,22 @@
         "net_id",
         "segments",
         "style"
+      ],
+      "type": "object"
+    },
+    "SchematicSubZoneIr": {
+      "description": "Sub-zone divider inside a framed schematic zone (e.g., \"DECOUPLING CAPACITORS\" or \"ADDRESS SWITCHING\").",
+      "properties": {
+        "bbox": {
+          "$ref": "#/definitions/Rect2"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "bbox",
+        "title"
       ],
       "type": "object"
     },
@@ -1349,6 +1401,12 @@
     },
     "ViewIr": {
       "properties": {
+        "author": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "frame": {
           "type": "string"
         },
@@ -1358,17 +1416,45 @@
         "kind": {
           "type": "string"
         },
+        "rev": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "scale": {
           "type": "string"
         },
         "sheet": {
           "type": "string"
         },
+        "sheet_index": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "sheet_total": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
         "show_dimensions": {
           "type": "boolean"
         },
         "show_labels": {
           "type": "boolean"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "required": [

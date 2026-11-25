@@ -1,0 +1,660 @@
+// EDL Benchmark A — 126-Component, 4-Sheet Production Flight Controller ("VECTRON-V2")
+// Modeled directly on real-world multi-sheet KiCad 9 production schematics:
+//   - Native KiCad 9 `.kicad_sym` symbols (BMP280, MPU-6050, LSM6DSL, DS3231MZ, AMS1117-3.3, BC547, Buzzer, SolderJumper, Device:R/C/LED/D_Schottky)
+//   - 4 hierarchical sheets with automatic cross-sheet global net flags & KiCad 9 multi-sheet ERC
+//   - Framed solid zones, dashed internal subzones ("DECOUPLING CAPACITORS", "ADDRESS SWITCHING"), 2D hstack/vstack layout, and inline note boxes
+
+project "VECTRON_V2_120" {
+    units: mm
+    frame Sheet: Frame2
+
+    // =========================================================================
+    // Reusable Sub-Circuit Modules (keep 126 components clean & maintainable!)
+    // =========================================================================
+
+    module DecouplingPair(c_val = 100nF) {
+        component C1: "Device:C" { value: c_val }
+        component C2: "Device:C" { value: c_val }
+        net _VCC { connect: [C1.1, C2.1] }
+        net _GND { connect: [C1.2, C2.2] }
+        bind VCC -> C1.1
+        bind GND -> C1.2
+    }
+
+    module AddrSelectJumper(r_val = 10kohm) {
+        component JP: "Jumper:SolderJumper_3_Open" { value: "Jumper" }
+        component R:  "Device:R" { value: r_val }
+        net _MID { connect: [JP.2, R.1] }
+        bind VCC -> JP.1
+        bind GND -> JP.3
+        bind OUT -> R.1
+        bind GND -> R.2
+    }
+
+    module StatusLed(r_val = 470ohm, color = "LED_Green") {
+        component R: "Device:R"   { value: r_val  orient: 90 }
+        component D: "Device:LED" { value: color }
+        net _A { connect: [R.2, D.2] }
+        bind IN  -> R.1
+        bind GND -> D.1
+    }
+
+    module I2cPullups(r_val = 4.7kohm) {
+        component R_SDA: "Device:R" { value: r_val }
+        component R_SCL: "Device:R" { value: r_val }
+        net _V { connect: [R_SDA.1, R_SCL.1] }
+        bind VCC -> R_SDA.1
+        bind SDA -> R_SDA.2
+        bind SCL -> R_SCL.2
+    }
+
+    module RcFilterChannel(r_val = 1kohm, c_val = 100nF) {
+        component R: "Device:R" { value: r_val  orient: 90 }
+        component C: "Device:C" { value: c_val }
+        net _OUT { connect: [R.2, C.1] }
+        bind IN  -> R.1
+        bind OUT -> R.2
+        bind GND -> C.2
+    }
+
+    module ActuatorDriver(r_gate = 1kohm, r_pd = 10kohm) {
+        component RG:  "Device:R"              { value: r_gate  orient: 90 }
+        component RPD: "Device:R"              { value: r_pd }
+        component Q:   "Transistor_BJT:BC547"  { value: "SS8050" }
+        component D:   "Device:D_Schottky"     { value: "SS24" }
+        component RL:  "Device:R"              { value: 100ohm }
+        net _BASE { connect: [RG.2, RPD.1, Q.B] }
+        net _COL  { connect: [Q.C, D.2, RL.2] }
+        bind CTRL -> RG.1
+        bind VCC  -> D.1
+        bind VCC  -> RL.1
+        bind GND  -> RPD.2
+        bind GND  -> Q.E
+    }
+
+    // =========================================================================
+    // Complete Electrical Circuit (~126 Components, Full Connectivity)
+    // =========================================================================
+    circuit VectronBoard {
+        // ---- SHEET 1: POWER DISTRIBUTION (28 components) ----
+        component J_USB: connector {
+            value: "USB_C_5V"
+            pin VBUS: power_out (5V)
+            pin GND:  ground (0V)
+            pin DP:   bidir
+            pin DM:   bidir
+        }
+        component F101: fuse {
+            value: "2A_PTC"
+            pin A: passive
+            pin B: passive
+        }
+        component D101: "Device:D_Schottky" { value: "SS34"  orient: 90 }
+        component C101: "Device:C" { value: 22uF }
+        component C102: "Device:C" { value: 100nF }
+
+        // Primary 3.3V Digital LDO
+        component U101: "Regulator_Linear:AMS1117-3.3" { value: "AMS1117-3.3" }
+        component C103: "Device:C" { value: 10uF }
+        component C104: "Device:C" { value: 22uF }
+        component C105: "Device:C" { value: 100nF }
+        use LedPwr3V3 = StatusLed(r_val = 1kohm, color = "Green_3V3") { IN: V3V3, GND: GND }
+
+        // Dedicated Low-Noise 3.3V Sensor Rail LDO
+        component U102: "Regulator_Linear:AMS1117-3.3" { value: "AMS1117-3.3" }
+        component C106: "Device:C" { value: 10uF }
+        component C107: "Device:C" { value: 22uF }
+        component C108: "Device:C" { value: 100nF }
+        use LedPwrSens = StatusLed(r_val = 1kohm, color = "Blue_SENS") { IN: V3V3_SENS, GND: GND }
+
+        // Coin-Cell RTC Backup + VBAT Sense Divider
+        component BT101: connector {
+            value: "CR1220_3V"
+            pin POS: power_out (3V)
+            pin NEG: ground (0V)
+        }
+        component D102: "Device:D_Schottky" { value: "BAT54"  orient: 90 }
+        component C109: "Device:C" { value: 100nF }
+        component R101: "Device:R" { value: 100kohm }
+        component R102: "Device:R" { value: 100kohm }
+        component C110: "Device:C" { value: 100nF }
+
+        // USB Data Series Termination + Pullup
+        component R103: "Device:R" { value: 22ohm  orient: 90 }
+        component R104: "Device:R" { value: 22ohm  orient: 90 }
+        component C111: "Device:C" { value: 10uF }
+        component C112: "Device:C" { value: 100nF }
+        component R105: "Device:R" { value: 10kohm }
+
+        // ---- SHEET 2: MCU CORE & CLOCK/DEBUG (28 components) ----
+        component U201: ic {
+            value: "STM32F405RGT6"
+            footprint: "Package_QFP:LQFP-64_10x10mm_P0.5mm"
+            pin VDD:      power_in (2.0V..3.6V) side: north
+            pin VDDA:     power_in (2.0V..3.6V) side: north
+            pin GND:      ground (0V)           side: south
+            pin NRST:     input                 side: west
+            pin OSC_IN:   input                 side: west
+            pin OSC_OUT:  output                side: west
+            pin USB_DP:   bidir                 side: west
+            pin USB_DM:   bidir                 side: west
+            pin VBAT_ADC: input                 side: west
+            pin SWDIO:    bidir                 side: west
+            pin SWCLK:    input                 side: west
+            pin SDA1:     bidir                 side: east
+            pin SCL1:     output                side: east
+            pin SDA2:     bidir                 side: east
+            pin SCL2:     output                side: east
+            pin BMP_CSB:  output                side: east
+            pin LSM_CS:   output                side: east
+            pin BUZZER:   output                side: east
+            pin ACT1:     output                side: east
+            pin ACT2:     output                side: east
+            pin ACT3:     output                side: east
+            pin ACT4:     output                side: east
+            pin TELEM1:   output                side: east
+            pin TELEM2:   output                side: east
+            pin TELEM3:   output                side: east
+            pin TELEM4:   output                side: east
+            pin LED_STAT: output                side: east
+            pin LED_ERR:  output                side: east
+        }
+        use McuDecA = DecouplingPair(c_val = 100nF) { VCC: V3V3, GND: GND }
+        use McuDecB = DecouplingPair(c_val = 100nF) { VCC: V3V3, GND: GND }
+        use McuDecC = DecouplingPair(c_val = 1uF)   { VCC: V3V3, GND: GND }
+        use McuDecD = DecouplingPair(c_val = 100nF) { VCC: V3V3, GND: GND }
+
+        // Crystal + Load Caps + Reset RC + SWD Header
+        component Y201: crystal {
+            value: "16MHz"
+            pin A: passive side: west
+            pin B: passive side: east
+        }
+        component C201: "Device:C" { value: 18pF }
+        component C202: "Device:C" { value: 18pF }
+        component R201: "Device:R" { value: 10kohm }
+        component C203: "Device:C" { value: 100nF }
+        component SW201: switch {
+            value: "RST_BTN"
+            pin A: passive
+            pin B: passive
+        }
+        component J_SWD: connector {
+            value: "SWD_HDR"
+            pin VDD:   power_in (2.0V..3.6V)
+            pin SWDIO: bidir
+            pin SWCLK: output
+            pin NRST:  output
+            pin GND:   ground (0V)
+        }
+        use I2c1Pull = I2cPullups(r_val = 4.7kohm) { VCC: V3V3_SENS, SDA: SDA1, SCL: SCL1 }
+        use I2c2Pull = I2cPullups(r_val = 4.7kohm) { VCC: V3V3_SENS, SDA: SDA2, SCL: SCL2 }
+        use LedStat  = StatusLed(r_val = 470ohm, color = "Blue_STAT") { IN: LED_STAT, GND: GND }
+        use LedErr   = StatusLed(r_val = 470ohm, color = "Red_ERR")   { IN: LED_ERR,  GND: GND }
+        component L201: inductor {
+            value: "10uH_FB"
+            pin A: passive
+            pin B: passive
+        }
+        component C204: "Device:C" { value: 1uF }
+        component C205: "Device:C" { value: 100nF }
+
+        // ---- SHEET 3: REDUNDANT SENSORS & BUZZER (40 components — modeled on VECTRON-V1 Image 3!) ----
+        // Zone 1: BMP280 Primary
+        component U401: "Sensor_Pressure:BMP280" {}
+        component R401: "Device:R" { value: 10kohm  orient: 90 }
+        use Bmp1Dec = DecouplingPair(c_val = 100nF)   { VCC: V3V3_SENS, GND: GND }
+        use Bmp1Jmp = AddrSelectJumper(r_val = 10kohm) { VCC: V3V3_SENS, GND: GND, OUT: BMP1_SDO }
+
+        // Zone 2: BMP280 Redundant
+        component U402: "Sensor_Pressure:BMP280" {}
+        component R402: "Device:R" { value: 10kohm  orient: 90 }
+        use Bmp2Dec = DecouplingPair(c_val = 100nF)   { VCC: V3V3_SENS, GND: GND }
+        use Bmp2Jmp = AddrSelectJumper(r_val = 10kohm) { VCC: V3V3_SENS, GND: GND, OUT: BMP2_SDO }
+
+        // Zone 3: MPU-6050 6-Axis IMU
+        component U403: "Sensor_Motion:MPU-6050" {
+            no_connect: [INT, AUX_DA, AUX_CL]
+        }
+        component C411: "Device:C" { value: 100nF }
+        component C412: "Device:C" { value: 2.2nF }
+        use MpuDec = DecouplingPair(c_val = 100nF)    { VCC: V3V3_SENS, GND: GND }
+        use MpuJmp = AddrSelectJumper(r_val = 10kohm) { VCC: V3V3_SENS, GND: GND, OUT: MPU_AD0 }
+
+        // Zone 4: LSM6DSL Redundant 6-Axis IMU
+        component U404: "Sensor_Motion:LSM6DSL" {
+            no_connect: [SDX, SCX, INT1, INT2]
+        }
+        component R405: "Device:R" { value: 10kohm  orient: 90 }
+        use LsmDec = DecouplingPair(c_val = 100nF)    { VCC: V3V3_SENS, GND: GND }
+        use LsmJmp = AddrSelectJumper(r_val = 10kohm) { VCC: V3V3_SENS, GND: GND, OUT: LSM_SA0 }
+
+        // Zone 5: DS3231MZ Precision RTC
+        component U405: "Timer_RTC:DS3231MZ" {
+            no_connect: [1, 3]
+        }
+        component R406: "Device:R" { value: 10kohm }
+        use RtcDec = DecouplingPair(c_val = 100nF)    { VCC: V3V3_SENS, GND: GND }
+
+        // Zone 6: Passive Buzzer Driver (exact Image 3 topology: R + BC547 + SS24 flyback + Buzzer!)
+        component LS401: "Device:Buzzer"         { value: "CMT-8530S-SMT" }
+        component D401:  "Device:D_Schottky"     { value: "SS24" }
+        component Q401:  "Transistor_BJT:BC547"  { value: "SS8050" }
+        component R407:  "Device:R"              { value: 1kohm  orient: 90 }
+        component R408:  "Device:R"              { value: 10kohm }
+
+        // ---- SHEET 4: TELEMETRY FILTERS & 4x ACTUATOR DRIVERS (32 components) ----
+        use ActCh1 = ActuatorDriver(r_gate = 1kohm, r_pd = 10kohm) { CTRL: ACT1, VCC: V5_PROT, GND: GND }
+        use ActCh2 = ActuatorDriver(r_gate = 1kohm, r_pd = 10kohm) { CTRL: ACT2, VCC: V5_PROT, GND: GND }
+        use ActCh3 = ActuatorDriver(r_gate = 1kohm, r_pd = 10kohm) { CTRL: ACT3, VCC: V5_PROT, GND: GND }
+        use ActCh4 = ActuatorDriver(r_gate = 1kohm, r_pd = 10kohm) { CTRL: ACT4, VCC: V5_PROT, GND: GND }
+
+        use TelFlt1 = RcFilterChannel(r_val = 1kohm, c_val = 100nF) { IN: TELEM1, OUT: TX_OUT1, GND: GND }
+        use TelFlt2 = RcFilterChannel(r_val = 1kohm, c_val = 100nF) { IN: TELEM2, OUT: TX_OUT2, GND: GND }
+        use TelFlt3 = RcFilterChannel(r_val = 1kohm, c_val = 100nF) { IN: TELEM3, OUT: TX_OUT3, GND: GND }
+        use TelFlt4 = RcFilterChannel(r_val = 1kohm, c_val = 100nF) { IN: TELEM4, OUT: TX_OUT4, GND: GND }
+
+        component J_TEL: connector {
+            value: "TELEM_4CH"
+            pin CH1: input
+            pin CH2: input
+            pin CH3: input
+            pin CH4: input
+            pin GND: ground (0V)
+        }
+        use TelDec = DecouplingPair(c_val = 100nF) { VCC: V5_PROT, GND: GND }
+        component R501: "Device:R" { value: 10kohm }
+
+        // =========================================================================
+        // Connectivity Nets
+        // =========================================================================
+        net VBUS      { connect: [J_USB.VBUS, F101.A] }
+        net VBUS_FUSE { connect: [F101.B, D101.2] }
+        net V5_PROT   {
+            power_flag: true
+            connect: [D101.1, C101.1, C102.1, C111.1, C112.1, U101.VI, C103.1, U102.VI, C106.1, R101.1, R501.1]
+        }
+        net V3V3      {
+            power_flag: true
+            connect: [U101.VO, C104.1, C105.1, R105.1, U201.VDD, R201.1, J_SWD.VDD, L201.A]
+        }
+        net VDDA_FILT { connect: [L201.B, U201.VDDA, C204.1, C205.1] }
+        net V3V3_SENS {
+            power_flag: true
+            connect: [U102.VO, C107.1, C108.1, U401.VDD, U401.VDDIO, R401.1, U402.VDD, U402.VDDIO, R402.1, U403.VDD, U403.VLOGIC, U404.VDD, U404.VDDIO, R405.1, U405.VCC, R406.1, LS401.1, D401.1]
+        }
+        net VBAT_RAW  { connect: [BT101.POS, D102.2] }
+        net BATT_RTC  {
+            power_flag: true
+            connect: [D102.1, C109.1, U405.VBAT]
+        }
+        net GND       {
+            connect: [
+                J_USB.GND, C101.2, C102.2, C111.2, C112.2, U101.GND, C103.2, C104.2, C105.2,
+                U102.GND, C106.2, C107.2, C108.2, BT101.NEG, C109.2, R102.2, C110.2, R105.2,
+                U201.GND, C201.2, C202.2, C203.2, SW201.B, J_SWD.GND, C204.2, C205.2,
+                U401.GND, U402.GND, U403.GND, U403.FSYNC, U403.CLKIN, C411.2, C412.2,
+                U404.GND, U405.GND, Q401.E, R408.2, J_TEL.GND, R501.2
+            ]
+        }
+
+        // Power-sense, USB, Clock, Reset, SWD
+        net VBAT_ADC  { connect: [R101.2, R102.1, C110.1, U201.VBAT_ADC] }
+        net USB_DP_R  { connect: [J_USB.DP, R103.1] }
+        net USB_DM_R  { connect: [J_USB.DM, R104.1] }
+        net USB_DP    { connect: [R103.2, U201.USB_DP] }
+        net USB_DM    { connect: [R104.2, U201.USB_DM] }
+        net OSC_IN    { connect: [U201.OSC_IN,  Y201.A, C201.1] }
+        net OSC_OUT   { connect: [U201.OSC_OUT, Y201.B, C202.1] }
+        net NRST      { connect: [U201.NRST, R201.2, C203.1, SW201.A, J_SWD.NRST] }
+        net SWDIO     { connect: [U201.SWDIO, J_SWD.SWDIO] }
+        net SWCLK     { connect: [U201.SWCLK, J_SWD.SWCLK] }
+
+        // Cross-sheet I2C buses & sensor signals
+        net SDA1      { connect: [U201.SDA1, U401.SDI, U403.SDA, U405.SDA] }
+        net SCL1      { connect: [U201.SCL1, U401.SCK, U403.SCL, U405.SCL] }
+        net SDA2      { connect: [U201.SDA2, U402.SDI, U404.SDA] }
+        net SCL2      { connect: [U201.SCL2, U402.SCK, U404.SCL] }
+        net BMP_CSB   { connect: [U201.BMP_CSB, R401.2, U401.CSB, R402.2, U402.CSB] }
+        net LSM_CS    { connect: [U201.LSM_CS, R405.2, U404.CS] }
+        net BMP1_SDO  { connect: [U401.SDO] }
+        net BMP2_SDO  { connect: [U402.SDO] }
+        net MPU_AD0   { connect: [U403.AD0] }
+        net LSM_SA0   { connect: [U404.1] }
+        net MPU_CPOUT { connect: [U403.CPOUT, C411.1] }
+        net MPU_REG   { connect: [U403.REGOUT, C412.1] }
+        net RTC_RST   { connect: [U405.RST, R406.2] }
+
+        // Buzzer driver local nets
+        net BUZZER    { connect: [U201.BUZZER, R407.1] }
+        net BUZ_BASE  { connect: [R407.2, R408.1, Q401.B] }
+        net BUZ_DRIVE { connect: [LS401.2, D401.2, Q401.C] }
+
+        // Cross-sheet LED, Actuator & Telemetry signals
+        net LED_STAT  { connect: [U201.LED_STAT] }
+        net LED_ERR   { connect: [U201.LED_ERR] }
+        net ACT1      { connect: [U201.ACT1] }
+        net ACT2      { connect: [U201.ACT2] }
+        net ACT3      { connect: [U201.ACT3] }
+        net ACT4      { connect: [U201.ACT4] }
+        net TELEM1    { connect: [U201.TELEM1] }
+        net TELEM2    { connect: [U201.TELEM2] }
+        net TELEM3    { connect: [U201.TELEM3] }
+        net TELEM4    { connect: [U201.TELEM4] }
+        net TX_OUT1   { connect: [J_TEL.CH1] }
+        net TX_OUT2   { connect: [J_TEL.CH2] }
+        net TX_OUT3   { connect: [J_TEL.CH3] }
+        net TX_OUT4   { connect: [J_TEL.CH4] }
+    }
+
+    // =========================================================================
+    // SHEET 1/4: POWER DISTRIBUTION
+    // =========================================================================
+    schematic Power {
+        sheet: A3 landscape
+        title: "Power Distribution & Protection"
+        rev: "2.0.0"
+        author: "EDL v1.2"
+
+        zone USB_INPUT {
+            title: "USB-C 5V INPUT & PROTECTION"
+            hstack {
+                J_USB
+                vstack {
+                    hstack { F101  D101 }
+                    hstack { R103  R104 }
+                }
+                subzone "BULK & BYPASS" {
+                    hstack { C101  C102  C111  C112 }
+                }
+            }
+            note "2A PTC polyfuse + SS34 reverse-current Schottky"
+        }
+
+        zone LDO_3V3_DIG {
+            title: "3.3V DIGITAL RAIL (AMS1117-3.3)"
+            hstack {
+                C103
+                U101
+                subzone "OUTPUT CAPS" {
+                    hstack { C104  C105 }
+                }
+                vstack { LedPwr3V3_R  LedPwr3V3_D }
+            }
+        }
+
+        zone LDO_3V3_SENS {
+            title: "3.3V LOW-NOISE SENSOR RAIL"
+            hstack {
+                C106
+                U102
+                subzone "OUTPUT CAPS" {
+                    hstack { C107  C108 }
+                }
+                vstack { LedPwrSens_R  LedPwrSens_D }
+            }
+        }
+
+        zone RTC_BACKUP_SENSE {
+            title: "RTC BATTERY BACKUP & VBAT SENSE"
+            hstack {
+                BT101
+                D102
+                C109
+                subzone "VBAT DIVIDER (1:2)" {
+                    hstack { R101  R102  C110  R105 }
+                }
+            }
+        }
+
+        layout {
+            row [USB_INPUT, LDO_3V3_DIG]
+            row [LDO_3V3_SENS, RTC_BACKUP_SENSE]
+            group_gap: 20.32mm
+            row_gap: 22.86mm
+        }
+        routing {
+            default: zone_local
+            power: symbol
+            ground: symbol
+        }
+    }
+
+    // =========================================================================
+    // SHEET 2/4: MCU CORE, CLOCK, DEBUG & PULL-UPS
+    // =========================================================================
+    schematic MCU_Core {
+        sheet: A3 landscape
+        title: "STM32F405 Flight Controller Core"
+        rev: "2.0.0"
+        author: "EDL v1.2"
+
+        zone MCU_MAIN {
+            title: "STM32F405RGT6 MCU"
+            hstack {
+                U201
+                subzone "VDD DECOUPLING" {
+                    vstack {
+                        hstack { McuDecA_C1  McuDecA_C2  McuDecB_C1  McuDecB_C2 }
+                        hstack { McuDecC_C1  McuDecC_C2  McuDecD_C1  McuDecD_C2 }
+                    }
+                }
+            }
+        }
+
+        zone CLOCK_RESET {
+            title: "16MHz HSE CRYSTAL & RESET"
+            hstack {
+                subzone "HSE 16MHz" {
+                    vstack { Y201  hstack { C201  C202 } }
+                }
+                subzone "NRST RC" {
+                    hstack { R201  C203  SW201 }
+                }
+                subzone "VDDA FILTER" {
+                    hstack { L201  C204  C205 }
+                }
+            }
+        }
+
+        zone DEBUG_I2C_LEDS {
+            title: "SWD DEBUG, I2C PULL-UPS & STATUS LEDS"
+            hstack {
+                J_SWD
+                subzone "I2C1 & I2C2 PULL-UPS" {
+                    hstack { I2c1Pull_R_SDA  I2c1Pull_R_SCL  I2c2Pull_R_SDA  I2c2Pull_R_SCL }
+                }
+                subzone "STATUS LEDS" {
+                    vstack {
+                        hstack { LedStat_R  LedStat_D }
+                        hstack { LedErr_R   LedErr_D }
+                    }
+                }
+            }
+        }
+
+        layout {
+            row [MCU_MAIN, CLOCK_RESET]
+            row [DEBUG_I2C_LEDS]
+            group_gap: 20.32mm
+            row_gap: 22.86mm
+        }
+        routing {
+            default: zone_local
+            power: symbol
+            ground: symbol
+        }
+    }
+
+    // =========================================================================
+    // SHEET 3/4: REDUNDANT SENSORS & BUZZER (Modeled directly on VECTRON-V1 Image 3!)
+    // =========================================================================
+    schematic Sensors_Redundant {
+        sheet: A2 landscape
+        title: "Redundant Barometer, Dual IMU, RTC & Buzzer"
+        rev: "2.0.0"
+        author: "EDL v1.2"
+
+        zone BMP280_PRI {
+            title: "BMP280 (PRIMARY)"
+            hstack {
+                vstack { R401  U401 }
+                subzone "DECOUPLING CAPACITORS" {
+                    hstack { Bmp1Dec_C1  Bmp1Dec_C2 }
+                }
+                subzone "ADDRESS SWITCHING" {
+                    hstack { Bmp1Jmp_JP  Bmp1Jmp_R }
+                }
+            }
+            note "I2C1 Addr: SDO=GND -> 0x76 | SDO=VDD -> 0x77"
+        }
+
+        zone BMP280_RED {
+            title: "BMP280 (REDUNDANT)"
+            hstack {
+                vstack { R402  U402 }
+                subzone "DECOUPLING CAPACITORS" {
+                    hstack { Bmp2Dec_C1  Bmp2Dec_C2 }
+                }
+                subzone "ADDRESS SWITCHING" {
+                    hstack { Bmp2Jmp_JP  Bmp2Jmp_R }
+                }
+            }
+            note "I2C2 Redundant Barometer (CSB pulled high)"
+        }
+
+        zone MPU6050_IMU {
+            title: "MPU-6050 (6-AXIS IMU)"
+            hstack {
+                U403
+                subzone "CHARGE PUMP & REG" {
+                    hstack { C411  C412 }
+                }
+                subzone "DECOUPLING CAPACITORS" {
+                    hstack { MpuDec_C1  MpuDec_C2 }
+                }
+                subzone "ADDRESS SWITCHING" {
+                    hstack { MpuJmp_JP  MpuJmp_R }
+                }
+            }
+            note "I2C1 Addr: AD0=GND -> 0x68 | AD0=VDD -> 0x69"
+        }
+
+        zone PASSIVE_BUZZER {
+            title: "PASSIVE BUZZER DRIVER"
+            hstack {
+                vstack { R407  R408 }
+                Q401
+                vstack { LS401  D401 }
+            }
+            note "SS8050 low-side NPN + SS24 flyback clamp"
+        }
+
+        zone LSM6DSL_IMU {
+            title: "LSM6DSL (REDUNDANT IMU)"
+            hstack {
+                vstack { R405  U404 }
+                subzone "DECOUPLING CAPACITORS" {
+                    hstack { LsmDec_C1  LsmDec_C2 }
+                }
+                subzone "ADDRESS SWITCHING" {
+                    hstack { LsmJmp_JP  LsmJmp_R }
+                }
+            }
+            note "I2C2 Redundant IMU (1.71V..3.6V)"
+        }
+
+        zone RTC_DS3231 {
+            title: "RTC DS3231MZ"
+            hstack {
+                vstack { R406  U405 }
+                subzone "DECOUPLING CAPACITORS" {
+                    hstack { RtcDec_C1  RtcDec_C2 }
+                }
+            }
+            note "VBAT backed by CR1220 on Sheet 1 (BATT_RTC)"
+        }
+
+        layout {
+            row [BMP280_PRI, BMP280_RED]
+            row [MPU6050_IMU, PASSIVE_BUZZER]
+            row [LSM6DSL_IMU, RTC_DS3231]
+            group_gap: 20.32mm
+            row_gap: 22.86mm
+        }
+        routing {
+            default: zone_local
+            power: symbol
+            ground: symbol
+        }
+    }
+
+    // =========================================================================
+    // SHEET 4/4: TELEMETRY FILTERS & 4-CHANNEL ACTUATOR DRIVERS
+    // =========================================================================
+    schematic Comms_Actuators {
+        sheet: A3 landscape
+        title: "Telemetry RC Filters & 4-Channel Actuator Drivers"
+        rev: "2.0.0"
+        author: "EDL v1.2"
+
+        zone ACT_BANK_A {
+            title: "ACTUATOR CHANNELS 1 & 2"
+            vstack {
+                subzone "CH1 DRIVER" {
+                    hstack { ActCh1_RG  ActCh1_RPD  ActCh1_Q  ActCh1_D  ActCh1_RL }
+                }
+                subzone "CH2 DRIVER" {
+                    hstack { ActCh2_RG  ActCh2_RPD  ActCh2_Q  ActCh2_D  ActCh2_RL }
+                }
+            }
+        }
+
+        zone ACT_BANK_B {
+            title: "ACTUATOR CHANNELS 3 & 4"
+            vstack {
+                subzone "CH3 DRIVER" {
+                    hstack { ActCh3_RG  ActCh3_RPD  ActCh3_Q  ActCh3_D  ActCh3_RL }
+                }
+                subzone "CH4 DRIVER" {
+                    hstack { ActCh4_RG  ActCh4_RPD  ActCh4_Q  ActCh4_D  ActCh4_RL }
+                }
+            }
+        }
+
+        zone TELEMETRY_PORT {
+            title: "4-CH RC-FILTERED TELEMETRY PORT"
+            hstack {
+                subzone "RC FILTERS (1.6kHz)" {
+                    vstack {
+                        hstack { TelFlt1_R  TelFlt1_C  TelFlt2_R  TelFlt2_C }
+                        hstack { TelFlt3_R  TelFlt3_C  TelFlt4_R  TelFlt4_C }
+                    }
+                }
+                J_TEL
+                subzone "5V BYPASS" {
+                    hstack { TelDec_C1  TelDec_C2  R501 }
+                }
+            }
+        }
+
+        layout {
+            row [ACT_BANK_A, ACT_BANK_B]
+            row [TELEMETRY_PORT]
+            group_gap: 20.32mm
+            row_gap: 22.86mm
+        }
+        routing {
+            default: zone_local
+            power: symbol
+            ground: symbol
+        }
+    }
+
+    verify {
+        require all_required_pins_connected
+        require no_power_ground_short
+        require no_multiple_power_drivers
+        require no_single_pin_nets
+    }
+}

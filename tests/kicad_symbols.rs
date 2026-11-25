@@ -213,3 +213,47 @@ project "Isolated_SMPS_Check" {
         .expect("should report isolation breach");
     assert!(diag.message.contains("R_SHORT"), "{}", diag.message);
 }
+
+#[test]
+fn benchmark_a_vectron_120_multisheet_passes_real_kicad_9_erc() {
+    if !std::path::Path::new("/usr/share/kicad/symbols/Device.kicad_sym").exists() {
+        return;
+    }
+    let mut ir = edl::compile_file(std::path::Path::new("examples/vectron_120_multisheet.edl"))
+        .expect("compile Benchmark A");
+    assert!(!ir.project.has_errors, "diagnostics: {:?}", ir.diagnostics);
+    assert!(ir.project.component_count >= 120, "expected >= 120 components");
+    assert_eq!(ir.views.len(), 4, "expected 4 hierarchical sheets");
+
+    // Multi-sheet KiCad 9 project export emits root + 4 subsheets = 5 files
+    let files = edl::export_kicad_project(&ir);
+    assert_eq!(files.len(), 5, "files: {:?}", files.keys().collect::<Vec<_>>());
+    assert!(files.values().any(|s| s.contains("(global_label \"SDA1\"")));
+
+    // Real multi-sheet KiCad 9 CLI ERC across ALL 4 sheets -> 0 errors!
+    run_and_ingest_kicad_erc(&mut ir);
+    let k1 = ir.evidence.iter().find(|e| e.check_id == "K1_kicad_erc_external").unwrap();
+    assert_eq!(k1.status, VerificationStatus::ExactlyChecked, "{}", k1.details);
+}
+
+#[test]
+fn benchmark_b_isolated_flyback_smps_passes_galvanic_isolation_and_kicad_9_erc() {
+    if !std::path::Path::new("/usr/share/kicad/symbols/Device.kicad_sym").exists() {
+        return;
+    }
+    let mut ir = edl::compile_file(std::path::Path::new("examples/smps_flyback_isolated.edl"))
+        .expect("compile Benchmark B");
+    assert!(!ir.project.has_errors, "diagnostics: {:?}", ir.diagnostics);
+    assert!(ir.project.component_count >= 50);
+
+    let iso = ir
+        .evidence
+        .iter()
+        .find(|e| e.check_id == "E6_galvanic_isolation_GND_HOT_GND_COLD")
+        .expect("galvanic isolation evidence");
+    assert_eq!(iso.status, VerificationStatus::ExactlyChecked);
+
+    run_and_ingest_kicad_erc(&mut ir);
+    let k1 = ir.evidence.iter().find(|e| e.check_id == "K1_kicad_erc_external").unwrap();
+    assert_eq!(k1.status, VerificationStatus::ExactlyChecked, "{}", k1.details);
+}

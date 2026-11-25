@@ -1,6 +1,5 @@
 use crate::core::ir::{CanonicalIr, EvidenceRecord, VerificationStatus};
 use crate::core::span::Diagnostic;
-use crate::domains::elec::kicad::export_kicad_sch;
 use serde::Deserialize;
 use std::process::Command;
 
@@ -41,19 +40,28 @@ pub fn run_and_ingest_kicad_erc(ir: &mut CanonicalIr) {
         return;
     }
 
-    let tmp_dir = std::env::temp_dir();
     let stamp = std::process::id();
     let safe_name: String = ir
         .project
         .name
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
+        .map(|c| if c.is_ascii_alphanumeric() || c == '_' || c == '-' { c } else { '_' })
         .collect();
-    let sch_path = tmp_dir.join(format!("edl_erc_{safe_name}_{stamp}.kicad_sch"));
-    let rpt_path = tmp_dir.join(format!("edl_erc_{safe_name}_{stamp}.json"));
+    let work_dir = std::env::temp_dir().join(format!("edl_erc_{safe_name}_{stamp}"));
+    let _ = std::fs::remove_dir_all(&work_dir);
+    let _ = std::fs::create_dir_all(&work_dir);
+    let sch_path = work_dir.join(format!("{safe_name}.kicad_sch"));
+    let rpt_path = work_dir.join(format!("{safe_name}_erc.json"));
 
-    let kicad_src = export_kicad_sch(ir);
-    if let Err(e) = std::fs::write(&sch_path, &kicad_src) {
+    let kicad_files = crate::domains::elec::kicad::export_kicad_project(ir);
+    let mut write_err: Option<std::io::Error> = None;
+    for (fname, content) in &kicad_files {
+        if let Err(e) = std::fs::write(work_dir.join(fname), content) {
+            write_err = Some(e);
+            break;
+        }
+    }
+    if let Some(e) = write_err {
         ir.evidence.push(EvidenceRecord {
             check_id: "K1_kicad_erc_external".to_string(),
             status: VerificationStatus::Unverified,

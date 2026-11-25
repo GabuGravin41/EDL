@@ -64,6 +64,8 @@ pub struct UseDecl {
     pub instance: String,
     pub module: String,
     pub args: Vec<(String, ArgValue, Span)>,
+    /// Optional `{ PORT: NET, ... }` net-wiring bindings attached directly to the `use` statement.
+    pub port_nets: Vec<(String, String, Span)>,
     pub span: Span,
 }
 

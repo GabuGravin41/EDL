@@ -45,10 +45,11 @@ pub fn elaborate_project(
     for circuit in &mut project.elec.circuits {
         struct PortTarget {
             pins: Vec<(String, String)>,
-            absorbed_internal_net: Option<usize>,
+            absorbed_internal_nets: Vec<usize>,
         }
         let mut internal_nets: Vec<crate::domains::elec::ast::NetDecl> = Vec::new();
         let mut port_rewrites: BTreeMap<(String, String), PortTarget> = BTreeMap::new();
+        let mut auto_wire_bindings: Vec<(String, String, String, crate::core::span::Span)> = Vec::new();
         let uses = std::mem::take(&mut circuit.uses);
 
         for u in uses {
@@ -86,8 +87,6 @@ pub fn elaborate_project(
             for b in body.port_binds {
                 let target_comp = format!("{}_{}", u.instance, b.target.component);
                 let target_pin = b.target.pin;
-                // Check if target_comp.target_pin belongs to an internal net of this instance.
-                // If so, connecting the parent net to Inst.PORT merges that entire internal net!
                 let mut found_idx = None;
                 for (idx, inet) in internal_nets.iter().enumerate().skip(net_start_idx) {
                     if inet
@@ -99,25 +98,52 @@ pub fn elaborate_project(
                         break;
                     }
                 }
-                let target = if let Some(idx) = found_idx {
-                    let pins = internal_nets[idx]
-                        .connects
-                        .iter()
-                        .map(|p| (p.component.clone(), p.pin.clone()))
-                        .collect();
-                    PortTarget {
-                        pins,
-                        absorbed_internal_net: Some(idx),
+                let entry = port_rewrites
+                    .entry((u.instance.clone(), b.port))
+                    .or_insert_with(|| PortTarget {
+                        pins: Vec::new(),
+                        absorbed_internal_nets: Vec::new(),
+                    });
+                if let Some(idx) = found_idx {
+                    for p in &internal_nets[idx].connects {
+                        let pair = (p.component.clone(), p.pin.clone());
+                        if !entry.pins.contains(&pair) {
+                            entry.pins.push(pair);
+                        }
+                    }
+                    if !entry.absorbed_internal_nets.contains(&idx) {
+                        entry.absorbed_internal_nets.push(idx);
                     }
                 } else {
-                    PortTarget {
-                        pins: vec![(target_comp, target_pin)],
-                        absorbed_internal_net: None,
+                    let pair = (target_comp, target_pin);
+                    if !entry.pins.contains(&pair) {
+                        entry.pins.push(pair);
                     }
-                };
-                port_rewrites.insert((u.instance.clone(), b.port), target);
+                }
+            }
+            for (port_k, net_v, sp) in u.port_nets {
+                auto_wire_bindings.push((u.instance.clone(), port_k, net_v, sp));
             }
             inst_to_components.insert(u.instance, expanded_comp_ids);
+        }
+
+        // Inject `{ PORT: NET }` bindings straight into parent `circuit.nets` before rewriting!
+        for (inst, port_k, net_v, sp) in auto_wire_bindings {
+            let pref = crate::domains::elec::ast::PinRef {
+                component: inst,
+                pin: port_k,
+                span: sp.clone(),
+            };
+            if let Some(existing) = circuit.nets.iter_mut().find(|n| n.name == net_v) {
+                existing.connects.push(pref);
+            } else {
+                circuit.nets.push(crate::domains::elec::ast::NetDecl {
+                    name: net_v,
+                    connects: vec![pref],
+                    power_flag: false,
+                    span: sp,
+                });
+            }
         }
 
         // Rewrite parent net connections referencing `Inst.PORT` -> expanded internal pins,
@@ -128,7 +154,7 @@ pub fn elaborate_project(
             let mut seen: BTreeSet<(String, String)> = BTreeSet::new();
             for pref in std::mem::take(&mut net.connects) {
                 if let Some(target) = port_rewrites.get(&(pref.component.clone(), pref.pin.clone())) {
-                    if let Some(idx) = target.absorbed_internal_net {
+                    for &idx in &target.absorbed_internal_nets {
                         absorbed_nets.insert(idx);
                     }
                     for (tc, tp) in &target.pins {

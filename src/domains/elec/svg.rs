@@ -8,10 +8,73 @@ use std::fmt::Write;
 /// Render an EDA-grade schematic SVG directly from Canonical IR (orthogonal routes, junctions,
 /// typed pins, group boxes, colored power/GND/signal nets, and red ERC violation overlays).
 pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
-    let bounds = ir
-        .project
-        .exterior_bounds
-        .unwrap_or(Rect2::new(0.0, 0.0, 254.0, 177.8));
+    let first_sheet = if ir.views.len() > 1 {
+        ir.views.first().map(|v| v.id.as_str())
+    } else {
+        None
+    };
+    render_svg_sheet(ir, first_sheet, annotated)
+}
+
+/// Render a specific schematic sheet (or the sole sheet if `sheet_name` is `None`).
+pub fn render_svg_sheet(ir: &CanonicalIr, sheet_name: Option<&str>, annotated: bool) -> String {
+    let multi_sheet = ir.views.len() > 1;
+    let active_sheet: Option<&str> = if multi_sheet {
+        sheet_name.or_else(|| ir.views.first().map(|v| v.id.as_str()))
+    } else {
+        None
+    };
+    let active_view = active_sheet
+        .and_then(|sn| ir.views.iter().find(|v| v.id == sn))
+        .or_else(|| ir.views.first());
+
+    let sheet_groups: Vec<&SchematicGroupIr> = ir
+        .schematic_groups
+        .iter()
+        .filter(|g| match active_sheet {
+            Some(sn) => g.sheet.as_deref() == Some(sn),
+            None => true,
+        })
+        .collect();
+    let sheet_routes: Vec<&SchematicRouteIr> = ir
+        .schematic_routes
+        .iter()
+        .filter(|r| match active_sheet {
+            Some(sn) => r.sheet.as_deref() == Some(sn),
+            None => true,
+        })
+        .collect();
+    let sheet_entities: Vec<&EntityIr> = ir
+        .entities
+        .iter()
+        .filter(|e| match active_sheet {
+            Some(sn) => e.props.get("sheet").and_then(|v| v.as_str()) == Some(sn),
+            None => true,
+        })
+        .collect();
+
+    let bounds = if multi_sheet {
+        let (mut mx, mut my) = (228.6_f64, 152.4_f64);
+        for g in &sheet_groups {
+            mx = mx.max(g.bbox.max_x + 15.24);
+            my = my.max(g.bbox.max_y + 15.24);
+        }
+        for r in &sheet_routes {
+            for seg in &r.segments {
+                mx = mx.max(seg.p0.x.max(seg.p1.x) + 15.24);
+                my = my.max(seg.p0.y.max(seg.p1.y) + 15.24);
+            }
+            for t in &r.terminals {
+                mx = mx.max(t.pos.x + 18.0);
+                my = my.max(t.pos.y + 15.24);
+            }
+        }
+        Rect2::new(0.0, 0.0, mx, my)
+    } else {
+        ir.project
+            .exterior_bounds
+            .unwrap_or(Rect2::new(0.0, 0.0, 254.0, 177.8))
+    };
 
     let pad_mm = 15.0;
     let footer_mm = 22.0;
@@ -54,6 +117,16 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
       .sheet {{ fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; }}
       .grp-box {{ fill: #f8fafc; fill-opacity: 0.7; stroke: #94a3b8; stroke-width: 1.0; stroke-dasharray: 5 4; }}
       .grp-title {{ font-family: 'Inter', system-ui, sans-serif; font-size: 11px; font-weight: 700; fill: #64748b; text-anchor: middle; }}
+      .zone-box {{ fill: #ffffff; stroke: #334155; stroke-width: 1.4; }}
+      .zone-title {{ font-family: 'Inter', system-ui, sans-serif; font-size: 11.5px; font-weight: 700; fill: #059669; text-anchor: start; }}
+      .subzone-box {{ fill: #f8fafc; fill-opacity: 0.55; stroke: #0284c7; stroke-width: 1.0; stroke-dasharray: 4 3; }}
+      .subzone-title {{ font-family: monospace; font-size: 8.5px; font-weight: 700; fill: #0369a1; text-anchor: start; }}
+      .note-box {{ fill: #fefce8; stroke: #ca8a04; stroke-width: 0.9; }}
+      .note-txt {{ font-family: monospace; font-size: 8.5px; fill: #854d0e; text-anchor: start; }}
+      .flag-global {{ fill: #fff1f2; stroke: #be123c; stroke-width: 1.15; }}
+      .flag-global-txt {{ font-family: monospace; font-size: 9px; font-weight: 700; fill: #9f1239; }}
+      .flag-local {{ fill: #eff6ff; stroke: #1d4ed8; stroke-width: 1.05; }}
+      .flag-local-txt {{ font-family: monospace; font-size: 9px; font-weight: 700; fill: #1e40af; }}
       .sym-body {{ fill: #fef9c3; stroke: #854d0e; stroke-width: 1.6; }}
       .sym-body-err {{ fill: #fee2e2; stroke: #dc2626; stroke-width: 2.2; }}
       .sym-stroke {{ fill: none; stroke: #854d0e; stroke-linecap: round; stroke-linejoin: round; }}
@@ -98,28 +171,83 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
 
     // 1. Functional stage group boxes
     let _ = writeln!(out, r#"  <g id="groups">"#);
-    for grp in &ir.schematic_groups {
+    for grp in &sheet_groups {
         let x = sx(grp.bbox.min_x);
         let y = sy(grp.bbox.min_y);
         let w = sl(grp.bbox.width());
         let h = sl(grp.bbox.depth());
-        let _ = writeln!(
-            out,
-            r#"    <rect class="grp-box" x="{x:.2}" y="{y:.2}" width="{w:.2}" height="{h:.2}" rx="6"/>"#
-        );
-        let _ = writeln!(
-            out,
-            r#"    <text class="grp-title" x="{:.2}" y="{:.2}">{}</text>"#,
-            x + w * 0.5,
-            y - 5.0,
-            escape_xml(&grp.name)
-        );
+        let is_solid = grp.border.as_deref() == Some("solid");
+        let label = grp.title.as_deref().unwrap_or(&grp.name);
+        if is_solid {
+            let _ = writeln!(
+                out,
+                r#"    <rect class="zone-box" x="{x:.2}" y="{y:.2}" width="{w:.2}" height="{h:.2}" rx="3"/>"#
+            );
+            let _ = writeln!(
+                out,
+                r#"    <text class="zone-title" x="{:.2}" y="{:.2}">{}</text>"#,
+                x + 6.0,
+                y - 5.0,
+                escape_xml(label)
+            );
+        } else {
+            let _ = writeln!(
+                out,
+                r#"    <rect class="grp-box" x="{x:.2}" y="{y:.2}" width="{w:.2}" height="{h:.2}" rx="6"/>"#
+            );
+            let _ = writeln!(
+                out,
+                r#"    <text class="grp-title" x="{:.2}" y="{:.2}">{}</text>"#,
+                x + w * 0.5,
+                y - 5.0,
+                escape_xml(label)
+            );
+        }
+        // Dashed internal subzone dividers (e.g. DECOUPLING CAPACITORS / ADDRESS SWITCHING)
+        for sz in &grp.subzones {
+            let zx = sx(sz.bbox.min_x);
+            let zy = sy(sz.bbox.min_y);
+            let zw = sl(sz.bbox.width());
+            let zh = sl(sz.bbox.depth());
+            let _ = writeln!(
+                out,
+                r#"    <rect class="subzone-box" x="{zx:.2}" y="{zy:.2}" width="{zw:.2}" height="{zh:.2}" rx="2"/>"#
+            );
+            let _ = writeln!(
+                out,
+                r#"    <text class="subzone-title" x="{:.2}" y="{:.2}">{}</text>"#,
+                zx + 5.0,
+                zy + zh - 5.0,
+                escape_xml(&sz.title)
+            );
+        }
+        // Callout note boxes inside zone bottom
+        if !grp.notes.is_empty() {
+            let line_h = 13.0;
+            let nh = (grp.notes.len() as f64) * line_h + 8.0;
+            let nx = x + 6.0;
+            let ny = y + h - nh - 5.0;
+            let nw = (w - 12.0).max(40.0);
+            let _ = writeln!(
+                out,
+                r#"    <rect class="note-box" x="{nx:.2}" y="{ny:.2}" width="{nw:.2}" height="{nh:.2}" rx="2"/>"#
+            );
+            for (ni, ntxt) in grp.notes.iter().enumerate() {
+                let _ = writeln!(
+                    out,
+                    r#"    <text class="note-txt" x="{:.2}" y="{:.2}">{}</text>"#,
+                    nx + 5.0,
+                    ny + 12.0 + (ni as f64) * line_h,
+                    escape_xml(ntxt)
+                );
+            }
+        }
     }
     let _ = writeln!(out, r#"  </g>"#);
 
     // 2. Orthogonal wire routes, junctions, and net labels
     let _ = writeln!(out, r#"  <g id="wires">"#);
-    for route in &ir.schematic_routes {
+    for route in &sheet_routes {
         let is_err = violated_entities.contains(route.net_id.as_str());
         let w_cls = if is_err {
             "wire-err"
@@ -200,6 +328,74 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
                         escape_xml(&term.label)
                     );
                 }
+                "global_flag" | "label_flag" => {
+                    // KiCad-style pointed flag badge (crimson for cross-sheet global, blue for intra-sheet cross-zone)
+                    let (b_cls, t_cls) = if term.kind == "global_flag" {
+                        ("flag-global", "flag-global-txt")
+                    } else {
+                        ("flag-local", "flag-local-txt")
+                    };
+                    let bw = ((term.label.len() as f64) * 5.6 + 10.0).max(26.0);
+                    let bh = 13.0;
+                    let tip_w = 5.0;
+                    match term.dir {
+                        Side::West => {
+                            // Pointed on right (at wire tip), box extends left
+                            let pts = format!(
+                                "{tx:.1},{ty:.1} {:.1},{:.1} {:.1},{:.1} {:.1},{:.1} {:.1},{:.1}",
+                                tx - tip_w, ty - bh * 0.5,
+                                tx - tip_w - bw, ty - bh * 0.5,
+                                tx - tip_w - bw, ty + bh * 0.5,
+                                tx - tip_w, ty + bh * 0.5
+                            );
+                            let _ = writeln!(out, r#"    <polygon class="{b_cls}" points="{pts}"/>"#);
+                            let _ = writeln!(
+                                out,
+                                r#"    <text class="{t_cls}" x="{:.2}" y="{:.2}" text-anchor="middle">{}</text>"#,
+                                tx - tip_w - bw * 0.5, ty + 3.2, escape_xml(&term.label)
+                            );
+                        }
+                        Side::East => {
+                            let pts = format!(
+                                "{tx:.1},{ty:.1} {:.1},{:.1} {:.1},{:.1} {:.1},{:.1} {:.1},{:.1}",
+                                tx + tip_w, ty - bh * 0.5,
+                                tx + tip_w + bw, ty - bh * 0.5,
+                                tx + tip_w + bw, ty + bh * 0.5,
+                                tx + tip_w, ty + bh * 0.5
+                            );
+                            let _ = writeln!(out, r#"    <polygon class="{b_cls}" points="{pts}"/>"#);
+                            let _ = writeln!(
+                                out,
+                                r#"    <text class="{t_cls}" x="{:.2}" y="{:.2}" text-anchor="middle">{}</text>"#,
+                                tx + tip_w + bw * 0.5, ty + 3.2, escape_xml(&term.label)
+                            );
+                        }
+                        Side::North => {
+                            let _ = writeln!(
+                                out,
+                                r#"    <rect class="{b_cls}" x="{:.2}" y="{:.2}" width="{bw:.1}" height="{bh:.1}" rx="2"/>"#,
+                                tx - bw * 0.5, ty - bh - 2.0
+                            );
+                            let _ = writeln!(
+                                out,
+                                r#"    <text class="{t_cls}" x="{tx:.2}" y="{:.2}" text-anchor="middle">{}</text>"#,
+                                ty - 5.2, escape_xml(&term.label)
+                            );
+                        }
+                        Side::South => {
+                            let _ = writeln!(
+                                out,
+                                r#"    <rect class="{b_cls}" x="{:.2}" y="{:.2}" width="{bw:.1}" height="{bh:.1}" rx="2"/>"#,
+                                tx - bw * 0.5, ty + 2.0
+                            );
+                            let _ = writeln!(
+                                out,
+                                r#"    <text class="{t_cls}" x="{tx:.2}" y="{:.2}" text-anchor="middle">{}</text>"#,
+                                ty + 11.5, escape_xml(&term.label)
+                            );
+                        }
+                    }
+                }
                 _ => {
                     // Named net-label stub badge (clean horizontal flag)
                     let (lx, ly, anchor) = match term.dir {
@@ -221,7 +417,7 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
 
     // 3. Components & typed pins
     let _ = writeln!(out, r#"  <g id="components">"#);
-    for e in &ir.entities {
+    for e in &sheet_entities {
         let EntityGeometryIr::Component {
             category,
             value,
@@ -423,22 +619,46 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
         svg_w - 28.0,
         footer_y - 16.0
     );
+    let sheet_title = active_view
+        .and_then(|v| v.title.as_deref())
+        .map(|t| format!("{} — {t}", ir.project.name))
+        .unwrap_or_else(|| {
+            if let Some(sn) = active_sheet {
+                format!("{} / {sn}", ir.project.name)
+            } else {
+                ir.project.name.clone()
+            }
+        });
     let _ = writeln!(
         out,
         r#"  <text class="title-text" x="34" y="{footer_y:.1}">EDL Schematic: {}</text>"#,
-        escape_xml(&ir.project.name)
+        escape_xml(&sheet_title)
     );
-    let sheet_txt = ir
-        .views
-        .first()
+    let sheet_txt = active_view
         .map(|v| v.sheet.clone())
         .unwrap_or_else(|| "A4 landscape".to_string());
+    let sheet_id_meta = match (
+        active_view.and_then(|v| v.sheet_index),
+        active_view.and_then(|v| v.sheet_total),
+    ) {
+        (Some(i), Some(n)) => format!(" | Sheet: {i}/{n}"),
+        _ => String::new(),
+    };
+    let rev_meta = active_view
+        .and_then(|v| v.rev.as_deref())
+        .map(|r| format!(" | Rev: {r}"))
+        .unwrap_or_default();
+    let author_meta = active_view
+        .and_then(|v| v.author.as_deref())
+        .map(|a| format!(" | Drawn by: {a}"))
+        .unwrap_or_default();
     let _ = writeln!(
         out,
-        r#"  <text class="meta-text" x="34" y="{:.1}">{} | Components: {} | Nets: {} | Grid: 2.54mm (100 mil)</text>"#,
+        r#"  <text class="meta-text" x="34" y="{:.1}">{}{sheet_id_meta}{rev_meta}{author_meta} | Components: {}{} | Nets: {} | Grid: 2.54mm</text>"#,
         footer_y + 18.0,
         sheet_txt,
-        ir.project.component_count,
+        sheet_entities.len(),
+        if multi_sheet { format!(" (of {})", ir.project.component_count) } else { String::new() },
         ir.project.net_count
     );
 

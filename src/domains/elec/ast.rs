@@ -67,10 +67,39 @@ pub struct CircuitDecl {
     pub span: Span,
 }
 
+/// Declarative 2D relative layout tree inside a schematic `group` or `zone` (zero coordinate math!).
+#[derive(Debug, Clone)]
+pub enum LayoutNode {
+    Comp(String),
+    HStack(Vec<LayoutNode>),
+    VStack(Vec<LayoutNode>),
+    SubZone {
+        title: String,
+        items: Vec<LayoutNode>,
+    },
+}
+
+impl LayoutNode {
+    pub fn collect_components(&self, out: &mut Vec<String>) {
+        match self {
+            LayoutNode::Comp(c) => out.push(c.clone()),
+            LayoutNode::HStack(v) | LayoutNode::VStack(v) | LayoutNode::SubZone { items: v, .. } => {
+                for child in v {
+                    child.collect_components(out);
+                }
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct SchematicGroupDecl {
     pub name: String,
+    pub title: Option<String>,
+    pub border: String, // "dashed" | "solid"
     pub members: Vec<String>,
+    pub layout_tree: Option<LayoutNode>,
+    pub notes: Vec<String>,
     pub span: Span,
 }
 
@@ -93,6 +122,7 @@ pub enum NetRoutingStyle {
     Rail,
     Symbol,
     LabelStub,
+    ZoneLocal,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -115,6 +145,9 @@ pub struct ExplicitPlacementDecl {
 pub struct SchematicDecl {
     pub name: String,
     pub sheet: String,
+    pub title: Option<String>,
+    pub rev: Option<String>,
+    pub author: Option<String>,
     pub groups: Vec<SchematicGroupDecl>,
     pub layout: Option<SchematicLayoutDecl>,
     pub routing: Option<SchematicRoutingDecl>,

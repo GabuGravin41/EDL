@@ -3,7 +3,7 @@ use edl::core::diff;
 use edl::core::query::{inspect_summary, measure_ir, query_ir};
 use edl::{
     build_bom, build_panel_schedule, compile_file, export_bom_csv, export_dxf, export_kicad_sch,
-    export_panel_schedule_csv, export_spice_netlist, render_svg, simulate_dc_and_rc,
+    export_panel_schedule_csv, export_spice_netlist, simulate_dc_and_rc,
 };
 use std::fs;
 use std::path::PathBuf;
@@ -43,6 +43,12 @@ enum Commands {
         /// Show entity/pin annotations even when all checks pass
         #[arg(long)]
         annotated: bool,
+        /// Optional specific sheet name to render (multi-sheet schematics)
+        #[arg(long)]
+        sheet: Option<String>,
+        /// Render every sheet to `<output>/<sheet>.svg` (treats `-o` as a directory)
+        #[arg(long)]
+        all_sheets: bool,
     },
     /// Export to a native CAD/EDA format (DXF, KiCad .kicad_sch, SPICE .cir, or BOM .csv)
     Export {
@@ -54,6 +60,9 @@ enum Commands {
         /// Output KiCad schematic (.kicad_sch) file path (electronics)
         #[arg(long)]
         kicad: Option<PathBuf>,
+        /// Output directory for a multi-sheet KiCad 9 hierarchical project
+        #[arg(long)]
+        kicad_dir: Option<PathBuf>,
         /// Output SPICE3 netlist (.cir) file path (electronics)
         #[arg(long)]
         spice: Option<PathBuf>,
@@ -270,34 +279,50 @@ fn main() {
             file,
             output,
             annotated,
+            sheet,
+            all_sheets,
         } => {
             let ir = load_and_compile(&file);
-            let svg = render_svg(&ir, annotated);
-            if let Some(parent) = output.parent() {
-                if !parent.as_os_str().is_empty() {
-                    let _ = fs::create_dir_all(parent);
+            if all_sheets && ir.views.len() > 1 {
+                let _ = fs::create_dir_all(&output);
+                for v in &ir.views {
+                    let svg = edl::render_svg_sheet(&ir, Some(&v.id), annotated);
+                    let out_f = output.join(format!("{}.svg", v.id));
+                    fs::write(&out_f, svg).unwrap_or_else(|e| {
+                        eprintln!("error: failed to write '{}': {e}", out_f.display());
+                        process::exit(2);
+                    });
+                    println!("Rendered sheet '{}' -> {}", v.id, out_f.display());
                 }
+            } else {
+                let svg = edl::render_svg_sheet(&ir, sheet.as_deref(), annotated);
+                if let Some(parent) = output.parent() {
+                    if !parent.as_os_str().is_empty() {
+                        let _ = fs::create_dir_all(parent);
+                    }
+                }
+                fs::write(&output, svg).unwrap_or_else(|e| {
+                    eprintln!("error: failed to write '{}': {e}", output.display());
+                    process::exit(2);
+                });
+                println!(
+                    "Rendered SVG preview -> {} (errors: {})",
+                    output.display(),
+                    ir.project.has_errors
+                );
             }
-            fs::write(&output, svg).unwrap_or_else(|e| {
-                eprintln!("error: failed to write '{}': {e}", output.display());
-                process::exit(2);
-            });
-            println!(
-                "Rendered SVG preview -> {} (errors: {})",
-                output.display(),
-                ir.project.has_errors
-            );
         }
         Commands::Export {
             file,
             dxf,
             kicad,
+            kicad_dir,
             spice,
             bom,
         } => {
             let ir = load_and_compile(&file);
-            if dxf.is_none() && kicad.is_none() && spice.is_none() && bom.is_none() {
-                eprintln!("error: specify --dxf, --kicad, --spice, or --bom");
+            if dxf.is_none() && kicad.is_none() && kicad_dir.is_none() && spice.is_none() && bom.is_none() {
+                eprintln!("error: specify --dxf, --kicad, --kicad-dir, --spice, or --bom");
                 process::exit(2);
             }
             if let Some(dxf_path) = dxf {
@@ -315,6 +340,18 @@ fn main() {
                     process::exit(2);
                 });
                 println!("Exported layered DXF -> {}", dxf_path.display());
+            }
+            if let Some(kdir) = kicad_dir {
+                let _ = fs::create_dir_all(&kdir);
+                let files = edl::export_kicad_project(&ir);
+                for (fname, content) in &files {
+                    let out_p = kdir.join(fname);
+                    fs::write(&out_p, content).unwrap_or_else(|e| {
+                        eprintln!("Failed to write {}: {e}", out_p.display());
+                        process::exit(1);
+                    });
+                }
+                println!("Exported KiCad 9 project ({} file(s)) -> {}", files.len(), kdir.display());
             }
             if let Some(kicad_path) = kicad {
                 if ir.project.has_errors {

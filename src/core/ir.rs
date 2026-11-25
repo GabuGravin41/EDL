@@ -245,18 +245,35 @@ pub struct RelationIr {
     pub span: Option<Span>,
 }
 
-/// Presentation-layer schematic group container.
+/// Sub-zone divider inside a framed schematic zone (e.g., "DECOUPLING CAPACITORS" or "ADDRESS SWITCHING").
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct SchematicGroupIr {
-    pub name: String,
-    pub members: Vec<String>,
+pub struct SchematicSubZoneIr {
+    pub title: String,
     pub bbox: Rect2,
 }
 
-/// Local schematic terminal graphics (GND triangle, upward power bar, or named net-label stub).
+/// Presentation-layer schematic group / zone container.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SchematicGroupIr {
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sheet: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub border: Option<String>, // "solid" | "dashed"
+    pub members: Vec<String>,
+    pub bbox: Rect2,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub notes: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub subzones: Vec<SchematicSubZoneIr>,
+}
+
+/// Local schematic terminal graphics (GND triangle, upward power bar, named net-label stub, or global flag).
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct NetTerminalIr {
-    pub kind: String, // "gnd_symbol" | "power_symbol" | "label_stub"
+    pub kind: String, // "gnd_symbol" | "power_symbol" | "label_stub" | "global_flag"
     pub pos: Point2,
     pub dir: Side,
     pub label: String,
@@ -266,7 +283,9 @@ pub struct NetTerminalIr {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct SchematicRouteIr {
     pub net_id: String,
-    pub style: String, // "direct" | "bus" | "rail" | "symbol" | "label_stub"
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sheet: Option<String>,
+    pub style: String, // "direct" | "bus" | "rail" | "symbol" | "label_stub" | "zone_local"
     pub is_power: bool,
     pub is_ground: bool,
     pub segments: Vec<Segment2>,
@@ -333,6 +352,16 @@ pub struct ViewIr {
     pub scale: String,
     pub show_dimensions: bool,
     pub show_labels: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rev: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sheet_index: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sheet_total: Option<usize>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

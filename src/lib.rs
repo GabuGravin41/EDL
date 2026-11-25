@@ -65,8 +65,20 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
     domains::arch::dxf::export_dxf(ir)
 }
 
+pub fn render_svg_sheet(ir: &CanonicalIr, sheet_name: Option<&str>, annotated: bool) -> String {
+    if ir.project.domain == "electronics" {
+        domains::elec::svg::render_svg_sheet(ir, sheet_name, annotated)
+    } else {
+        render_svg(ir, annotated)
+    }
+}
+
 pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
     domains::elec::kicad::export_kicad_sch(ir)
+}
+
+pub fn export_kicad_project(ir: &CanonicalIr) -> std::collections::BTreeMap<String, String> {
+    domains::elec::kicad::export_kicad_project(ir)
 }
 
 pub fn export_spice_netlist(ir: &CanonicalIr) -> String {

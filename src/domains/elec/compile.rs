@@ -27,6 +27,7 @@ fn style_name(s: NetRoutingStyle) -> &'static str {
         NetRoutingStyle::Rail => "rail",
         NetRoutingStyle::Symbol => "symbol",
         NetRoutingStyle::LabelStub => "label_stub",
+        NetRoutingStyle::ZoneLocal => "zone_local",
     }
 }
 
@@ -770,8 +771,75 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         }
     }
 
+    // 3. Multi-sheet partitioning & cross-sheet global net detection
+    let sheet_list: Vec<Option<&SchematicDecl>> = if project.elec.schematics.is_empty() {
+        vec![None]
+    } else {
+        project.elec.schematics.iter().map(Some).collect()
+    };
+    let total_sheets = sheet_list.len();
+    let mut comp_to_sheet: BTreeMap<String, usize> = BTreeMap::new();
+    for (s_idx, s_opt) in sheet_list.iter().enumerate() {
+        if let Some(sc) = s_opt {
+            for g in &sc.groups {
+                for m in &g.members {
+                    comp_to_sheet.entry(m.clone()).or_insert(s_idx);
+                }
+            }
+            for pl in &sc.placements {
+                comp_to_sheet.entry(pl.component.clone()).or_insert(s_idx);
+            }
+        }
+    }
+    for cid in &comp_order {
+        comp_to_sheet.entry(cid.clone()).or_insert(0);
+    }
+
+    let mut cross_sheet_nets: BTreeSet<String> = BTreeSet::new();
+    if total_sheets > 1 {
+        for net in &all_nets {
+            let sheets_hit: BTreeSet<usize> = net_pins
+                .get(&net.name)
+                .map(|ps| {
+                    ps.iter()
+                        .filter_map(|(cid, _, _)| comp_to_sheet.get(cid).copied())
+                        .collect()
+                })
+                .unwrap_or_default();
+            if sheets_hit.len() > 1 {
+                cross_sheet_nets.insert(net.name.clone());
+            }
+        }
+    }
+
+    // Pre-assign pin sides for every component once across all sheets
+    let mut comp_pin_sides: BTreeMap<String, Vec<(&PinDecl, Side)>> = BTreeMap::new();
+    for cid in &comp_order {
+        let comp = comp_map[cid];
+        comp_pin_sides.insert(cid.clone(), assign_pin_sides(comp, &pin_to_nets, &ground_nets));
+    }
+
+    let mut entities: Vec<EntityIr> = Vec::new();
+    let mut schematic_groups: Vec<SchematicGroupIr> = Vec::new();
+    let mut schematic_routes: Vec<SchematicRouteIr> = Vec::new();
+    let mut views: Vec<ViewIr> = Vec::new();
+    let mut sheet_bounds = Rect2::new(0.0, 0.0, 228.6, 152.4);
+
+    for (s_idx, schem) in sheet_list.iter().copied().enumerate() {
+        let sheet_name_str = schem
+            .map(|s| s.name.clone())
+            .unwrap_or_else(|| "Main".to_string());
+        let sheet_tag: Option<String> = if total_sheets > 1 {
+            Some(sheet_name_str.clone())
+        } else {
+            None
+        };
+        let sheet_comps: Vec<String> = comp_order
+            .iter()
+            .filter(|cid| comp_to_sheet.get(*cid).copied().unwrap_or(0) == s_idx)
+            .cloned()
+            .collect();
     // 3. Resolve routing policies per net (layered: per-net override > category policy > smart default)
-    let schem = project.elec.schematics.first();
     let routing_cfg = schem.and_then(|s| s.routing.as_ref());
     let mut net_override_map: BTreeMap<String, NetRoutingStyle> = BTreeMap::new();
     if let Some(rcfg) = routing_cfg {
@@ -792,15 +860,26 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         if let Some(&ov) = net_override_map.get(net_name) {
             return ov;
         }
+        let def_st = routing_cfg
+            .and_then(|r| r.default_style)
+            .unwrap_or(NetRoutingStyle::Direct);
         if is_gnd {
             return routing_cfg
                 .and_then(|r| r.ground_style)
-                .unwrap_or(NetRoutingStyle::Rail);
+                .unwrap_or(if def_st == NetRoutingStyle::ZoneLocal {
+                    NetRoutingStyle::Symbol
+                } else {
+                    NetRoutingStyle::Rail
+                });
         }
         if is_pwr {
             return routing_cfg
                 .and_then(|r| r.power_style)
-                .unwrap_or(NetRoutingStyle::Direct);
+                .unwrap_or(if def_st == NetRoutingStyle::ZoneLocal {
+                    NetRoutingStyle::Symbol
+                } else {
+                    NetRoutingStyle::Direct
+                });
         }
         routing_cfg
             .and_then(|r| r.default_style)
@@ -842,7 +921,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             .get(&n.name)
             .map(|v| !v.is_empty())
             .unwrap_or(false)
-            || n.name.to_uppercase().starts_with('V');
+            || is_power_rail_name(&n.name);
         resolve_style(&n.name, is_g, is_p) == NetRoutingStyle::Symbol
     });
     let min_member_gap = if any_symbol_mode { 20.32 } else { 12.70 };
@@ -895,7 +974,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             }
         }
     }
-    let leftover: Vec<String> = comp_order
+    let leftover: Vec<String> = sheet_comps
         .iter()
         .filter(|id| !assigned.contains(*id))
         .cloned()
@@ -918,12 +997,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         }
     }
 
-    // Pre-assign pin sides for every component (honoring explicit `pin ... side:` overrides!)
-    let mut comp_pin_sides: BTreeMap<String, Vec<(&PinDecl, Side)>> = BTreeMap::new();
-    for cid in &comp_order {
-        let comp = comp_map[cid];
-        comp_pin_sides.insert(cid.clone(), assign_pin_sides(comp, &pin_to_nets, &ground_nets));
-    }
+
 
     let is_multi_row = ordered_groups.iter().any(|(r, _, _, _)| *r > 0);
 
@@ -935,14 +1009,14 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             .get(&net.name)
             .map(|v| !v.is_empty())
             .unwrap_or(false)
-            || net.name.to_uppercase().starts_with('V');
+            || is_power_rail_name(&net.name);
         let st = resolve_style(&net.name, is_gnd, is_pwr);
         let rows_spanned: BTreeSet<usize> = net
             .connects
             .iter()
             .filter_map(|p| comp_row_map.get(&p.component).copied())
             .collect();
-        if rows_spanned.len() > 1 && matches!(st, NetRoutingStyle::Direct | NetRoutingStyle::Bus) {
+        if st == NetRoutingStyle::ZoneLocal || cross_sheet_nets.contains(&net.name) || (rows_spanned.len() > 1 && matches!(st, NetRoutingStyle::Direct | NetRoutingStyle::Bus)) {
             continue; // cross-row nets automatically use clean local label_stub terminals!
         }
         if matches!(st, NetRoutingStyle::Bus) {
@@ -975,8 +1049,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     let mut cur_row_idx = 0usize;
     let mut cur_row_max_y = row_start_y + 25.4;
 
-    let mut entities: Vec<EntityIr> = Vec::new();
-    let mut schematic_groups: Vec<SchematicGroupIr> = Vec::new();
+    let mut local_entities: Vec<EntityIr> = Vec::new();
+    let mut local_groups: Vec<SchematicGroupIr> = Vec::new();
     let mut col_bounds: Vec<(f64, f64)> = Vec::new(); // (col_x0, col_x1)
 
     #[derive(Clone)]
@@ -995,6 +1069,10 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     let mut max_comp_y = row_start_y + 25.4;
     let mut max_comp_x = cur_x + 50.8;
 
+    let grp_decl_map: BTreeMap<&str, &SchematicGroupDecl> = schem
+        .map(|s| s.groups.iter().map(|g| (g.name.as_str(), g)).collect())
+        .unwrap_or_default();
+
     for (col_idx, &(r_idx, _c_in_row, ref gname, ref members)) in ordered_groups.iter().enumerate() {
         if r_idx != cur_row_idx {
             cur_row_idx = r_idx;
@@ -1004,6 +1082,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         }
         let mut col_body_w = 15.24_f64;
         let mut sizes: Vec<(f64, f64)> = Vec::new();
+        let mut size_map: BTreeMap<String, (f64, f64)> = BTreeMap::new();
         for cid in members {
             let comp = comp_map[cid];
             let (bw, bh) = if let Some(sym) = loaded_syms.get(cid) {
@@ -1020,7 +1099,29 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 compute_symbol_size(comp, assigned_sides)
             };
             col_body_w = col_body_w.max(bw);
+            size_map.insert(cid.clone(), (bw, bh));
             sizes.push((bw, bh));
+        }
+
+        // If this group/zone declares a 2D `hstack`/`vstack`/`subzone` tree, lay it out recursively!
+        let gdecl_opt = grp_decl_map.get(gname.as_str()).copied();
+        let mut tree_pos: BTreeMap<String, (f64, f64)> = BTreeMap::new();
+        let mut g_subzones: Vec<SchematicSubZoneIr> = Vec::new();
+        let mut tree_bbox_opt: Option<Rect2> = None;
+        if let Some(lt) = gdecl_opt.and_then(|g| g.layout_tree.as_ref()) {
+            let sz_fn = |cid: &str| size_map.get(cid).copied().unwrap_or((15.24, 10.16));
+            let tb = crate::domains::elec::sheet_layout::place_layout_node(
+                lt,
+                cur_x,
+                row_start_y,
+                &sz_fn,
+                10.16,
+                10.16,
+                &mut tree_pos,
+                &mut g_subzones,
+            );
+            col_body_w = col_body_w.max(tb.width());
+            tree_bbox_opt = Some(tb);
         }
 
         let col_x0 = snap_grid(cur_x);
@@ -1039,6 +1140,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
 
             let (bx0, by0) = if let Some(&(ex, ey)) = explicit_pos.get(cid) {
                 (ex, ey)
+            } else if let Some(&(tx, ty)) = tree_pos.get(cid) {
+                (tx, ty)
             } else {
                 (snap_grid(col_x0 + (col_body_w - bw) * 0.5), snap_grid(cur_y))
             };
@@ -1057,8 +1160,25 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     comp.orient_deg,
                     comp.mirror,
                 );
-                let cx = snap_grid(bx0 - lb.min_x);
-                let cy = snap_grid(by0 - lb.min_y);
+                let mut cx = snap_grid(bx0 - lb.min_x);
+                let mut cy = snap_grid(by0 - lb.min_y);
+                // If a KiCad library symbol's pins sit at half-grid offsets (e.g. Device:R/C at ±3.81mm = 1.5*2.54mm),
+                // offset the symbol center by 1.27mm so EVERY pin tip lands cleanly on the 2.54mm grid with exact pin length!
+                let first_unit_pin = sym.pins.iter().find(|p| (p.unit == 0 || p.unit == u) && !p.hide);
+                if let Some(fp) = first_unit_pin {
+                    let (rx, ry) = crate::domains::elec::kicad_sym::transform_local_yup(
+                        fp.x,
+                        fp.y,
+                        comp.orient_deg,
+                        comp.mirror,
+                    );
+                    if (rx - snap_grid(rx)).abs() > 0.5 {
+                        cx += GRID_MM * 0.5;
+                    }
+                    if (ry - snap_grid(ry)).abs() > 0.5 {
+                        cy += GRID_MM * 0.5;
+                    }
+                }
                 let body = Rect2::new(
                     cx + lb.min_x,
                     cy + lb.min_y,
@@ -1168,7 +1288,10 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             if let Some(ref lid) = lib_id_opt {
                 props.insert("lib_id".to_string(), json!(lid));
             }
-            entities.push(EntityIr {
+            if let Some(ref st) = sheet_tag {
+                props.insert("sheet".to_string(), json!(st));
+            }
+            local_entities.push(EntityIr {
                 id: cid.clone(),
                 kind: "elec.component".to_string(),
                 frame: default_frame.clone(),
@@ -1206,11 +1329,32 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             max_comp_x = max_comp_x.max(body.max_x + PIN_LEN_MM + 12.70);
         }
 
+        if let Some(tb) = tree_bbox_opt {
+            g_min_x = g_min_x.min(tb.min_x - 2.54);
+            g_max_x = g_max_x.max(tb.max_x + 2.54);
+            g_min_y = g_min_y.min(tb.min_y - 2.54);
+            g_max_y = g_max_y.max(tb.max_y + 2.54);
+            cur_row_max_y = cur_row_max_y.max(g_max_y);
+            max_comp_x = max_comp_x.max(g_max_x + 7.62);
+            max_comp_y = max_comp_y.max(g_max_y);
+        }
+        let g_notes = gdecl_opt.map(|g| g.notes.clone()).unwrap_or_default();
+        if !g_notes.is_empty() && g_max_y.is_finite() {
+            let note_h = (g_notes.len() as f64) * 6.35 + 5.08;
+            g_max_y = snap_grid(g_max_y + note_h);
+            cur_row_max_y = cur_row_max_y.max(g_max_y);
+            max_comp_y = max_comp_y.max(g_max_y);
+        }
         if g_min_x.is_finite() {
-            schematic_groups.push(SchematicGroupIr {
+            local_groups.push(SchematicGroupIr {
                 name: gname.clone(),
+                sheet: sheet_tag.clone(),
+                title: gdecl_opt.and_then(|g| g.title.clone()),
+                border: gdecl_opt.map(|g| g.border.clone()),
                 members: members.clone(),
                 bbox: Rect2::new(g_min_x, g_min_y, g_max_x, g_max_y),
+                notes: g_notes,
+                subzones: g_subzones,
             });
         }
 
@@ -1239,7 +1383,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             .get(&net.name)
             .map(|v| !v.is_empty())
             .unwrap_or(false)
-            || net.name.to_uppercase().starts_with('V');
+            || is_power_rail_name(&net.name);
         let st = resolve_style(&net.name, is_g, is_p);
         let min_lane = match st {
             NetRoutingStyle::Symbol => 1,
@@ -1273,7 +1417,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     }
 
     let gnd_rail_y = snap_grid(max_comp_y + 12.70);
-    let mut schematic_routes: Vec<SchematicRouteIr> = Vec::new();
+    let mut local_routes: Vec<SchematicRouteIr> = Vec::new();
+    let mut astar_used_cells: BTreeSet<(i32, i32)> = BTreeSet::new();
     let mut top_bus_track = 0usize;
     let mut gnd_rail_track = 0usize;
 
@@ -1283,7 +1428,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             .get(&net.name)
             .map(|v| !v.is_empty())
             .unwrap_or(false)
-            || net.name.to_uppercase().starts_with('V');
+            || is_power_rail_name(&net.name);
 
         let style = resolve_style(&net.name, is_gnd, is_pwr);
 
@@ -1383,14 +1528,14 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             e
                         }
                         Side::West => {
-                            let mid = Point2::new(snap_grid(tip.x - GRID_MM), tip.y);
+                            let mid = Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), tip.y);
                             let e = Point2::new(mid.x, snap_grid(mid.y + GRID_MM));
                             add_ortho_seg(&mut segments, tip, mid);
                             add_ortho_seg(&mut segments, mid, e);
                             e
                         }
                         Side::East => {
-                            let mid = Point2::new(snap_grid(tip.x + GRID_MM), tip.y);
+                            let mid = Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), tip.y);
                             let e = Point2::new(mid.x, snap_grid(mid.y + GRID_MM));
                             add_ortho_seg(&mut segments, tip, mid);
                             add_ortho_seg(&mut segments, mid, e);
@@ -1416,14 +1561,14 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             e
                         }
                         Side::West => {
-                            let mid = Point2::new(snap_grid(tip.x - GRID_MM), tip.y);
+                            let mid = Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), tip.y);
                             let e = Point2::new(mid.x, snap_grid(mid.y - GRID_MM));
                             add_ortho_seg(&mut segments, tip, mid);
                             add_ortho_seg(&mut segments, mid, e);
                             e
                         }
                         Side::East => {
-                            let mid = Point2::new(snap_grid(tip.x + GRID_MM), tip.y);
+                            let mid = Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), tip.y);
                             let e = Point2::new(mid.x, snap_grid(mid.y - GRID_MM));
                             add_ortho_seg(&mut segments, tip, mid);
                             add_ortho_seg(&mut segments, mid, e);
@@ -1443,13 +1588,91 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     });
                 }
             }
-            schematic_routes.push(SchematicRouteIr {
+            local_routes.push(SchematicRouteIr {
                 net_id: net.name.clone(),
+                sheet: sheet_tag.clone(),
                 style: style_name(style).to_string(),
                 is_power: is_pwr,
                 is_ground: is_gnd,
                 segments,
                 junctions,
+                terminals,
+                label_pos: None,
+            });
+            continue;
+        }
+
+        // --- MODE A2: Cross-Sheet Global Flags & Zone-Local Obstacle-Aware A* Routing ---
+        let is_cross_sheet = cross_sheet_nets.contains(&net.name);
+        if (style == NetRoutingStyle::ZoneLocal || is_cross_sheet) && !is_gnd && !is_pwr {
+            let cols_in_net: BTreeSet<usize> = net_endpoints.iter().map(|rp| rp.col_idx).collect();
+            // Intra-zone net on a single sheet -> route directly with obstacle-aware grid A*!
+            if !is_cross_sheet && cols_in_net.len() == 1 && net_endpoints.len() >= 2 {
+                let body_obs: Vec<Rect2> = local_entities
+                    .iter()
+                    .filter_map(|e| match &e.geometry {
+                        EntityGeometryIr::Component { body_rect, .. } => Some(*body_rect),
+                        _ => None,
+                    })
+                    .collect();
+                let foreign_tips: BTreeSet<(i32, i32)> = placed_pins
+                    .values()
+                    .map(|rp| (
+                        (rp.pin.tip_point.x / GRID_MM).round() as i32,
+                        (rp.pin.tip_point.y / GRID_MM).round() as i32,
+                    ))
+                    .collect();
+                let eps: Vec<(Point2, Side)> = net_endpoints
+                    .iter()
+                    .map(|rp| (rp.pin.tip_point, rp.pin.side))
+                    .collect();
+                let (segs, juncs) = crate::domains::elec::router::route_net_astar(
+                    &eps,
+                    &body_obs,
+                    &foreign_tips,
+                    &mut astar_used_cells,
+                );
+                local_routes.push(SchematicRouteIr {
+                    net_id: net.name.clone(),
+                    sheet: sheet_tag.clone(),
+                    style: "zone_local".to_string(),
+                    is_power: is_pwr,
+                    is_ground: is_gnd,
+                    segments: segs,
+                    junctions: juncs,
+                    terminals: Vec::new(),
+                    label_pos: None,
+                });
+                continue;
+            }
+            // Cross-zone or Cross-sheet net -> crisp shaped flag terminals at each endpoint!
+            let term_kind = if is_cross_sheet { "global_flag" } else { "label_flag" };
+            let mut segments = Vec::new();
+            let mut terminals = Vec::new();
+            for rp in &net_endpoints {
+                let tip = rp.pin.tip_point;
+                let end = match rp.pin.side {
+                    Side::West => Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), tip.y),
+                    Side::East => Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), tip.y),
+                    Side::North => Point2::new(tip.x, snap_grid(tip.y - 2.0 * GRID_MM)),
+                    Side::South => Point2::new(tip.x, snap_grid(tip.y + 2.0 * GRID_MM)),
+                };
+                add_ortho_seg(&mut segments, tip, end);
+                terminals.push(NetTerminalIr {
+                    kind: term_kind.to_string(),
+                    pos: end,
+                    dir: rp.pin.side,
+                    label: net.name.clone(),
+                });
+            }
+            local_routes.push(SchematicRouteIr {
+                net_id: net.name.clone(),
+                sheet: sheet_tag.clone(),
+                style: if is_cross_sheet { "global_flag" } else { "zone_local" }.to_string(),
+                is_power: is_pwr,
+                is_ground: is_gnd,
+                segments,
+                junctions: Vec::new(),
                 terminals,
                 label_pos: None,
             });
@@ -1482,8 +1705,9 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     label: net.name.clone(),
                 });
             }
-            schematic_routes.push(SchematicRouteIr {
+            local_routes.push(SchematicRouteIr {
                 net_id: net.name.clone(),
+                sheet: sheet_tag.clone(),
                 style: style_name(style).to_string(),
                 is_power: is_pwr,
                 is_ground: is_gnd,
@@ -1577,8 +1801,9 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     Some(Point2::new(gx, snap_grid(0.5 * (ys[0] + *ys.last().unwrap()))))
                 };
 
-                schematic_routes.push(SchematicRouteIr {
+                local_routes.push(SchematicRouteIr {
                     net_id: net.name.clone(),
+                    sheet: sheet_tag.clone(),
                     style: "direct".to_string(),
                     is_power: is_pwr,
                     is_ground: false,
@@ -1661,8 +1886,9 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     .map(|s| Point2::new(snap_grid(0.5 * (s.p0.x + s.p1.x)), s.p0.y))
                     .or_else(|| Some(Point2::new(gx, ys[0])));
 
-                schematic_routes.push(SchematicRouteIr {
+                local_routes.push(SchematicRouteIr {
                     net_id: net.name.clone(),
+                    sheet: sheet_tag.clone(),
                     style: "direct".to_string(),
                     is_power: is_pwr,
                     is_ground: false,
@@ -1818,8 +2044,9 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         } else {
             "bus"
         };
-        schematic_routes.push(SchematicRouteIr {
+        local_routes.push(SchematicRouteIr {
             net_id: net.name.clone(),
+            sheet: sheet_tag.clone(),
             style: effective_style_str.to_string(),
             is_power: is_pwr,
             is_ground: is_gnd,
@@ -1831,15 +2058,15 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     }
 
     // 5b. Post-pass: guarantee NO net label ever lands on a perpendicular crossing of another net!
-    let route_count = schematic_routes.len();
+    let route_count = local_routes.len();
     for i in 0..route_count {
-        if schematic_routes[i].label_pos.is_none() {
+        if local_routes[i].label_pos.is_none() {
             continue;
         }
         let mut chosen: Option<Point2> = None;
-        let segs_i = schematic_routes[i].segments.clone();
+        let segs_i = local_routes[i].segments.clone();
         let mut candidates: Vec<Point2> = Vec::new();
-        if let Some(lp) = schematic_routes[i].label_pos {
+        if let Some(lp) = local_routes[i].label_pos {
             candidates.push(lp);
         }
         for pass in 0..2 {
@@ -1872,7 +2099,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 if j == i {
                     return false;
                 }
-                schematic_routes[j]
+                local_routes[j]
                     .segments
                     .iter()
                     .any(|s| point_on_ortho_segment(cand, *s))
@@ -1883,14 +2110,14 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             }
         }
         if let Some(pt) = chosen {
-            schematic_routes[i].label_pos = Some(pt);
+            local_routes[i].label_pos = Some(pt);
         }
     }
 
     // Compute tight actual sheet bounds from all routed coordinates
     let mut max_x = max_comp_x;
     let mut max_y = max_comp_y + 15.24;
-    for r in &schematic_routes {
+    for r in &local_routes {
         for s in &r.segments {
             max_x = max_x.max(s.p0.x.max(s.p1.x) + 15.24);
             max_y = max_y.max(s.p0.y.max(s.p1.y) + 15.24);
@@ -1900,21 +2127,25 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             max_y = max_y.max(t.pos.y + 15.24);
         }
     }
-    let sheet_bounds = Rect2::new(0.0, 0.0, snap_grid(max_x.max(228.6)), snap_grid(max_y.max(152.4)));
+    let this_bounds = Rect2::new(0.0, 0.0, snap_grid(max_x.max(228.6)), snap_grid(max_y.max(152.4)));
+    if s_idx == 0 {
+        sheet_bounds = this_bounds;
+    }
 
     let sheet_str = schem
         .map(|s| s.sheet.clone())
         .unwrap_or_else(|| "A4 landscape".to_string());
     if let Some((sw, sh)) = sheet_dimensions_mm(&sheet_str) {
-        if sheet_bounds.width() > sw - 12.0 || sheet_bounds.depth() > sh - 12.0 {
+        if this_bounds.width() > sw - 12.0 || this_bounds.depth() > sh - 12.0 {
             diagnostics.push(
                 Diagnostic::warning(
                     "W_SHEET_OVERFLOW",
                     "layout",
                     format!(
-                        "Schematic bounds ({:.1}mm × {:.1}mm) exceed declared sheet '{}' ({:.0}mm × {:.0}mm)",
-                        sheet_bounds.width(),
-                        sheet_bounds.depth(),
+                        "Schematic '{}' bounds ({:.1}mm × {:.1}mm) exceed declared sheet '{}' ({:.0}mm × {:.0}mm)",
+                        sheet_name_str,
+                        this_bounds.width(),
+                        this_bounds.depth(),
                         sheet_str,
                         sw,
                         sh
@@ -1922,23 +2153,32 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     schem.map(|s| s.span.clone()),
                 )
                 .with_suggestion(
-                    "Split groups across multiple `row [...]` bands in `layout { ... }` or increase `sheet:` (e.g., `A3 landscape` or `A2 landscape`)",
+                    "Split groups across multiple `schematic` sheets, `row [...]` bands, or increase `sheet:` (e.g., `A3 landscape`)",
                 ),
             );
         }
     }
 
-    let views = vec![ViewIr {
-        id: schem.map(|s| s.name.clone()).unwrap_or_else(|| "Main".to_string()),
+    views.push(ViewIr {
+        id: sheet_name_str,
         kind: "SchematicView".to_string(),
-        frame: default_frame,
+        frame: default_frame.clone(),
         sheet: sheet_str,
         scale: "1:1".to_string(),
         show_dimensions: false,
         show_labels: true,
-    }];
+        title: schem.and_then(|s| s.title.clone()),
+        rev: schem.and_then(|s| s.rev.clone()),
+        author: schem.and_then(|s| s.author.clone()),
+        sheet_index: if total_sheets > 1 { Some(s_idx + 1) } else { None },
+        sheet_total: if total_sheets > 1 { Some(total_sheets) } else { None },
+    });
 
+    entities.extend(local_entities);
+    schematic_groups.extend(local_groups);
+    schematic_routes.extend(local_routes);
     let _ = col_bounds;
+    } // end per-sheet loop
 
     let mut ir = CanonicalIr {
         ir_version: "0.6.0".to_string(),
@@ -2369,4 +2609,12 @@ fn place_pins_on_body(
         }
     }
     placed
+}
+
+fn is_power_rail_name(name: &str) -> bool {
+    let u = name.to_uppercase();
+    if u.contains("_ADC") || u.contains("_SENSE") || u.contains("_SNS") || u.contains("_SIG") || u.contains("_DIV") {
+        return false;
+    }
+    u.starts_with('V')
 }

@@ -1,0 +1,280 @@
+// EDL Benchmark B — 52-Component Dense Discrete Isolated Flyback SMPS Power Supply
+// Modeled on Image 1 (classic discrete primary-regulated multi-rail flyback SMPS):
+//   - AC EMI filter + full-wave bridge rectifier (VD3..VD6) + 310V HV DC bus
+//   - Discrete BJT switching, startup & protection stage (VT1..VT4, VT6) + 4 parallel sense resistors (R25||R28||R30||R32)
+//   - Galvanic isolation barrier: multi-winding flyback transformer T1 + feedback optocoupler U_OPTO
+//   - 3 isolated secondary rails (+125V/HV, +15V, +12V regulated) with LC pi-filters
+//   - Verified with `require galvanic_isolation(GND_HOT, GND_COLD)` AND real KiCad 9 CLI ERC!
+
+project "SMPS_Flyback_Isolated_52" {
+    units: mm
+    frame Sheet: Frame2
+
+    circuit FlybackSmps {
+        // ---- ZONE 1: AC INPUT, EMI FILTER & BRIDGE RECTIFIER (HOT PRIMARY) ----
+        component J_AC: connector {
+            value: "AC_230V"
+            pin L: power_out (230V)
+            pin N: ground (0V)
+        }
+        component F1: fuse {
+            value: "3.15A_T"
+            pin A: passive
+            pin B: passive
+        }
+        component R10: "Device:R" { value: "4.7ohm_NTC"  orient: 90 }
+        component L1: inductor {
+            value: "10mH_CM"
+            pin A: passive
+            pin B: passive
+        }
+        component C5: "Device:C" { value: 220nF }
+        component C7: "Device:C" { value: 220nF }
+        component VD3: "Device:D" { value: "KD226G"  orient: 90 }
+        component VD4: "Device:D" { value: "KD226G"  orient: 90 }
+        component VD5: "Device:D" { value: "KD226G"  orient: 90 }
+        component VD6: "Device:D" { value: "KD226G"  orient: 90 }
+        component C11: "Device:C" { value: "220uF_400V" }
+        component R20: "Device:R" { value: 4.7ohm  orient: 90 }
+
+        // ---- ZONE 2: PRIMARY STARTUP, PROTECTION & STABILIZATION (VT1..VT4) ----
+        component R1:  "Device:R" { value: 2.2kohm }
+        component R2:  "Device:R" { value: 5.6kohm }
+        component R6:  "Device:R" { value: 15kohm   orient: 90 }
+        component R7:  "Device:R" { value: 5.6kohm  orient: 90 }
+        component R11: "Device:R" { value: 1.5kohm  orient: 90 }
+        component C1:  "Device:C" { value: 100nF }
+        component C2:  "Device:C" { value: 100uF }
+        component C4:  "Device:C" { value: 22nF }
+        component VD1: "Device:D" { value: "KS168A_Z" }
+        component VT1: "Transistor_BJT:BC547" { value: "KT315B" }
+        component VT2: "Transistor_BJT:BC547" { value: "KT361G" }
+        component VT3: "Transistor_BJT:BC547" { value: "KT315B" }
+        component VT4: "Transistor_BJT:BC547" { value: "KT940A" }
+        component R9:  "Device:R" { value: 27kohm }
+        component R12: "Device:R" { value: 1kohm }
+        component R17: "Device:R" { value: 330ohm }
+        component R18: "Device:R" { value: 47kohm }
+        component R37: "Device:R" { value: 5.6kohm }
+        component R38: "Device:R" { value: 1.5kohm }
+
+        // ---- ZONE 3: MAIN POWER SWITCH (VT6), SNUBBER & PARALLEL SENSE BANK ----
+        component VT6: "Transistor_BJT:BC547" { value: "KT846B_HV" }
+        component R26: "Device:R" { value: 2kohm   orient: 90 }
+        component R27: "Device:R" { value: 1ohm }
+        component R29: "Device:R" { value: 1.5ohm }
+        component R25: "Device:R" { value: 27ohm }
+        component R28: "Device:R" { value: 68ohm }
+        component R30: "Device:R" { value: 68ohm }
+        component R32: "Device:R" { value: 68ohm }
+        component VD8: "Device:D" { value: "KD226B" }
+        component C10: "Device:C" { value: 100nF }
+        component C12: "Device:C" { value: 1nF }
+        component R31: "Device:R" { value: 56ohm }
+
+        // ---- ZONE 4: GALVANIC ISOLATION BARRIER (FLYBACK TRANSFORMER + OPTOCOUPLER) ----
+        component T1: transformer {
+            value: "TPI-4-3_FLYBACK"
+            isolated: true
+            pin PRI_TOP: passive side: west
+            pin PRI_SW:  passive side: west
+            pin AUX_H:   passive side: west
+            pin AUX_L:   passive side: west
+            pin SEC1_H:  power_out (125V) side: east
+            pin SEC2_H:  power_out (15V)  side: east
+            pin SEC3_H:  power_out (12V)  side: east
+            pin SEC_GND: ground (0V)      side: east
+        }
+        component U_OPTO: ic {
+            value: "PC817_ISO"
+            isolated: true
+            pin LED_A: passive side: east
+            pin LED_K: passive side: east
+            pin COL:   passive side: west
+            pin EMIT:  passive side: west
+        }
+
+        // ---- ZONE 5: ISOLATED SECONDARY RECTIFIERS, LC PI-FILTERS & 12V REG (COLD) ----
+        component VD14: "Device:D_Schottky" { value: "KD226D"  orient: 90 }
+        component L5:   inductor { value: "100uH"  pin A: passive  pin B: passive }
+        component C21:  "Device:C" { value: "100uF_160V" }
+        component R36:  "Device:R" { value: 220kohm }
+
+        component VD12: "Device:D_Schottky" { value: "KD226B"  orient: 90 }
+        component L4:   inductor { value: "60uH"   pin A: passive  pin B: passive }
+        component C22:  "Device:C" { value: "470uF_25V" }
+
+        component VD11: "Device:D_Schottky" { value: "KD226A"  orient: 90 }
+        component C19:  "Device:C" { value: "470uF_25V" }
+        component U_REG: "Regulator_Linear:AMS1117-3.3" { value: "KR142EN8B_12V" }
+        component R34:  "Device:R" { value: 1kohm }
+        component C24:  "Device:C" { value: 100uF }
+
+        component J_OUT: connector {
+            value: "SEC_OUT"
+            pin V125:     power_in (100V..140V)
+            pin V15:      power_in (12V..18V)
+            pin V12_REG:  power_in (10V..14V)
+            pin GND_COLD: ground (0V)
+        }
+
+        // ---- PRIMARY (HOT) CONNECTIVITY ----
+        net AC_L_FUSE { connect: [J_AC.L, F1.A] }
+        net AC_NTC    { connect: [F1.B, R10.1] }
+        net AC_FILT   { connect: [R10.2, L1.A, C5.1] }
+        net AC_BR_L   { connect: [L1.B, C7.1, VD3.2, VD4.1] }
+        net AC_BR_N   { connect: [J_AC.N, C5.2, C7.2, VD5.2, VD6.1] }
+        net HV_BUS    {
+            power_flag: true
+            connect: [VD3.1, VD5.1, R20.1]
+        }
+        net HV_310V   {
+            power_flag: true
+            connect: [R20.2, C11.1, T1.PRI_TOP, R1.1, R9.1, C12.1]
+        }
+        net GND_HOT   {
+            connect: [
+                VD4.2, VD6.2, C11.2, R2.2, C1.2, C2.2, C4.2, VD1.2,
+                VT1.E, VT3.E, R17.2, R18.2, R37.2, R27.2, R29.2,
+                R25.2, R28.2, R30.2, R32.2, C10.2, T1.AUX_L, U_OPTO.EMIT
+            ]
+        }
+
+        // Control & Protection (Hot)
+        net BIAS_REF  { connect: [R1.2, R2.1, C1.1, VD1.1, R7.1, VT2.C] }
+        net CTRL_A    { connect: [R7.2, VT2.B, R6.1] }
+        net CTRL_B    { connect: [R6.2, R11.1, VT1.C, R12.1] }
+        net CTRL_C    { connect: [R11.2, C2.1, R17.1, VT2.E, U_OPTO.COL] }
+        net PROT_IN   { connect: [R12.2, VT1.B, C4.1, R18.1, VT3.B] }
+        net PROT_DRV  { connect: [R9.2, VT3.C, R37.1, VT4.B] }
+        net START_DRV { connect: [VT4.C, T1.AUX_H, VD8.2] }
+        net BASE_DRV  { connect: [VT4.E, R38.1, R26.1, VD8.1, C10.1] }
+        net SW_BASE   { connect: [R26.2, R38.2, VT6.B] }
+        net SW_EMIT   { connect: [VT6.E, R27.1, R29.1, R25.1, R28.1, R30.1, R32.1] }
+        net SNUB_MID  { connect: [C12.2, R31.1] }
+        net SW_COL    { connect: [VT6.C, R31.2, T1.PRI_SW] }
+
+        // ---- SECONDARY (COLD, GALVANICALLY ISOLATED) CONNECTIVITY ----
+        net GND_COLD  { connect: [T1.SEC_GND, C21.2, R36.2, C22.2, C19.2, U_REG.GND, C24.2, J_OUT.GND_COLD, U_OPTO.LED_K] }
+        net SEC1_AC   { connect: [T1.SEC1_H, VD14.2] }
+        net SEC1_FILT { connect: [VD14.1, L5.A] }
+        net V125_OUT  {
+            power_flag: true
+            connect: [L5.B, C21.1, R36.1, J_OUT.V125]
+        }
+        net SEC2_AC   { connect: [T1.SEC2_H, VD12.2] }
+        net SEC2_FILT { connect: [VD12.1, L4.A] }
+        net V15_OUT   {
+            power_flag: true
+            connect: [L4.B, C22.1, J_OUT.V15]
+        }
+        net SEC3_AC   { connect: [T1.SEC3_H, VD11.2] }
+        net V15_RAW   {
+            power_flag: true
+            connect: [VD11.1, C19.1, U_REG.VI]
+        }
+        net V12_REG   {
+            power_flag: true
+            connect: [U_REG.VO, C24.1, R34.1, J_OUT.V12_REG]
+        }
+        net FB_OPTO   { connect: [R34.2, U_OPTO.LED_A] }
+    }
+
+    schematic MainSMPS {
+        sheet: A2 landscape
+        title: "52-Component Discrete Isolated Flyback SMPS"
+        rev: "1.0"
+        author: "EDL v1.2"
+
+        zone AC_RECTIFIER {
+            title: "1. AC INPUT, EMI FILTER & BRIDGE (HOT)"
+            hstack {
+                J_AC
+                vstack { F1  R10  L1 }
+                subzone "EMI CAPS" {
+                    hstack { C5  C7 }
+                }
+                subzone "FULL-WAVE BRIDGE" {
+                    vstack {
+                        hstack { VD3  VD5 }
+                        hstack { VD4  VD6 }
+                    }
+                }
+                hstack { R20  C11 }
+            }
+            note "WARNING: HOT PRIMARY (310V DC / GND_HOT)"
+        }
+
+        zone CTRL_PROTECT {
+            title: "2. STABILIZATION & PROTECTION (VT1..VT4)"
+            hstack {
+                subzone "REF & STAB" {
+                    vstack {
+                        hstack { R1  R2  VD1  C1 }
+                        hstack { R7  VT2  R6  R11 }
+                        hstack { VT1  C2  R17  C4 }
+                    }
+                }
+                subzone "PROTECTION & STARTUP" {
+                    vstack {
+                        hstack { R12  R18  R9 }
+                        hstack { VT3  R37  VT4  R38 }
+                    }
+                }
+            }
+            note "Operating nodes: 13V bias, 12.2V ref, 0.7V trip"
+        }
+
+        zone POWER_SWITCH {
+            title: "3. HV SWITCH (VT6), SNUBBER & SENSE BANK"
+            vstack {
+                hstack { VD8  C10  R26  VT6  C12  R31 }
+                subzone "PARALLEL CURRENT-SENSE BANK" {
+                    hstack { R27  R29  R25  R28  R30  R32 }
+                }
+            }
+        }
+
+        zone ISOLATION_BARRIER {
+            title: "4. GALVANIC ISOLATION BARRIER"
+            vstack { T1  U_OPTO }
+            note "Reinforced 4kV isolation: GND_HOT || GND_COLD"
+        }
+
+        zone SECONDARY_OUT {
+            title: "5. ISOLATED SECONDARIES & 12V REG (COLD)"
+            vstack {
+                subzone "+125V RAIL" {
+                    hstack { VD14  L5  C21  R36 }
+                }
+                subzone "+15V RAIL" {
+                    hstack { VD12  L4  C22 }
+                }
+                subzone "+12V REGULATED & OPTO FB" {
+                    hstack { VD11  C19  U_REG  C24  R34  J_OUT }
+                }
+            }
+            note "COLD SECONDARY (GND_COLD) — Verified Isolated"
+        }
+
+        layout {
+            row [AC_RECTIFIER, CTRL_PROTECT]
+            row [POWER_SWITCH, ISOLATION_BARRIER, SECONDARY_OUT]
+            group_gap: 20.32mm
+            row_gap: 22.86mm
+        }
+        routing {
+            default: zone_local
+            power: symbol
+            ground: symbol
+        }
+    }
+
+    verify {
+        require all_required_pins_connected
+        require no_power_ground_short
+        require no_multiple_power_drivers
+        require no_single_pin_nets
+        require galvanic_isolation(GND_HOT, GND_COLD)
+    }
+}

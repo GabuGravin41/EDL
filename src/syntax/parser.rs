@@ -415,7 +415,25 @@ impl Parser {
         self.expect(TokenKind::Arrow, "'->'")?;
         let (comp, cspan) = self.expect_ident("internal component id")?;
         self.expect(TokenKind::Dot, "'.'")?;
-        let (pin, pspan) = self.expect_ident("internal pin name")?;
+        let (pin, pspan) = match self.peek().kind.clone() {
+            TokenKind::Ident(p) => {
+                let sp = self.bump().span(&self.file);
+                (p, sp)
+            }
+            TokenKind::Number(n, u) if u.is_empty() => {
+                let sp = self.bump().span(&self.file);
+                (format!("{}", n.round() as i64), sp)
+            }
+            TokenKind::Plus => {
+                let sp = self.bump().span(&self.file);
+                ("+".to_string(), sp)
+            }
+            TokenKind::Minus => {
+                let sp = self.bump().span(&self.file);
+                ("-".to_string(), sp)
+            }
+            _ => self.expect_ident("internal pin name or number")?,
+        };
         Ok(PortBindDecl {
             port,
             target: PinRef {
@@ -433,12 +451,17 @@ impl Parser {
         self.expect(TokenKind::Eq, "'='")?;
         let (module, mspan) = self.expect_ident("module name")?;
         let mut args = Vec::new();
+        let mut port_nets = Vec::new();
         let mut end = mspan;
         if self.peek().kind == TokenKind::LParen {
             self.bump();
             while self.peek().kind != TokenKind::RParen && self.peek().kind != TokenKind::Eof {
                 let (k, ksp) = self.expect_ident("argument name")?;
-                self.expect(TokenKind::Colon, "':'")?;
+                if matches!(self.peek().kind, TokenKind::Colon | TokenKind::Eq) {
+                    self.bump();
+                } else {
+                    self.expect(TokenKind::Colon, "':' or '='")?;
+                }
                 let (v, vsp) = self.parse_arg_value()?;
                 args.push((k, v, ksp.merge(&vsp)));
                 if self.peek().kind == TokenKind::Comma {
@@ -449,10 +472,29 @@ impl Parser {
             }
             end = self.expect(TokenKind::RParen, "')'")?.span(&self.file);
         }
+        // Optional trailing `{ PORT: NET, ... }` port-to-net wiring block
+        if self.peek().kind == TokenKind::LBrace {
+            self.bump();
+            while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+                let (port_k, ksp) = self.expect_ident("port binding name")?;
+                if matches!(self.peek().kind, TokenKind::Colon | TokenKind::Eq) {
+                    self.bump();
+                } else {
+                    self.expect(TokenKind::Colon, "':' or '='")?;
+                }
+                let (net_v, vsp) = self.expect_ident("target net name")?;
+                port_nets.push((port_k, net_v, ksp.merge(&vsp)));
+                if self.peek().kind == TokenKind::Comma {
+                    self.bump();
+                }
+            }
+            end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+        }
         Ok(UseDecl {
             instance,
             module,
             args,
+            port_nets,
             span: start.merge(&end),
         })
     }
@@ -1751,14 +1793,29 @@ impl Parser {
         self.expect(TokenKind::LBrace, "'{'")?;
 
         let mut sheet = "A4 landscape".to_string();
+        let mut title = None;
+        let mut rev = None;
+        let mut author = None;
         let mut groups = Vec::new();
         let mut layout = None;
         let mut routing = None;
         let mut placements = Vec::new();
 
         while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
-            let (kw, kspan) = self.expect_ident("sheet, group, layout, routing, or place")?;
+            let (kw, kspan) = self.expect_ident("sheet, title, rev, author, group, zone, layout, routing, or place")?;
             match kw.as_str() {
+                "title" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    title = Some(self.expect_string("sheet title")?.0);
+                }
+                "rev" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    rev = Some(self.expect_string("sheet revision")?.0);
+                }
+                "author" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    author = Some(self.expect_string("sheet author")?.0);
+                }
                 "sheet" => {
                     self.expect(TokenKind::Colon, "':'")?;
                     let (size, _) = self.expect_ident("sheet size")?;
@@ -1775,27 +1832,97 @@ impl Parser {
                     };
                     sheet = format!("{size}{orient}");
                 }
-                "group" => {
-                    let (gname, _) = self.expect_ident("group name")?;
-                    self.expect(TokenKind::LBrace, "'{'")?;
-                    self.expect_keyword("members")?;
-                    self.expect(TokenKind::Colon, "':'")?;
-                    self.expect(TokenKind::LBracket, "'['")?;
-                    let mut members = Vec::new();
-                    while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
-                        let m = self.parse_room_ref()?;
-                        members.push(m);
-                        if self.peek().kind == TokenKind::Comma {
+                "group" | "zone" => {
+                    let is_zone = kw == "zone";
+                    let gname = match self.peek().kind.clone() {
+                        TokenKind::Str(s) => {
                             self.bump();
-                        } else {
-                            break;
+                            s
+                        }
+                        _ => self.expect_ident("group/zone name")?.0,
+                    };
+                    self.expect(TokenKind::LBrace, "'{'")?;
+                    let mut gtitle: Option<String> = None;
+                    let mut border = if is_zone { "solid" } else { "dashed" }.to_string();
+                    let mut members: Vec<String> = Vec::new();
+                    let mut notes: Vec<String> = Vec::new();
+                    let mut tree_items: Vec<LayoutNode> = Vec::new();
+
+                    while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+                        let (gk, gspan) = self.expect_ident("group/zone entry")?;
+                        match gk.as_str() {
+                            "title" => {
+                                self.expect(TokenKind::Colon, "':'")?;
+                                gtitle = Some(self.expect_string("zone title")?.0);
+                            }
+                            "style" | "border" => {
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (st, _) = self.expect_ident("solid or dashed")?;
+                                border = st;
+                            }
+                            "note" => {
+                                if self.peek().kind == TokenKind::Colon {
+                                    self.bump();
+                                }
+                                notes.push(self.expect_string("zone note")?.0);
+                            }
+                            "members" => {
+                                self.expect(TokenKind::Colon, "':'")?;
+                                self.expect(TokenKind::LBracket, "'['")?;
+                                while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
+                                    let m = self.parse_room_ref()?;
+                                    members.push(m);
+                                    if self.peek().kind == TokenKind::Comma {
+                                        self.bump();
+                                    } else {
+                                        break;
+                                    }
+                                }
+                                self.expect(TokenKind::RBracket, "']'")?;
+                            }
+                            "hstack" => {
+                                tree_items.push(self.parse_layout_node("hstack")?);
+                            }
+                            "vstack" => {
+                                tree_items.push(self.parse_layout_node("vstack")?);
+                            }
+                            "subzone" => {
+                                tree_items.push(self.parse_layout_node("subzone")?);
+                            }
+                            other => {
+                                return Err(Diagnostic::error(
+                                    "E_PARSE_GROUP",
+                                    "syntax",
+                                    format!("Unknown entry '{other}' inside group/zone '{gname}'"),
+                                    Some(gspan),
+                                ))
+                            }
                         }
                     }
-                    self.expect(TokenKind::RBracket, "']'")?;
                     let gend = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+                    let layout_tree = if tree_items.is_empty() {
+                        None
+                    } else if tree_items.len() == 1 {
+                        Some(tree_items.remove(0))
+                    } else {
+                        Some(LayoutNode::VStack(tree_items))
+                    };
+                    if let Some(ref lt) = layout_tree {
+                        let mut collected = Vec::new();
+                        lt.collect_components(&mut collected);
+                        for c in collected {
+                            if !members.contains(&c) {
+                                members.push(c);
+                            }
+                        }
+                    }
                     groups.push(SchematicGroupDecl {
                         name: gname,
+                        title: gtitle,
+                        border,
                         members,
+                        layout_tree,
+                        notes,
                         span: kspan.merge(&gend),
                     });
                 }
@@ -1955,11 +2082,55 @@ impl Parser {
         Ok(SchematicDecl {
             name,
             sheet,
+            title,
+            rev,
+            author,
             groups,
             layout,
             routing,
             placements,
             span: start.merge(&end),
+        })
+    }
+
+    fn parse_layout_node(&mut self, kind: &str) -> Result<LayoutNode, Diagnostic> {
+        let title = if kind == "subzone" {
+            Some(match self.peek().kind.clone() {
+                TokenKind::Str(s) => {
+                    self.bump();
+                    s
+                }
+                _ => self.expect_ident("subzone title")?.0,
+            })
+        } else {
+            None
+        };
+        self.expect(TokenKind::LBrace, "'{'")?;
+        let mut items = Vec::new();
+        while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+            match self.peek().kind.clone() {
+                TokenKind::Ident(ref k) if k == "hstack" || k == "vstack" || k == "subzone" => {
+                    let subk = k.clone();
+                    self.bump();
+                    items.push(self.parse_layout_node(&subk)?);
+                }
+                _ => {
+                    let comp_ref = self.parse_room_ref()?;
+                    items.push(LayoutNode::Comp(comp_ref));
+                }
+            }
+            if self.peek().kind == TokenKind::Comma {
+                self.bump();
+            }
+        }
+        self.expect(TokenKind::RBrace, "'}'")?;
+        Ok(match kind {
+            "hstack" => LayoutNode::HStack(items),
+            "subzone" => LayoutNode::SubZone {
+                title: title.unwrap_or_default(),
+                items,
+            },
+            _ => LayoutNode::VStack(items),
         })
     }
 
@@ -2487,6 +2658,7 @@ fn parse_routing_style(s: &str, span: Span) -> Result<NetRoutingStyle, Diagnosti
         "rail" => Ok(NetRoutingStyle::Rail),
         "symbol" => Ok(NetRoutingStyle::Symbol),
         "label_stub" => Ok(NetRoutingStyle::LabelStub),
+        "zone_local" | "auto_zone" => Ok(NetRoutingStyle::ZoneLocal),
         _ => Err(Diagnostic::error(
             "E_PARSE_ROUTING_STYLE",
             "syntax",

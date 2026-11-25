@@ -1,10 +1,10 @@
 [package]
 name = "edl"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/GabuGravin41/EDL"
-description = "Engineering Description Language (EDL) v1.1 — multi-domain Architecture + Building Electrical (MEP) + Electronics CAD/EDA, SPICE/MNA & MCP"
+description = "Engineering Description Language (EDL) v1.2 — multi-domain Architecture + Building Electrical (MEP) + Electronics CAD/EDA, SPICE/MNA & MCP"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
