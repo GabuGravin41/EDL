@@ -1110,13 +1110,18 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         let mut tree_bbox_opt: Option<Rect2> = None;
         if let Some(lt) = gdecl_opt.and_then(|g| g.layout_tree.as_ref()) {
             let sz_fn = |cid: &str| size_map.get(cid).copied().unwrap_or((15.24, 10.16));
+            let title_offset = if gdecl_opt.and_then(|g| g.title.as_ref()).is_some() {
+                7.62
+            } else {
+                0.0
+            };
             let tb = crate::domains::elec::sheet_layout::place_layout_node(
                 lt,
                 cur_x,
-                row_start_y,
+                snap_grid(row_start_y + title_offset),
                 &sz_fn,
-                10.16,
-                10.16,
+                5.08,
+                7.62,
                 &mut tree_pos,
                 &mut g_subzones,
             );
@@ -1330,9 +1335,14 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         }
 
         if let Some(tb) = tree_bbox_opt {
+            let title_hdr = if gdecl_opt.and_then(|g| g.title.as_ref()).is_some() {
+                7.62
+            } else {
+                2.54
+            };
             g_min_x = g_min_x.min(tb.min_x - 2.54);
             g_max_x = g_max_x.max(tb.max_x + 2.54);
-            g_min_y = g_min_y.min(tb.min_y - 2.54);
+            g_min_y = g_min_y.min(tb.min_y - title_hdr);
             g_max_y = g_max_y.max(tb.max_y + 2.54);
             cur_row_max_y = cur_row_max_y.max(g_max_y);
             max_comp_x = max_comp_x.max(g_max_x + 7.62);

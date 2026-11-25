@@ -10,11 +10,26 @@ use crate::domains::elec::ast::LayoutNode;
 use std::collections::BTreeMap;
 
 const GRID_MM: f64 = 2.54;
-const CELL_PAD_X: f64 = 17.78; // 7 grids left/right for pin stubs + wide shaped net flags
-const CELL_PAD_TOP: f64 = 12.70; // 5 grids above for North power rail + RefDes
-const CELL_PAD_BOT: f64 = 15.24; // 6 grids below for South GND symbol + Value
 const SUBZONE_PAD: f64 = 5.08;
-const SUBZONE_FOOTER: f64 = 7.62;
+const SUBZONE_FOOTER: f64 = 5.08;
+
+/// Body-aware KiCad 2.54mm-grid cell padding: compact passives pack tightly (like hand-drafted
+/// KiCad decoupling banks), while multi-pin ICs keep generous left/right gutters for global net flags.
+fn cell_padding(bw: f64, bh: f64) -> (f64, f64, f64, f64) {
+    // Returns (pad_left, pad_right, pad_top, pad_bot)
+    if bw <= 10.5 && bh <= 10.5 {
+        // Vertical 2-pin passives (Device:C / Device:R) place RefDes+Value cleanly to the right
+        if bh >= bw {
+            (5.08, 10.16, 7.62, 7.62)
+        } else {
+            (7.62, 7.62, 7.62, 7.62)
+        }
+    } else if bw <= 20.5 && bh <= 20.5 {
+        (10.16, 10.16, 10.16, 10.16)
+    } else {
+        (15.24, 15.24, 10.16, 10.16)
+    }
+}
 
 fn snap(v: f64) -> f64 {
     (v / GRID_MM).round() * GRID_MM
@@ -30,10 +45,8 @@ pub fn measure_layout_node(
     match node {
         LayoutNode::Comp(cid) => {
             let (bw, bh) = body_size(cid);
-            (
-                snap(bw + 2.0 * CELL_PAD_X),
-                snap(bh + CELL_PAD_TOP + CELL_PAD_BOT),
-            )
+            let (pl, pr, pt, pb) = cell_padding(bw, bh);
+            (snap(bw + pl + pr), snap(bh + pt + pb))
         }
         LayoutNode::HStack(items) => {
             if items.is_empty() {
@@ -101,8 +114,10 @@ pub fn place_layout_node(
 
     match node {
         LayoutNode::Comp(cid) => {
-            let bx = snap(x0 + CELL_PAD_X);
-            let by = snap(y0 + CELL_PAD_TOP);
+            let (bw, bh) = body_size(cid);
+            let (pl, _pr, pt, _pb) = cell_padding(bw, bh);
+            let bx = snap(x0 + pl);
+            let by = snap(y0 + pt);
             positions.insert(cid.clone(), (bx, by));
             Rect2::new(x0, y0, snap(x0 + total_w), snap(y0 + total_h))
         }
