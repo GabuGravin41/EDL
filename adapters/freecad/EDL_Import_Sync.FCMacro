@@ -1,0 +1,307 @@
+#!/usr/bin/env python3
+"""EDL <-> FreeCAD 3D Architectural & MEP Import/Sync Macro.
+
+Usage inside FreeCAD:
+  Macro -> Macros -> Execute `EDL_Import_Sync.FCMacro`
+  (Select any architectural or arch+mep.elec `.edl` file; builds a full 3D model
+   with mitered walls, floor slab, fixtures, and 3D-elevated electrical devices,
+   each tagged with custom `EDL_ID` & `EDL_KIND` properties.)
+
+Standalone CLI / CI headless mode (no FreeCAD GUI required):
+  python3 adapters/freecad/EDL_Import_Sync.FCMacro examples/apartment_2br_electrical.edl --plan-3d
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+
+DEFAULT_CEILING_MM = 2700.0
+SLAB_THICKNESS_MM = 150.0
+
+FIXTURE_HEIGHTS_MM: Dict[str, float] = {
+    "wardrobe": 2100.0,
+    "fridge": 1850.0,
+    "cabinet": 900.0,
+    "counter": 900.0,
+    "vanity": 850.0,
+    "sink": 850.0,
+    "sofa": 800.0,
+    "table": 750.0,
+    "desk": 750.0,
+    "bed": 550.0,
+    "toilet": 420.0,
+    "shower": 120.0,
+}
+
+
+@dataclass
+class SolidSpec:
+    edl_id: str
+    kind: str
+    group: str
+    x: float
+    y: float
+    z: float
+    dx: float
+    dy: float
+    dz: float
+    color_rgb: Tuple[float, float, float]
+
+
+def find_edl_binary(explicit: Optional[str] = None) -> str:
+    if explicit:
+        return explicit
+    env_bin = os.environ.get("EDL_BIN")
+    if env_bin and Path(env_bin).is_file():
+        return env_bin
+    on_path = shutil.which("edl")
+    if on_path:
+        return on_path
+    repo_root = Path(__file__).resolve().parents[2]
+    for rel in ("target/release/edl", "target/debug/edl"):
+        cand = repo_root / rel
+        if cand.is_file():
+            return str(cand)
+    raise FileNotFoundError("Could not locate `edl` binary. Build with `cargo build --release` or set EDL_BIN.")
+
+
+def compile_edl_ir(edl_file: Path, edl_bin: Optional[str] = None) -> Dict[str, Any]:
+    exe = find_edl_binary(edl_bin)
+    proc = subprocess.run([exe, "build", str(edl_file), "--json"], text=True, capture_output=True)
+    if proc.returncode != 0:
+        raise RuntimeError(f"edl build failed:\n{proc.stderr or proc.stdout}")
+    return json.loads(proc.stdout)
+
+
+def infer_ceiling_height(ir: Dict[str, Any]) -> float:
+    for ent in ir.get("entities", []):
+        g = ent.get("geometry", {})
+        if g.get("type") == "mep_device" and g.get("device_kind") == "light":
+            h = float(g.get("height_mm", DEFAULT_CEILING_MM))
+            if h >= 2000.0:
+                return h
+    return DEFAULT_CEILING_MM
+
+
+def build_3d_plan(ir: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert EDL Canonical IR into exact 3D box extrusions tagged with stable EDL_IDs."""
+    ceiling_mm = infer_ceiling_height(ir)
+    solids: List[SolidSpec] = []
+
+    # 1. Floor slab
+    bounds = ir.get("project", {}).get("exterior_bounds")
+    if bounds:
+        solids.append(
+            SolidSpec(
+                edl_id="EDL_FloorSlab",
+                kind="arch.slab",
+                group="Structure",
+                x=bounds["min_x"],
+                y=bounds["min_y"],
+                z=-SLAB_THICKNESS_MM,
+                dx=bounds["max_x"] - bounds["min_x"],
+                dy=bounds["max_y"] - bounds["min_y"],
+                dz=SLAB_THICKNESS_MM,
+                color_rgb=(0.86, 0.88, 0.90),
+            )
+        )
+
+    # 2. Exact mitered wall solids (exterior & interior)
+    for idx, cell in enumerate(ir.get("wall_solids", [])):
+        r = cell["rect"]
+        dx = r["max_x"] - r["min_x"]
+        dy = r["max_y"] - r["min_y"]
+        if dx <= 0.1 or dy <= 0.1:
+            continue
+        is_ext = cell.get("kind") == "exterior"
+        solids.append(
+            SolidSpec(
+                edl_id=f"WallSolid_{idx}",
+                kind=f"arch.wall.{cell.get('kind', 'interior')}",
+                group="Walls",
+                x=r["min_x"],
+                y=r["min_y"],
+                z=0.0,
+                dx=dx,
+                dy=dy,
+                dz=ceiling_mm,
+                color_rgb=(0.24, 0.29, 0.36) if is_ext else (0.45, 0.50, 0.58),
+            )
+        )
+
+    # 3. Fixtures and 3D-elevated MEP electrical devices
+    for ent in ir.get("entities", []):
+        eid = ent["id"]
+        g = ent.get("geometry", {})
+        gtype = g.get("type")
+        if gtype == "fixture":
+            r = g["body_rect"]
+            cat = str(g.get("category", "")).lower()
+            h = 750.0
+            for key, val in FIXTURE_HEIGHTS_MM.items():
+                if key in cat:
+                    h = val
+                    break
+            solids.append(
+                SolidSpec(
+                    edl_id=eid,
+                    kind="arch.fixture",
+                    group="Fixtures",
+                    x=r["min_x"],
+                    y=r["min_y"],
+                    z=0.0,
+                    dx=r["max_x"] - r["min_x"],
+                    dy=r["max_y"] - r["min_y"],
+                    dz=h,
+                    color_rgb=(0.76, 0.81, 0.88),
+                )
+            )
+        elif gtype == "mep_device":
+            pos = g["pos"]
+            dk = g.get("device_kind", "outlet")
+            z_mm = float(g.get("height_mm", 300.0))
+            if dk == "panel":
+                w, d, h, col = 300.0, 120.0, 450.0, (0.85, 0.18, 0.18)
+                z0 = z_mm - h * 0.5
+            elif dk == "light":
+                w, d, h, col = 220.0, 220.0, 60.0, (0.95, 0.72, 0.10)
+                z0 = ceiling_mm - h
+            elif dk == "switch":
+                w, d, h, col = 86.0, 35.0, 86.0, (0.58, 0.20, 0.92)
+                z0 = z_mm - h * 0.5
+            else:
+                w, d, h, col = 146.0, 40.0, 86.0, (0.92, 0.35, 0.05)
+                z0 = z_mm - h * 0.5
+            solids.append(
+                SolidSpec(
+                    edl_id=eid,
+                    kind=f"mep.{dk}",
+                    group="Electrical",
+                    x=pos["x"] - w * 0.5,
+                    y=pos["y"] - d * 0.5,
+                    z=z0,
+                    dx=w,
+                    dy=d,
+                    dz=h,
+                    color_rgb=col,
+                )
+            )
+
+    return {
+        "project": ir["project"]["name"],
+        "domain": ir["project"]["domain"],
+        "ceiling_height_mm": ceiling_mm,
+        "solid_count": len(solids),
+        "groups": {
+            grp: sum(1 for s in solids if s.group == grp)
+            for grp in ("Structure", "Walls", "Fixtures", "Electrical")
+        },
+        "solids": [asdict(s) for s in solids],
+    }
+
+
+def sync_freecad_centers_to_edl(
+    edl_file: Path,
+    moved_centers_mm: Dict[str, Tuple[float, float]],
+    apply: bool = False,
+    edl_bin: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Sync moved FreeCAD object XY centers back into `.edl` via EDL's verified DXF anchor pipeline."""
+    exe = find_edl_binary(edl_bin)
+    tmp_dxf = edl_file.with_suffix(".freecad_sync.dxf")
+    try:
+        exp = subprocess.run([exe, "export", str(edl_file), "--dxf", str(tmp_dxf)], text=True, capture_output=True)
+        if exp.returncode != 0:
+            raise RuntimeError(exp.stderr or exp.stdout)
+        lines = tmp_dxf.read_text(encoding="utf-8").splitlines()
+        out = list(lines)
+        for i in range(1, len(lines) - 1):
+            if lines[i] == "1000" and lines[i - 1] == "EDL" and lines[i + 1] in moved_centers_mm:
+                nx, ny = moved_centers_mm[lines[i + 1]]
+                j = i
+                while j > 0 and lines[j] != "POINT":
+                    j -= 1
+                for k in range(j, i):
+                    if lines[k] == "10":
+                        out[k + 1] = f"{nx:.4f}"
+                    elif lines[k] == "20":
+                        out[k + 1] = f"{ny:.4f}"
+        tmp_dxf.write_text("\n".join(out) + "\n", encoding="utf-8")
+        args = [exe, "sync", str(edl_file), "--from-dxf", str(tmp_dxf), "--json"]
+        if apply:
+            args.append("--apply")
+        syn = subprocess.run(args, text=True, capture_output=True)
+        if syn.returncode not in (0, 2):
+            raise RuntimeError(syn.stderr or syn.stdout)
+        return json.loads(syn.stdout)
+    finally:
+        if tmp_dxf.exists():
+            tmp_dxf.unlink()
+
+
+def materialize_in_freecad(plan_3d: Dict[str, Any]) -> None:
+    """Instantiate all 3D solids inside an active FreeCAD session with EDL_ID attributes."""
+    import FreeCAD  # type: ignore
+    import Part  # type: ignore
+
+    doc = FreeCAD.newDocument(plan_3d["project"])
+    group_objs: Dict[str, Any] = {}
+    for gname in ("Structure", "Walls", "Fixtures", "Electrical"):
+        group_objs[gname] = doc.addObject("App::DocumentObjectGroup", gname)
+
+    for s in plan_3d["solids"]:
+        box = Part.makeBox(s["dx"], s["dy"], s["dz"], FreeCAD.Vector(s["x"], s["y"], s["z"]))
+        obj = doc.addObject("Part::Feature", s["edl_id"])
+        obj.Shape = box
+        obj.addProperty("App::PropertyString", "EDL_ID", "EDL", "Stable EDL entity identifier").EDL_ID = s["edl_id"]
+        obj.addProperty("App::PropertyString", "EDL_KIND", "EDL", "EDL entity kind").EDL_KIND = s["kind"]
+        if hasattr(obj, "ViewObject") and obj.ViewObject is not None:
+            obj.ViewObject.ShapeColor = tuple(s["color_rgb"])
+        group_objs[s["group"]].addObject(obj)
+
+    doc.recompute()
+    if FreeCAD.GuiUp:
+        import FreeCADGui  # type: ignore
+
+        FreeCADGui.ActiveDocument.ActiveView.viewIsometric()
+        FreeCADGui.SendMsgToActiveView("ViewFit")
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    # If launched directly inside FreeCAD GUI with no CLI args, prompt for a .edl file.
+    if argv is None and len(sys.argv) <= 1 and "FreeCAD" in sys.modules:
+        from PySide2 import QtWidgets  # type: ignore
+
+        fname, _ = QtWidgets.QFileDialog.getOpenFileName(None, "Import EDL Project", "", "EDL Files (*.edl)")
+        if not fname:
+            return 0
+        ir = compile_edl_ir(Path(fname))
+        materialize_in_freecad(build_3d_plan(ir))
+        return 0
+
+    parser = argparse.ArgumentParser(description="EDL <-> FreeCAD 3D import & sync adapter")
+    parser.add_argument("edl_file", type=Path)
+    parser.add_argument("--edl-bin", default=None)
+    parser.add_argument("--plan-3d", action="store_true", help="Print 3D extrusion plan JSON (headless)")
+    args = parser.parse_args(argv)
+
+    ir = compile_edl_ir(args.edl_file, edl_bin=args.edl_bin)
+    plan = build_3d_plan(ir)
+    if args.plan_3d or "FreeCAD" not in sys.modules:
+        print(json.dumps(plan, indent=2))
+    else:
+        materialize_in_freecad(plan)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

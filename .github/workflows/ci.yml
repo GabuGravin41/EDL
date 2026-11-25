@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust-and-adapters:
+    name: Rust Tests, Release Build & Adapter Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run Rust unit & integration tests (incl. IR schema parity)
+        run: cargo test
+
+      - name: Build release binary (warnings check)
+        run: cargo build --release
+
+      - name: Smoke-test CLI commands
+        run: |
+          ./target/release/edl domains
+          ./target/release/edl build examples/apartment_2br_electrical.edl
+          ./target/release/edl build examples/sensor_node_2row.edl
+          ./target/release/edl simulate examples/sensor_node_2row.edl
+
+      - name: Run KiCad & FreeCAD host-tool adapter tests
+        run: python3 -m unittest adapters/test_adapters.py -v

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://go.kicad.org/pcm/schemas/v1",
+  "name": "EDL Bidirectional Sync",
+  "description": "Sync KiCad 9 schematics bidirectionally with EDL (Engineering Description Language) source-of-truth files.",
+  "description_full": "Compile EDL projects into ERC-clean KiCad 9 schematics tagged with stable EDL_ID properties, and sync visual component moves, value edits, and footprint changes back into verified, minimal .edl source patches.",
+  "identifier": "org.edl-lang.kicad-bridge",
+  "type": "plugin",
+  "author": {
+    "name": "EDL Contributors",
+    "contact": {
+      "web": "https://github.com/GabuGravin41/EDL"
+    }
+  },
+  "license": "MIT",
+  "resources": {
+    "homepage": "https://github.com/GabuGravin41/EDL"
+  },
+  "versions": [
+    {
+      "version": "1.0.0",
+      "status": "stable",
+      "kicad_version": "8.0"
+    }
+  ]
+}

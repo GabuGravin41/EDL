@@ -8,7 +8,7 @@ An AI-native, typed, declarative language, Rust compiler, and native MCP server 
 - **Honest verification + machine-readable repair plans:** Every check produces a typed evidence record (`EXACTLY_CHECKED`, `VIOLATED`, `UNVERIFIED`) plus structured `RepairAction` suggestions so AI agents can self-repair deterministically.
 - **Bidirectional host-tool sync + automated target-side validation:** `.edl` stays the typed source of truth while humans work visually in KiCad / AutoCAD; exports carry stable `EDL_ID` tags, `edl sync` turns visual edits into verified minimal `.edl` patches, and `--kicad-erc` ingests real `kicad-cli sch erc` results into EDL's evidence ledger.
 
-## What Works Today (v0.9.0 — 38 Rust Tests Passing, 6/6 KiCad 9 ERCs Passing)
+## What Works Today (v1.0.0 — 38 Rust Tests + 2 Host-Adapter Suites Passing, 6/6 KiCad 9 ERCs Passing)
 
 ### Cross-Domain Core, Composition & AI Tooling (`v0.4`–`v0.6`)
 - **Modular compiler architecture:** `src/core/` (spans + repair actions, SI units including `H/mH/uH/nH`, 2D analytical geometry, Canonical IR, semantic query/measure, semantic diff), `src/syntax/` (lexer, AST, parser, import/module elaborator), `src/domains/{arch,elec}/`, and `src/mcp.rs`.
@@ -51,6 +51,12 @@ Humans stay in KiCad / AutoCAD; EDL stays the typed source of truth.
   * [`docs/EDL_V1_SPEC.md`](docs/EDL_V1_SPEC.md) — Complete EDL v1.0 language & Canonical IR specification
   * [`docs/ADAPTER_AUTHORING_GUIDE.md`](docs/ADAPTER_AUTHORING_GUIDE.md) — Building bidirectional adapters (KiCad, AutoCAD, FreeCAD, Onshape, Revit) & custom `DomainEngine` plugins
   * [`docs/MCP_INTEGRATION.md`](docs/MCP_INTEGRATION.md) — Drop-in MCP configs for Antigravity, Claude Desktop, and Cursor
+
+### Native Host-Tool Adapters, Antigravity Plugin & CI (`v1.0.0`)
+* **KiCad 9 Bridge (`adapters/kicad/`):** Zero-dependency Python CLI + KiCad ActionPlugin (`edl_kicad_bridge.py` + `metadata.json`) supporting `pull` (with live `kicad-cli` ERC), `status` dry-run, `push` (`edl sync --apply`), and `watch`.
+* **FreeCAD 3D Macro (`adapters/freecad/EDL_Import_Sync.FCMacro`):** Extrudes verified architectural + building-electrical `.edl` projects into live 3D solids (floor slab, mitered walls, fixtures, 3D-elevated panels/lights/switches/sockets) tagged with `EDL_ID`, plus headless `--plan-3d` mode and round-trip fixture sync.
+* **Antigravity Plugin Bundle (`plugins/antigravity-edl/`):** Turnkey bundle packaging `edl mcp`, the `edl-design` skill, and engineering verification rules.
+* **Open-Source Release Ready:** MIT `LICENSE`, `CONTRIBUTING.md`, `CHANGELOG.md`, GitHub Actions CI (`.github/workflows/ci.yml`), and multi-platform release builds (`.github/workflows/release.yml`).
 
 ## Quick Start
 
@@ -101,5 +107,7 @@ cargo build --release
 - `src/watch.rs` — Zero-dependency live preview & two-way KiCad watch server
 - `src/mcp.rs` — Model Context Protocol (MCP) JSON-RPC 2.0 stdio server
 - `examples/` — Reference `.edl` projects and reusable libraries (`examples/lib/`)
+- `adapters/` — Thin native host-tool adapters (`adapters/kicad/`, `adapters/freecad/`, `adapters/test_adapters.py`)
+- `plugins/antigravity-edl/` — Installable Antigravity plugin bundle (`plugin.json`, `mcp_config.json`, skill, rules)
 - `docs/` — Formal v1.0 Spec (`EDL_V1_SPEC.md`), Canonical IR JSON Schema (`canonical_ir.schema.json`), Adapter & Plugin Guide (`ADAPTER_AUTHORING_GUIDE.md`), MCP Guide (`MCP_INTEGRATION.md`), and historical references
 - `bakeoff/` — Empirical 6-way LLM syntax bake-off results (`bakeoff/SCORECARD.md`)

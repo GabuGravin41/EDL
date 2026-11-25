@@ -13,7 +13,7 @@ use std::process;
 #[command(
     name = "edl",
     version,
-    about = "Engineering Description Language (EDL) v0.9 — multi-domain compiler, simulator, sync, plugin registry & MCP server"
+    about = "Engineering Description Language (EDL) v1.0 — multi-domain compiler, simulator, sync, plugin registry & MCP server"
 )]
 struct Cli {
     #[command(subcommand)]
