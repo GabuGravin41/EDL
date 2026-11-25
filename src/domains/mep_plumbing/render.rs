@@ -113,10 +113,15 @@ pub fn render_plumbing_overlay(ir: &CanonicalIr, view: &ViewTransform) -> Option
                                 r#"    <polygon class="{acls}" points="{ax:.1},{ay:.1} {bx:.1},{by:.1} {cx:.1},{cy:.1}"/>"#
                             );
                             if seg_len > 48.0 {
-                                let label = if let Some(ref sl) = pipe.slope_ratio {
+                                let base_lbl = if let Some(ref sl) = pipe.slope_ratio {
                                     format!("Ø{:.0} {sl}", pipe.dia_mm)
                                 } else {
                                     format!("Ø{:.0}", pipe.dia_mm)
+                                };
+                                let label = if pipe.is_header && pipe.dfu > 0.0 {
+                                    format!("{base_lbl} ({:.0} DFU)", pipe.dfu)
+                                } else {
+                                    base_lbl
                                 };
                                 // Offset badge perpendicular to the pipe (into room space when stack has wall facing)
                                 let dest_facing = model
@@ -222,6 +227,12 @@ pub fn render_plumbing_overlay(ir: &CanonicalIr, view: &ViewTransform) -> Option
                     let _ = writeln!(out, r#"    <circle class="{cls}" cx="{px:.2}" cy="{py:.2}" r="3.0"/>"#);
                     draw_pill_label(&mut out, px, py + 14.5, "FD");
                 }
+                "cleanout" => {
+                    let cls = if is_err { "pl-err" } else { "pl-stack" };
+                    let _ = writeln!(out, r#"    <circle id="pl-{}" class="{cls}" cx="{px:.2}" cy="{py:.2}" r="5.5"/>"#, n.id);
+                    let _ = writeln!(out, r#"    <rect class="pl-stack-in" x="{:.2}" y="{:.2}" width="4.4" height="4.4"/>"#, px - 2.2, py - 2.2);
+                    draw_pill_label(&mut out, px, py + 14.5, "COP");
+                }
                 _ => {}
             }
         }
@@ -233,15 +244,17 @@ pub fn render_plumbing_overlay(ir: &CanonicalIr, view: &ViewTransform) -> Option
     let _ = writeln!(
         out,
         r##"    <g id="plumbing-legend">
-      <rect x="{:.1}" y="{:.1}" width="372" height="22" rx="4" fill="#ffffff" fill-opacity="0.93" stroke="#cbd5e1" stroke-width="1"/>
+      <rect x="{:.1}" y="{:.1}" width="445" height="22" rx="4" fill="#ffffff" fill-opacity="0.93" stroke="#cbd5e1" stroke-width="1"/>
       <line class="pl-cold" x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}"/>
       <text class="pl-leg-txt" x="{:.1}" y="{:.1}">CWS (Cold)</text>
       <line class="pl-hot" x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}"/>
       <text class="pl-leg-txt" x="{:.1}" y="{:.1}">HWS (Hot)</text>
       <line class="pl-soil" x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}"/>
-      <text class="pl-leg-txt" x="{:.1}" y="{:.1}">DWV Soil Ø110</text>
+      <text class="pl-leg-txt" x="{:.1}" y="{:.1}">Soil Ø110</text>
       <line class="pl-waste" x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}"/>
-      <text class="pl-leg-txt" x="{:.1}" y="{:.1}">Waste Ø40-50</text>
+      <text class="pl-leg-txt" x="{:.1}" y="{:.1}">Waste Ø50</text>
+      <line class="pl-vent" x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}"/>
+      <text class="pl-leg-txt" x="{:.1}" y="{:.1}">Vent Ø50</text>
     </g>"##,
         lx - 8.0, ly - 13.0,
         lx, ly - 2.0, lx + 18.0, ly - 2.0,
@@ -250,8 +263,10 @@ pub fn render_plumbing_overlay(ir: &CanonicalIr, view: &ViewTransform) -> Option
         lx + 109.0, ly + 1.0,
         lx + 168.0, ly - 2.0, lx + 186.0, ly - 2.0,
         lx + 191.0, ly + 1.0,
-        lx + 272.0, ly - 2.0, lx + 290.0, ly - 2.0,
-        lx + 295.0, ly + 1.0,
+        lx + 250.0, ly - 2.0, lx + 268.0, ly - 2.0,
+        lx + 273.0, ly + 1.0,
+        lx + 338.0, ly - 2.0, lx + 356.0, ly - 2.0,
+        lx + 361.0, ly + 1.0,
     );
 
     Some(out)

@@ -46,6 +46,10 @@ pub struct PipeRun {
     pub length_mm: f64,
     pub flow_l_s: f64,
     pub velocity_m_s: f64,
+    #[serde(default)]
+    pub dfu: f64,
+    #[serde(default)]
+    pub is_header: bool,
     pub points: Vec<[f64; 2]>,
 }
 
@@ -149,10 +153,10 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
         let mut pipes: Vec<PipeRun> = Vec::new();
         let mut pipe_spans: Vec<Span> = Vec::new();
 
-        // 1. Parse risers, water heaters, soil/vent stacks, valves, floor drains
+        // 1. Parse risers, water heaters, soil/vent stacks, valves, floor drains, cleanouts
         for child in &tree.children {
             match child.kind.as_str() {
-                "riser" | "heater" | "stack" | "valve" | "floor_drain" => {
+                "riser" | "heater" | "stack" | "valve" | "floor_drain" | "cleanout" => {
                     let id = child
                         .name
                         .clone()
@@ -166,6 +170,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                             "stack" => "soil_stack".to_string(),
                             "valve" => "isolation_valve".to_string(),
                             "floor_drain" => "floor_drain".to_string(),
+                            "cleanout" => "cleanout".to_string(),
                             _ => child.kind.clone(),
                         });
                     let system = child
@@ -177,6 +182,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                             "soil_stack" => "soil".to_string(),
                             "vent_stack" => "vent".to_string(),
                             "floor_drain" => "waste".to_string(),
+                            "cleanout" => "soil".to_string(),
                             _ => "cold".to_string(),
                         });
 
@@ -227,8 +233,96 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             }
         }
 
+        // 1b. Parse Commercial Collector Headers (`header <Name>: soil_header|waste_header|cold_header|hot_header|vent_header`)
+        struct HeaderInfo {
+            system: String,
+            p0: Point2,
+            p1: Point2,
+            pipe_idx: usize,
+            dia_mm: f64,
+            dfu_sum: f64,
+            span: Span,
+        }
+        let mut headers: BTreeMap<String, HeaderInfo> = BTreeMap::new();
+        for child in tree.children_of("header") {
+            let Some(hid) = child.name.clone() else {
+                continue;
+            };
+            let sub = child.subtype.as_deref().unwrap_or("soil_header");
+            let sys = match sub {
+                "cold_header" | "cold" => "cold",
+                "hot_header" | "hot" => "hot",
+                "waste_header" | "waste" => "waste",
+                "vent_header" | "vent" => "vent",
+                _ => "soil",
+            };
+            let Some(from_id) = child.ident("from") else { continue };
+            let Some(to_id) = child.ident("to") else { continue };
+            let (Some(n0), Some(n1)) = (nodes.get(from_id), nodes.get(to_id)) else {
+                ir.diagnostics.push(Diagnostic::error(
+                    "E_PLUMB_UNKNOWN_NODE",
+                    "plumbing",
+                    format!("Header '{hid}' references unknown endpoint node '{from_id}' or '{to_id}'"),
+                    Some(child.span.clone()),
+                ));
+                ir.project.has_errors = true;
+                continue;
+            };
+            let p0 = Point2::new(n0.pos[0], n0.pos[1]);
+            let p1 = Point2::new(n1.pos[0], n1.pos[1]);
+            let default_dia = match sys {
+                "soil" => 110.0,
+                "waste" => 100.0,
+                "vent" => 50.0,
+                "cold" => 32.0,
+                _ => 25.0,
+            };
+            let dia = child.mm("dia").unwrap_or(default_dia);
+            let slope_str = child.ident("slope").map(|s| s.to_string()).or_else(|| {
+                if sys == "soil" {
+                    Some("1:100".to_string())
+                } else if sys == "waste" {
+                    Some("1:50".to_string())
+                } else {
+                    None
+                }
+            });
+            let slope_pct = slope_str.as_deref().and_then(parse_slope_pct);
+            let pts = vec![p0, p1];
+            let len = p0.dist(p1);
+            let pipe_idx = pipes.len();
+            pipes.push(PipeRun {
+                id: hid.clone(),
+                system: sys.to_string(),
+                from_id: from_id.to_string(),
+                to_id: to_id.to_string(),
+                dia_mm: dia,
+                slope_ratio: slope_str,
+                slope_pct,
+                length_mm: len,
+                flow_l_s: if sys == "cold" || sys == "hot" { 0.65 } else { 2.0 },
+                velocity_m_s: calc_velocity_m_s(if sys == "cold" || sys == "hot" { 0.65 } else { 2.0 }, dia),
+                dfu: 0.0,
+                is_header: true,
+                points: pts.iter().map(|p| [p.x, p.y]).collect(),
+            });
+            pipe_spans.push(child.span.clone());
+            headers.insert(
+                hid,
+                HeaderInfo {
+                    system: sys.to_string(),
+                    p0,
+                    p1,
+                    pipe_idx,
+                    dia_mm: dia,
+                    dfu_sum: 0.0,
+                    span: child.span.clone(),
+                },
+            );
+        }
+
         // 2. Auto-route cold water feeds to water heaters (`cold_in: ColdMain`)
-        //    and drains from floor drains (`to: SoilMain`)
+        //    and drains from floor drains (`to: SoilMain` or `to: WasteHeader`)
         for child in &tree.children {
             if child.kind == "heater" {
                 let Some(hid) = child.name.as_deref() else {
@@ -257,6 +351,8 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                             length_mm: len,
                             flow_l_s: flow,
                             velocity_m_s: vel,
+                            dfu: 0.0,
+                            is_header: false,
                             points: pts.iter().map(|p| [p.x, p.y]).collect(),
                         });
                         pipe_spans.push(child.span.clone());
@@ -267,31 +363,37 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                     continue;
                 };
                 if let Some(dst_id) = child.ident("to") {
-                    if let (Some(fd), Some(dst)) = (nodes.get(fd_id), nodes.get(dst_id)) {
-                        let dia = child.mm("dia").unwrap_or(50.0);
-                        let slope_str = child.ident("slope").unwrap_or("1:50").to_string();
-                        let slope_pct = parse_slope_pct(&slope_str);
-                        let pts = route_orthogonal(
-                            Point2::new(fd.pos[0], fd.pos[1]),
-                            Point2::new(dst.pos[0], dst.pos[1]),
-                            "waste",
-                            &rooms,
-                        );
-                        let len = polyline_len(&pts);
-                        pipes.push(PipeRun {
-                            id: format!("DWV_{fd_id}_to_{dst_id}"),
-                            system: "waste".to_string(),
-                            from_id: fd_id.to_string(),
-                            to_id: dst_id.to_string(),
-                            dia_mm: dia,
-                            slope_ratio: Some(slope_str),
-                            slope_pct,
-                            length_mm: len,
-                            flow_l_s: 0.4,
-                            velocity_m_s: calc_velocity_m_s(0.4, dia),
-                            points: pts.iter().map(|p| [p.x, p.y]).collect(),
-                        });
-                        pipe_spans.push(child.span.clone());
+                    if let Some(fd) = nodes.get(fd_id) {
+                        let fd_pt = Point2::new(fd.pos[0], fd.pos[1]);
+                        let target_pt = if let Some(hdr) = headers.get_mut(dst_id) {
+                            hdr.dfu_sum += 2.0; // IPC Floor Drain = 2 DFU
+                            Some(project_to_segment(fd_pt, hdr.p0, hdr.p1))
+                        } else {
+                            nodes.get(dst_id).map(|n| Point2::new(n.pos[0], n.pos[1]))
+                        };
+                        if let Some(tpt) = target_pt {
+                            let dia = child.mm("dia").unwrap_or(50.0);
+                            let slope_str = child.ident("slope").unwrap_or("1:50").to_string();
+                            let slope_pct = parse_slope_pct(&slope_str);
+                            let pts = route_orthogonal(fd_pt, tpt, "waste", &rooms);
+                            let len = polyline_len(&pts);
+                            pipes.push(PipeRun {
+                                id: format!("DWV_{fd_id}_to_{dst_id}"),
+                                system: "waste".to_string(),
+                                from_id: fd_id.to_string(),
+                                to_id: dst_id.to_string(),
+                                dia_mm: dia,
+                                slope_ratio: Some(slope_str),
+                                slope_pct,
+                                length_mm: len,
+                                flow_l_s: 0.4,
+                                velocity_m_s: calc_velocity_m_s(0.4, dia),
+                                dfu: 2.0,
+                                is_header: false,
+                                points: pts.iter().map(|p| [p.x, p.y]).collect(),
+                            });
+                            pipe_spans.push(child.span.clone());
+                        }
                     }
                 }
             }
@@ -326,18 +428,19 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             let flow_cold = fixture_design_flow_l_s(&fx.subtype, false);
             let flow_hot = fixture_design_flow_l_s(&fx.subtype, true);
             let aux_vented = child.ident("aux_vent").is_some()
+                || child.ident("vent").is_some()
                 || child.ident("vented").map(|s| s == "true").unwrap_or(false);
 
-            // Cold supply branch
+            // Cold supply branch (can tap either a riser node OR a collector header!)
             if let Some(src_id) = child.ident("cold") {
-                if let Some(src) = nodes.get(src_id) {
+                let src_pt = if let Some(hdr) = headers.get(src_id) {
+                    Some(project_to_segment(fx_pt, hdr.p0, hdr.p1))
+                } else {
+                    nodes.get(src_id).map(|n| Point2::new(n.pos[0], n.pos[1]))
+                };
+                if let Some(spt) = src_pt {
                     let dia = child.mm("cold_dia").unwrap_or(15.0);
-                    let pts = route_orthogonal(
-                        Point2::new(src.pos[0], src.pos[1]),
-                        fx_pt,
-                        "cold",
-                        &rooms,
-                    );
+                    let pts = route_orthogonal(spt, fx_pt, "cold", &rooms);
                     let len = polyline_len(&pts);
                     let vel = calc_velocity_m_s(flow_cold, dia);
                     pipes.push(PipeRun {
@@ -351,6 +454,8 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                         length_mm: len,
                         flow_l_s: flow_cold,
                         velocity_m_s: vel,
+                        dfu: 0.0,
+                        is_header: false,
                         points: pts.iter().map(|p| [p.x, p.y]).collect(),
                     });
                     pipe_spans.push(child.span.clone());
@@ -359,23 +464,23 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                     ir.diagnostics.push(Diagnostic::error(
                         "E_PLUMB_UNKNOWN_NODE",
                         "plumbing",
-                        format!("Cold supply for '{fx_id}' references unknown riser/node '{src_id}'"),
+                        format!("Cold supply for '{fx_id}' references unknown riser/header '{src_id}'"),
                         Some(child.span.clone()),
                     ));
                     ir.project.has_errors = true;
                 }
             }
 
-            // Hot supply branch
+            // Hot supply branch (can tap either a heater node OR a hot collector header!)
             if let Some(src_id) = child.ident("hot") {
-                if let Some(src) = nodes.get(src_id) {
+                let src_pt = if let Some(hdr) = headers.get(src_id) {
+                    Some(project_to_segment(fx_pt, hdr.p0, hdr.p1))
+                } else {
+                    nodes.get(src_id).map(|n| Point2::new(n.pos[0], n.pos[1]))
+                };
+                if let Some(spt) = src_pt {
                     let dia = child.mm("hot_dia").unwrap_or(15.0);
-                    let pts = route_orthogonal(
-                        Point2::new(src.pos[0], src.pos[1]),
-                        fx_pt,
-                        "hot",
-                        &rooms,
-                    );
+                    let pts = route_orthogonal(spt, fx_pt, "hot", &rooms);
                     let len = polyline_len(&pts);
                     let vel = calc_velocity_m_s(flow_hot, dia);
                     pipes.push(PipeRun {
@@ -389,6 +494,8 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                         length_mm: len,
                         flow_l_s: flow_hot,
                         velocity_m_s: vel,
+                        dfu: 0.0,
+                        is_header: false,
                         points: pts.iter().map(|p| [p.x, p.y]).collect(),
                     });
                     pipe_spans.push(child.span.clone());
@@ -397,20 +504,57 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                     ir.diagnostics.push(Diagnostic::error(
                         "E_PLUMB_UNKNOWN_NODE",
                         "plumbing",
-                        format!("Hot supply for '{fx_id}' references unknown heater/node '{src_id}'"),
+                        format!("Hot supply for '{fx_id}' references unknown heater/header '{src_id}'"),
                         Some(child.span.clone()),
                     ));
                     ir.project.has_errors = true;
                 }
             }
 
-            // Soil or waste drainage branch
+            // Optional explicit Vent Pipe branch (`vent: VentHeader | VentStack  vent_dia: 50mm`)
+            if let Some(v_id) = child.ident("vent") {
+                let dst_pt = if let Some(hdr) = headers.get(v_id) {
+                    Some(project_to_segment(fx_pt, hdr.p0, hdr.p1))
+                } else {
+                    nodes.get(v_id).map(|n| Point2::new(n.pos[0], n.pos[1]))
+                };
+                if let Some(vpt) = dst_pt {
+                    let dia = child.mm("vent_dia").unwrap_or(50.0);
+                    let pts = route_orthogonal(fx_pt, vpt, "vent", &rooms);
+                    let len = polyline_len(&pts);
+                    pipes.push(PipeRun {
+                        id: format!("VP_{fx_id}"),
+                        system: "vent".to_string(),
+                        from_id: fx_id.clone(),
+                        to_id: v_id.to_string(),
+                        dia_mm: dia,
+                        slope_ratio: None,
+                        slope_pct: None,
+                        length_mm: len,
+                        flow_l_s: 0.0,
+                        velocity_m_s: 0.0,
+                        dfu: 0.0,
+                        is_header: false,
+                        points: pts.iter().map(|p| [p.x, p.y]).collect(),
+                    });
+                    pipe_spans.push(child.span.clone());
+                }
+            }
+
+            // Soil or waste drainage branch (can tap either a soil stack OR a collector header!)
             let drain_pair = child
                 .ident("soil")
                 .map(|s| ("soil", s))
                 .or_else(|| child.ident("waste").map(|s| ("waste", s)));
             if let Some((sys, dst_id)) = drain_pair {
-                if let Some(dst) = nodes.get(dst_id) {
+                let fx_dfu = fixture_dfu(&fx.subtype, &fx_id);
+                let dst_pt = if let Some(hdr) = headers.get_mut(dst_id) {
+                    hdr.dfu_sum += fx_dfu;
+                    Some(project_to_segment(fx_pt, hdr.p0, hdr.p1))
+                } else {
+                    nodes.get(dst_id).map(|n| Point2::new(n.pos[0], n.pos[1]))
+                };
+                if let Some(dpt) = dst_pt {
                     let default_dia = if sys == "soil" { 110.0 } else { 50.0 };
                     let dia = child.mm("drain_dia").unwrap_or(default_dia);
                     let slope_str = child
@@ -418,12 +562,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                         .unwrap_or(if sys == "soil" { "1:60" } else { "1:40" })
                         .to_string();
                     let slope_pct = parse_slope_pct(&slope_str);
-                    let pts = route_orthogonal(
-                        fx_pt,
-                        Point2::new(dst.pos[0], dst.pos[1]),
-                        sys,
-                        &rooms,
-                    );
+                    let pts = route_orthogonal(fx_pt, dpt, sys, &rooms);
                     let len = polyline_len(&pts);
                     let pid = format!("DWV_{fx_id}");
                     pipe_vented_override.insert(pid.clone(), aux_vented);
@@ -438,6 +577,8 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                         length_mm: len,
                         flow_l_s: if sys == "soil" { 2.0 } else { 0.5 },
                         velocity_m_s: calc_velocity_m_s(if sys == "soil" { 2.0 } else { 0.5 }, dia),
+                        dfu: fx_dfu,
+                        is_header: false,
                         points: pts.iter().map(|p| [p.x, p.y]).collect(),
                     });
                     pipe_spans.push(child.span.clone());
@@ -446,11 +587,18 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                     ir.diagnostics.push(Diagnostic::error(
                         "E_PLUMB_UNKNOWN_NODE",
                         "plumbing",
-                        format!("Drain for '{fx_id}' references unknown stack/node '{dst_id}'"),
+                        format!("Drain for '{fx_id}' references unknown stack/header '{dst_id}'"),
                         Some(child.span.clone()),
                     ));
                     ir.project.has_errors = true;
                 }
+            }
+        }
+
+        // Write accumulated DFUs back onto header trunk PipeRuns & run P7 DFU capacity check!
+        for hdr in headers.values() {
+            if let Some(p) = pipes.get_mut(hdr.pipe_idx) {
+                p.dfu = hdr.dfu_sum;
             }
         }
 
@@ -631,7 +779,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
         let mut p3_errs: Vec<String> = Vec::new();
         let mut max_ratio = 0.0_f64;
         for (idx, pipe) in pipes.iter().enumerate() {
-            if pipe.system != "soil" && pipe.system != "waste" {
+            if (pipe.system != "soil" && pipe.system != "waste") || pipe.is_header {
                 continue;
             }
             let aux_vented = *pipe_vented_override.get(&pipe.id).unwrap_or(&false);
@@ -853,6 +1001,63 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                 format!("MEP clashes: {}", p6_clashes.join("; "))
             },
         });
+
+        // P7: Commercial Collector Header DFU Capacity (IPC Table 710.1(1) / EN 12056)
+        let drain_headers: Vec<(&String, &HeaderInfo)> = headers
+            .iter()
+            .filter(|(_, h)| h.system == "soil" || h.system == "waste")
+            .collect();
+        if !drain_headers.is_empty() {
+            let mut p7_errs = Vec::new();
+            let mut total_dfu = 0.0;
+            for (hid, h) in &drain_headers {
+                total_dfu += h.dfu_sum;
+                let max_dfu = if h.dia_mm >= 150.0 {
+                    480.0
+                } else if h.dia_mm >= 100.0 {
+                    160.0
+                } else if h.dia_mm >= 75.0 {
+                    42.0
+                } else {
+                    12.0
+                };
+                if h.dfu_sum > max_dfu {
+                    p7_errs.push(format!("{hid} {:.0} DFU > {:.0} DFU", h.dfu_sum, max_dfu));
+                    ir.diagnostics.push(
+                        Diagnostic::error(
+                            "E_PLUMB_HEADER_DFU_OVERLOAD",
+                            "plumbing",
+                            format!(
+                                "Collector header '{}' (Ø{:.0}mm) carries {:.1} DFU, exceeding IPC/EN 12056 capacity {:.0} DFU",
+                                hid, h.dia_mm, h.dfu_sum, max_dfu
+                            ),
+                            Some(h.span.clone()),
+                        )
+                        .with_entities(vec![(*hid).clone()]),
+                    );
+                }
+            }
+            ir.evidence.push(EvidenceRecord {
+                check_id: "P7_dfu_header_capacity".to_string(),
+                status: if p7_errs.is_empty() {
+                    VerificationStatus::ExactlyChecked
+                } else {
+                    VerificationStatus::Violated
+                },
+                method: "ipc710_dfu_collector_header_capacity_v1.8".to_string(),
+                tolerance_mm: None,
+                subjects: drain_headers.iter().map(|(id, _)| (*id).clone()).collect(),
+                details: if p7_errs.is_empty() {
+                    format!(
+                        "All {} drainage collector header(s) within IPC/EN 12056 DFU capacity (total {:.0} DFU)",
+                        drain_headers.len(),
+                        total_dfu
+                    )
+                } else {
+                    format!("Header DFU overloads: {}", p7_errs.join("; "))
+                },
+            });
+        }
 
         // 5. Emit CanonicalIr entities (full plumbing model + individual nodes for query/diff)
         let model = PlumbingModel {
@@ -1138,4 +1343,26 @@ fn route_orthogonal(
 
 fn polyline_len(pts: &[Point2]) -> f64 {
     pts.windows(2).map(|w| w[0].dist(w[1])).sum()
+}
+
+fn fixture_dfu(subtype: &str, id: &str) -> f64 {
+    let s = format!("{} {}", subtype.to_lowercase(), id.to_lowercase());
+    if s.contains("toilet") || s.contains("wc") {
+        4.0
+    } else if s.contains("shower") || s.contains("tub") || s.contains("bath") || s.contains("sink") || s.contains("washer") {
+        2.0
+    } else {
+        1.0 // Lavatory / basin / vanity
+    }
+}
+
+fn project_to_segment(p: Point2, a: Point2, b: Point2) -> Point2 {
+    let abx = b.x - a.x;
+    let aby = b.y - a.y;
+    let len2 = abx * abx + aby * aby;
+    if len2 < 1e-6 {
+        return a;
+    }
+    let t = (((p.x - a.x) * abx + (p.y - a.y) * aby) / len2).clamp(0.05, 0.95);
+    Point2::new(a.x + t * abx, a.y + t * aby)
 }

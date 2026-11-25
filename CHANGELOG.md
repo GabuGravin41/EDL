@@ -2,6 +2,11 @@
 
 All notable releases of **EDL (Engineering Description Language)** are documented here.
 
+## [1.8.0] — 2026-11-25
+### Added
+- **Commercial Collector-Header Plumbing, Venting, Cleanouts & DFU Verification (`mep.plumbing`):** Added `header` (`soil_header`, `waste_header`, `cold_header`, `hot_header`, `vent_header`) with automatic closest-point tapping & 45° wye branching, `cleanout` (`COP`), explicit `vent:` pipes (`Ø50 VP` green dashed), and **`P7_dfu_header_capacity`** verifying cumulative IPC/EN 12056 Drainage Fixture Units (DFU) on collector headers.
+- **Commercial Restroom Benchmark (`examples/commercial_restroom_plumbing.edl`):** 14 wet fixtures + 5 floor drains + 300L geyser across Men's, Women's, ADA & Plant rooms with 3 parallel collector headers (`45 DFU`, `100.31 m` pipe takeoff, 14/14 checks `EXACTLY_CHECKED`).
+
 ## [1.7.0] — 2026-11-25
 ### Added
 - **Commercial Multi-Panel Electrical Floor Plans (`mep.elec` + `arch`):** Embedded right-side auto-computed `PANEL SCHEDULE` tables directly on SVG sheets (`LP1`, `PP1`, etc.), rich commercial drafting symbols (`troffer` linear LED bars, 24/7 unswitched life-safety `exit_sign` badges, `ceiling_fan`, `2way` corridor switches, `data_rj45` ports), and 30m×15m commercial office benchmark `examples/commercial_office_electrical_level01.edl` (dual panels, 56 devices, 8 circuits, 14/14 checks `EXACTLY_CHECKED`).

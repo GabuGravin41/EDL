@@ -1,0 +1,167 @@
+// EDL v1.8.0 Commercial Plumbing Benchmark — Modeled directly on User Images 2, 4 & 5:
+// Commercial Multi-Stall Restroom Block (Men's + Women's + ADA Accessible + Plant Room)
+// Features tested:
+//   - Parallel Commercial Collector Headers (`SoilHeader` Ø110 SP 1:100, `WasteHeader` Ø100 WP 1:50,
+//     `VentHeader` Ø50 VP, `ColdHeader` Ø32 CWS, `HotHeader` Ø25 HWS)
+//   - Upstream Cleanout Plugs (`COP_Soil`, `COP_Waste`), 5 Floor Drains (`FD`), 300L Commercial Geyser (`WH1`),
+//     Isolation Valves, and Explicit Green Dashed Vent Pipes (`Ø50 VP`)
+//   - 14 Wet Architectural Fixtures + 5 Floor Drains tapping via 45° wyes into shared collector headers
+//   - Live IPC/EN 12056 Cumulative DFU Calculation & P1-P7 + Arch V1-V6 Verification!
+
+project "Commercial_Restroom_Block_Plumbing_DWV" {
+  units: mm
+  frame Plan: Frame2
+
+  architecture.defaults {
+    measurement_basis: clear_interior
+    exterior_wall: 240mm
+    interior_wall: 140mm
+  }
+
+  // --- Architectural Restroom & Wet Core Floor Plan ---
+  room Corridor {
+    role: circulation
+    clear_size: (11680mm, 1800mm)
+    anchor: southwest at Plan.origin
+  }
+  room PlantRoom {
+    role: service
+    clear_size: (2400mm, 5400mm)
+  }
+  room Restroom_M {
+    role: wet
+    clear_size: (3200mm, 5400mm)
+  }
+  room Restroom_F {
+    role: wet
+    clear_size: (3200mm, 5400mm)
+  }
+  room Restroom_ADA {
+    role: wet
+    clear_size: (2460mm, 5400mm)
+  }
+
+  layout Plan {
+    require PlantRoom.west  == Corridor.west
+    require PlantRoom.south == Corridor.north + interior_wall
+
+    require Restroom_M.west  == PlantRoom.east + interior_wall
+    require Restroom_M.south == PlantRoom.south
+
+    require Restroom_F.west  == Restroom_M.east + interior_wall
+    require Restroom_F.south == PlantRoom.south
+
+    require Restroom_ADA.west  == Restroom_F.east + interior_wall
+    require Restroom_ADA.east  == Corridor.east
+    require Restroom_ADA.south == PlantRoom.south
+  }
+
+  // Entries & Restroom Doors
+  opening MainEntry:  door { host: exterior(Corridor, west)            width: 1100mm align: center hinge: start swing: into Corridor }
+  opening D_Plant:    door { host: shared_wall(Corridor, PlantRoom)    width: 900mm  align: center hinge: start swing: into PlantRoom }
+  opening D_Men:      door { host: shared_wall(Corridor, Restroom_M)   width: 900mm  offset: 300mm from start hinge: start swing: into Restroom_M }
+  opening D_Women:    door { host: shared_wall(Corridor, Restroom_F)   width: 900mm  offset: 300mm from end   hinge: end   swing: into Restroom_F }
+  opening D_ADA:      door { host: shared_wall(Corridor, Restroom_ADA) width: 950mm  offset: 300mm from end   hinge: end   swing: into Restroom_ADA }
+
+  // --- 14 Commercial Wet Fixtures (Back-to-Back WCs along central chase, Basins along outer walls!) ---
+  // Men's Restroom (3 WCs on east chase, 3 Basins on west wall)
+  fixture M_WC1: toilet { room: Restroom_M  size: (450mm, 680mm) against: east offset: 600mm  from start clearance_front: 500mm }
+  fixture M_WC2: toilet { room: Restroom_M  size: (450mm, 680mm) against: east offset: 2100mm from start clearance_front: 500mm }
+  fixture M_WC3: toilet { room: Restroom_M  size: (450mm, 680mm) against: east offset: 3600mm from start clearance_front: 500mm }
+  fixture M_Basin1: basin { room: Restroom_M size: (550mm, 450mm) against: west offset: 1400mm from start clearance_front: 500mm }
+  fixture M_Basin2: basin { room: Restroom_M size: (550mm, 450mm) against: west offset: 2700mm from start clearance_front: 500mm }
+  fixture M_Basin3: basin { room: Restroom_M size: (550mm, 450mm) against: west offset: 4000mm from start clearance_front: 500mm }
+
+  // Women's Restroom (3 WCs back-to-back on west chase, 3 Basins on east wall)
+  fixture F_WC1: toilet { room: Restroom_F  size: (450mm, 680mm) against: west offset: 600mm  from start clearance_front: 500mm }
+  fixture F_WC2: toilet { room: Restroom_F  size: (450mm, 680mm) against: west offset: 2100mm from start clearance_front: 500mm }
+  fixture F_WC3: toilet { room: Restroom_F  size: (450mm, 680mm) against: west offset: 3600mm from start clearance_front: 500mm }
+  fixture F_Basin1: basin { room: Restroom_F size: (550mm, 450mm) against: east offset: 1400mm from start clearance_front: 500mm }
+  fixture F_Basin2: basin { room: Restroom_F size: (550mm, 450mm) against: east offset: 2700mm from start clearance_front: 500mm }
+  fixture F_Basin3: basin { room: Restroom_F size: (550mm, 450mm) against: east offset: 4000mm from start clearance_front: 500mm }
+
+  // ADA Accessible Restroom (1 WC + 1 Basin on west wall, back-to-back with Women's Basins!)
+  fixture ADA_WC:    toilet { room: Restroom_ADA size: (480mm, 720mm) against: west offset: 1400mm from start clearance_front: 700mm }
+  fixture ADA_Basin: basin  { room: Restroom_ADA size: (600mm, 480mm) against: west offset: 3400mm from start clearance_front: 700mm }
+
+  // =========================================================================
+  // COMMERCIAL BUILDING PLUMBING (COLLECTOR HEADERS, DFU, VENTS & CLEANOUTS)
+  // =========================================================================
+  building_plumbing CommercialDWV {
+    standard: "IPC 2021 / EN 12056 / EN 806"
+    supply_pressure_bar: 3.5
+
+    // Plant Room Risers, 300L Commercial Geyser & Main Stacks
+    riser  ColdMain: cold_water     { host: PlantRoom.north  at: 600mm   dia: 32mm }
+    heater WH1:      water_heater   { host: PlantRoom.north  at: 1500mm  capacity_l: 300  cold_in: ColdMain  cold_dia: 25mm  hot_dia: 25mm }
+    valve  V_Main:   isolation_valve { system: cold  host: PlantRoom.north  at: 950mm   serves: "Main Cold Supply" }
+    valve  V_WH1:    isolation_valve { system: hot   host: PlantRoom.north  at: 1950mm  serves: "300L Commercial Geyser" }
+
+    // Main Soil Stack (North end of central WC chase) + Vent Stack + Cleanout Plugs (South end!)
+    stack    SoilStack_M:  soil_stack { host: Restroom_M.east  at: 4950mm  dia: 110mm  vented: true }
+    cleanout COP_Soil_M:   cleanout   { host: Restroom_M.east  at: 350mm   dia: 110mm }
+
+    stack    WasteStack_W: soil_stack { host: Restroom_M.west  at: 4950mm  dia: 100mm  vented: true }
+    cleanout COP_Waste_W:  cleanout   { host: Restroom_M.west  at: 350mm   dia: 100mm }
+
+    stack    SoilStack_E:  soil_stack { host: Restroom_F.east  at: 4950mm  dia: 110mm  vented: true }
+    cleanout COP_Soil_E:   cleanout   { host: Restroom_F.east  at: 350mm   dia: 110mm }
+
+    stack    VentStack_C:  vent_stack { host: Restroom_F.west  at: 5050mm  dia: 50mm   vented: true }
+    cleanout VentEnd_C:    cleanout   { system: vent  host: Restroom_F.west  at: 450mm  dia: 50mm }
+
+    // Supply Distribution Endpoints across the North Chase
+    valve    CWS_End_E:    isolation_valve { system: cold  host: Restroom_ADA.north  at: 800mm  serves: "East Cold Header" }
+    valve    HWS_End_E:    isolation_valve { system: hot   host: Restroom_ADA.north  at: 1200mm serves: "East Hot Header" }
+
+    // --- COMMERCIAL COLLECTOR HEADERS (ZERO SPAGHETTI!) ---
+    header SoilHeader_Center: soil_header  { from: COP_Soil_M   to: SoilStack_M  dia: 110mm  slope: "1:100" }
+    header WasteHeader_West:  waste_header { from: COP_Waste_W  to: WasteStack_W dia: 100mm  slope: "1:50" }
+    header SoilHeader_East:   soil_header  { from: COP_Soil_E   to: SoilStack_E  dia: 110mm  slope: "1:100" }
+    header VentHeader_Center: vent_header  { from: VentEnd_C    to: VentStack_C  dia: 50mm }
+    header ColdHeader_North:  cold_header  { from: ColdMain     to: CWS_End_E    dia: 32mm }
+    header HotHeader_North:   hot_header   { from: WH1          to: HWS_End_E    dia: 25mm }
+
+    // Floor Drains (trapped & tied into collector headers!)
+    floor_drain FD_M1  { in: Restroom_M   at: (1500mm, 1400mm)  dia: 50mm  to: WasteHeader_West  slope: "1:40" }
+    floor_drain FD_M2  { in: Restroom_M   at: (1500mm, 3400mm)  dia: 50mm  to: WasteHeader_West  slope: "1:40" }
+    floor_drain FD_F1  { in: Restroom_F   at: (1700mm, 1400mm)  dia: 50mm  to: SoilHeader_East   slope: "1:40" }
+    floor_drain FD_F2  { in: Restroom_F   at: (1700mm, 3400mm)  dia: 50mm  to: SoilHeader_East   slope: "1:40" }
+    floor_drain FD_ADA { in: Restroom_ADA at: (1300mm, 2400mm)  dia: 50mm  to: SoilHeader_East   slope: "1:40" }
+
+    // --- Connect All 14 Wet Fixtures to Shared Collector Headers (with explicit Ø50 VP Venting!) ---
+    connect M_WC1    { cold: ColdHeader_North  cold_dia: 20mm  soil: SoilHeader_Center  drain_dia: 110mm  slope: "1:60"  vent: VentHeader_Center }
+    connect M_WC2    { cold: ColdHeader_North  cold_dia: 20mm  soil: SoilHeader_Center  drain_dia: 110mm  slope: "1:60"  vent: VentHeader_Center }
+    connect M_WC3    { cold: ColdHeader_North  cold_dia: 20mm  soil: SoilHeader_Center  drain_dia: 110mm  slope: "1:60"  vent: VentHeader_Center }
+    connect M_Basin1 { cold: ColdHeader_North  cold_dia: 15mm  hot: HotHeader_North  hot_dia: 15mm  waste: WasteHeader_West  drain_dia: 40mm  slope: "1:40" }
+    connect M_Basin2 { cold: ColdHeader_North  cold_dia: 15mm  hot: HotHeader_North  hot_dia: 15mm  waste: WasteHeader_West  drain_dia: 40mm  slope: "1:40" }
+    connect M_Basin3 { cold: ColdHeader_North  cold_dia: 15mm  hot: HotHeader_North  hot_dia: 15mm  waste: WasteHeader_West  drain_dia: 40mm  slope: "1:40" }
+
+    connect F_WC1    { cold: ColdHeader_North  cold_dia: 20mm  soil: SoilHeader_Center  drain_dia: 110mm  slope: "1:60"  vent: VentHeader_Center }
+    connect F_WC2    { cold: ColdHeader_North  cold_dia: 20mm  soil: SoilHeader_Center  drain_dia: 110mm  slope: "1:60"  vent: VentHeader_Center }
+    connect F_WC3    { cold: ColdHeader_North  cold_dia: 20mm  soil: SoilHeader_Center  drain_dia: 110mm  slope: "1:60"  vent: VentHeader_Center }
+    connect F_Basin1 { cold: ColdHeader_North  cold_dia: 15mm  hot: HotHeader_North  hot_dia: 15mm  waste: SoilHeader_East   drain_dia: 40mm  slope: "1:40" }
+    connect F_Basin2 { cold: ColdHeader_North  cold_dia: 15mm  hot: HotHeader_North  hot_dia: 15mm  waste: SoilHeader_East   drain_dia: 40mm  slope: "1:40" }
+    connect F_Basin3 { cold: ColdHeader_North  cold_dia: 15mm  hot: HotHeader_North  hot_dia: 15mm  waste: SoilHeader_East   drain_dia: 40mm  slope: "1:40" }
+
+    connect ADA_WC    { cold: ColdHeader_North cold_dia: 20mm  soil: SoilHeader_East    drain_dia: 110mm  slope: "1:60" }
+    connect ADA_Basin { cold: ColdHeader_North cold_dia: 15mm  hot: HotHeader_North  hot_dia: 15mm  waste: SoilHeader_East  drain_dia: 40mm  slope: "1:40" }
+  }
+
+  verify {
+    require no_room_overlap
+    require opening_jamb_margin >= 100mm
+    require no_door_swing_collision
+    require all_rooms_reachable
+    require no_fixture_collision
+    require habitable_rooms_have_window
+  }
+
+  view PlanView: plan {
+    frame: Plan
+    sheet: A2 landscape
+    scale: 1:50
+    show_dimensions: true
+    show_labels: true
+  }
+}

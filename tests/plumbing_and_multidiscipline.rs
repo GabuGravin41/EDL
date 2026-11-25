@@ -175,3 +175,38 @@ fn commercial_office_dual_panel_electrical_level01_passes_all_14_rules() {
     assert!(svg.contains("PANEL SCHEDULE — PP1"));
     assert!(svg.contains("EXIT"));
 }
+
+#[test]
+fn commercial_restroom_collector_headers_dfu_vents_and_cleanouts_verify_cleanly() {
+    let src = std::fs::read_to_string("examples/commercial_restroom_plumbing.edl").unwrap();
+    let ir = compile_source("examples/commercial_restroom_plumbing.edl", &src).unwrap();
+    assert!(
+        !ir.project.has_errors,
+        "unexpected commercial plumbing errors: {:?}",
+        ir.diagnostics
+    );
+    let p7 = ir
+        .evidence
+        .iter()
+        .find(|e| e.check_id == "P7_dfu_header_capacity")
+        .expect("P7 DFU evidence");
+    assert_eq!(p7.status, VerificationStatus::ExactlyChecked);
+    assert!(p7.details.contains("45 DFU"));
+
+    let svg = render_svg_with_layers(&ir, false, None);
+    assert!(svg.contains("24 DFU"));
+    assert!(svg.contains("COP"));
+    assert!(svg.contains("Vent Ø50"));
+
+    // Negative DFU overload test: shrink SoilHeader_Center to 50mm (max 12 DFU < 24 DFU!)
+    let bad = src.replace(
+        "header SoilHeader_Center: soil_header  { from: COP_Soil_M   to: SoilStack_M  dia: 110mm  slope: \"1:100\" }",
+        "header SoilHeader_Center: soil_header  { from: COP_Soil_M   to: SoilStack_M  dia: 50mm   slope: \"1:100\" }",
+    );
+    let bad_ir = compile_source("bad_dfu.edl", &bad).unwrap();
+    assert!(bad_ir.project.has_errors);
+    assert!(bad_ir
+        .diagnostics
+        .iter()
+        .any(|d| d.code == "E_PLUMB_HEADER_DFU_OVERLOAD"));
+}

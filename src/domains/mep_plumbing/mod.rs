@@ -51,6 +51,7 @@ impl DomainEngine for MepPlumbingDomain {
             RuleInfo { id: "P4_supply_velocity_and_sizing", description: "Supply water velocity <= 2.0 m/s to prevent noise & erosion" },
             RuleInfo { id: "P5_isolation_valves", description: "Shutoff isolation valves present on main cold supply and water heater" },
             RuleInfo { id: "P6_cross_discipline_clearance", description: "Zero wall/panel clashes between plumbing nodes and co-resident electrical devices" },
+            RuleInfo { id: "P7_dfu_header_capacity", description: "Cumulative DFU on commercial collector headers stays within IPC/EN 12056 pipe capacity" },
         ]
     }
 }
