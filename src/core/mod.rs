@@ -3,4 +3,5 @@ pub mod geom;
 pub mod ir;
 pub mod query;
 pub mod span;
+pub mod sync;
 pub mod units;

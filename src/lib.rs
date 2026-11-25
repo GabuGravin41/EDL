@@ -2,6 +2,7 @@ pub mod core;
 pub mod domains;
 pub mod mcp;
 pub mod syntax;
+pub mod watch;
 
 use crate::core::ir::CanonicalIr;
 use crate::core::span::Diagnostic;
@@ -751,7 +752,7 @@ project "BadNotch" {
         }))
         .unwrap();
         let tools = list["result"]["tools"].as_array().unwrap();
-        assert_eq!(tools.len(), 9);
+        assert_eq!(tools.len(), 10);
 
         let call = crate::mcp::handle_jsonrpc_request(&json!({
             "jsonrpc": "2.0",

@@ -197,6 +197,20 @@ fn mcp_tool_schemas() -> Value {
             }
         },
         {
+            "name": "edl_sync",
+            "description": "Bidirectional sync: diff an edited host-tool file (KiCad .kicad_sch or DXF exported by EDL) against the .edl source of truth and produce a minimal structured patch plan (component moves -> `place`, value/footprint edits, freestanding fixture moves -> `at:`). With apply=true the patches are written to the .edl file only after the patched source re-compiles without new errors. Unrepresentable edits are returned as report_only/unsupported with a reason.",
+            "inputSchema": {
+                "type": "object",
+                "required": ["file_path"],
+                "properties": {
+                    "file_path": { "type": "string", "description": "The .edl project (source of truth)" },
+                    "from_kicad": { "type": "string", "description": "Path to the edited .kicad_sch" },
+                    "from_dxf": { "type": "string", "description": "Path to the edited .dxf" },
+                    "apply": { "type": "boolean", "description": "Write patches into the .edl file (default false = verified dry run)" }
+                }
+            }
+        },
+        {
             "name": "edl_diff",
             "description": "Compute a semantic diff by stable entity ID between two EDL revisions.",
             "inputSchema": {
@@ -330,6 +344,17 @@ fn call_mcp_tool(name: &str, args: &Value) -> Result<Value, String> {
                 let sched = build_panel_schedule(&ir);
                 serde_json::to_value(&sched).map_err(|e| e.to_string())
             }
+        }
+        "edl_sync" => {
+            let file = args
+                .get("file_path")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "Missing required 'file_path' parameter".to_string())?;
+            let k = args.get("from_kicad").and_then(|v| v.as_str()).map(Path::new);
+            let d = args.get("from_dxf").and_then(|v| v.as_str()).map(Path::new);
+            let apply = args.get("apply").and_then(|v| v.as_bool()).unwrap_or(false);
+            let (plan, result) = crate::core::sync::run_sync(Path::new(file), k, d, apply)?;
+            Ok(json!({ "plan": plan, "result": result }))
         }
         "edl_diff" => {
             let before = compile_from_args(args, "before_path", "before_source")?;

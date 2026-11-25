@@ -20,7 +20,9 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
     let _ = writeln!(out, "0\nENDSEC");
 
     let _ = writeln!(out, "0\nSECTION\n2\nTABLES");
-    let _ = writeln!(out, "0\nTABLE\n2\nLAYER\n70\n13");
+    // Registered XDATA application so AutoCAD preserves the EDL_ID tags through edits.
+    let _ = writeln!(out, "0\nTABLE\n2\nAPPID\n70\n1\n0\nAPPID\n2\nEDL\n70\n0\n0\nENDTAB");
+    let _ = writeln!(out, "0\nTABLE\n2\nLAYER\n70\n14");
     for (name, color) in [
         ("WALLS_EXT", 7),
         ("WALLS_INT", 8),
@@ -35,6 +37,7 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
         ("ELEC_SWITCHES", 30),
         ("ELEC_POWER", 4),
         ("ELEC_WIRING", 6),
+        ("EDL_ANCHORS", 8),
     ] {
         let _ = writeln!(
             out,
@@ -172,6 +175,18 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
                 write_text(&mut out, layer, pos.x, pos.y + 110.0, 75.0, &e.id);
             }
             _ => {}
+        }
+    }
+
+    // Stable identity anchors for bidirectional sync (`edl sync --from-dxf`): one tagged POINT per movable entity,
+    // placed inside its footprint so a normal window-select + move in AutoCAD carries it along.
+    for e in &ir.entities {
+        if let Some((kind, x, y)) = crate::core::sync::dxf_anchor(e) {
+            let _ = writeln!(
+                out,
+                "0\nPOINT\n8\nEDL_ANCHORS\n10\n{x:.4}\n20\n{y:.4}\n30\n0.0\n1001\nEDL\n1000\n{}\n1000\n{kind}",
+                e.id
+            );
         }
     }
 

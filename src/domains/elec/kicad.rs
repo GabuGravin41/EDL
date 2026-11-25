@@ -300,6 +300,14 @@ pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
             "    (property \"Datasheet\" \"\" (at {:.2} {:.2} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
             cx, cy
         );
+        // Stable EDL identity: survives re-annotation / Reference edits in KiCad, used by `edl sync`.
+        let _ = writeln!(
+            out,
+            "    (property \"EDL_ID\" \"{}\" (at {:.2} {:.2} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
+            escape_sexpr(&ent.id),
+            cx,
+            cy
+        );
         for p in pins {
             let pu = det_uuid("pin", &format!("{}.{}", ent.id, p.number));
             let _ = writeln!(out, "    (pin \"{}\" (uuid \"{pu}\"))", p.number);

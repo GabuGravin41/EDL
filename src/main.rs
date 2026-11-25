@@ -124,6 +124,34 @@ enum Commands {
         #[arg(long)]
         csv: bool,
     },
+    /// Bidirectional sync: turn edits made in KiCad / AutoCAD(DXF) back into minimal patches of the .edl source
+    Sync {
+        /// The .edl project that is the source of truth
+        file: PathBuf,
+        /// Edited KiCad schematic exported by EDL (moves, value and footprint edits)
+        #[arg(long)]
+        from_kicad: Option<PathBuf>,
+        /// Edited DXF exported by EDL (fixture moves; semantic drift report)
+        #[arg(long)]
+        from_dxf: Option<PathBuf>,
+        /// Write the patches into the .edl file (default is a verified dry run)
+        #[arg(long)]
+        apply: bool,
+        /// Emit the structured patch plan as JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Live co-editing bridge: serve a hot-reloading preview and (optionally) keep a KiCad file in two-way sync
+    Watch {
+        /// The .edl project to watch
+        file: PathBuf,
+        /// Local port for the live preview (default 8765)
+        #[arg(long, default_value_t = 8765)]
+        port: u16,
+        /// Keep this .kicad_sch in two-way sync (EDL edits re-export; KiCad saves sync back)
+        #[arg(long)]
+        kicad: Option<PathBuf>,
+    },
     /// Start the Model Context Protocol (MCP) JSON-RPC 2.0 server over stdio
     Mcp,
 }
@@ -431,6 +459,38 @@ fn main() {
             } else {
                 let sched = build_panel_schedule(&ir);
                 println!("{}", serde_json::to_string_pretty(&sched).unwrap());
+            }
+        }
+        Commands::Sync {
+            file,
+            from_kicad,
+            from_dxf,
+            apply,
+            json,
+        } => match edl::core::sync::run_sync(&file, from_kicad.as_deref(), from_dxf.as_deref(), apply) {
+            Ok((plan, res)) => {
+                if json {
+                    println!(
+                        "{}",
+                        serde_json::to_string_pretty(&serde_json::json!({"plan": plan, "result": res})).unwrap()
+                    );
+                } else {
+                    print!("{}", edl::core::sync::format_plan(&plan));
+                    println!("  => {}", res.message);
+                }
+                if !res.applied && plan.patch_count() > 0 {
+                    process::exit(2);
+                }
+            }
+            Err(e) => {
+                eprintln!("sync error: {e}");
+                process::exit(1);
+            }
+        },
+        Commands::Watch { file, port, kicad } => {
+            if let Err(e) = edl::watch::run_watch(&file, port, kicad.as_deref()) {
+                eprintln!("watch error: {e}");
+                process::exit(1);
             }
         }
         Commands::Mcp => {

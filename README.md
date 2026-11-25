@@ -8,7 +8,7 @@ An AI-native, typed, declarative language, Rust compiler, and native MCP server 
 - **Honest verification + machine-readable repair plans:** Every check produces a typed evidence record (`EXACTLY_CHECKED`, `VIOLATED`, `UNVERIFIED`) plus structured `RepairAction` suggestions so AI agents can self-repair deterministically.
 - **One-way compilation + automated target-side validation:** `.edl` is the single source of truth; adapters export to DXF and KiCad 9 and automatically ingest `kicad-cli sch erc` results (`--kicad-erc`) into EDL's evidence ledger.
 
-## What Works Today (v0.7.0 — 27/27 Rust Tests Passing, 6/6 KiCad 9 ERCs Passing)
+## What Works Today (v0.8.0 — 33 Rust Tests Passing, 6/6 KiCad 9 ERCs Passing)
 
 ### Cross-Domain Core, Composition & AI Tooling (`v0.4`–`v0.6`)
 - **Modular compiler architecture:** `src/core/` (spans + repair actions, SI units including `H/mH/uH/nH`, 2D analytical geometry, Canonical IR, semantic query/measure, semantic diff), `src/syntax/` (lexer, AST, parser, import/module elaborator), `src/domains/{arch,elec}/`, and `src/mcp.rs`.
@@ -34,6 +34,15 @@ are placed on real wall faces; orthogonal circuit runs and switch legs are route
 Six exact rules: `M1` breaker load, `M2` voltage drop, `M3` wet-zone clearance, `M4` switch/door accessibility, `M5` device/opening clearance, `M6` RCD on wet circuits.
 Outputs: layered SVG, 5-layer DXF (`ELEC_PANEL/LIGHTING/SWITCHES/POWER/WIRING`), and `edl schedule [--csv]` DB circuit schedule.
 See `examples/apartment_2br_electrical.edl` (13/13 rules `EXACTLY_CHECKED`).
+
+### Bidirectional Sync & Live Co-Editing (`v0.8`)
+Humans stay in KiCad / AutoCAD; EDL stays the typed source of truth.
+* Every export carries the stable entity id (`EDL_ID` property in `.kicad_sch`; tagged `EDL_ANCHORS` POINTs with registered `EDL` XDATA in `.dxf`).
+* `edl sync design.edl --from-kicad edited.kicad_sch [--apply]` turns a human's drag / value / footprint edit into a **minimal text patch**
+  (`place U1 at: (...)`, `value: 22uF`) — comments, parameters and modules are untouched. `--from-dxf` patches freestanding fixtures (`at:`) and reports
+  semantic drift (wall-anchored fixtures, devices, rooms) instead of guessing. Patches are re-compiled first and **rejected** if they would break verification.
+* `edl watch design.edl [--kicad live.kicad_sch]` serves a hot-reloading, pan/zoom browser preview (last good render kept on errors) and keeps KiCad in two-way sync.
+* MCP: new `edl_sync` tool (10 tools total).
 
 ## Quick Start
 
