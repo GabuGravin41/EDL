@@ -2170,6 +2170,21 @@ impl Parser {
     fn parse_net(&mut self) -> Result<NetDecl, Diagnostic> {
         let start = self.expect_keyword("net")?;
         let (name, _) = self.expect_ident_or_str("net name")?;
+        
+        // Parse hierarchical net name: /Module/SubModule/NetName -> ["Module", "SubModule"] with name="NetName"
+        let mut hierarchy = Vec::new();
+        let mut net_name = name.clone();
+        if name.starts_with('/') {
+            let parts: Vec<&str> = name.split('/').filter(|s| !s.is_empty()).collect();
+            if parts.len() > 1 {
+                // All but last are hierarchy
+                hierarchy = parts[..parts.len() - 1].iter().map(|s| s.to_string()).collect();
+                net_name = parts[parts.len() - 1].to_string();
+            } else if parts.len() == 1 {
+                net_name = parts[0].to_string();
+            }
+        }
+        
         self.expect(TokenKind::LBrace, "'{'")?;
         let mut connects = Vec::new();
         let mut power_flag = false;
@@ -2231,7 +2246,8 @@ impl Parser {
         }
         let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
         Ok(NetDecl {
-            name,
+            name: net_name,
+            hierarchy,
             connects,
             power_flag,
             span: start.merge(&end),

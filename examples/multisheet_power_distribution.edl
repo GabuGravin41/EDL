@@ -1,0 +1,145 @@
+// EDL v3.1 Example: Multi-Sheet Power Distribution with Hierarchical Nets
+// Demonstrates hierarchical net naming for industrial power management architectures
+// Real use case: Industrial buck converters with multi-stage filtering and protection
+
+project "Industrial Power Distribution v3.1" {
+    units: mm
+    frame Sheet: Frame2
+
+    circuit PowerInput {
+        component J1: connector {
+            value: "USB_5V"
+            pin VBUS: power_out (5V)
+            pin GND: ground (0V)
+        }
+
+        // Hierarchical net for input stage - scoped to this functional block
+        net /PowerInput/VBUS_RAW {
+            connect: [J1.VBUS]
+            power_flag: true
+        }
+
+        net /PowerInput/GND {
+            connect: [J1.GND]
+        }
+    }
+
+    circuit PrimaryStage {
+        component C1: capacitor {
+            value: 100uF
+            pin POS: passive
+            pin NEG: passive
+        }
+
+        component L1: inductor {
+            value: 10uH
+            pin A: passive
+            pin B: passive
+        }
+
+        component U1: regulator {
+            value: "MP9486A"
+            pin VIN: power_in (4.5V..12V)
+            pin GND: ground (0V)
+            pin VOUT: power_out (3.3V)
+            pin FB: input
+        }
+
+        component R1: resistor {
+            value: 10kohm
+            pin A: passive
+            pin B: passive
+        }
+
+        net /PrimaryStage/VIN {
+            connect: [C1.POS, L1.A, U1.VIN]
+        }
+
+        net /PrimaryStage/GND {
+            connect: [C1.NEG, U1.GND, R1.B]
+        }
+
+        net /PrimaryStage/V3V3 {
+            connect: [L1.B, U1.VOUT, R1.A]
+            power_flag: true
+        }
+    }
+
+    circuit SecondaryStage {
+        component C2: capacitor {
+            value: 10uF
+            pin POS: passive
+            pin NEG: passive
+        }
+
+        component C3: capacitor {
+            value: 100nF
+            pin POS: passive
+            pin NEG: passive
+        }
+
+        component U2: ic {
+            value: "STM32L476"
+            pin VDD: power_in (3.0V..3.6V)
+            pin GND: ground (0V)
+            pin PA0: input
+            pin PA1: input
+        }
+
+        // Secondary stage uses power from primary stage via cross-sheet reference
+        net V3V3 {
+            connect: [
+                C2.POS,
+                C3.POS,
+                U2.VDD,
+                /PrimaryStage/V3V3  // Cross-hierarchy reference
+            ]
+        }
+
+        net GND {
+            connect: [
+                C2.NEG,
+                C3.NEG,
+                U2.GND,
+                /PrimaryStage/GND
+            ]
+        }
+
+        net SENSOR_A {
+            connect: [U2.PA0]
+        }
+
+        net SENSOR_B {
+            connect: [U2.PA1]
+        }
+    }
+
+    schematic MainSheet {
+        sheet: A3 landscape
+
+        group InputStage {
+            members: [J1, C1]
+        }
+
+        group BuckConverter {
+            members: [L1, U1, R1]
+        }
+
+        group MCU_Decoupling {
+            members: [C2, C3, U2]
+        }
+
+        layout {
+            arrange: [InputStage, BuckConverter, MCU_Decoupling] left_to_right
+            group_gap: 50.8mm
+        }
+    }
+
+    verify {
+        require all_required_pins_connected
+        require no_power_ground_short
+        require no_multiple_power_drivers
+        require voltage_compatibility
+        require no_single_pin_nets
+    }
+}
