@@ -218,7 +218,11 @@ impl Parser {
             }
             TokenKind::Ident(s) => {
                 self.bump();
-                Ok((ArgValue::Ident(s), sp))
+                if let Some(bound) = self.param_env.get(&s) {
+                    Ok((bound.clone(), sp))
+                } else {
+                    Ok((ArgValue::Ident(s), sp))
+                }
             }
             _ => Err(self.err(
                 "E_PARSE_ARG",
@@ -515,7 +519,12 @@ impl Parser {
                     })?;
                 }
                 "frame" => frames.push(self.parse_frame()?),
-                "parameter" => parameters.push(self.parse_param()?),
+                "parameter" => {
+                    let p = self.parse_param()?;
+                    self.param_env
+                        .insert(p.name.clone(), ArgValue::Quantity(p.value));
+                    parameters.push(p);
+                }
                 "architecture" => arch.defaults = self.parse_arch_defaults()?,
                 "room" => arch.rooms.push(self.parse_room()?),
                 "layout" => arch.layouts.push(self.parse_layout()?),
@@ -929,8 +938,15 @@ impl Parser {
                             let room_a = self.parse_room_ref()?;
                             self.expect(TokenKind::Comma, "','")?;
                             let room_b = self.parse_room_ref()?;
+                            let side = if self.peek().kind == TokenKind::Comma {
+                                self.bump();
+                                let (side_s, sspan) = self.expect_ident("side (north/south/east/west)")?;
+                                Some(parse_side(&side_s, sspan)?)
+                            } else {
+                                None
+                            };
                             self.expect(TokenKind::RParen, "')'")?;
-                            host = Some(WallHost::SharedWall { room_a, room_b });
+                            host = Some(WallHost::SharedWall { room_a, room_b, side });
                         }
                         _ => {
                             return Err(Diagnostic::error(

@@ -97,31 +97,42 @@ pub fn inspect_summary(ir: &CanonicalIr) -> Value {
         .filter(|d| d.severity == Severity::Error)
         .count();
 
-    json!({
-        "project": {
-            "name": ir.project.name,
-            "domain": ir.project.domain,
-            "has_errors": ir.project.has_errors,
-            "error_count": violations_count,
-            "exterior_footprint_mm": ir.project.exterior_footprint_mm,
-            "total_clear_area_m2": round2(ir.project.total_clear_area_m2),
-            "remaining_dof": ir.project.remaining_dof,
-            "counts": {
-                "rooms": ir.project.room_count,
-                "openings": ir.project.opening_count,
-                "fixtures": ir.project.fixture_count,
-                "components": ir.project.component_count,
-                "nets": ir.project.net_count,
-            }
-        },
+    let is_elec = ir.project.domain == "electronics";
+    let mut project_obj = json!({
+        "name": ir.project.name,
+        "domain": ir.project.domain,
+        "has_errors": ir.project.has_errors,
+        "error_count": violations_count,
+        "exterior_footprint_mm": ir.project.exterior_footprint_mm,
+    });
+    if is_elec {
+        project_obj["counts"] = json!({
+            "components": ir.project.component_count,
+            "nets": ir.project.net_count,
+        });
+    } else {
+        project_obj["total_clear_area_m2"] = json!(round2(ir.project.total_clear_area_m2));
+        project_obj["remaining_dof"] = json!(ir.project.remaining_dof);
+        project_obj["counts"] = json!({
+            "rooms": ir.project.room_count,
+            "openings": ir.project.opening_count,
+            "fixtures": ir.project.fixture_count,
+        });
+    }
+
+    let mut out = json!({
+        "project": project_obj,
         "modules": modules_used
             .into_iter()
             .map(|(m, insts)| (m, insts.into_iter().collect::<Vec<_>>()))
             .collect::<BTreeMap<_, _>>(),
         "entities": entities_compact,
-        "nets": nets_compact,
         "evidence": evidence_compact,
-    })
+    });
+    if is_elec {
+        out["nets"] = json!(nets_compact);
+    }
+    out
 }
 
 /// Targeted semantic queries over Canonical IR (`summary`, `entity`, `net`, `room`, `module`, `violations`).
@@ -258,24 +269,38 @@ pub fn query_ir(ir: &CanonicalIr, kind: &str, target: Option<&str>) -> Result<Va
                         .find(|r| r.as_str() != id)
                         .cloned()
                         .unwrap_or_default();
+                    let axis = if (w.clear_segment.p0.y - w.clear_segment.p1.y).abs() <= EPS_MM {
+                        "horizontal"
+                    } else {
+                        "vertical"
+                    };
                     json!({
                         "room": other,
                         "wall_id": w.id,
+                        "axis": axis,
                         "shared_length_mm": round2(w.clear_length_mm),
                         "thickness_mm": round2(w.thickness_mm),
                     })
                 })
                 .collect();
 
+            // Match openings hosted on any derived wall whose `derived_from` includes this room ID
+            let room_wall_ids: BTreeSet<&str> = ir
+                .derived_walls
+                .iter()
+                .filter(|w| w.derived_from.iter().any(|r| r == id))
+                .map(|w| w.id.as_str())
+                .collect();
+
             let hosted_openings: Vec<String> = ir
                 .entities
                 .iter()
                 .filter(|e| {
-                    e.kind.starts_with("arch.opening.")
+                    matches!(e.kind.as_str(), "arch.door" | "arch.window" | "arch.passage")
                         && e.props
                             .get("host_wall")
                             .and_then(|v| v.as_str())
-                            .map(|hw| hw.contains(id))
+                            .map(|hw| room_wall_ids.contains(hw))
                             .unwrap_or(false)
                 })
                 .map(|e| e.id.clone())
@@ -384,6 +409,8 @@ pub fn measure_ir(ir: &CanonicalIr, target_a: &str, target_b: Option<&str>) -> R
 
     let ba = entity_bbox(ea).ok_or_else(|| format!("Entity '{target_a}' has no geometry"))?;
     let bb = entity_bbox(eb).ok_or_else(|| format!("Entity '{tb}' has no geometry"))?;
+    let subs_a = entity_subrects(ea);
+    let subs_b = entity_subrects(eb);
 
     let ca = ba.center();
     let cb = bb.center();
@@ -391,10 +418,31 @@ pub fn measure_ir(ir: &CanonicalIr, target_a: &str, target_b: Option<&str>) -> R
     let dy = cb.y - ca.y;
     let center_dist = (dx * dx + dy * dy).sqrt();
 
-    let gap_x = (bb.min_x - ba.max_x).max(ba.min_x - bb.max_x).max(0.0);
-    let gap_y = (bb.min_y - ba.max_y).max(ba.min_y - bb.max_y).max(0.0);
-    let clear_gap = (gap_x * gap_x + gap_y * gap_y).sqrt();
-    let overlaps = ba.overlaps_strict(bb);
+    // Compute exact minimum clear gap across decomposed sub-rectangles (handles L-shaped notched rooms!)
+    let mut best_gap = f64::INFINITY;
+    let mut best_gx = 0.0_f64;
+    let mut best_gy = 0.0_f64;
+    let mut any_overlap = false;
+    for &ra in &subs_a {
+        for &rb in &subs_b {
+            if ra.overlaps_strict(rb) {
+                any_overlap = true;
+            }
+            let gx = (rb.min_x - ra.max_x).max(ra.min_x - rb.max_x).max(0.0);
+            let gy = (rb.min_y - ra.max_y).max(ra.min_y - rb.max_y).max(0.0);
+            let g = (gx * gx + gy * gy).sqrt();
+            if g < best_gap {
+                best_gap = g;
+                best_gx = gx;
+                best_gy = gy;
+            }
+        }
+    }
+    let (clear_gap, gap_x, gap_y) = if best_gap.is_finite() {
+        (best_gap, best_gx, best_gy)
+    } else {
+        (0.0, 0.0, 0.0)
+    };
 
     let shared_walls: Vec<Value> = ir
         .derived_walls
@@ -405,8 +453,14 @@ pub fn measure_ir(ir: &CanonicalIr, target_a: &str, target_b: Option<&str>) -> R
                 && w.derived_from.iter().any(|r| r == tb)
         })
         .map(|w| {
+            let axis = if (w.clear_segment.p0.y - w.clear_segment.p1.y).abs() <= EPS_MM {
+                "horizontal"
+            } else {
+                "vertical"
+            };
             json!({
                 "wall_id": w.id,
+                "axis": axis,
                 "clear_length_mm": round2(w.clear_length_mm),
                 "thickness_mm": round2(w.thickness_mm),
             })
@@ -423,7 +477,7 @@ pub fn measure_ir(ir: &CanonicalIr, target_a: &str, target_b: Option<&str>) -> R
         .map(|r| r.id.clone())
         .collect();
 
-    Ok(json!({
+    let mut out = json!({
         "kind": "pair",
         "target_a": target_a,
         "target_b": tb,
@@ -432,10 +486,29 @@ pub fn measure_ir(ir: &CanonicalIr, target_a: &str, target_b: Option<&str>) -> R
         "clear_gap_mm": round2(clear_gap),
         "gap_x_mm": round2(gap_x),
         "gap_y_mm": round2(gap_y),
-        "bboxes_overlap": overlaps && clear_gap <= EPS_MM,
-        "shared_walls": shared_walls,
-        "shared_nets": shared_nets,
-    }))
+        "bboxes_overlap": any_overlap,
+    });
+    if ir.project.domain == "electronics" {
+        out["shared_nets"] = json!(shared_nets);
+    } else {
+        out["shared_walls"] = json!(shared_walls);
+    }
+    Ok(out)
+}
+
+fn entity_subrects(e: &EntityIr) -> Vec<Rect2> {
+    match &e.geometry {
+        EntityGeometryIr::Rect {
+            min,
+            max,
+            notch_rect,
+            ..
+        } => crate::domains::arch::compile::decompose_room_rect(
+            Rect2::new(min[0], min[1], max[0], max[1]),
+            *notch_rect,
+        ),
+        _ => entity_bbox(e).into_iter().collect(),
+    }
 }
 
 fn entity_bbox(e: &EntityIr) -> Option<Rect2> {

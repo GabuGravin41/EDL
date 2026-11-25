@@ -411,9 +411,27 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
     }
     let _ = writeln!(out, r#"  </g>"#);
 
-    // 5. Room labels & clear dimensions (rendered on top so never obscured)
+    // 5. Room labels & clear dimensions (smart collision-free placement away from fixtures & door arcs!)
+    let mut label_obstacles: Vec<Rect2> = Vec::new();
+    for e in &ir.entities {
+        match &e.geometry {
+            EntityGeometryIr::Fixture { body_rect, .. } => label_obstacles.push(*body_rect),
+            EntityGeometryIr::Door { swing_arc, .. } => {
+                // Approximate quarter-disk bbox around door swing so labels stay clear of door leaves
+                let p0 = swing_arc.start_point();
+                let p1 = swing_arc.end_point();
+                let c = swing_arc.center;
+                let min_x = c.x.min(p0.x).min(p1.x);
+                let max_x = c.x.max(p0.x).max(p1.x);
+                let min_y = c.y.min(p0.y).min(p1.y);
+                let max_y = c.y.max(p0.y).max(p1.y);
+                label_obstacles.push(Rect2::new(min_x, min_y, max_x, max_y));
+            }
+            _ => {}
+        }
+    }
+
     let _ = writeln!(out, r#"  <g id="room-labels">"#);
-    let mut room_rects_all: Vec<Rect2> = Vec::new();
     for e in &ir.entities {
         if e.kind != "arch.room" {
             continue;
@@ -429,15 +447,9 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
         {
             let full_r = Rect2::new(min[0], min[1], max[0], max[1]);
             let subs = crate::domains::arch::compile::decompose_room_rect(full_r, notch_rect);
-            room_rects_all.extend(subs.iter().copied());
-            // Place room label centered in the largest sub-rectangle (avoids empty notch corners!)
-            let best = subs
-                .iter()
-                .max_by(|a, b| a.area_m2().partial_cmp(&b.area_m2()).unwrap())
-                .copied()
-                .unwrap_or(full_r);
-            let cx = sx(best.center().x);
-            let cy = sy(best.center().y);
+            let best_pt = pick_clear_room_label_pos(&subs, &label_obstacles, e.id.len());
+            let cx = sx(best_pt.x);
+            let cy = sy(best_pt.y);
             let _ = writeln!(
                 out,
                 r#"    <text class="room-title" x="{cx:.2}" y="{:.2}">{}</text>"#,
@@ -502,41 +514,39 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
             bounds.depth() / 1000.0
         );
 
-        // Interior room dimension chains (top/bottom X-spans + right/left Y-spans)
-        if !room_rects_all.is_empty() {
-            let max_ry = room_rects_all.iter().map(|r| r.max_y).fold(f64::NEG_INFINITY, f64::max);
-            let min_ry = room_rects_all.iter().map(|r| r.min_y).fold(f64::INFINITY, f64::min);
-            let max_rx = room_rects_all.iter().map(|r| r.max_x).fold(f64::NEG_INFINITY, f64::max);
-            let min_rx = room_rects_all.iter().map(|r| r.min_x).fold(f64::INFINITY, f64::min);
+        // Interior room dimension chains derived directly from exterior-facing walls!
+        // This accurately includes recessed wings (non-rectangular footprints) AND keeps
+        // unbroken exterior walls of notched rooms as single continuous spans!
+        let mut raw_top: Vec<(f64, f64, f64)> = Vec::new();
+        let mut raw_bot: Vec<(f64, f64, f64)> = Vec::new();
+        let mut raw_right: Vec<(f64, f64, f64)> = Vec::new();
+        let mut raw_left: Vec<(f64, f64, f64)> = Vec::new();
 
-            let top_spans = collect_non_overlapping_spans(
-                room_rects_all
-                    .iter()
-                    .filter(|r| (r.max_y - max_ry).abs() < 2.0)
-                    .map(|r| (r.min_x, r.max_x))
-                    .collect(),
-            );
-            let bot_spans = collect_non_overlapping_spans(
-                room_rects_all
-                    .iter()
-                    .filter(|r| (r.min_y - min_ry).abs() < 2.0)
-                    .map(|r| (r.min_x, r.max_x))
-                    .collect(),
-            );
-            let right_spans = collect_non_overlapping_spans(
-                room_rects_all
-                    .iter()
-                    .filter(|r| (r.max_x - max_rx).abs() < 2.0)
-                    .map(|r| (r.min_y, r.max_y))
-                    .collect(),
-            );
-            let left_spans = collect_non_overlapping_spans(
-                room_rects_all
-                    .iter()
-                    .filter(|r| (r.min_x - min_rx).abs() < 2.0)
-                    .map(|r| (r.min_y, r.max_y))
-                    .collect(),
-            );
+        for w in &ir.derived_walls {
+            if w.kind != "arch.wall.exterior" {
+                continue;
+            }
+            let x0 = w.clear_segment.p0.x.min(w.clear_segment.p1.x);
+            let x1 = w.clear_segment.p0.x.max(w.clear_segment.p1.x);
+            let y0 = w.clear_segment.p0.y.min(w.clear_segment.p1.y);
+            let y1 = w.clear_segment.p0.y.max(w.clear_segment.p1.y);
+            if w.id.contains("_north") {
+                raw_top.push((x0, x1, y0)); // higher y wins if overlapping in X
+            } else if w.id.contains("_south") {
+                raw_bot.push((x0, x1, -y0)); // lower y wins if overlapping in X
+            } else if w.id.contains("_east") {
+                raw_right.push((y0, y1, x0)); // higher x wins if overlapping in Y
+            } else if w.id.contains("_west") {
+                raw_left.push((y0, y1, -x0)); // lower x wins if overlapping in Y
+            }
+        }
+
+        let top_spans = project_outermost_spans(raw_top);
+        let bot_spans = project_outermost_spans(raw_bot);
+        let right_spans = project_outermost_spans(raw_right);
+        let left_spans = project_outermost_spans(raw_left);
+
+        if true {
 
             // Top interior chain
             if top_spans.len() >= 1 {
@@ -731,21 +741,98 @@ fn notched_room_polygon(r: Rect2, n: Rect2) -> Vec<crate::core::geom::Point2> {
     }
 }
 
-fn collect_non_overlapping_spans(mut spans: Vec<(f64, f64)>) -> Vec<(f64, f64)> {
-    spans.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-    let mut out: Vec<(f64, f64)> = Vec::new();
-    for (a, b) in spans {
+/// Choose the clearest room label position inside `subs` that avoids fixtures and door swing arcs,
+/// breaking ties by proximity to the largest sub-rectangle's center.
+fn pick_clear_room_label_pos(
+    subs: &[Rect2],
+    obstacles: &[Rect2],
+    title_len: usize,
+) -> crate::core::geom::Point2 {
+    use crate::core::geom::Point2;
+    let primary = subs
+        .iter()
+        .max_by(|a, b| a.area_m2().partial_cmp(&b.area_m2()).unwrap())
+        .copied()
+        .unwrap_or_else(|| Rect2::new(0.0, 0.0, 1000.0, 1000.0));
+    let anchor = primary.center();
+
+    let half_w = ((title_len as f64) * 52.0).clamp(520.0, 680.0);
+    let half_h = 280.0_f64;
+
+    let mut best_pt = anchor;
+    let mut best_score = f64::INFINITY;
+
+    for &sr in subs {
+        let pad_x = half_w.min(sr.width() * 0.35);
+        let pad_y = half_h.min(sr.depth() * 0.35);
+        let x_lo = sr.min_x + pad_x;
+        let x_hi = (sr.max_x - pad_x).max(x_lo);
+        let y_lo = sr.min_y + pad_y;
+        let y_hi = (sr.max_y - pad_y).max(y_lo);
+
+        for ix in 0..=6 {
+            let fx = ix as f64 / 6.0;
+            let cx = x_lo + fx * (x_hi - x_lo);
+            for iy in 0..=6 {
+                let fy = iy as f64 / 6.0;
+                let cy = y_lo + fy * (y_hi - y_lo);
+                let lbox = Rect2::new(cx - half_w, cy - half_h, cx + half_w, cy + half_h);
+                let mut overlap_pen = 0.0_f64;
+                for &ob in obstacles {
+                    if lbox.overlaps_strict(ob) {
+                        overlap_pen += lbox.overlap_area(ob);
+                    }
+                }
+                let dist = ((cx - anchor.x).powi(2) + (cy - anchor.y).powi(2)).sqrt();
+                // Prioritize zero-overlap strongly, then stay close to room center
+                let score = overlap_pen * 1000.0 + dist;
+                if score < best_score {
+                    best_score = score;
+                    best_pt = Point2::new(cx, cy);
+                }
+            }
+        }
+    }
+    best_pt
+}
+
+/// Project exterior-facing wall segments onto an axis, keeping the outermost segment wherever
+/// two wings overlap in projection, so recessed wings (e.g. Hall beside Study & Kitchen) are
+/// always preserved in the interior dimension chain!
+fn project_outermost_spans(mut segs: Vec<(f64, f64, f64)>) -> Vec<(f64, f64)> {
+    // Sort by outer priority descending (outermost walls claim their intervals first)
+    segs.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap());
+    let mut claimed: Vec<(f64, f64)> = Vec::new();
+    for (a, b, _) in segs {
         if b - a < 100.0 {
             continue;
         }
-        if let Some(last) = out.last() {
-            if a < last.1 - 1.0 {
-                continue;
+        // Subtract already-claimed intervals from (a, b)
+        let mut pieces = vec![(a, b)];
+        for &(c0, c1) in &claimed {
+            let mut next = Vec::new();
+            for (p0, p1) in pieces {
+                if c1 <= p0 + 1.0 || c0 >= p1 - 1.0 {
+                    next.push((p0, p1));
+                } else {
+                    if c0 > p0 + 1.0 {
+                        next.push((p0, c0.min(p1)));
+                    }
+                    if c1 < p1 - 1.0 {
+                        next.push((c1.max(p0), p1));
+                    }
+                }
+            }
+            pieces = next;
+        }
+        for (p0, p1) in pieces {
+            if p1 - p0 >= 150.0 {
+                claimed.push((p0, p1));
             }
         }
-        out.push((a, b));
     }
-    out
+    claimed.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    claimed
 }
 
 fn spans_equal(a: &[(f64, f64)], b: &[(f64, f64)]) -> bool {

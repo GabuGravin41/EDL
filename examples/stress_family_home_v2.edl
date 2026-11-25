@@ -1,0 +1,299 @@
+// EDL v0.5 Stress Test (Turn 2): 8-Room Single-Story Family Home — Revision 2
+// Changes from v1:
+// 1. Widen Kitchen by +400mm (3400mm -> 3800mm) and expand KitchenIsland (1200mm -> 1400mm)
+// 2. Resize & repurpose Study (3200mm) into a smaller Nursery (2600mm) via CompactNursery module
+
+import "./lib/arch_units.edl"
+
+module CompactPowder(w = 1900mm, d = 1900mm) {
+  room Powder {
+    role: wet
+    clear_size: (w, d)
+  }
+
+  fixture Toilet: toilet {
+    room: Powder
+    size: (450mm, 650mm)
+    against: west
+    offset: 150mm from start
+    clearance_front: 400mm
+  }
+
+  fixture Vanity: vanity {
+    room: Powder
+    size: (750mm, 450mm)
+    against: east
+    offset: 150mm from start
+    clearance_front: 400mm
+  }
+}
+
+module CompactNursery(w = 2600mm, d = 3400mm, crib_w = 750mm, crib_l = 1400mm, win_w = 1200mm) {
+  room NurseryRm {
+    role: habitable
+    clear_size: (w, d)
+  }
+
+  opening Win: window {
+    host: exterior(NurseryRm, north)
+    width: win_w
+    align: center
+  }
+
+  fixture ChangingDesk: desk {
+    room: NurseryRm
+    size: (1000mm, 650mm)
+    against: north
+    offset: 200mm from start
+    clearance_front: 500mm
+  }
+
+  fixture Crib: bed {
+    room: NurseryRm
+    size: (crib_w, crib_l)
+    against: east
+    offset: 1100mm from start
+    clearance_front: 500mm
+  }
+
+  fixture Wardrobe: wardrobe {
+    room: NurseryRm
+    size: (900mm, 500mm)
+    against: east
+    offset: 200mm from end
+    clearance_front: 500mm
+  }
+}
+
+project "Family Home v2 — Expanded Kitchen + Nursery" {
+  units: mm
+  frame FloorPlan: Frame2
+
+  parameter kitchen_w: 3800mm
+  parameter hall_w: 6800mm
+
+  architecture.defaults {
+    measurement_basis: clear_interior
+    exterior_wall: 200mm
+    interior_wall: 120mm
+  }
+
+  // --- South Wing (Public Zone) ---
+
+  room LivingDining {
+    role: habitable
+    clear_size: (6600mm, 5000mm)
+    notch: (2020mm, 2020mm) at northeast
+    anchor: southwest at FloorPlan.origin
+  }
+
+  use PowderRoom = CompactPowder(w: 1900mm, d: 1900mm)
+
+  room Kitchen {
+    role: service
+  }
+
+  // --- Middle Strip (Circulation + Main Bathroom) ---
+
+  use MainBath = StandardBath(w: 2200mm, d: 2100mm)
+
+  room Hall {
+    role: circulation
+  }
+
+  // --- North Wing (Private Sleeping Zone) ---
+
+  use MasterBed = StandardBedroom(w: 3800mm, d: 3400mm, bed_w: 1800mm, win_w: 1800mm)
+  use Bed2      = StandardBedroom(w: 3600mm, d: 3400mm, bed_w: 1400mm, win_w: 1400mm)
+  use Nursery   = CompactNursery(w: 2600mm, d: 3400mm, crib_w: 750mm, crib_l: 1400mm, win_w: 1200mm)
+
+  layout FloorPlan {
+    // Tuck PowderRoom inside LivingDining's northeast notch (120mm interior wall clearance)
+    require PowderRoom.east  == LivingDining.east
+    require PowderRoom.north == LivingDining.north
+
+    // Kitchen directly east of LivingDining / PowderRoom (+400mm wider in v2)
+    require Kitchen.west  == LivingDining.east + interior_wall
+    require Kitchen.south == LivingDining.south
+    require Kitchen.north == LivingDining.north
+    require Kitchen.width == kitchen_w
+
+    // MainBath and Hall north of the South Wing
+    require MainBath.west  == LivingDining.west
+    require MainBath.south == LivingDining.north + interior_wall
+
+    require Hall.west  == MainBath.east + interior_wall
+    require Hall.south == LivingDining.north + interior_wall
+    require Hall.north == MainBath.north
+    require Hall.width == hall_w
+
+    // Three bedrooms aligned along the North Wing (Study repurposed into smaller Nursery)
+    require MasterBed.west  == MainBath.west
+    require MasterBed.south == MainBath.north + interior_wall
+
+    require Bed2.west  == MasterBed.east + interior_wall
+    require Bed2.south == MasterBed.south
+
+    require Nursery.west  == Bed2.east + interior_wall
+    require Nursery.south == Bed2.south
+  }
+
+  // --- Exterior Openings ---
+
+  opening FrontDoor: door {
+    host: exterior(LivingDining, south)
+    width: 1000mm
+    offset: 600mm from start
+    hinge: start
+    swing: into LivingDining
+  }
+
+  opening LivingSouthWin: window {
+    host: exterior(LivingDining, south)
+    width: 1800mm
+    offset: 600mm from end
+  }
+
+  opening LivingWestWin: window {
+    host: exterior(LivingDining, west)
+    width: 2000mm
+    align: center
+  }
+
+  opening KitchenEastWin: window {
+    host: exterior(Kitchen, east)
+    width: 1600mm
+    align: center
+  }
+
+  opening KitchenSouthWin: window {
+    host: exterior(Kitchen, south)
+    width: 1400mm
+    align: center
+  }
+
+  opening HallEastWin: window {
+    host: exterior(Hall, east)
+    width: 1000mm
+    align: center
+  }
+
+  // --- Interior Passages & Doors ---
+
+  opening KitchenPassage: passage {
+    host: shared_wall(LivingDining, Kitchen)
+    width: 1800mm
+    align: center
+  }
+
+  opening HallPassage: passage {
+    host: shared_wall(LivingDining, Hall)
+    width: 1400mm
+    align: center
+  }
+
+  opening PowderDoor: door {
+    host: shared_wall(Hall, PowderRoom)
+    width: 800mm
+    align: center
+    hinge: start
+    swing: into PowderRoom
+  }
+
+  opening MainBathDoor: door {
+    host: shared_wall(MainBath, Hall)
+    width: 800mm
+    offset: 1150mm from start
+    hinge: end
+    swing: into MainBath
+  }
+
+  opening MasterDoor: door {
+    host: shared_wall(Hall, MasterBed)
+    width: 900mm
+    align: center
+    hinge: start
+    swing: into MasterBed
+  }
+
+  opening Bed2Door: door {
+    host: shared_wall(Hall, Bed2)
+    width: 900mm
+    offset: 300mm from start
+    hinge: start
+    swing: into Bed2
+  }
+
+  opening NurseryDoor: door {
+    host: shared_wall(Hall, Nursery)
+    width: 900mm
+    align: center
+    hinge: start
+    swing: into Nursery
+  }
+
+  // --- Furniture & Fixtures ---
+
+  fixture LivingSofa: sofa {
+    room: LivingDining
+    size: (2400mm, 950mm)
+    against: west
+    offset: 1800mm from start
+    clearance_front: 600mm
+  }
+
+  fixture DiningTable: table {
+    room: LivingDining
+    size: (1800mm, 1000mm)
+    at: (4000mm, 1100mm)
+    clearance_all: 600mm
+  }
+
+  fixture KitchenNorthCounter: counter {
+    room: Kitchen
+    size: (2600mm, 650mm)
+    against: north
+    align: center
+    clearance_front: 600mm
+  }
+
+  fixture KitchenSouthCounter: counter {
+    room: Kitchen
+    size: (2600mm, 650mm)
+    against: south
+    align: center
+    clearance_front: 600mm
+  }
+
+  fixture KitchenIsland: counter {
+    room: Kitchen
+    size: (1400mm, 1200mm)
+    at: center
+    clearance_all: 500mm
+  }
+
+  fixture HallCloset: wardrobe {
+    room: Hall
+    size: (1400mm, 450mm)
+    against: south
+    offset: 500mm from end
+    clearance_front: 500mm
+  }
+
+  verify {
+    require no_room_overlap
+    require opening_jamb_margin >= 100mm
+    require no_door_swing_collision
+    require all_rooms_reachable
+    require no_fixture_collision
+    require habitable_rooms_have_window
+  }
+
+  view GroundPlan: PlanView {
+    frame: FloorPlan
+    sheet: A3 landscape
+    scale: 1:50
+    show_dimensions: true
+    show_labels: true
+  }
+}

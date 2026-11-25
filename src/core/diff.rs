@@ -163,11 +163,20 @@ fn describe_entity_delta(a: &EntityIr, b: &EntityIr) -> String {
         ) => {
             let dx = sb.p0.x - sa.p0.x;
             let dy = sb.p0.y - sa.p0.y;
-            format!(
-                "width {:.0}mm -> {:.0}mm; start shifted ({dx:+.0}mm, {dy:+.0}mm)",
-                sa.length(),
-                sb.length()
-            )
+            let la = sa.length();
+            let lb = sb.length();
+            let mut parts = Vec::new();
+            if (lb - la).abs() > 1e-4 {
+                parts.push(format!("width {la:.0}mm -> {lb:.0}mm"));
+            }
+            if dx.abs() > 1e-4 || dy.abs() > 1e-4 {
+                parts.push(format!("shifted ({dx:+.0}mm, {dy:+.0}mm)"));
+            }
+            if parts.is_empty() {
+                "properties changed".to_string()
+            } else {
+                parts.join("; ")
+            }
         }
         (
             EntityGeometryIr::Door { swing_arc: aa, .. },
@@ -175,10 +184,18 @@ fn describe_entity_delta(a: &EntityIr, b: &EntityIr) -> String {
         ) => {
             let dx = ab.center.x - aa.center.x;
             let dy = ab.center.y - aa.center.y;
-            format!(
-                "hinge shifted ({dx:+.0}mm, {dy:+.0}mm); radius {:.0}mm -> {:.0}mm",
-                aa.radius, ab.radius
-            )
+            let mut parts = Vec::new();
+            if dx.abs() > 1e-4 || dy.abs() > 1e-4 {
+                parts.push(format!("hinge shifted ({dx:+.0}mm, {dy:+.0}mm)"));
+            }
+            if (ab.radius - aa.radius).abs() > 1e-4 {
+                parts.push(format!("radius {:.0}mm -> {:.0}mm", aa.radius, ab.radius));
+            }
+            if parts.is_empty() {
+                "properties changed".to_string()
+            } else {
+                parts.join("; ")
+            }
         }
         (
             EntityGeometryIr::Fixture { body_rect: ra, .. },
@@ -186,13 +203,24 @@ fn describe_entity_delta(a: &EntityIr, b: &EntityIr) -> String {
         ) => {
             let dx = rb.min_x - ra.min_x;
             let dy = rb.min_y - ra.min_y;
-            format!(
-                "fixture shifted ({dx:+.0}mm, {dy:+.0}mm); size {:.0}x{:.0}mm -> {:.0}x{:.0}mm",
-                ra.width(),
-                ra.depth(),
-                rb.width(),
-                rb.depth()
-            )
+            let mut parts = Vec::new();
+            if dx.abs() > 1e-4 || dy.abs() > 1e-4 {
+                parts.push(format!("shifted ({dx:+.0}mm, {dy:+.0}mm)"));
+            }
+            if (rb.width() - ra.width()).abs() > 1e-4 || (rb.depth() - ra.depth()).abs() > 1e-4 {
+                parts.push(format!(
+                    "size {:.0}x{:.0}mm -> {:.0}x{:.0}mm",
+                    ra.width(),
+                    ra.depth(),
+                    rb.width(),
+                    rb.depth()
+                ));
+            }
+            if parts.is_empty() {
+                "properties changed".to_string()
+            } else {
+                parts.join("; ")
+            }
         }
         _ => "geometry updated".to_string(),
     }

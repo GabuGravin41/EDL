@@ -665,10 +665,10 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         col_bounds.push((col_x0, col_x1));
 
         let mut cur_y = comp_start_y;
-        let g_min_x = col_x0 - PIN_LEN_MM - 5.08;
-        let g_max_x = col_x1 + PIN_LEN_MM + 5.08;
-        let mut g_min_y = cur_y - PIN_LEN_MM - 5.08;
-        let mut g_max_y = cur_y + 20.32;
+        let mut g_min_x = f64::INFINITY;
+        let mut g_max_x = f64::NEG_INFINITY;
+        let mut g_min_y = f64::INFINITY;
+        let mut g_max_y = f64::NEG_INFINITY;
 
         for (m_idx, (cid, (bw, bh))) in members.iter().zip(sizes.into_iter()).enumerate() {
             let comp = comp_map[cid];
@@ -708,6 +708,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 props.insert("footprint".to_string(), json!(fp));
             }
 
+            let has_north = placed.iter().any(|p| p.side == Side::North);
             entities.push(EntityIr {
                 id: cid.clone(),
                 kind: "elec.component".to_string(),
@@ -727,17 +728,22 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             if !explicit_pos.contains_key(cid) {
                 cur_y = snap_grid(body.max_y + member_gap_mm + PIN_LEN_MM);
             }
-            g_min_y = g_min_y.min(body.min_y - PIN_LEN_MM - 5.08);
+            let top_pad = if has_north { PIN_LEN_MM + 9.0 } else { PIN_LEN_MM + 5.08 };
+            g_min_x = g_min_x.min(body.min_x - PIN_LEN_MM - 5.08);
+            g_max_x = g_max_x.max(body.max_x + PIN_LEN_MM + 5.08);
+            g_min_y = g_min_y.min(body.min_y - top_pad);
             g_max_y = g_max_y.max(body.max_y + PIN_LEN_MM + 5.08);
             max_comp_y = max_comp_y.max(body.max_y + PIN_LEN_MM);
             max_comp_x = max_comp_x.max(body.max_x + PIN_LEN_MM + 12.70);
         }
 
-        schematic_groups.push(SchematicGroupIr {
-            name: gname.clone(),
-            members: members.clone(),
-            bbox: Rect2::new(g_min_x, g_min_y, g_max_x, g_max_y),
-        });
+        if g_min_x.is_finite() {
+            schematic_groups.push(SchematicGroupIr {
+                name: gname.clone(),
+                members: members.clone(),
+                bbox: Rect2::new(g_min_x, g_min_y, g_max_x, g_max_y),
+            });
+        }
 
         cur_x = snap_grid(col_x1 + effective_group_gap + 2.0 * PIN_LEN_MM);
     }
@@ -754,6 +760,44 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     if any_gnd_rail {
         for c in 0..ordered_groups.len() {
             left_lane_next.insert(c, 1); // lane 0 reserved exclusively for GND rail drops
+        }
+    }
+    // Reserve gutter lanes occupied by East/West `symbol` (1 grid) or `label_stub` (2 grids)
+    // so vertical wire trunks NEVER cross a local power symbol or net-label stub!
+    for net in &all_nets {
+        let is_g = ground_nets.contains(&net.name);
+        let is_p = net_driven_voltage
+            .get(&net.name)
+            .map(|v| !v.is_empty())
+            .unwrap_or(false)
+            || net.name.to_uppercase().starts_with('V');
+        let st = resolve_style(&net.name, is_g, is_p);
+        let min_lane = match st {
+            NetRoutingStyle::Symbol => 1,
+            NetRoutingStyle::LabelStub => 2,
+            _ => 0,
+        };
+        if min_lane == 0 {
+            continue;
+        }
+        for pref in &net.connects {
+            if let Some(rp) = placed_pins.get(&(pref.component.clone(), pref.pin.clone())) {
+                match rp.pin.side {
+                    Side::East => {
+                        let e = right_lane_next.entry(rp.col_idx).or_insert(0);
+                        if *e < min_lane {
+                            *e = min_lane;
+                        }
+                    }
+                    Side::West => {
+                        let e = left_lane_next.entry(rp.col_idx).or_insert(0);
+                        if *e < min_lane {
+                            *e = min_lane;
+                        }
+                    }
+                    _ => {}
+                }
+            }
         }
     }
 

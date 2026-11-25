@@ -224,9 +224,10 @@ pub fn elaborate_project(
                     room: local_room_map.get(&room).cloned().unwrap_or(room),
                     side,
                 },
-                WallHost::SharedWall { room_a, room_b } => WallHost::SharedWall {
+                WallHost::SharedWall { room_a, room_b, side } => WallHost::SharedWall {
                     room_a: local_room_map.get(&room_a).cloned().unwrap_or(room_a),
                     room_b: local_room_map.get(&room_b).cloned().unwrap_or(room_b),
+                    side,
                 },
             };
             if let Some(sw) = op.swing_into {
@@ -258,9 +259,10 @@ pub fn elaborate_project(
                     room: single_room_aliases.get(&room).cloned().unwrap_or(room),
                     side,
                 },
-                WallHost::SharedWall { room_a, room_b } => WallHost::SharedWall {
+                WallHost::SharedWall { room_a, room_b, side } => WallHost::SharedWall {
                     room_a: single_room_aliases.get(&room_a).cloned().unwrap_or(room_a),
                     room_b: single_room_aliases.get(&room_b).cloned().unwrap_or(room_b),
+                    side,
                 },
             };
             if let Some(ref sw) = op.swing_into {

@@ -134,8 +134,16 @@ pub enum OpeningKind {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum WallHost {
-    Exterior { room: String, side: Side },
-    SharedWall { room_a: String, room_b: String },
+    Exterior {
+        room: String,
+        side: Side,
+    },
+    SharedWall {
+        room_a: String,
+        room_b: String,
+        #[serde(skip_serializing_if = "Option::is_none", default)]
+        side: Option<Side>,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

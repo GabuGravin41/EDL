@@ -315,27 +315,45 @@ fn build_diode(
     is_led: bool,
 ) -> SymbolGraphic {
     let mut prims = Vec::new();
-    // Detect cathode pin (`K`, `CATHODE`, or Ground-role pin) vs anode pin (`A`, `ANODE`, or first pin)
-    let anode_pin = pins
+    // Prioritize explicit `A`/`ANODE` and `K`/`CATHODE` names before falling back to role/order
+    // so shunt TVS diodes (pin K: north, pin A: ground south) orient accurately!
+    let explicit_anode = pins
         .iter()
-        .find(|p| p.name.eq_ignore_ascii_case("A") || p.name.eq_ignore_ascii_case("ANODE"))
-        .or_else(|| pins.first());
-    let cathode_pin = pins
+        .find(|p| p.name.eq_ignore_ascii_case("A") || p.name.eq_ignore_ascii_case("ANODE"));
+    let explicit_cathode = pins
         .iter()
-        .find(|p| {
-            p.name.eq_ignore_ascii_case("K")
-                || p.name.eq_ignore_ascii_case("CATHODE")
-                || p.role == crate::domains::elec::ast::PinRole::Ground
-        })
-        .or_else(|| pins.get(1));
+        .find(|p| p.name.eq_ignore_ascii_case("K") || p.name.eq_ignore_ascii_case("CATHODE"));
+
+    let anode_pin = explicit_anode.or_else(|| {
+        pins.iter()
+            .find(|p| explicit_cathode.map(|c| c.number != p.number).unwrap_or(true))
+    });
+    let cathode_pin = explicit_cathode.or_else(|| {
+        pins.iter()
+            .find(|p| {
+                anode_pin.map(|a| a.number != p.number).unwrap_or(true)
+                    && p.role == crate::domains::elec::ast::PinRole::Ground
+            })
+            .or_else(|| {
+                pins.iter()
+                    .find(|p| anode_pin.map(|a| a.number != p.number).unwrap_or(true))
+            })
+    });
 
     let vert = is_vertical_pair(pins);
     if vert {
         let half_h = 2.0;
         let half_w = 2.2;
-        let y_a = cy - half_h;
-        let y_k = cy + half_h;
-        // Triangle pointing down (Y-down: anode top, cathode bottom)
+        // Point UP if anode is physically below cathode (Y-down: anode.y > cathode.y), else DOWN!
+        let point_up = match (anode_pin, cathode_pin) {
+            (Some(ap), Some(kp)) => ap.body_point.y > kp.body_point.y,
+            _ => false,
+        };
+        let (y_a, y_k) = if point_up {
+            (cy + half_h, cy - half_h)
+        } else {
+            (cy - half_h, cy + half_h)
+        };
         prims.push(SymPrim::Polyline {
             pts: vec![
                 Point2::new(cx - half_w, y_a),
@@ -361,9 +379,16 @@ fn build_diode(
     } else {
         let half_w = 2.0;
         let half_h = 2.1;
-        let x_a = cx - half_w;
-        let x_k = cx + half_w;
-        // Triangle pointing right (anode left, cathode right)
+        // Point LEFT if anode is physically to the right of cathode (anode.x > cathode.x), else RIGHT!
+        let point_left = match (anode_pin, cathode_pin) {
+            (Some(ap), Some(kp)) => ap.body_point.x > kp.body_point.x + 0.5,
+            _ => false,
+        };
+        let (x_a, x_k) = if point_left {
+            (cx + half_w, cx - half_w)
+        } else {
+            (cx - half_w, cx + half_w)
+        };
         prims.push(SymPrim::Polyline {
             pts: vec![
                 Point2::new(x_a, cy - half_h),
@@ -384,9 +409,13 @@ fn build_diode(
             connect_lead(&mut prims, ap.body_point, Point2::new(x_a, cy), ap.side);
         }
         if let Some(kp) = cathode_pin {
-            // If cathode is on South (common in LED-to-GND), route neatly out right then down to South body_point
+            // If cathode is on South (common in LED-to-GND), route neatly out then down to South body_point
             if kp.side == Side::South {
-                let drop_x = (x_k + 1.2).min(body.max_x - 0.6);
+                let drop_x = if point_left {
+                    (x_k - 1.2).max(body.min_x + 0.6)
+                } else {
+                    (x_k + 1.2).min(body.max_x - 0.6)
+                };
                 let drop_y = (body.max_y - 1.0).max(cy + 1.2);
                 prims.push(SymPrim::Polyline {
                     pts: vec![

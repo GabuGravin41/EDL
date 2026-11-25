@@ -1,0 +1,357 @@
+// EDL v0.5 Stress Test — Mixed-Signal Smart Sensor Node (32 components)
+// Turn 2: Clean 8-column A3 landscape schematic with layered routing (symbol + label_stub + direct)
+import "./lib/elec_blocks.edl"
+
+module RcFilter(r = 1kohm, c = 100nF) {
+  component R: resistor {
+    value: r
+    footprint: "Resistor_SMD:R_0603_1608Metric"
+    pin P1: passive side: west
+    pin P2: passive side: east
+  }
+  component C: capacitor {
+    value: c
+    footprint: "Capacitor_SMD:C_0603_1608Metric"
+    pin POS: passive side: north
+    pin NEG: ground (0V) side: south
+  }
+
+  net _OUT { connect: [R.P2, C.POS] }
+
+  bind IN  -> R.P1
+  bind OUT -> R.P2
+  bind GND -> C.NEG
+}
+
+module I2cPullUps(r = 4.7kohm) {
+  component R_SDA: resistor {
+    value: r
+    footprint: "Resistor_SMD:R_0603_1608Metric"
+    pin P1: passive side: north
+    pin P2: passive side: south
+  }
+  component R_SCL: resistor {
+    value: r
+    footprint: "Resistor_SMD:R_0603_1608Metric"
+    pin P1: passive side: north
+    pin P2: passive side: south
+  }
+
+  net _VCC { connect: [R_SDA.P1, R_SCL.P1] }
+
+  bind VCC -> R_SDA.P1
+  bind SDA -> R_SDA.P2
+  bind SCL -> R_SCL.P2
+}
+
+module ResetCircuit(r = 10kohm, c = 100nF) {
+  component R_PU: resistor {
+    value: r
+    footprint: "Resistor_SMD:R_0603_1608Metric"
+    pin P1: passive side: north
+    pin P2: passive side: south
+  }
+  component C_RST: capacitor {
+    value: c
+    footprint: "Capacitor_SMD:C_0603_1608Metric"
+    pin POS: passive side: north
+    pin NEG: ground (0V) side: south
+  }
+  component SW_RST: switch {
+    value: "SW_Push"
+    footprint: "Button_Switch_SMD:SW_SPST_TL3342"
+    pin P1: passive side: north
+    pin P2: ground (0V) side: south
+  }
+
+  net _NRST { connect: [R_PU.P2, C_RST.POS, SW_RST.P1] }
+  net _GND  { connect: [C_RST.NEG, SW_RST.P2] }
+
+  bind VCC  -> R_PU.P1
+  bind NRST -> R_PU.P2
+  bind GND  -> C_RST.NEG
+}
+
+module DecouplingPair(c1 = 100nF, c2 = 100nF) {
+  component C1: capacitor {
+    value: c1
+    footprint: "Capacitor_SMD:C_0603_1608Metric"
+    pin POS: passive side: north
+    pin NEG: ground (0V) side: south
+  }
+  component C2: capacitor {
+    value: c2
+    footprint: "Capacitor_SMD:C_0603_1608Metric"
+    pin POS: passive side: north
+    pin NEG: ground (0V) side: south
+  }
+
+  net _VCC { connect: [C1.POS, C2.POS] }
+  net _GND { connect: [C1.NEG, C2.NEG] }
+
+  bind VCC -> C1.POS
+  bind GND -> C1.NEG
+}
+
+project "Mixed-Signal Smart Sensor Node" {
+  units: mm
+  frame Sheet: Frame2
+
+  circuit SensorNode {
+    // === Stage 1: USB 5V Input & Protection ===
+    component J_USB: connector {
+      value: "USB_5V"
+      footprint: "Connector_USB:USB_C_Receptacle_GCT_USB4105"
+      pin VBUS: power_out (5V) side: east
+      pin CC1: passive side: east
+      pin CC2: passive side: east
+      pin GND: ground (0V) side: south
+    }
+
+    component R_CC1: resistor {
+      value: 5.1kohm
+      footprint: "Resistor_SMD:R_0603_1608Metric"
+      pin P1: passive side: north
+      pin P2: ground (0V) side: south
+    }
+
+    component R_CC2: resistor {
+      value: 5.1kohm
+      footprint: "Resistor_SMD:R_0603_1608Metric"
+      pin P1: passive side: north
+      pin P2: ground (0V) side: south
+    }
+
+    component D_ESD: diode {
+      value: "SMBJ5A"
+      footprint: "Diode_SMD:D_SMB"
+      pin K: passive side: north
+      pin A: ground (0V) side: south
+    }
+
+    component FB_USB: inductor {
+      value: "FB_600R"
+      footprint: "Inductor_SMD:L_0603_1608Metric"
+      pin P1: power_in (4.5V..5.5V) side: west
+      pin P2: power_out (5V) side: east
+    }
+
+    component C_USB: capacitor {
+      value: 100nF
+      footprint: "Capacitor_SMD:C_0603_1608Metric"
+      pin POS: passive side: north
+      pin NEG: ground (0V) side: south
+    }
+
+    // === Stage 2: 5V -> 3.3V Power Regulation & Power LED ===
+    use Reg3V3 = DecoupledLDO(
+      vin_min: 4.5V,
+      vin_max: 12V,
+      vout: 3.3V,
+      part: "AMS1117",
+      cap: 10uF
+    )
+
+    use PwrLed = LedIndicator(r: 680ohm, color: "Green")
+
+    // === Stage 3: MCU, Decoupling, Reset & SWD Debug ===
+    component U_MCU: ic {
+      value: "STM32G071"
+      footprint: "Package_DFN_QFN:UFQFPN-28-1EP_4x4mm_P0.5mm"
+      pin VDD: power_in (2.0V..3.6V) side: north
+      pin VDDA: power_in (2.0V..3.6V) side: north
+      pin GND: ground (0V) side: south
+      pin ADC_IN0: input side: west
+      pin NRST: input side: west
+      pin SWDIO: bidir side: west
+      pin SWCLK: input side: west
+      pin I2C_SDA: bidir side: east
+      pin I2C_SCL: output side: east
+      pin LED_STAT: output side: east
+      pin LED_ERR: output side: east
+    }
+
+    use McuDecouple = DecouplingPair(c1: 100nF, c2: 100nF)
+    use Rst = ResetCircuit(r: 10kohm, c: 100nF)
+
+    component J_SWD: connector {
+      value: "SWD_1x5"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical"
+      pin VTREF: passive side: north
+      pin SWDIO: passive side: east
+      pin SWCLK: passive side: east
+      pin NRST: passive side: east
+      pin GND: ground (0V) side: south
+    }
+
+    // === Stage 4: Analog Front-End (Sensor Header + Op-Amp Buffer + RC LPF) ===
+    component J_SENS: connector {
+      value: "SENS_1x3"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+      pin VCC: passive side: north
+      pin SIG: passive side: east
+      pin GND: ground (0V) side: south
+    }
+
+    component R_SENS_PD: resistor {
+      value: 100kohm
+      footprint: "Resistor_SMD:R_0603_1608Metric"
+      pin P1: passive side: north
+      pin P2: ground (0V) side: south
+    }
+
+    component U_AMP: opamp {
+      value: "MCP6001"
+      footprint: "Package_TO_SOT_SMD:SOT-23-5"
+      pin INP: input side: west
+      pin INN: input side: west
+      pin OUT: output side: east
+      pin VCC: power_in (1.8V..5.5V) side: north
+      pin GND: ground (0V) side: south
+    }
+
+    component C_AMP: capacitor {
+      value: 100nF
+      footprint: "Capacitor_SMD:C_0603_1608Metric"
+      pin POS: passive side: north
+      pin NEG: ground (0V) side: south
+    }
+
+    use AfeFilter = RcFilter(r: 1kohm, c: 100nF)
+
+    // === Stage 5: Digital I2C Sensor & Telemetry LEDs ===
+    use I2cBus = I2cPullUps(r: 4.7kohm)
+
+    component U_BME: ic {
+      value: "BME280"
+      footprint: "Package_LGA:Bosch_LGA-8_2.5x2.5mm_P0.65mm"
+      pin VDD: power_in (1.71V..3.6V) side: north
+      pin GND: ground (0V) side: south
+      pin SDA: bidir side: west
+      pin SCL: input side: west
+    }
+
+    component C_BME: capacitor {
+      value: 100nF
+      footprint: "Capacitor_SMD:C_0603_1608Metric"
+      pin POS: passive side: north
+      pin NEG: ground (0V) side: south
+    }
+
+    use StatLed = LedIndicator(r: 470ohm, color: "Blue")
+    use ErrLed  = LedIndicator(r: 470ohm, color: "Red")
+
+    // === Nets ===
+    // USB & Power rails
+    net VBUS_RAW  { connect: [J_USB.VBUS, D_ESD.K, FB_USB.P1] }
+    net VBUS_5V   { connect: [FB_USB.P2, C_USB.POS, Reg3V3.IN] }
+    net USB_CC1   { connect: [J_USB.CC1, R_CC1.P1] }
+    net USB_CC2   { connect: [J_USB.CC2, R_CC2.P1] }
+
+    net V3V3 {
+      connect: [
+        Reg3V3.OUT,
+        PwrLed.IN,
+        U_MCU.VDD,
+        U_MCU.VDDA,
+        McuDecouple.VCC,
+        Rst.VCC,
+        J_SWD.VTREF,
+        J_SENS.VCC,
+        U_AMP.VCC,
+        C_AMP.POS,
+        I2cBus.VCC,
+        U_BME.VDD,
+        C_BME.POS
+      ]
+    }
+
+    net GND {
+      connect: [
+        J_USB.GND,
+        R_CC1.P2,
+        R_CC2.P2,
+        D_ESD.A,
+        C_USB.NEG,
+        Reg3V3.GND,
+        PwrLed.GND,
+        U_MCU.GND,
+        McuDecouple.GND,
+        Rst.GND,
+        J_SWD.GND,
+        J_SENS.GND,
+        R_SENS_PD.P2,
+        U_AMP.GND,
+        C_AMP.NEG,
+        AfeFilter.GND,
+        U_BME.GND,
+        C_BME.NEG,
+        StatLed.GND,
+        ErrLed.GND
+      ]
+    }
+
+    // MCU Reset & Debug
+    net NRST  { connect: [Rst.NRST, J_SWD.NRST, U_MCU.NRST] }
+    net SWDIO { connect: [J_SWD.SWDIO, U_MCU.SWDIO] }
+    net SWCLK { connect: [J_SWD.SWCLK, U_MCU.SWCLK] }
+
+    // Analog Front-End Chain
+    net SENS_RAW { connect: [J_SENS.SIG, R_SENS_PD.P1, U_AMP.INP] }
+    net AMP_OUT  { connect: [U_AMP.OUT, U_AMP.INN, AfeFilter.IN] }
+    net ADC_SIG  { connect: [AfeFilter.OUT, U_MCU.ADC_IN0] }
+
+    // Digital I2C Bus & Telemetry LEDs
+    net I2C_SDA   { connect: [U_MCU.I2C_SDA, I2cBus.SDA, U_BME.SDA] }
+    net I2C_SCL   { connect: [U_MCU.I2C_SCL, I2cBus.SCL, U_BME.SCL] }
+    net STAT_CTRL { connect: [U_MCU.LED_STAT, StatLed.IN] }
+    net ERR_CTRL  { connect: [U_MCU.LED_ERR, ErrLed.IN] }
+  }
+
+  schematic SensorNodeSheet {
+    sheet: A3 landscape
+
+    group UsbInput   { members: [J_USB, D_ESD, R_CC1, R_CC2] }
+    group PowerReg   { members: [FB_USB, C_USB, Reg3V3] }
+    group AnalogIn   { members: [J_SENS, R_SENS_PD, U_AMP, C_AMP] }
+    group AfeRst     { members: [AfeFilter, Rst] }
+    group McuCore    { members: [U_MCU, McuDecouple, I2cBus] }
+    group Telemetry  { members: [PwrLed.R, StatLed.R, ErrLed.R, U_BME, C_BME] }
+    group OutputDbg  { members: [PwrLed.D, StatLed.D, ErrLed.D, J_SWD] }
+
+    layout {
+      arrange: [UsbInput, PowerReg, AnalogIn, AfeRst, McuCore, Telemetry, OutputDbg] left_to_right
+      group_gap: 15.24mm
+      member_gap: 22.86mm
+    }
+
+    // Layered routing styles for readability at scale
+    routing {
+      default: direct
+      power_nets: symbol
+      ground_nets: symbol
+
+      // Local USB input & analog chains kept as clean direct wires
+      net VBUS_RAW: direct
+      net VBUS_5V: symbol
+      net ADC_SIG: direct
+
+      // Cross-sheet control, debug, and bus nets as clean label stubs
+      net NRST: label_stub
+      net SWDIO: label_stub
+      net SWCLK: label_stub
+      net I2C_SDA: label_stub
+      net I2C_SCL: label_stub
+      net STAT_CTRL: label_stub
+      net ERR_CTRL: label_stub
+    }
+  }
+
+  verify {
+    require all_required_pins_connected
+    require no_power_ground_short
+    require no_multiple_power_drivers
+    require voltage_compatibility
+    require no_single_pin_nets
+  }
+}

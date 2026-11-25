@@ -1,6 +1,6 @@
 [package]
 name = "edl"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 description = "Engineering Description Language (EDL) v0.5 compiler — modular Architecture + Electronics CAD/EDA with MCP tooling"
 

@@ -743,4 +743,116 @@ project "BadNotch" {
         let parsed: serde_json::Value = serde_json::from_str(text).unwrap();
         assert_eq!(parsed["clear_gap_mm"], 120.0);
     }
+
+    #[test]
+    fn stress_sensor_node_32_components_and_diode_polarity_and_inductance_units() {
+        use crate::core::ir::{EntityGeometryIr, VerificationStatus};
+        use crate::core::units::{Dimension, Unit};
+
+        // Verify inductance units (H, mH, uH, nH)
+        assert_eq!(Unit::parse("uH").unwrap().dimension(), Dimension::Inductance);
+        assert_eq!(Unit::parse("nH").unwrap().dimension(), Dimension::Inductance);
+
+        // Compile 32-component stress test & verify EDL + KiCad 9 ERC
+        let mut ir = compile_file(std::path::Path::new("examples/stress_sensor_node.edl")).unwrap();
+        assert!(!ir.project.has_errors, "diagnostics: {:?}", ir.diagnostics);
+        assert_eq!(ir.entities.len(), 32);
+        assert_eq!(ir.relations.len(), 19);
+        crate::domains::elec::kicad_erc::run_and_ingest_kicad_erc(&mut ir);
+        let k1 = ir
+            .evidence
+            .iter()
+            .find(|e| e.check_id == "K1_kicad_erc_external")
+            .unwrap();
+        assert!(
+            k1.status == VerificationStatus::ExactlyChecked
+                || k1.status == VerificationStatus::Unverified,
+            "KiCad ERC failed: {:?}",
+            k1
+        );
+
+        // Verify D_ESD (pin K: north, pin A: south ground) triangle points UPWARD (cathode at top y < center)
+        let d_esd = ir.entities.iter().find(|e| e.id == "D_ESD").expect("D_ESD");
+        if let EntityGeometryIr::Component {
+            category,
+            body_rect,
+            pins,
+            ..
+        } = &d_esd.geometry
+        {
+            let g = crate::domains::elec::symbols::build_symbol_graphic(category, *body_rect, pins);
+            let cy = body_rect.center().y;
+            let tri = g
+                .primitives
+                .iter()
+                .find_map(|p| match p {
+                    crate::domains::elec::symbols::SymPrim::Polyline { pts, filled: true, .. } => Some(pts),
+                    _ => None,
+                })
+                .expect("filled diode triangle");
+            // Tip vertex (pts[2]) is the cathode -> must be ABOVE center (smaller y in Y-down!)
+            assert!(tri[2].y < cy, "D_ESD cathode tip must point UP (y < cy), got {} vs {}", tri[2].y, cy);
+        } else {
+            panic!("D_ESD must be Component");
+        }
+    }
+
+    #[test]
+    fn stress_family_home_notched_measure_hosted_openings_and_project_params() {
+        use crate::core::query::{measure_ir, query_ir};
+
+        let ir1 = compile_file(std::path::Path::new("examples/stress_family_home.edl")).unwrap();
+        let ir2 = compile_file(std::path::Path::new("examples/stress_family_home_v2.edl")).unwrap();
+        assert!(!ir1.project.has_errors, "v1 diags: {:?}", ir1.diagnostics);
+        assert!(!ir2.project.has_errors, "v2 diags: {:?}", ir2.diagnostics);
+
+        // 1) `query room` must return hosted openings!
+        let q_ld = query_ir(&ir1, "room", Some("LivingDining")).unwrap();
+        let hosted = q_ld["hosted_openings"].as_array().unwrap();
+        assert!(hosted.len() >= 4, "expected >= 4 hosted openings on LivingDining, got {:?}", hosted);
+
+        // 2) `measure` on L-shaped notched room + tucked room must report exact 120mm gap, NOT overlap!
+        let m = measure_ir(&ir1, "LivingDining", Some("PowderRoom")).unwrap();
+        assert_eq!(m["bboxes_overlap"], false);
+        assert_eq!(m["clear_gap_mm"], 120.0);
+        let sws = m["shared_walls"].as_array().unwrap();
+        assert_eq!(sws.len(), 2);
+        assert_ne!(sws[0]["wall_id"], sws[1]["wall_id"]);
+
+        // 3) Project `parameter` works directly in `clear_size`, `use` args, and `shared_wall(..., side)`!
+        let param_src = r#"
+module MiniRoom(w = 2000mm, d = 2000mm) {
+  room R { role: wet clear_size: (w, d) }
+}
+project "ParamEverywhere" {
+  units: mm
+  frame P: Frame2
+  parameter bath_w: 2200mm
+  parameter bath_d: 2000mm
+  room Living {
+    role: habitable
+    clear_size: (5000mm, 4200mm)
+    notch: (2320mm, 2120mm) at northeast
+    anchor: southwest at P.origin
+  }
+  use Bath = MiniRoom(w: bath_w, d: bath_d)
+  layout P {
+    require Bath.east == Living.east
+    require Bath.north == Living.north
+  }
+  opening Entry: door { host: exterior(Living, south) width: 900mm offset: 300mm from start hinge: start swing: into Living }
+  opening BathDoor: door { host: shared_wall(Living, Bath, north) width: 800mm align: center hinge: start swing: into Living }
+  opening Win: window { host: exterior(Living, west) width: 1400mm align: center }
+  verify {
+    require no_room_overlap
+    require opening_jamb_margin >= 100mm
+    require no_door_swing_collision
+    require all_rooms_reachable
+    require habitable_rooms_have_window
+  }
+}
+"#;
+        let ir_p = compile_source("param_everywhere.edl", param_src).unwrap();
+        assert!(!ir_p.project.has_errors, "param diags: {:?}", ir_p.diagnostics);
+    }
 }

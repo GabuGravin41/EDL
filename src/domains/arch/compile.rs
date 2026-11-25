@@ -1094,7 +1094,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                                 entry_roots.push(room.clone());
                             }
                         }
-                        WallHost::SharedWall { room_a, room_b } => {
+                        WallHost::SharedWall { room_a, room_b, .. } => {
                             adj.entry(room_a.clone()).or_default().push(room_b.clone());
                             adj.entry(room_b.clone()).or_default().push(room_a.clone());
                         }
@@ -1301,17 +1301,29 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                         }
                         if a.body_rect.overlaps_strict(b.body_rect) {
                             violations += 1;
+                            let ox = (a.body_rect.max_x.min(b.body_rect.max_x)
+                                - a.body_rect.min_x.max(b.body_rect.min_x))
+                            .max(0.0);
+                            let oy = (a.body_rect.max_y.min(b.body_rect.max_y)
+                                - a.body_rect.min_y.max(b.body_rect.min_y))
+                            .max(0.0);
+                            let min_shift = ox.min(oy);
                             diagnostics.push(
                                 Diagnostic::error(
                                     "E_VERIFY_FIXTURE_OVERLAP",
                                     "verification",
                                     format!(
-                                        "Fixtures '{}' and '{}' overlap in room '{}'",
-                                        a.id, b.id, a.room
+                                        "Fixtures '{}' and '{}' overlap in room '{}' by {:.0}mm × {:.0}mm",
+                                        a.id, b.id, a.room, ox, oy
                                     ),
                                     Some(b.span.clone()),
                                 )
-                                .with_entities(vec![a.id.clone(), b.id.clone()]),
+                                .with_entities(vec![a.id.clone(), b.id.clone()])
+                                .with_measurement(round4(min_shift), 0.0, "mm")
+                                .with_suggestion(format!(
+                                    "Shift '{}' or '{}' by at least {:.0}mm to clear overlap (dx={:.0}mm, dy={:.0}mm)",
+                                    b.id, a.id, min_shift, ox, oy
+                                )),
                             );
                         } else {
                             if let Some(clr_a) = a.clearance_rect {
@@ -1566,6 +1578,18 @@ fn derive_semantic_walls(
         }
     }
 
+    // Disambiguate dual perpendicular shared walls between the same room pair (e.g. notched rooms!)
+    let mut id_counts: BTreeMap<String, usize> = BTreeMap::new();
+    for w in &walls {
+        *id_counts.entry(w.id.clone()).or_insert(0) += 1;
+    }
+    for w in &mut walls {
+        if id_counts.get(&w.id).copied().unwrap_or(0) > 1 {
+            let axis_tag = if w.is_horizontal { "H" } else { "V" };
+            w.id = format!("{}_{axis_tag}", w.id);
+        }
+    }
+
     // 2. Exterior walls: subtract any interval covered by an adjacent room OR the room's own notch
     for (room_id, &r) in rooms {
         let notch = room_notches.get(room_id).copied();
@@ -1781,12 +1805,28 @@ fn find_host_wall<'a>(
                         .unwrap()
                 })
         }
-        WallHost::SharedWall { room_a, room_b } => walls.iter().find(|w| {
-            w.kind == "arch.wall.interior"
-                && ((w.derived_from.first().map(|s| s.as_str()) == Some(room_a.as_str())
-                    && w.derived_from.get(1).map(|s| s.as_str()) == Some(room_b.as_str()))
-                    || (w.derived_from.first().map(|s| s.as_str()) == Some(room_b.as_str())
-                        && w.derived_from.get(1).map(|s| s.as_str()) == Some(room_a.as_str())))
+        WallHost::SharedWall {
+            room_a,
+            room_b,
+            side,
+        } => walls.iter().find(|w| {
+            if w.kind != "arch.wall.interior" {
+                return false;
+            }
+            let pair_match = (w.derived_from.first().map(|s| s.as_str()) == Some(room_a.as_str())
+                && w.derived_from.get(1).map(|s| s.as_str()) == Some(room_b.as_str()))
+                || (w.derived_from.first().map(|s| s.as_str()) == Some(room_b.as_str())
+                    && w.derived_from.get(1).map(|s| s.as_str()) == Some(room_a.as_str()));
+            if !pair_match {
+                return false;
+            }
+            match side {
+                None => true,
+                Some(Side::North) => w.is_horizontal && w.room_low.as_deref() == Some(room_a.as_str()),
+                Some(Side::South) => w.is_horizontal && w.room_high.as_deref() == Some(room_a.as_str()),
+                Some(Side::East) => !w.is_horizontal && w.room_low.as_deref() == Some(room_a.as_str()),
+                Some(Side::West) => !w.is_horizontal && w.room_high.as_deref() == Some(room_a.as_str()),
+            }
         }),
     }
 }

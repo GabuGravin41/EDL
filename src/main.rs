@@ -241,9 +241,14 @@ fn main() {
                 println!("{}", serde_json::to_string_pretty(&d).unwrap());
             } else {
                 println!("Semantic Diff: {} -> {}", d.project_a, d.project_b);
+                let fmt_fp = |fp: Option<[f64; 2]>| -> String {
+                    fp.map(|[w, h]| format!("{w:.0}×{h:.0} mm"))
+                        .unwrap_or_else(|| "none".to_string())
+                };
                 println!(
-                    "  Footprint : {:?} -> {:?}",
-                    d.footprint_before_mm, d.footprint_after_mm
+                    "  Footprint : {} -> {}",
+                    fmt_fp(d.footprint_before_mm),
+                    fmt_fp(d.footprint_after_mm)
                 );
                 println!(
                     "  Clear area: {:.2} m² -> {:.2} m²",
