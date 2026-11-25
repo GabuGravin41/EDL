@@ -222,6 +222,11 @@ fn main() {
                         ir.project.net_count,
                         ir.schematic_routes.len()
                     );
+                } else if ir.project.domain == "elec.industrial" {
+                    println!(
+                        "  Industrial Control: {} device(s) | {} control rung(s)",
+                        ir.project.component_count, ir.project.net_count
+                    );
                 } else {
                     if let Some([w, d]) = ir.project.exterior_footprint_mm {
                         println!(

@@ -1,0 +1,76 @@
+// EDL Benchmark C — Industrial 3-Phase Forward/Reverse + Star-Delta Motor Control Panel (IEC 60617)
+// Modeled directly on Images 4 & 5 (AutoCAD Electrical / IEC 60617 industrial schematics):
+//   - Left:  400V 3-Phase Main Power Circuit (L1/L2/L3 -> 3P MCB Q1 -> Thermal Overload F2 ->
+//            Reversing Contactors FC/RC with L1<->L3 phase swap -> Star/Delta SC/DC -> 7.5kW 3-Phase Motor M1)
+//   - Right: 220V Vertical Control Ladder (F2 95-96 + S0 E-Stop master series -> parallel Start/Latch rungs ->
+//            mutual electrical NC interlocks -> Contactor Coils A1-A2 + automatic IEC Cross-Reference tables)
+//   - Formal safety checks: I1 (exhaustive Boolean interlock proof), I2 (E-Stop/Overload authority),
+//            I3 (coil<->contact cross-reference audit), I4 (3-phase reversal sequence)
+
+project "Motor_Fwd_Rev_StarDelta_IEC60617" {
+    units: mm
+    frame Sheet: Frame2
+
+    industrial_control MainPanel {
+        title: "FORWARD / REVERSE STAR-DELTA 3-PHASE MOTOR CONTROL"
+        supply_power: "400V 3Ph 50Hz"
+        supply_control: "220V AC"
+
+        // Multi-unit physical industrial devices (split across Power & Control circuits!)
+        breaker Q1: mcb_3p { label: "Main MCB"  rating: 32A }
+        overload F2: thermal_3p { label: "Thermal O/L"  trip_a: 18A  aux_nc: ["95-96"] }
+
+        contactor FC: contactor_3p { label: "Forward"  aux_no: ["13-14"]  aux_nc: ["21-22"] }
+        contactor RC: contactor_3p { label: "Reverse"  aux_no: ["13-14"]  aux_nc: ["21-22"] }
+        contactor SC: contactor_3p { label: "Star"     aux_no: ["13-14"]  aux_nc: ["21-22"] }
+        contactor DC: contactor_3p { label: "Delta"    aux_no: ["13-14"]  aux_nc: ["21-22"] }
+
+        pushbutton S0:  nc { label: "STOP" }
+        pushbutton FSB: no { label: "FWD" }
+        pushbutton RSB: no { label: "REV" }
+        motor M1: motor_3p { label: "Conveyor"  power: 7.5kW }
+
+        main_circuit {
+            bus: ["R/L1", "S/L2", "T/L3"]
+            stages: [Q1, F2]
+            reversing_pair: [FC, RC]
+            star_delta: [SC, DC]
+            load: M1
+        }
+
+        control_circuit {
+            rail_top: "220V"
+            rail_bottom: "0V"
+            master_series: ["F2.95-96", "S0.1-2"]
+
+            rung FWD {
+                start: FSB
+                latch: "FC.13-14"
+                interlock_nc: ["RC.21-22"]
+                coil: FC
+            }
+            rung REV {
+                start: RSB
+                latch: "RC.13-14"
+                interlock_nc: ["FC.21-22"]
+                coil: RC
+            }
+            rung STAR {
+                enable_no: ["FC.13-14", "RC.13-14"]
+                interlock_nc: ["DC.21-22"]
+                coil: SC
+            }
+            rung DELTA {
+                enable_no: ["FC.13-14", "RC.13-14"]
+                interlock_nc: ["SC.21-22"]
+                coil: DC
+            }
+        }
+
+        check mutual_interlock { pair: [FC, RC] }
+        check mutual_interlock { pair: [SC, DC] }
+        check estop_deenergizes { device: S0 }
+        check overload_deenergizes { device: F2 }
+        check phase_reversal { forward: FC  reverse: RC }
+    }
+}

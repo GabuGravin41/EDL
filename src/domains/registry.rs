@@ -130,6 +130,7 @@ impl DomainRegistry {
         let mut r = Self::empty();
         r.register(Box::new(ArchDomain));
         r.register(Box::new(ElecDomain));
+        r.register(Box::new(super::industrial::IndustrialControlDomain));
         r.register(Box::new(MepElecDomain));
         r
     }
@@ -209,6 +210,7 @@ impl DomainRegistry {
         let mut svg = self
             .engines
             .iter()
+            .rev()
             .filter(|e| e.role() == DomainRole::Base)
             .find_map(|e| e.render_svg(ir, annotated))
             .unwrap_or_else(|| String::from("<svg xmlns=\"http://www.w3.org/2000/svg\"/>"));
@@ -268,7 +270,10 @@ impl DomainEngine for ArchDomain {
         super::arch::compile::compile_project(ast)
     }
     fn render_svg(&self, ir: &CanonicalIr, annotated: bool) -> Option<String> {
-        (ir.project.domain != "electronics").then(|| super::arch::svg::render_svg(ir, annotated))
+        let is_arch = ir.project.domain == "architecture"
+            || ir.project.domain.starts_with("arch")
+            || ir.project.domain.is_empty();
+        is_arch.then(|| super::arch::svg::render_svg(ir, annotated))
     }
     fn exports(&self) -> Vec<ExportFormat> {
         vec![ExportFormat {
@@ -278,7 +283,10 @@ impl DomainEngine for ArchDomain {
         }]
     }
     fn export(&self, format: &str, ir: &CanonicalIr) -> Option<String> {
-        (format == "dxf").then(|| super::arch::dxf::export_dxf(ir))
+        let is_arch = ir.project.domain == "architecture"
+            || ir.project.domain.starts_with("arch")
+            || ir.project.domain.is_empty();
+        (format == "dxf" && is_arch).then(|| super::arch::dxf::export_dxf(ir))
     }
     fn rules(&self) -> Vec<RuleInfo> {
         vec![

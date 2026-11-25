@@ -62,7 +62,11 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
 }
 
 pub fn export_dxf(ir: &CanonicalIr) -> String {
-    domains::arch::dxf::export_dxf(ir)
+    if ir.project.domain == "elec.industrial" {
+        domains::industrial::render::export_industrial_dxf(ir)
+    } else {
+        domains::arch::dxf::export_dxf(ir)
+    }
 }
 
 pub fn render_svg_sheet(ir: &CanonicalIr, sheet_name: Option<&str>, annotated: bool) -> String {
