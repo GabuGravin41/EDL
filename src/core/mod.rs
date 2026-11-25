@@ -1,3 +1,4 @@
+pub mod constraints;
 pub mod diff;
 pub mod geom;
 pub mod ir;

@@ -1,6 +1,7 @@
 pub mod ast;
 pub mod bom;
 pub mod compile;
+pub mod constraints;
 pub mod idioms;
 pub mod kicad;
 pub mod kicad_erc;
