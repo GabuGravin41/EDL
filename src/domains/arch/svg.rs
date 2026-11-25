@@ -44,7 +44,9 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
     let max_world = world_w.max(world_h);
     let scale_px_per_mm = (1280.0 / max_world).clamp(0.015, 0.13);
 
-    let svg_w = (world_w * scale_px_per_mm).round();
+    let plan_svg_w = (world_w * scale_px_per_mm).round();
+    let sidebar_w = if show_elec && ir.mep_circuits.len() >= 6 { 286.0 } else { 0.0 };
+    let svg_w = plan_svg_w + sidebar_w;
     let svg_h = (world_h * scale_px_per_mm).round();
 
     let sx = |x: f64| -> f64 { (x - bounds.min_x + margin_mm) * scale_px_per_mm };
@@ -208,7 +210,7 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
         let y_top = (sy(bounds.max_y) - 48.0).max(26.0);
         let y_bot = (sy(bounds.min_y) + 56.0).min(svg_h - 110.0);
         let x_l = (sx(bounds.min_x) - 56.0).max(40.0);
-        let x_r = (sx(bounds.max_x) + 46.0).min(svg_w - 28.0);
+        let x_r = (sx(bounds.max_x) + 46.0).min(plan_svg_w - 28.0);
 
         // Vertical grid axes (X: 1, 2, 3...) + circled bubbles at bottom
         for xa in &g.x_axes {
@@ -726,6 +728,7 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
         for e in &ir.entities {
             let EntityGeometryIr::MepDevice {
                 device_kind,
+                subtype,
                 pos,
                 facing,
                 ..
@@ -767,12 +770,42 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                 }
                 "light" => {
                     let cls = if is_err { "mep-err" } else { "mep-light" };
-                    let r = 7.5;
-                    let _ = writeln!(out, r#"    <circle id="mep-{id}" class="{cls}" cx="{px:.2}" cy="{py:.2}" r="{r:.1}"/>"#, id = e.id);
-                    let d = r * 0.7;
-                    let _ = writeln!(out, r#"    <line class="{cls}" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#, px - d, py - d, px + d, py + d);
-                    let _ = writeln!(out, r#"    <line class="{cls}" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#, px - d, py + d, px + d, py - d);
-                    let _ = writeln!(out, r#"    <text class="mep-lbl" x="{px:.2}" y="{:.2}">{}</text>"#, py - r - 3.0, e.id);
+                    let sub = subtype.to_lowercase();
+                    if sub == "troffer" || sub == "linear" {
+                        let fill = if is_err { "#fecaca" } else { "#f5d0fe" };
+                        let stroke = if is_err { "#dc2626" } else { "#c026d3" };
+                        let _ = writeln!(
+                            out,
+                            r#"    <rect id="mep-{id}" x="{:.2}" y="{:.2}" width="22" height="7" rx="1.2" fill="{fill}" stroke="{stroke}" stroke-width="1.3"/>"#,
+                            px - 11.0,
+                            py - 3.5,
+                            id = e.id
+                        );
+                        let _ = writeln!(out, r#"    <text class="mep-lbl" style="font-size:7.2px;" x="{px:.2}" y="{:.2}">{}</text>"#, py - 6.0, e.id);
+                    } else if sub == "exit" || sub == "exit_sign" || sub == "emergency" {
+                        let _ = writeln!(
+                            out,
+                            r##"    <rect id="mep-{id}" x="{:.2}" y="{:.2}" width="26" height="12" rx="2" fill="#fee2e2" stroke="#dc2626" stroke-width="1.4"/>"##,
+                            px - 13.0,
+                            py - 6.0,
+                            id = e.id
+                        );
+                        let _ = writeln!(out, r##"    <text x="{px:.2}" y="{:.2}" font-family="monospace" font-size="7.8" font-weight="700" text-anchor="middle" fill="#b91c1c">EXIT</text>"##, py + 3.0);
+                    } else if sub == "ceiling_fan" || sub == "fan" {
+                        let _ = writeln!(out, r##"    <circle id="mep-{id}" cx="{px:.2}" cy="{py:.2}" r="3.0" fill="#bbf7d0" stroke="#15803d" stroke-width="1.3"/>"##, id = e.id);
+                        for deg in [0.0_f64, 120.0, 240.0] {
+                            let rad = deg.to_radians();
+                            let _ = writeln!(out, r##"    <line x1="{px:.2}" y1="{py:.2}" x2="{:.2}" y2="{:.2}" stroke="#15803d" stroke-width="2.0" stroke-linecap="round"/>"##, px + rad.cos() * 10.0, py + rad.sin() * 10.0);
+                        }
+                        let _ = writeln!(out, r#"    <text class="mep-lbl" style="font-size:7.2px;" x="{px:.2}" y="{:.2}">{}</text>"#, py - 11.0, e.id);
+                    } else {
+                        let r = 7.5;
+                        let _ = writeln!(out, r#"    <circle id="mep-{id}" class="{cls}" cx="{px:.2}" cy="{py:.2}" r="{r:.1}"/>"#, id = e.id);
+                        let d = r * 0.7;
+                        let _ = writeln!(out, r#"    <line class="{cls}" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#, px - d, py - d, px + d, py + d);
+                        let _ = writeln!(out, r#"    <line class="{cls}" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#, px - d, py + d, px + d, py - d);
+                        let _ = writeln!(out, r#"    <text class="mep-lbl" x="{px:.2}" y="{:.2}">{}</text>"#, py - r - 3.0, e.id);
+                    }
                 }
                 "switch" => {
                     let cls = if is_err { "mep-err" } else { "mep-switch" };
@@ -781,6 +814,9 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                     let _ = writeln!(out, r#"    <circle id="mep-{id}" class="{cls}" cx="{cx:.2}" cy="{cy:.2}" r="4.0"/>"#, id = e.id);
                     let _ = writeln!(out, r#"    <line class="{cls}" x1="{cx:.2}" y1="{cy:.2}" x2="{:.2}" y2="{:.2}"/>"#, cx + 6.5, cy - 6.5);
                     let _ = writeln!(out, r#"    <line class="{cls}" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#, cx + 6.5, cy - 6.5, cx + 9.0, cy - 4.0);
+                    if subtype.eq_ignore_ascii_case("2way") {
+                        let _ = writeln!(out, r#"    <line class="{cls}" x1="{cx:.2}" y1="{cy:.2}" x2="{:.2}" y2="{:.2}"/>"#, cx - 5.5, cy + 5.5);
+                    }
                     if annotated || is_err {
                         let _ = writeln!(out, r#"    <text class="mep-lbl" x="{:.2}" y="{:.2}">{}</text>"#, cx + nx * 10.0, cy + ny * 10.0 + 3.0, e.id);
                     }
@@ -789,19 +825,29 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                     let cls = if is_err { "mep-err" } else { "mep-outlet" };
                     let cx = px + nx * 5.5;
                     let cy = py + ny * 5.5;
-                    let _ = writeln!(out, r#"    <circle id="mep-{id}" class="{cls}" cx="{cx:.2}" cy="{cy:.2}" r="4.8"/>"#, id = e.id);
-                    // Twin prongs pointing inward from wall
-                    let tx = -ny;
-                    let ty = nx;
-                    for sign in [-1.0, 1.0] {
-                        let bx = cx + tx * sign * 2.0;
-                        let by = cy + ty * sign * 2.0;
+                    let sub = subtype.to_lowercase();
+                    if sub == "data" || sub == "rj45" || sub == "data_rj45" {
                         let _ = writeln!(
                             out,
-                            r#"    <line class="{cls}" x1="{bx:.2}" y1="{by:.2}" x2="{:.2}" y2="{:.2}"/>"#,
-                            bx + nx * 5.0,
-                            by + ny * 5.0
+                            r##"    <polygon id="mep-{id}" points="{:.1},{:.1} {:.1},{:.1} {:.1},{:.1}" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.4"/>"##,
+                            cx, cy - 5.0, cx - 5.0, cy + 4.5, cx + 5.0, cy + 4.5,
+                            id = e.id
                         );
+                    } else {
+                        let _ = writeln!(out, r#"    <circle id="mep-{id}" class="{cls}" cx="{cx:.2}" cy="{cy:.2}" r="4.8"/>"#, id = e.id);
+                        // Twin prongs pointing inward from wall
+                        let tx = -ny;
+                        let ty = nx;
+                        for sign in [-1.0, 1.0] {
+                            let bx = cx + tx * sign * 2.0;
+                            let by = cy + ty * sign * 2.0;
+                            let _ = writeln!(
+                                out,
+                                r#"    <line class="{cls}" x1="{bx:.2}" y1="{by:.2}" x2="{:.2}" y2="{:.2}"/>"#,
+                                bx + nx * 5.0,
+                                by + ny * 5.0
+                            );
+                        }
                     }
                     if annotated || is_err {
                         let _ = writeln!(out, r#"    <text class="mep-lbl" x="{:.2}" y="{:.2}">{}</text>"#, cx + nx * 13.0, cy + ny * 12.0 + 3.0, e.id);
@@ -811,8 +857,8 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
             }
         }
         let _ = writeln!(out, r#"  </g>"#);
-        // Compact Electrical Legend bar in top-right sheet header margin
-        let ex = svg_w - 392.0;
+        // Compact Electrical Legend bar in top-right of the floor-plan region
+        let ex = plan_svg_w - 392.0;
         let ey = 33.0;
         let _ = writeln!(
             out,
@@ -845,6 +891,92 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
             ex + 298.0, ey - 2.0,
             ex + 306.0, ey + 1.0,
         );
+
+        // Embedded Right-Side PANEL SCHEDULE Tables (AutoCAD ELECTRICAL_LEVEL_01.dwg style!)
+        if sidebar_w > 0.0 {
+            let sx0 = plan_svg_w + 4.0;
+            let sw = sidebar_w - 28.0;
+            let mut by = 32.0;
+            let mut by_panel: std::collections::BTreeMap<&str, Vec<&MepCircuitIr>> =
+                std::collections::BTreeMap::new();
+            for c in &ir.mep_circuits {
+                by_panel.entry(c.panel_id.as_str()).or_default().push(c);
+            }
+            let _ = writeln!(out, r#"  <g id="panel-schedule-sidebar">"#);
+            for (panel_id, ckts) in &by_panel {
+                let row_h = 16.0;
+                let tbl_h = 40.0 + (ckts.len() as f64) * row_h + 10.0;
+                let _ = writeln!(
+                    out,
+                    r##"    <rect x="{sx0:.1}" y="{by:.1}" width="{sw:.1}" height="{tbl_h:.1}" rx="4" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.1"/>"##
+                );
+                let _ = writeln!(
+                    out,
+                    r##"    <rect x="{sx0:.1}" y="{by:.1}" width="{sw:.1}" height="20" rx="3" fill="#1e293b"/>"##
+                );
+                let _ = writeln!(
+                    out,
+                    r##"    <text x="{:.1}" y="{:.1}" font-family="monospace" font-size="9.5" font-weight="700" fill="#ffffff">PANEL SCHEDULE — {panel_id}</text>"##,
+                    sx0 + 8.0,
+                    by + 13.5
+                );
+                let hy = by + 32.0;
+                let _ = writeln!(
+                    out,
+                    r##"    <text x="{:.1}" y="{hy:.1}" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">CIRCUIT</text>"##,
+                    sx0 + 6.0
+                );
+                let _ = writeln!(
+                    out,
+                    r##"    <text x="{:.1}" y="{hy:.1}" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">LOAD</text>"##,
+                    sx0 + 114.0
+                );
+                let _ = writeln!(
+                    out,
+                    r##"    <text x="{:.1}" y="{hy:.1}" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">MCB</text>"##,
+                    sx0 + 158.0
+                );
+                let _ = writeln!(
+                    out,
+                    r##"    <text x="{:.1}" y="{hy:.1}" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">dU%</text>"##,
+                    sx0 + 206.0
+                );
+                let _ = writeln!(
+                    out,
+                    r##"    <line x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}" stroke="#cbd5e1" stroke-width="0.9"/>"##,
+                    sx0 + 4.0, hy + 4.0, sx0 + sw - 4.0, hy + 4.0
+                );
+                for (i, c) in ckts.iter().enumerate() {
+                    let ry = hy + 16.0 + (i as f64) * row_h;
+                    let short_id = if c.id.len() > 14 { &c.id[..14] } else { &c.id };
+                    let _ = writeln!(
+                        out,
+                        r##"    <text x="{:.1}" y="{ry:.1}" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">{short_id}</text>"##,
+                        sx0 + 6.0
+                    );
+                    let _ = writeln!(
+                        out,
+                        r##"    <text x="{:.1}" y="{ry:.1}" font-family="monospace" font-size="7.6" fill="#334155">{:.0}W</text>"##,
+                        sx0 + 114.0,
+                        c.total_load_w
+                    );
+                    let _ = writeln!(
+                        out,
+                        r##"    <text x="{:.1}" y="{ry:.1}" font-family="monospace" font-size="7.6" fill="#334155">{:.0}A</text>"##,
+                        sx0 + 158.0,
+                        c.rating_a
+                    );
+                    let _ = writeln!(
+                        out,
+                        r##"    <text x="{:.1}" y="{ry:.1}" font-family="monospace" font-size="7.6" fill="#0369a1">{:.2}%</text>"##,
+                        sx0 + 206.0,
+                        c.voltage_drop_pct
+                    );
+                }
+                by += tbl_h + 14.0;
+            }
+            let _ = writeln!(out, r#"  </g>"#);
+        }
     }
 
     // 6. Overall exterior + interior room dimension chains

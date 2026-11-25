@@ -718,7 +718,11 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
                     }
                 }
             }
-            if d.device_kind == "light" && !controlled_lights.contains(&d.id) {
+            let is_life_safety_unswitched = matches!(
+                d.subtype.to_lowercase().as_str(),
+                "exit" | "exit_sign" | "emergency" | "emergency_light"
+            );
+            if d.device_kind == "light" && !is_life_safety_unswitched && !controlled_lights.contains(&d.id) {
                 viols += 1;
                 ir.diagnostics.push(
                     Diagnostic::error(

@@ -157,3 +157,21 @@ fn cross_discipline_clash_check_catches_plumbing_riser_colliding_with_db_panel()
         .unwrap();
     assert_eq!(p6.status, VerificationStatus::Violated);
 }
+
+#[test]
+fn commercial_office_dual_panel_electrical_level01_passes_all_14_rules() {
+    let src = std::fs::read_to_string("examples/commercial_office_electrical_level01.edl").unwrap();
+    let ir = compile_source("examples/commercial_office_electrical_level01.edl", &src).unwrap();
+    assert!(
+        !ir.project.has_errors,
+        "unexpected commercial electrical errors: {:?}",
+        ir.diagnostics
+    );
+    assert_eq!(ir.project.room_count, 12);
+    assert_eq!(ir.mep_circuits.len(), 8);
+    assert!(ir.evidence.len() >= 14);
+    let svg = render_svg_with_layers(&ir, false, None);
+    assert!(svg.contains("PANEL SCHEDULE — LP1"));
+    assert!(svg.contains("PANEL SCHEDULE — PP1"));
+    assert!(svg.contains("EXIT"));
+}

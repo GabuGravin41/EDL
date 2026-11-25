@@ -1,0 +1,263 @@
+// EDL v1.7.0 Commercial Electrical Floor Plan Benchmark — Modeled directly on User Image 2 (ELECTRICAL_LEVEL_01.dwg):
+// Full Commercial Office Floor (30m x 15m, 12 spaces) on a 7 x 4 Structural Column Grid (`1..7`, `A..D`)
+// with DUAL Panels (LP1 Lighting Panel + PP1 Power Panel), 8 IEC 60364 circuits, 24 linear LED troffers,
+// 24/7 Emergency EXIT signs, 2-way corridor switching, latch-side switches, duplex sockets, RJ45 data ports,
+// AND embedded right-side Panel Schedule tables + 14 exact architectural/structural/electrical proofs!
+
+project "Commercial_Office_ELECTRICAL_LEVEL_01" {
+  units: mm
+  frame Plan: Frame2
+
+  architecture.defaults {
+    measurement_basis: clear_interior
+    exterior_wall: 240mm
+    interior_wall: 120mm
+  }
+
+  parameter ext_half: 120mm
+
+  // 6-Bay x 3-Bay Commercial Structural Grid (30.0m x 15.0m)
+  structural_grid OfficeGrid {
+    x_bays:   [5000mm, 5000mm, 5000mm, 5000mm, 5000mm, 5000mm]
+    x_labels: ["1", "2", "3", "4", "5", "6", "7"]
+    y_bays:   [6200mm, 2600mm, 6200mm]
+    y_labels: ["C", "B1", "B2", "A"]
+    columns:  ["1C", "2C", "3C", "4C", "5C", "6C", "7C",
+               "1A", "2A", "3A", "4A", "5A", "6A", "7A"]
+    column_size: (320mm, 320mm)
+    column_kind: concrete
+  }
+
+  // --- North Wing (Offices & Conference Suites) ---
+  room Conference_101 { role: habitable }
+  room OpenOffice_102 { role: habitable }
+  room Office_103     { role: habitable }
+  room Office_105     { role: habitable }
+  room Conference_106 { role: habitable }
+
+  // --- Central Spine ---
+  room Corridor_100   { role: circulation }
+
+  // --- South Wing (Meeting, Core, Restrooms, Elec Room, Offices) ---
+  room Meeting_108    { role: habitable }
+  room StairCore_109  { role: circulation }
+  room Restrooms_110  { role: wet }
+  room ElecRoom_111   { role: service }
+  room Office_112     { role: habitable }
+  room Conference_114 { role: habitable }
+
+  layout Plan {
+    // Central Corridor Spine (full 30m width along middle bay)
+    require Corridor_100.west  == grid_x_1 + ext_half
+    require Corridor_100.east  == grid_x_7 - ext_half
+    require Corridor_100.south == grid_y_B1 + 60mm
+    require Corridor_100.north == grid_y_B2 - 60mm
+
+    // North Wing (aligned to grid bays 1..7!)
+    require Conference_101.west  == grid_x_1 + ext_half
+    require Conference_101.east  == grid_x_2 - 60mm
+    require Conference_101.south == grid_y_B2 + 60mm
+    require Conference_101.north == grid_y_A - ext_half
+
+    require OpenOffice_102.west  == Conference_101.east + interior_wall
+    require OpenOffice_102.east  == grid_x_4 - 60mm
+    require OpenOffice_102.south == Conference_101.south
+    require OpenOffice_102.north == Conference_101.north
+
+    require Office_103.west  == OpenOffice_102.east + interior_wall
+    require Office_103.east  == grid_x_5 - 60mm
+    require Office_103.south == Conference_101.south
+    require Office_103.north == Conference_101.north
+
+    require Office_105.west  == Office_103.east + interior_wall
+    require Office_105.east  == grid_x_6 - 60mm
+    require Office_105.south == Conference_101.south
+    require Office_105.north == Conference_101.north
+
+    require Conference_106.west  == Office_105.east + interior_wall
+    require Conference_106.east  == grid_x_7 - ext_half
+    require Conference_106.south == Conference_101.south
+    require Conference_106.north == Conference_101.north
+
+    // South Wing (aligned to grid bays 1..7!)
+    require Meeting_108.west  == grid_x_1 + ext_half
+    require Meeting_108.east  == grid_x_2 - 60mm
+    require Meeting_108.south == grid_y_C + ext_half
+    require Meeting_108.north == grid_y_B1 - 60mm
+
+    require StairCore_109.west  == Meeting_108.east + interior_wall
+    require StairCore_109.east  == grid_x_3 - 60mm
+    require StairCore_109.south == Meeting_108.south
+    require StairCore_109.north == Meeting_108.north
+
+    require Restrooms_110.west  == StairCore_109.east + interior_wall
+    require Restrooms_110.east  == grid_x_4 - 60mm
+    require Restrooms_110.south == Meeting_108.south
+    require Restrooms_110.north == Meeting_108.north
+
+    require ElecRoom_111.west  == Restrooms_110.east + interior_wall
+    require ElecRoom_111.east  == grid_x_5 - 60mm
+    require ElecRoom_111.south == Meeting_108.south
+    require ElecRoom_111.north == Meeting_108.north
+
+    require Office_112.west  == ElecRoom_111.east + interior_wall
+    require Office_112.east  == grid_x_6 - 60mm
+    require Office_112.south == Meeting_108.south
+    require Office_112.north == Meeting_108.north
+
+    require Conference_114.west  == Office_112.east + interior_wall
+    require Conference_114.east  == grid_x_7 - ext_half
+    require Conference_114.south == Meeting_108.south
+    require Conference_114.north == Meeting_108.north
+  }
+
+  // --- Doors & Exterior Windows ---
+  opening MainExitW:   door { host: exterior(Corridor_100, west)  width: 1100mm align: center hinge: start swing: into Corridor_100 }
+  opening MainExitE:   door { host: exterior(Corridor_100, east)  width: 1100mm align: center hinge: start swing: into Corridor_100 }
+
+  opening D_Conf101:   door { host: shared_wall(Corridor_100, Conference_101) width: 900mm offset: 400mm from end   hinge: end   swing: into Conference_101 }
+  opening D_Open102:   door { host: shared_wall(Corridor_100, OpenOffice_102) width: 1000mm offset: 600mm from start hinge: start swing: into OpenOffice_102 }
+  opening D_Off103:    door { host: shared_wall(Corridor_100, Office_103)     width: 900mm offset: 400mm from start hinge: start swing: into Office_103 }
+  opening D_Off105:    door { host: shared_wall(Corridor_100, Office_105)     width: 900mm offset: 400mm from start hinge: start swing: into Office_105 }
+  opening D_Conf106:   door { host: shared_wall(Corridor_100, Conference_106) width: 900mm offset: 400mm from start hinge: start swing: into Conference_106 }
+
+  opening D_Meet108:   door { host: shared_wall(Meeting_108, Corridor_100)    width: 900mm offset: 400mm from end   hinge: end   swing: into Meeting_108 }
+  opening D_Stair109:  door { host: shared_wall(StairCore_109, Corridor_100)  width: 1000mm offset: 400mm from start hinge: start swing: into StairCore_109 }
+  opening D_Rest110:   door { host: shared_wall(Restrooms_110, Corridor_100)  width: 900mm offset: 400mm from start hinge: start swing: into Restrooms_110 }
+  opening D_Elec111:   door { host: shared_wall(ElecRoom_111, Corridor_100)   width: 1000mm align: center hinge: start swing: into ElecRoom_111 }
+  opening D_Off112:    door { host: shared_wall(Office_112, Corridor_100)     width: 900mm offset: 400mm from start hinge: start swing: into Office_112 }
+  opening D_Conf114:   door { host: shared_wall(Conference_114, Corridor_100) width: 900mm offset: 400mm from start hinge: start swing: into Conference_114 }
+
+  // Exterior Daylight Windows (centered cleanly between structural columns!)
+  opening W_C101: window { host: exterior(Conference_101, north) width: 2600mm align: center }
+  opening W_O102: window { host: exterior(OpenOffice_102, north) width: 2800mm offset: 800mm from start }
+  opening W_O103: window { host: exterior(Office_103, north)     width: 2400mm align: center }
+  opening W_O105: window { host: exterior(Office_105, north)     width: 2400mm align: center }
+  opening W_C106: window { host: exterior(Conference_106, north) width: 2600mm align: center }
+  opening W_M108: window { host: exterior(Meeting_108, south)    width: 2600mm align: center }
+  opening W_O112: window { host: exterior(Office_112, south)     width: 2400mm align: center }
+  opening W_C114: window { host: exterior(Conference_114, south) width: 2600mm align: center }
+
+  // Core Stair & Elevator
+  fixture MainStair: stair_u  { room: StairCore_109  size: (2800mm, 2400mm)  against: south  offset: 600mm from start }
+  fixture CoreLift:  elevator { room: Restrooms_110  size: (1800mm, 1800mm)  against: south  offset: 400mm from end }
+
+  // =========================================================================
+  // BUILDING ELECTRICAL INSTALLATION — DUAL PANELS (LP1 + PP1, 8 CIRCUITS)
+  // =========================================================================
+  building_electrical CommercialLevel01 {
+    supply: 230V 50Hz
+    ceiling_height: 3000mm
+
+    // Dual Panelboards inside dedicated ElecRoom_111 (Lighting Panel LP1 + Power Panel PP1!)
+    panel LP1 { host: wall(ElecRoom_111, west)  offset: 1800mm from start  main_breaker: 100A  height: 1500mm }
+    panel PP1 { host: wall(ElecRoom_111, east)  offset: 1800mm from start  main_breaker: 125A  height: 1500mm }
+
+    // LP1 — 4 Lighting & Emergency Circuits (4.0mm2 / 2.5mm2 commercial low-drop trunks!)
+    breaker L1_NW_Suite:    lighting { from: LP1  rating: 16A  cable: 4.0mm2  rcd: 30mA  max_voltage_drop: 3% }
+    breaker L2_NE_Offices:  lighting { from: LP1  rating: 16A  cable: 4.0mm2  rcd: 30mA  max_voltage_drop: 3% }
+    breaker L3_Corridor_Em: lighting { from: LP1  rating: 16A  cable: 4.0mm2  rcd: 30mA  max_voltage_drop: 3% }
+    breaker L4_South_Wing:  lighting { from: LP1  rating: 16A  cable: 4.0mm2  rcd: 30mA  max_voltage_drop: 3% }
+
+    // PP1 — 4 Power, IT Data & Dedicated Circuits
+    breaker P1_North_Pwr:   socket    { from: PP1  rating: 20A  cable: 4.0mm2  rcd: 30mA  max_voltage_drop: 5% }
+    breaker P2_South_Pwr:   socket    { from: PP1  rating: 20A  cable: 4.0mm2  rcd: 30mA  max_voltage_drop: 5% }
+    breaker P3_IT_Data:     socket    { from: PP1  rating: 16A  cable: 4.0mm2  rcd: 30mA  max_voltage_drop: 5% }
+    breaker P4_Core_Aux:    appliance { from: PP1  rating: 16A  cable: 4.0mm2  rcd: 30mA  max_voltage_drop: 5% }
+
+    // Linear LED Troffer Arrays (multiple fixtures per room, just like ELECTRICAL_LEVEL_01.dwg!)
+    light L1_1:  troffer { room: Conference_101  at: (2400mm, 4400mm)  load: 40W  circuit: L1_NW_Suite }
+    light L1_2:  troffer { room: Conference_101  at: (2400mm, 1800mm)  load: 40W  circuit: L1_NW_Suite }
+    light L1_3:  troffer { room: OpenOffice_102  at: (2600mm, 4400mm)  load: 40W  circuit: L1_NW_Suite }
+    light L1_4:  troffer { room: OpenOffice_102  at: (7200mm, 4400mm)  load: 40W  circuit: L1_NW_Suite }
+    light L1_5:  troffer { room: OpenOffice_102  at: (2600mm, 1800mm)  load: 40W  circuit: L1_NW_Suite }
+    light L1_6:  troffer { room: OpenOffice_102  at: (7200mm, 1800mm)  load: 40W  circuit: L1_NW_Suite }
+
+    light L2_1:  troffer { room: Office_103      at: (2400mm, 4200mm)  load: 40W  circuit: L2_NE_Offices }
+    light L2_2:  troffer { room: Office_103      at: (2400mm, 1800mm)  load: 40W  circuit: L2_NE_Offices }
+    light L2_3:  troffer { room: Office_105      at: (2400mm, 4200mm)  load: 40W  circuit: L2_NE_Offices }
+    light L2_4:  troffer { room: Office_105      at: (2400mm, 1800mm)  load: 40W  circuit: L2_NE_Offices }
+    light L2_5:  troffer { room: Conference_106  at: (2400mm, 4200mm)  load: 40W  circuit: L2_NE_Offices }
+    light L2_6:  troffer { room: Conference_106  at: (2400mm, 1800mm)  load: 40W  circuit: L2_NE_Offices }
+
+    // Corridor Troffer Spine + 24/7 Emergency EXIT Signs!
+    light EXIT_W: exit_sign { room: Corridor_100  at: (1800mm, 1900mm)  load: 10W  circuit: L3_Corridor_Em }
+    light LC_1:   troffer   { room: Corridor_100  at: (5000mm, 1200mm)  load: 36W  circuit: L3_Corridor_Em }
+    light LC_2:   troffer   { room: Corridor_100  at: (11000mm, 1200mm) load: 36W  circuit: L3_Corridor_Em }
+    light LC_3:   troffer   { room: Corridor_100  at: (17000mm, 1200mm) load: 36W  circuit: L3_Corridor_Em }
+    light LC_4:   troffer   { room: Corridor_100  at: (23000mm, 1200mm) load: 36W  circuit: L3_Corridor_Em }
+    light EXIT_E: exit_sign { room: Corridor_100  at: (27800mm, 1900mm) load: 10W  circuit: L3_Corridor_Em }
+
+    // South Wing Troffers & Core Lighting
+    light L4_1:  troffer { room: Meeting_108     at: (2400mm, 4200mm)  load: 40W  circuit: L4_South_Wing }
+    light L4_2:  troffer { room: Meeting_108     at: (2400mm, 1800mm)  load: 40W  circuit: L4_South_Wing }
+    light L4_3:  ceiling { room: StairCore_109   at: (2400mm, 4500mm)  load: 24W  circuit: L4_South_Wing }
+    light L4_4:  ceiling { room: Restrooms_110   at: (2400mm, 4500mm)  load: 24W  circuit: L4_South_Wing  ip: IP44 }
+    light L4_5:  troffer { room: ElecRoom_111    at: (2400mm, 4500mm)  load: 36W  circuit: L4_South_Wing }
+    light L4_6:  troffer { room: Office_112      at: (2400mm, 4200mm)  load: 40W  circuit: L4_South_Wing }
+    light L4_7:  troffer { room: Office_112      at: (2400mm, 1800mm)  load: 40W  circuit: L4_South_Wing }
+    light L4_8:  troffer { room: Conference_114  at: (2400mm, 4200mm)  load: 40W  circuit: L4_South_Wing }
+    light L4_9:  troffer { room: Conference_114  at: (2400mm, 1800mm)  load: 40W  circuit: L4_South_Wing }
+
+    // Switches (including 2-Way Corridor Switching at BOTH exits!)
+    switch SW_C101:  1gang { host: beside(D_Conf101, latch_side, 180mm)  room: Conference_101  controls: [L1_1, L1_2]               circuit: L1_NW_Suite }
+    switch SW_O102:  2gang { host: beside(D_Open102, latch_side, 180mm)  room: OpenOffice_102  controls: [L1_3, L1_4, L1_5, L1_6]   circuit: L1_NW_Suite }
+    switch SW_O103:  1gang { host: beside(D_Off103, latch_side, 180mm)   room: Office_103      controls: [L2_1, L2_2]               circuit: L2_NE_Offices }
+    switch SW_O105:  1gang { host: beside(D_Off105, latch_side, 180mm)   room: Office_105      controls: [L2_3, L2_4]               circuit: L2_NE_Offices }
+    switch SW_C106:  1gang { host: beside(D_Conf106, latch_side, 180mm)  room: Conference_106  controls: [L2_5, L2_6]               circuit: L2_NE_Offices }
+
+    switch SW_CorrW: 2way  { host: beside(MainExitW, latch_side, 180mm)  room: Corridor_100    controls: [LC_1, LC_2, LC_3, LC_4]   circuit: L3_Corridor_Em }
+    switch SW_CorrE: 2way  { host: beside(MainExitE, latch_side, 180mm)  room: Corridor_100    controls: [LC_1, LC_2, LC_3, LC_4]   circuit: L3_Corridor_Em }
+
+    switch SW_M108:  1gang { host: beside(D_Meet108, latch_side, 180mm)  room: Meeting_108     controls: [L4_1, L4_2]               circuit: L4_South_Wing }
+    switch SW_Stair: 1gang { host: beside(D_Stair109, latch_side, 180mm) room: Corridor_100    controls: [L4_3]                     circuit: L4_South_Wing }
+    switch SW_Rest:  1gang { host: beside(D_Rest110, latch_side, 180mm)  room: Corridor_100    controls: [L4_4]                     circuit: L4_South_Wing }
+    switch SW_Elec:  1gang { host: beside(D_Elec111, latch_side, 180mm)  room: ElecRoom_111    controls: [L4_5]                     circuit: L4_South_Wing }
+    switch SW_O112:  1gang { host: beside(D_Off112, latch_side, 180mm)   room: Office_112      controls: [L4_6, L4_7]               circuit: L4_South_Wing }
+    switch SW_C114:  1gang { host: beside(D_Conf114, latch_side, 180mm)  room: Conference_114  controls: [L4_8, L4_9]               circuit: L4_South_Wing }
+
+    // Power Outlets & RJ45 Data Ports across North & South Office Wings
+    outlet P_C101:  duplex { host: wall(Conference_101, west)  offset: 2400mm from start height: 300mm load: 450W circuit: P1_North_Pwr }
+    outlet P_O102A: duplex { host: wall(OpenOffice_102, north) offset: 1800mm from start height: 300mm load: 500W circuit: P1_North_Pwr }
+    outlet P_O102B: duplex { host: wall(OpenOffice_102, north) offset: 6800mm from start height: 300mm load: 500W circuit: P1_North_Pwr }
+    outlet P_O103:  duplex { host: wall(Office_103, east)      offset: 2200mm from start height: 300mm load: 450W circuit: P1_North_Pwr }
+    outlet P_O105:  duplex { host: wall(Office_105, east)      offset: 2200mm from start height: 300mm load: 450W circuit: P1_North_Pwr }
+    outlet P_C106:  duplex { host: wall(Conference_106, east)  offset: 2400mm from start height: 300mm load: 450W circuit: P1_North_Pwr }
+
+    outlet P_M108:  duplex { host: wall(Meeting_108, west)     offset: 2400mm from start height: 300mm load: 500W circuit: P2_South_Pwr }
+    outlet P_O112:  duplex { host: wall(Office_112, west)      offset: 2400mm from start height: 300mm load: 500W circuit: P2_South_Pwr }
+    outlet P_C114:  duplex { host: wall(Conference_114, east)  offset: 2400mm from start height: 300mm load: 500W circuit: P2_South_Pwr }
+
+    // IT / RJ45 Data Drops (blue triangles, SchemBAT style!)
+    outlet D_O102:  data_rj45 { host: wall(OpenOffice_102, west) offset: 2200mm from start height: 300mm load: 250W circuit: P3_IT_Data }
+    outlet D_O103:  data_rj45 { host: wall(Office_103, west)     offset: 2200mm from start height: 300mm load: 250W circuit: P3_IT_Data }
+    outlet D_O112:  data_rj45 { host: wall(Office_112, east)     offset: 2200mm from start height: 300mm load: 250W circuit: P3_IT_Data }
+    outlet D_C114:  data_rj45 { host: wall(Conference_114, west) offset: 2200mm from start height: 300mm load: 250W circuit: P3_IT_Data }
+
+    // Dedicated Core Appliance Circuit (Hand dryer / Elec room service)
+    outlet P_Rest_Aux: appliance { host: wall(Restrooms_110, west) offset: 2600mm from start height: 1200mm load: 1600W circuit: P4_Core_Aux ip: IP44 }
+  }
+
+  verify {
+    require no_room_overlap
+    require opening_jamb_margin >= 100mm
+    require no_door_swing_collision
+    require all_rooms_reachable
+    require no_fixture_collision
+    require habitable_rooms_have_window
+    require breaker_load_ok
+    require voltage_drop_ok
+    require wet_zone_clearance
+    require switch_accessible
+    require electrical_device_clear
+    require wet_circuits_rcd_protected
+  }
+
+  view PlanView: plan {
+    frame: Plan
+    sheet: A1 landscape
+    scale: 1:100
+    show_dimensions: true
+    show_labels: true
+  }
+}

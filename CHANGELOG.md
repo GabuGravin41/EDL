@@ -2,6 +2,10 @@
 
 All notable releases of **EDL (Engineering Description Language)** are documented here.
 
+## [1.7.0] — 2026-11-25
+### Added
+- **Commercial Multi-Panel Electrical Floor Plans (`mep.elec` + `arch`):** Embedded right-side auto-computed `PANEL SCHEDULE` tables directly on SVG sheets (`LP1`, `PP1`, etc.), rich commercial drafting symbols (`troffer` linear LED bars, 24/7 unswitched life-safety `exit_sign` badges, `ceiling_fan`, `2way` corridor switches, `data_rj45` ports), and 30m×15m commercial office benchmark `examples/commercial_office_electrical_level01.edl` (dual panels, 56 devices, 8 circuits, 14/14 checks `EXACTLY_CHECKED`).
+
 ## [1.6.0] — 2026-11-25
 ### Added
 - **Building Power Single-Line Diagram Domain (`elec.sld`, `src/domains/sld/`):** `power_sld` blocks modeling MV/LV transformers, standby generators, Solar PV inverters, BESS battery storage, split main LV switchboards (`LVMD`), ATS bus couplers (`QF_Tie`), sub-distribution boards (`SDB`), PFC capacitor banks, motors, UPS, and EV charging hubs.
