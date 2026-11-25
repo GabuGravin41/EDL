@@ -13,7 +13,7 @@ use std::process;
 #[command(
     name = "edl",
     version,
-    about = "Engineering Description Language (EDL) v0.6 compiler, simulator & MCP server"
+    about = "Engineering Description Language (EDL) v0.9 — multi-domain compiler, simulator, sync, plugin registry & MCP server"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -152,6 +152,14 @@ enum Commands {
         #[arg(long)]
         kicad: Option<PathBuf>,
     },
+    /// List the registered domain engines (role, owned keywords, export formats, verification rules)
+    Domains {
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Emit the formal JSON Schema for EDL Canonical IR (derived from Rust IR types)
+    Schema,
     /// Start the Model Context Protocol (MCP) JSON-RPC 2.0 server over stdio
     Mcp,
 }
@@ -492,6 +500,26 @@ fn main() {
                 eprintln!("watch error: {e}");
                 process::exit(1);
             }
+        }
+        Commands::Domains { json } => {
+            let info = edl::domains::registry::DomainRegistry::builtin().info();
+            if json {
+                println!("{}", serde_json::to_string_pretty(&info).unwrap());
+            } else {
+                for d in info {
+                    println!("{} [{:?}] — {}", d.id, d.role, d.description);
+                    for e in &d.exports {
+                        println!("    export {:<9} .{:<10} {}", e.name, e.extension, e.description);
+                    }
+                    for r in &d.rules {
+                        println!("    rule   {:<34} {}", r.id, r.description);
+                    }
+                }
+            }
+        }
+        Commands::Schema => {
+            let schema = edl::core::ir::canonical_ir_schema();
+            println!("{}", serde_json::to_string_pretty(&schema).unwrap());
         }
         Commands::Mcp => {
             if let Err(e) = edl::mcp::run_stdio_server() {

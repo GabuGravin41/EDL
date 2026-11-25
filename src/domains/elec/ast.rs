@@ -3,6 +3,7 @@ use crate::core::ir::ModuleProvenanceIr;
 pub use crate::core::ir::PortRole as PinRole;
 use crate::core::span::Span;
 use crate::core::units::{Quantity, VoltageSpec};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default)]
@@ -73,7 +74,7 @@ pub struct SchematicLayoutDecl {
     pub span: Span,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum NetRoutingStyle {
     Direct,

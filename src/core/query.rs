@@ -525,6 +525,12 @@ fn entity_bbox(e: &EntityIr) -> Option<Rect2> {
             pos.x + 50.0,
             pos.y + 50.0,
         )),
+        // Custom domains may publish `"bbox": [min_x, min_y, max_x, max_y]` so generic queries/measure work on them.
+        EntityGeometryIr::Custom { data, .. } => {
+            let b = data.get("bbox")?.as_array()?;
+            let v: Vec<f64> = b.iter().filter_map(|x| x.as_f64()).collect();
+            (v.len() == 4).then(|| Rect2::new(v[0], v[1], v[2], v[3]))
+        }
     }
 }
 

@@ -11,13 +11,29 @@ use std::path::Path;
 
 /// Compile an in-memory `.edl` source string (elaborates local modules; no filesystem imports).
 pub fn compile_source(file: &str, src: &str) -> Result<CanonicalIr, Diagnostic> {
+    compile_source_with(&domains::registry::DomainRegistry::builtin(), file, src)
+}
+
+/// Compile with a custom [`domains::registry::DomainRegistry`] (built-ins plus your own domain engines).
+pub fn compile_source_with(
+    registry: &domains::registry::DomainRegistry,
+    file: &str,
+    src: &str,
+) -> Result<CanonicalIr, Diagnostic> {
     let mut ast = syntax::parser::parse_project(file, src)?;
     syntax::elaborate::elaborate_project(&mut ast, None)?;
-    Ok(compile_ast(&ast))
+    Ok(registry.compile_ast(&ast))
 }
 
 /// Compile an `.edl` file on disk, resolving relative `import "..."` libraries and `module`/`use` blocks.
 pub fn compile_file(path: &Path) -> Result<CanonicalIr, Diagnostic> {
+    compile_file_with(&domains::registry::DomainRegistry::builtin(), path)
+}
+
+pub fn compile_file_with(
+    registry: &domains::registry::DomainRegistry,
+    path: &Path,
+) -> Result<CanonicalIr, Diagnostic> {
     let file_str = path.display().to_string();
     let src = fs::read_to_string(path).map_err(|e| {
         Diagnostic::error(
@@ -29,20 +45,7 @@ pub fn compile_file(path: &Path) -> Result<CanonicalIr, Diagnostic> {
     })?;
     let mut ast = syntax::parser::parse_project(&file_str, &src)?;
     syntax::elaborate::elaborate_project(&mut ast, path.parent())?;
-    Ok(compile_ast(&ast))
-}
-
-fn compile_ast(ast: &syntax::ast::ProjectAst) -> CanonicalIr {
-    if !ast.elec.circuits.is_empty() && ast.arch.rooms.is_empty() {
-        domains::elec::compile::compile_electronics(ast)
-    } else {
-        // Staged multi-domain compilation: Architecture first, then Building Electrical layered on top!
-        let mut ir = domains::arch::compile::compile_project(ast);
-        if !ast.mep_elec.installations.is_empty() {
-            domains::mep_elec::compile::compile_building_electrical(ast, &mut ir);
-        }
-        ir
-    }
+    Ok(registry.compile_ast(&ast))
 }
 
 pub fn build_panel_schedule(ir: &CanonicalIr) -> domains::mep_elec::schedule::PanelScheduleReport {
@@ -53,13 +56,9 @@ pub fn export_panel_schedule_csv(ir: &CanonicalIr) -> String {
     domains::mep_elec::schedule::export_panel_schedule_csv(ir)
 }
 
-/// Domain-dispatched SVG preview renderer.
+/// Domain-dispatched SVG preview renderer (base engine + overlay engines via the registry).
 pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
-    if ir.project.domain == "electronics" {
-        domains::elec::svg::render_svg(ir, annotated)
-    } else {
-        domains::arch::svg::render_svg(ir, annotated)
-    }
+    domains::registry::DomainRegistry::builtin().render_svg(ir, annotated)
 }
 
 pub fn export_dxf(ir: &CanonicalIr) -> String {
@@ -752,7 +751,7 @@ project "BadNotch" {
         }))
         .unwrap();
         let tools = list["result"]["tools"].as_array().unwrap();
-        assert_eq!(tools.len(), 10);
+        assert_eq!(tools.len(), 11);
 
         let call = crate::mcp::handle_jsonrpc_request(&json!({
             "jsonrpc": "2.0",

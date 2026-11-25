@@ -211,6 +211,11 @@ fn mcp_tool_schemas() -> Value {
             }
         },
         {
+            "name": "edl_domains",
+            "description": "List the registered EDL domain engines (arch, elec, mep.elec, plus any plugins): role (base/overlay), owned syntax keywords, export formats and the verification rules each domain checks. Use this to discover what can be designed and verified before writing EDL.",
+            "inputSchema": { "type": "object", "properties": {} }
+        },
+        {
             "name": "edl_diff",
             "description": "Compute a semantic diff by stable entity ID between two EDL revisions.",
             "inputSchema": {
@@ -355,6 +360,9 @@ fn call_mcp_tool(name: &str, args: &Value) -> Result<Value, String> {
             let apply = args.get("apply").and_then(|v| v.as_bool()).unwrap_or(false);
             let (plan, result) = crate::core::sync::run_sync(Path::new(file), k, d, apply)?;
             Ok(json!({ "plan": plan, "result": result }))
+        }
+        "edl_domains" => {
+            serde_json::to_value(crate::domains::registry::DomainRegistry::builtin().info()).map_err(|e| e.to_string())
         }
         "edl_diff" => {
             let before = compile_from_args(args, "before_path", "before_source")?;

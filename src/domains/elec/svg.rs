@@ -40,6 +40,14 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
     );
     let _ = writeln!(
         out,
+        "<!--EDL_VIEW ox={:.6} oy={:.6} kx={:.9} ky={:.9}-->",
+        (pad_mm - bounds.min_x) * px_per_mm,
+        (pad_mm - bounds.min_y) * px_per_mm,
+        px_per_mm,
+        px_per_mm
+    );
+    let _ = writeln!(
+        out,
         r##"  <defs>
     <style>
       .bg {{ fill: #f8fafc; }}

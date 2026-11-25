@@ -43,6 +43,15 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
         out,
         r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {svg_w:.1} {svg_h:.1}" width="{svg_w:.0}" height="{svg_h:.0}">"#
     );
+    // Model->pixel mapping (px = ox + kx*x_mm, py = oy + ky*y_mm) so registered overlay domains can draw in project coordinates.
+    let _ = writeln!(
+        out,
+        "<!--EDL_VIEW ox={:.6} oy={:.6} kx={:.9} ky={:.9}-->",
+        (margin_mm - bounds.min_x) * scale_px_per_mm,
+        (bounds.max_y + margin_mm) * scale_px_per_mm,
+        scale_px_per_mm,
+        -scale_px_per_mm
+    );
     let _ = writeln!(
         out,
         r##"  <defs>

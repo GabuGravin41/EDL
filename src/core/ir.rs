@@ -1,17 +1,18 @@
 use crate::core::geom::{Arc2, Point2, Rect2, Segment2, Side};
 use crate::core::span::{Diagnostic, Span};
 use crate::core::units::VoltageSpec;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum ConstraintStrength {
     Require,
     Prefer,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct EquationRecord {
     pub id: String,
     pub tier: u8,
@@ -22,7 +23,7 @@ pub struct EquationRecord {
     pub residual_mm: Option<f64>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum PortRole {
     PowerOut,
@@ -50,7 +51,7 @@ impl PortRole {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum VerificationStatus {
     FormallyChecked,
@@ -62,7 +63,7 @@ pub enum VerificationStatus {
     Violated,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct EvidenceRecord {
     pub check_id: String,
     pub status: VerificationStatus,
@@ -72,7 +73,7 @@ pub struct EvidenceRecord {
     pub details: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct FrameIr {
     pub id: String,
     pub kind: String,
@@ -80,13 +81,13 @@ pub struct FrameIr {
     pub handedness: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ModuleProvenanceIr {
     pub module: String,
     pub instance: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct PlacedPinIr {
     pub name: String,
     pub number: usize,
@@ -100,7 +101,7 @@ pub struct PlacedPinIr {
     pub tip_point: Point2,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum EntityGeometryIr {
     Rect {
@@ -154,9 +155,15 @@ pub enum EntityGeometryIr {
         #[serde(skip_serializing_if = "Option::is_none")]
         circuit: Option<String>,
     },
+    /// Open-ended geometry for externally registered domains (plumbing, hvac, pcb, ...). `shape` names the
+    /// payload schema owned by the domain; `data` is arbitrary JSON in project model coordinates (mm).
+    Custom {
+        shape: String,
+        data: serde_json::Value,
+    },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct EntityIr {
     pub id: String,
     pub kind: String,
@@ -170,7 +177,7 @@ pub struct EntityIr {
 }
 
 /// Functional connectivity relation (strictly separate from drawn wire routes).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct RelationIr {
     pub id: String,
     pub kind: String, // e.g., "elec.net"
@@ -183,7 +190,7 @@ pub struct RelationIr {
 }
 
 /// Presentation-layer schematic group container.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct SchematicGroupIr {
     pub name: String,
     pub members: Vec<String>,
@@ -191,7 +198,7 @@ pub struct SchematicGroupIr {
 }
 
 /// Local schematic terminal graphics (GND triangle, upward power bar, or named net-label stub).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct NetTerminalIr {
     pub kind: String, // "gnd_symbol" | "power_symbol" | "label_stub"
     pub pos: Point2,
@@ -200,7 +207,7 @@ pub struct NetTerminalIr {
 }
 
 /// Presentation-layer orthogonal wire route (or symbol/label-stub termination) for a functional net.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct SchematicRouteIr {
     pub net_id: String,
     pub style: String, // "direct" | "bus" | "rail" | "symbol" | "label_stub"
@@ -214,7 +221,7 @@ pub struct SchematicRouteIr {
 }
 
 /// Building electrical breaker circuit summary & computed IEC/NEC metrics.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct MepCircuitIr {
     pub id: String,
     pub kind: String, // "lighting" | "socket" | "appliance" | "dedicated"
@@ -234,7 +241,7 @@ pub struct MepCircuitIr {
 }
 
 /// Physical conduit/wire run or switch-control line overlaid on the architectural floor plan.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct MepWireRunIr {
     pub circuit_id: String,
     pub run_kind: String, // "power" | "lighting" | "switch_leg"
@@ -243,7 +250,7 @@ pub struct MepWireRunIr {
     pub segments: Vec<Segment2>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct DerivedWallIr {
     pub id: String,
     pub kind: String, // "arch.wall.exterior" | "arch.wall.interior"
@@ -255,13 +262,13 @@ pub struct DerivedWallIr {
 }
 
 /// Exact non-overlapping wall poché cell (after corner joins, T-junctions, and opening cutouts).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct WallSolidCell {
     pub kind: String, // "exterior" | "interior"
     pub rect: Rect2,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ViewIr {
     pub id: String,
     pub kind: String,
@@ -272,7 +279,7 @@ pub struct ViewIr {
     pub show_labels: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ProjectSummaryIr {
     pub name: String,
     pub domain: String, // "architecture" | "electronics"
@@ -291,7 +298,7 @@ pub struct ProjectSummaryIr {
     pub has_errors: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct CanonicalIr {
     pub ir_version: String,
     pub project: ProjectSummaryIr,
@@ -316,4 +323,10 @@ pub struct CanonicalIr {
     pub views: Vec<ViewIr>,
     pub evidence: Vec<EvidenceRecord>,
     pub diagnostics: Vec<Diagnostic>,
+}
+
+/// Generate the formal JSON Schema (Draft 7) for [`CanonicalIr`], derived directly from the Rust IR types.
+pub fn canonical_ir_schema() -> serde_json::Value {
+    let schema = schemars::schema_for!(CanonicalIr);
+    serde_json::to_value(&schema).expect("serialize CanonicalIr JSON Schema")
 }

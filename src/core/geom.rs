@@ -1,8 +1,9 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub const EPS_MM: f64 = 1e-6;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum Side {
     West,
@@ -22,7 +23,7 @@ impl Side {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Point2 {
     pub x: f64,
     pub y: f64,
@@ -38,7 +39,7 @@ impl Point2 {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Segment2 {
     pub p0: Point2,
     pub p1: Point2,
@@ -54,7 +55,7 @@ impl Segment2 {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Rect2 {
     pub min_x: f64,
     pub min_y: f64,
@@ -122,7 +123,7 @@ impl Rect2 {
 }
 
 /// Exact analytical circular arc (authoritative — never tessellated in IR).
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Arc2 {
     pub center: Point2,
     pub radius: f64,
@@ -166,7 +167,7 @@ impl Arc2 {
 /// Exact 90-degree axis-aligned quarter-disk swept by a door leaf.
 /// A point (x, y) is strictly inside the quarter-disk iff:
 ///   (x, y) is strictly inside `bbox` AND (x - cx)^2 + (y - cy)^2 < r^2.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct QuarterDisk2 {
     pub arc: Arc2,
     pub bbox: Rect2,

@@ -1,6 +1,7 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Span {
     pub file: String,
     pub start_line: usize,
@@ -37,7 +38,7 @@ impl Span {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Severity {
     Error,
@@ -45,7 +46,7 @@ pub enum Severity {
     Info,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct RepairAction {
     /// Machine-readable repair verb: e.g. "adjust_offset", "move_fixture", "reverse_swing",
     /// "add_window", "add_opening", "connect_pin", "fix_voltage", "add_constraint", "split_net".
@@ -58,7 +59,7 @@ pub struct RepairAction {
     pub rationale: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Diagnostic {
     pub code: String,
     pub category: String,

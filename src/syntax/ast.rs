@@ -80,6 +80,8 @@ pub struct ProjectAst {
     pub arch: ArchProjectData,
     pub elec: ElecProjectData,
     pub mep_elec: MepElecProjectData,
+    /// Declarations owned by externally registered domains (see `syntax::ext`).
+    pub extensions: Vec<crate::syntax::ext::ExtensionBlock>,
     pub verifications: Vec<VerifyRule>,
     pub views: Vec<ViewDecl>,
 }

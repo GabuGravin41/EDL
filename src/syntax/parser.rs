@@ -488,6 +488,7 @@ impl Parser {
         let mut arch = ArchProjectData::default();
         let mut elec = ElecProjectData::default();
         let mut mep_elec = MepElecProjectData::default();
+        let mut extensions = Vec::new();
         let mut verifications = Vec::new();
         let mut views = Vec::new();
 
@@ -537,12 +538,10 @@ impl Parser {
                 "building_electrical" => mep_elec.installations.push(self.parse_building_electrical()?),
                 "verify" => verifications.extend(self.parse_verify()?),
                 "view" => views.push(self.parse_view()?),
-                other => {
-                    return Err(self.err(
-                        "E_PARSE_UNKNOWN_DECL",
-                        format!("Unknown top-level declaration '{other}' inside project"),
-                        &tok,
-                    ))
+                _ => {
+                    // Not a built-in keyword: capture as an extension block for a registered domain.
+                    // Unclaimed keywords are reported at compile time as `E_UNKNOWN_DOMAIN_BLOCK`.
+                    extensions.push(self.parse_extension_block()?);
                 }
             }
         }
@@ -560,8 +559,54 @@ impl Parser {
             arch,
             elec,
             mep_elec,
+            extensions,
             verifications,
             views,
+        })
+    }
+
+    /// `keyword [header tokens...] { balanced body }` captured verbatim for a registered domain engine.
+    fn parse_extension_block(&mut self) -> Result<crate::syntax::ext::ExtensionBlock, Diagnostic> {
+        let kw_tok = self.bump();
+        let TokenKind::Ident(keyword) = kw_tok.kind.clone() else {
+            return Err(self.err("E_PARSE_DECL", "Expected declaration keyword", &kw_tok));
+        };
+        let mut header = Vec::new();
+        while !matches!(self.peek().kind, TokenKind::LBrace | TokenKind::Eof | TokenKind::RBrace) {
+            header.push(self.bump());
+        }
+        if self.peek().kind != TokenKind::LBrace {
+            return Err(self.err(
+                "E_PARSE_UNKNOWN_DECL",
+                format!("Unknown top-level declaration '{keyword}' inside project (expected '{{' after it)"),
+                &kw_tok,
+            ));
+        }
+        self.bump();
+        let mut body = Vec::new();
+        let mut depth = 1usize;
+        loop {
+            let t = self.peek().clone();
+            match t.kind {
+                TokenKind::Eof => return Err(self.err("E_PARSE_UNTERMINATED", format!("Unterminated '{keyword}' block"), &kw_tok)),
+                TokenKind::LBrace => depth += 1,
+                TokenKind::RBrace => {
+                    depth -= 1;
+                    if depth == 0 {
+                        break;
+                    }
+                }
+                _ => {}
+            }
+            body.push(self.bump());
+        }
+        let end = self.bump();
+        Ok(crate::syntax::ext::ExtensionBlock {
+            keyword,
+            file: self.file.clone(),
+            header,
+            body,
+            span: kw_tok.span(&self.file).merge(&end.span(&self.file)),
         })
     }
 
