@@ -1,10 +1,13 @@
 pub mod ast;
 pub mod bom;
 pub mod compile;
+pub mod idioms;
 pub mod kicad;
 pub mod kicad_erc;
 pub mod kicad_import;
+pub mod kicad_lift;
 pub mod kicad_sym;
+pub mod rel_layout;
 pub mod router;
 pub mod sheet_layout;
 pub mod spice;

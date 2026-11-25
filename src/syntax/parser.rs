@@ -583,6 +583,14 @@ impl Parser {
                     let (path_s, _) = self.expect_string("symbol library path")?;
                     elec.symbol_libs.push(path_s);
                 }
+                "layout_lock" => {
+                    self.bump();
+                    if self.peek().kind == TokenKind::Colon {
+                        self.bump();
+                    }
+                    let (path_s, _) = self.expect_string("layout lockfile path")?;
+                    elec.layout_lock = Some(path_s);
+                }
                 "circuit" => elec.circuits.push(self.parse_circuit()?),
                 "schematic" => elec.schematics.push(self.parse_schematic()?),
                 "building_electrical" => mep_elec.installations.push(self.parse_building_electrical()?),
@@ -1439,6 +1447,7 @@ impl Parser {
         self.expect(TokenKind::LBrace, "'{'")?;
         let mut components = Vec::new();
         let mut nets = Vec::new();
+        let mut idioms = Vec::new();
         let mut uses = Vec::new();
 
         while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
@@ -1448,7 +1457,7 @@ impl Parser {
                 _ => {
                     return Err(self.err(
                         "E_PARSE_CIRCUIT",
-                        format!("Expected 'component', 'net', or 'use' inside circuit, found {:?}", tok.kind),
+                        format!("Expected 'component', 'net', 'use', or idiom inside circuit, found {:?}", tok.kind),
                         &tok,
                     ))
                 }
@@ -1457,6 +1466,12 @@ impl Parser {
                 "component" => components.push(self.parse_component()?),
                 "net" => nets.push(self.parse_net()?),
                 "use" => uses.push(self.parse_use()?),
+                "decouple" => idioms.push(self.parse_idiom_decouple()?),
+                "pullup" => idioms.push(self.parse_idiom_pull(true)?),
+                "pulldown" => idioms.push(self.parse_idiom_pull(false)?),
+                "divider" => idioms.push(self.parse_idiom_divider()?),
+                "series" => idioms.push(self.parse_idiom_series()?),
+                "rc_filter" => idioms.push(self.parse_idiom_rc_filter()?),
                 other => {
                     return Err(self.err(
                         "E_PARSE_CIRCUIT",
@@ -1471,7 +1486,316 @@ impl Parser {
             name,
             components,
             nets,
+            idioms,
             uses,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_pin_token(&mut self) -> Result<(String, Span), Diagnostic> {
+        match self.peek().kind.clone() {
+            TokenKind::Ident(p) | TokenKind::Str(p) => {
+                let sp = self.bump().span(&self.file);
+                Ok((p, sp))
+            }
+            TokenKind::Number(n, u) if u.is_empty() => {
+                let sp = self.bump().span(&self.file);
+                Ok((format!("{}", n.round() as i64), sp))
+            }
+            TokenKind::Plus => {
+                let sp = self.bump().span(&self.file);
+                Ok(("+".to_string(), sp))
+            }
+            TokenKind::Minus => {
+                let sp = self.bump().span(&self.file);
+                Ok(("-".to_string(), sp))
+            }
+            _ => self.expect_ident_or_str("pin name or number"),
+        }
+    }
+
+    fn parse_pin_ref(&mut self) -> Result<PinRef, Diagnostic> {
+        let (comp, cspan) = self.expect_ident_or_str("component id")?;
+        self.expect(TokenKind::Dot, "'.'")?;
+        let (pin, pspan) = self.parse_pin_token()?;
+        Ok(PinRef {
+            component: comp,
+            pin,
+            span: cspan.merge(&pspan),
+        })
+    }
+
+    fn parse_anchor_ref(&mut self) -> Result<(AnchorRef, Span), Diagnostic> {
+        let (comp, cspan) = self.expect_ident_or_str("anchor component id")?;
+        if self.peek().kind == TokenKind::Dot {
+            self.bump();
+            let (pin, pspan) = self.parse_pin_token()?;
+            Ok((AnchorRef { component: comp, pin: Some(pin) }, cspan.merge(&pspan)))
+        } else {
+            Ok((AnchorRef { component: comp, pin: None }, cspan))
+        }
+    }
+
+    fn parse_chain_endpoint(&mut self) -> Result<(ChainEndpoint, Span), Diagnostic> {
+        let (first, sp1) = self.expect_ident_or_str("net name or component.pin")?;
+        if self.peek().kind == TokenKind::Dot {
+            self.bump();
+            let (pin, sp2) = self.parse_pin_token()?;
+            let sp = sp1.merge(&sp2);
+            Ok((
+                ChainEndpoint::Pin(PinRef {
+                    component: first,
+                    pin,
+                    span: sp.clone(),
+                }),
+                sp,
+            ))
+        } else {
+            Ok((ChainEndpoint::Net(first), sp1))
+        }
+    }
+
+    fn parse_idiom_value(&mut self) -> Result<(String, Span), Diagnostic> {
+        match self.peek().kind.clone() {
+            TokenKind::Str(s) => {
+                let sp = self.bump().span(&self.file);
+                Ok((s, sp))
+            }
+            TokenKind::Number(n, u) => {
+                let sp = self.bump().span(&self.file);
+                let ns = if (n - n.round()).abs() < 1e-9 {
+                    format!("{}", n.round() as i64)
+                } else {
+                    format!("{n}")
+                };
+                Ok((format!("{ns}{u}"), sp))
+            }
+            TokenKind::Ident(s) => {
+                let sp = self.bump().span(&self.file);
+                Ok((s, sp))
+            }
+            _ => self.expect_string("component value"),
+        }
+    }
+
+    fn parse_ref_val_pair(&mut self) -> Result<((String, String), Span), Diagnostic> {
+        let (rid, sp1) = self.expect_ident_or_str("component designator")?;
+        self.expect(TokenKind::Colon, "':'")?;
+        let (val, sp2) = self.parse_idiom_value()?;
+        Ok(((rid, val), sp1.merge(&sp2)))
+    }
+
+    fn parse_idiom_decouple(&mut self) -> Result<CircuitIdiomDecl, Diagnostic> {
+        let start = self.expect_keyword("decouple")?;
+        let target = self.parse_pin_ref()?;
+        self.expect_keyword("with")?;
+        let mut caps = Vec::new();
+        let mut end = if self.peek().kind == TokenKind::LBracket {
+            self.bump();
+            while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
+                let (pair, _) = self.parse_ref_val_pair()?;
+                caps.push(pair);
+                if self.peek().kind == TokenKind::Comma {
+                    self.bump();
+                } else {
+                    break;
+                }
+            }
+            self.expect(TokenKind::RBracket, "']'")?.span(&self.file)
+        } else {
+            let (pair, sp) = self.parse_ref_val_pair()?;
+            caps.push(pair);
+            sp
+        };
+        let mut ground = "GND".to_string();
+        let mut footprint = None;
+        loop {
+            match &self.peek().kind {
+                TokenKind::Ident(s) if s == "to" => {
+                    self.bump();
+                    if self.peek().kind == TokenKind::Colon {
+                        self.bump();
+                    }
+                    let (g, sp) = self.expect_ident_or_str("ground net")?;
+                    ground = g;
+                    end = sp;
+                }
+                TokenKind::Ident(s) if s == "footprint" => {
+                    self.bump();
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let (fp, sp) = self.expect_string("footprint")?;
+                    footprint = Some(fp);
+                    end = sp;
+                }
+                _ => break,
+            }
+        }
+        Ok(CircuitIdiomDecl::Decouple {
+            target,
+            caps,
+            ground,
+            footprint,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_idiom_pull(&mut self, is_up: bool) -> Result<CircuitIdiomDecl, Diagnostic> {
+        let start = self.expect_keyword(if is_up { "pullup" } else { "pulldown" })?;
+        let target = self.parse_pin_ref()?;
+        self.expect_keyword("with")?;
+        let ((ref_id, value), mut end) = self.parse_ref_val_pair()?;
+        let mut rail = if is_up { "V3V3".to_string() } else { "GND".to_string() };
+        let mut footprint = None;
+        loop {
+            match &self.peek().kind {
+                TokenKind::Ident(s) if s == "to" => {
+                    self.bump();
+                    if self.peek().kind == TokenKind::Colon {
+                        self.bump();
+                    }
+                    let (r, sp) = self.expect_ident_or_str("rail net")?;
+                    rail = r;
+                    end = sp;
+                }
+                TokenKind::Ident(s) if s == "footprint" => {
+                    self.bump();
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let (fp, sp) = self.expect_string("footprint")?;
+                    footprint = Some(fp);
+                    end = sp;
+                }
+                _ => break,
+            }
+        }
+        Ok(CircuitIdiomDecl::PullResistor {
+            is_up,
+            target,
+            ref_id,
+            value,
+            rail,
+            footprint,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_idiom_divider(&mut self) -> Result<CircuitIdiomDecl, Diagnostic> {
+        // `divider VIN -> R1: "10k" -> FB [at: U1.FB] -> R2: "3.3k" -> GND [footprint: "..."]`
+        // OR `divider VIN -> R1: "10k" -> U1.FB -> R2: "3.3k" -> GND`
+        let start = self.expect_keyword("divider")?;
+        let (top_net, _) = self.expect_ident_or_str("top net")?;
+        self.expect(TokenKind::Arrow, "'->'")?;
+        let (r_top, _) = self.parse_ref_val_pair()?;
+        self.expect(TokenKind::Arrow, "'->'")?;
+        let (mut tap, _) = self.parse_chain_endpoint()?;
+        let mut tap_net_name = None;
+        if matches!(&self.peek().kind, TokenKind::Ident(s) if s == "at") {
+            self.bump();
+            if self.peek().kind == TokenKind::Colon {
+                self.bump();
+            }
+            if let ChainEndpoint::Net(ref n) = tap {
+                tap_net_name = Some(n.clone());
+            }
+            tap = ChainEndpoint::Pin(self.parse_pin_ref()?);
+        }
+        self.expect(TokenKind::Arrow, "'->'")?;
+        let (r_bot, _) = self.parse_ref_val_pair()?;
+        self.expect(TokenKind::Arrow, "'->'")?;
+        let (bot_net, mut end) = self.expect_ident_or_str("bottom net")?;
+        let mut footprint = None;
+        if matches!(&self.peek().kind, TokenKind::Ident(s) if s == "footprint") {
+            self.bump();
+            self.expect(TokenKind::Colon, "':'")?;
+            let (fp, sp) = self.expect_string("footprint")?;
+            footprint = Some(fp);
+            end = sp;
+        }
+        Ok(CircuitIdiomDecl::Divider {
+            top_net,
+            r_top,
+            tap,
+            tap_net_name,
+            r_bot,
+            bot_net,
+            footprint,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_idiom_series(&mut self) -> Result<CircuitIdiomDecl, Diagnostic> {
+        // `series J1.D_P -> R1: "22" -> [L1: "10uH" ->] U1.USB_DP [footprint: "..."]`
+        let start = self.expect_keyword("series")?;
+        let (from, _) = self.parse_chain_endpoint()?;
+        self.expect(TokenKind::Arrow, "'->'")?;
+        let mut stages = Vec::new();
+        let (to, mut end) = loop {
+            // Peek ahead: if `<ident|str> ':'` -> stage component; else -> final endpoint!
+            if self.peek_next().kind == TokenKind::Colon {
+                let (pair, _) = self.parse_ref_val_pair()?;
+                stages.push(pair);
+                self.expect(TokenKind::Arrow, "'->'")?;
+            } else {
+                break self.parse_chain_endpoint()?;
+            }
+        };
+        let mut footprint = None;
+        if matches!(&self.peek().kind, TokenKind::Ident(s) if s == "footprint") {
+            self.bump();
+            self.expect(TokenKind::Colon, "':'")?;
+            let (fp, sp) = self.expect_string("footprint")?;
+            footprint = Some(fp);
+            end = sp;
+        }
+        Ok(CircuitIdiomDecl::SeriesChain {
+            from,
+            stages,
+            to,
+            footprint,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_idiom_rc_filter(&mut self) -> Result<CircuitIdiomDecl, Diagnostic> {
+        // `rc_filter VIN -> R1: "1k" -> FILT [at: U1.ADC] -> C1: "100nF" -> GND [footprint: "..."]`
+        let start = self.expect_keyword("rc_filter")?;
+        let (from, _) = self.parse_chain_endpoint()?;
+        self.expect(TokenKind::Arrow, "'->'")?;
+        let ((r_id, r_val), _) = self.parse_ref_val_pair()?;
+        self.expect(TokenKind::Arrow, "'->'")?;
+        let (mut tap, _) = self.parse_chain_endpoint()?;
+        let mut tap_net_name = None;
+        if matches!(&self.peek().kind, TokenKind::Ident(s) if s == "at") {
+            self.bump();
+            if self.peek().kind == TokenKind::Colon {
+                self.bump();
+            }
+            if let ChainEndpoint::Net(ref n) = tap {
+                tap_net_name = Some(n.clone());
+            }
+            tap = ChainEndpoint::Pin(self.parse_pin_ref()?);
+        }
+        self.expect(TokenKind::Arrow, "'->'")?;
+        let ((c_id, c_val), _) = self.parse_ref_val_pair()?;
+        self.expect(TokenKind::Arrow, "'->'")?;
+        let (ground, mut end) = self.expect_ident_or_str("ground net")?;
+        let mut footprint = None;
+        if matches!(&self.peek().kind, TokenKind::Ident(s) if s == "footprint") {
+            self.bump();
+            self.expect(TokenKind::Colon, "':'")?;
+            let (fp, sp) = self.expect_string("footprint")?;
+            footprint = Some(fp);
+            end = sp;
+        }
+        Ok(CircuitIdiomDecl::RcFilter {
+            from,
+            r_id,
+            r_val,
+            tap,
+            tap_net_name,
+            c_id,
+            c_val,
+            ground,
+            footprint,
             span: start.merge(&end),
         })
     }
@@ -1928,6 +2252,8 @@ impl Parser {
         let mut layout = None;
         let mut routing = None;
         let mut placements = Vec::new();
+        let mut relative_placements = Vec::new();
+        let mut standalone_notes = Vec::new();
         let mut explicit_wires = Vec::new();
         let mut explicit_bus_entries = Vec::new();
         let mut explicit_junctions = Vec::new();
@@ -2218,6 +2544,100 @@ impl Parser {
                         }
                         _ => self.parse_room_ref()?,
                     };
+                    // Check for AI-native relative placement keywords (`left_of`, `right_of`, `above`, `below`, `offset`, `at_angle`)!
+                    if let TokenKind::Ident(ref rel_kw) = self.peek().kind.clone() {
+                        if matches!(
+                            rel_kw.as_str(),
+                            "left_of" | "right_of" | "above" | "below" | "offset" | "at_angle"
+                        ) {
+                            let kw_s = rel_kw.clone();
+                            self.bump();
+                            let (kind, mut rend) = match kw_s.as_str() {
+                                "left_of" | "right_of" | "above" | "below" => {
+                                    let dir = match kw_s.as_str() {
+                                        "left_of" => RelDir::LeftOf,
+                                        "right_of" => RelDir::RightOf,
+                                        "above" => RelDir::Above,
+                                        _ => RelDir::Below,
+                                    };
+                                    let (anchor, mut sp) = self.parse_anchor_ref()?;
+                                    let mut gap = None;
+                                    let mut align_pin = None;
+                                    loop {
+                                        match &self.peek().kind {
+                                            TokenKind::Ident(s) if s == "gap" || s == "by" => {
+                                                self.bump();
+                                                if self.peek().kind == TokenKind::Colon {
+                                                    self.bump();
+                                                }
+                                                let (q, qsp) = self.parse_quantity()?;
+                                                gap = Some(q);
+                                                sp = sp.merge(&qsp);
+                                            }
+                                            TokenKind::Ident(s) if s == "align_pin" => {
+                                                self.bump();
+                                                self.expect(TokenKind::Colon, "':'")?;
+                                                let (p, psp) = self.parse_pin_token()?;
+                                                align_pin = Some(p);
+                                                sp = sp.merge(&psp);
+                                            }
+                                            _ => break,
+                                        }
+                                    }
+                                    (
+                                        RelativePlacementKind::Directional {
+                                            dir,
+                                            anchor,
+                                            gap,
+                                            align_pin,
+                                        },
+                                        sp,
+                                    )
+                                }
+                                "offset" => {
+                                    self.expect(TokenKind::Colon, "':'")?;
+                                    let ((dx, dy), _) = self.parse_xy_pair()?;
+                                    self.expect_keyword("from")?;
+                                    let (anchor, sp) = self.parse_anchor_ref()?;
+                                    (RelativePlacementKind::Offset { dx, dy, anchor }, sp)
+                                }
+                                _ => {
+                                    // `at_angle: 45deg dist: 15.24mm from P1`
+                                    if self.peek().kind == TokenKind::Colon {
+                                        self.bump();
+                                    }
+                                    let (ang_q, _) = self.parse_quantity()?;
+                                    self.expect_keyword("dist")?;
+                                    if self.peek().kind == TokenKind::Colon {
+                                        self.bump();
+                                    }
+                                    let (dist, _) = self.parse_quantity()?;
+                                    self.expect_keyword("from")?;
+                                    let (anchor, sp) = self.parse_anchor_ref()?;
+                                    (
+                                        RelativePlacementKind::Polar {
+                                            angle_deg: ang_q.raw_value,
+                                            dist,
+                                            anchor,
+                                        },
+                                        sp,
+                                    )
+                                }
+                            };
+                            let (orient_deg, mirror, extra_sp) = self.parse_optional_orient_mirror()?;
+                            if let Some(sp) = extra_sp {
+                                rend = rend.merge(&sp);
+                            }
+                            relative_placements.push(RelativePlacementDecl {
+                                component: comp,
+                                kind,
+                                orient_deg,
+                                mirror,
+                                span: kspan.merge(&rend),
+                            });
+                            continue;
+                        }
+                    }
                     let mut punit = None;
                     if matches!(&self.peek().kind, TokenKind::Ident(s) if s == "unit") {
                         self.bump();
@@ -2365,6 +2785,84 @@ impl Parser {
                         val_at,
                         fields,
                         span: kspan.merge(&pend),
+                    });
+                }
+                "align_y" | "align_x" => {
+                    let horizontal = kw == "align_y";
+                    let (lhs, _) = self.parse_anchor_ref()?;
+                    self.expect(TokenKind::EqEq, "'=='")?;
+                    let (rhs, rsp) = self.parse_anchor_ref()?;
+                    relative_placements.push(RelativePlacementDecl {
+                        component: lhs.component,
+                        kind: RelativePlacementKind::AlignAxis {
+                            horizontal,
+                            my_pin: lhs.pin,
+                            anchor: rhs,
+                        },
+                        orient_deg: None,
+                        mirror: None,
+                        span: kspan.merge(&rsp),
+                    });
+                }
+                "array" => {
+                    self.expect(TokenKind::LBracket, "'['")?;
+                    let mut members = Vec::new();
+                    while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
+                        let (m, _) = self.expect_ident_or_str("array component id")?;
+                        members.push(m);
+                        if self.peek().kind == TokenKind::Comma {
+                            self.bump();
+                        } else {
+                            break;
+                        }
+                    }
+                    let mut aend = self.expect(TokenKind::RBracket, "']'")?.span(&self.file);
+                    let mut vertical = true;
+                    if let TokenKind::Ident(ref d) = self.peek().kind.clone() {
+                        if d == "vertical" || d == "horizontal" {
+                            vertical = d == "vertical";
+                            aend = self.bump().span(&self.file);
+                        }
+                    }
+                    let mut pitch = None;
+                    if matches!(&self.peek().kind, TokenKind::Ident(s) if s == "pitch") {
+                        self.bump();
+                        if self.peek().kind == TokenKind::Colon {
+                            self.bump();
+                        }
+                        let (q, qsp) = self.parse_quantity()?;
+                        pitch = Some(q);
+                        aend = aend.merge(&qsp);
+                    }
+                    let head = members.first().cloned().unwrap_or_default();
+                    relative_placements.push(RelativePlacementDecl {
+                        component: head,
+                        kind: RelativePlacementKind::Array {
+                            members,
+                            vertical,
+                            pitch,
+                        },
+                        orient_deg: None,
+                        mirror: None,
+                        span: kspan.merge(&aend),
+                    });
+                }
+                "note" => {
+                    let (txt, mut nend) = self.expect_string("schematic note text")?;
+                    let mut near = None;
+                    if matches!(&self.peek().kind, TokenKind::Ident(s) if s == "near") {
+                        self.bump();
+                        if self.peek().kind == TokenKind::Colon {
+                            self.bump();
+                        }
+                        let (tgt, tsp) = self.expect_ident_or_str("target group or component")?;
+                        near = Some(tgt);
+                        nend = nend.merge(&tsp);
+                    }
+                    standalone_notes.push(SchematicNoteDecl {
+                        text: txt,
+                        near,
+                        span: kspan.merge(&nend),
                     });
                 }
                 "wire" | "bus" => {
@@ -2826,6 +3324,8 @@ impl Parser {
             layout,
             routing,
             placements,
+            relative_placements,
+            standalone_notes,
             explicit_wires,
             explicit_bus_entries,
             explicit_junctions,
@@ -2860,6 +3360,10 @@ impl Parser {
                     let subk = k.clone();
                     self.bump();
                     items.push(self.parse_layout_node(&subk)?);
+                }
+                TokenKind::Str(s) => {
+                    self.bump();
+                    items.push(LayoutNode::Comp(s));
                 }
                 _ => {
                     let comp_ref = self.parse_room_ref()?;

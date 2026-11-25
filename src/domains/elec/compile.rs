@@ -71,7 +71,21 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         })
         .collect();
 
-    // Collect components (auto-hydrating native `.kicad_sym` library symbols!) & nets across circuit blocks
+    // Expand high-density v3.0 circuit idioms (`decouple`, `pullup`, `pulldown`, `divider`, `series`, `rc_filter`)
+    let expanded_idioms = crate::domains::elec::idioms::expand_circuit_idioms(&project.elec.circuits);
+
+    // Collect explicit orientation/mirror overrides declared on `place ... left_of/...` relative constraints
+    let mut rel_orient_overrides: BTreeMap<String, (Option<i32>, Option<crate::domains::elec::kicad_sym::SymMirror>)> =
+        BTreeMap::new();
+    for sc in &project.elec.schematics {
+        for rp in &sc.relative_placements {
+            if rp.orient_deg.is_some() || rp.mirror.is_some() {
+                rel_orient_overrides.insert(rp.component.clone(), (rp.orient_deg, rp.mirror));
+            }
+        }
+    }
+
+    // Collect components (auto-hydrating native `.kicad_sym` library symbols!) & merged nets across circuit blocks + idioms
     let mut resolved_comps: BTreeMap<String, ComponentDecl> = BTreeMap::new();
     let mut loaded_syms: BTreeMap<String, crate::domains::elec::kicad_sym::KiCadLibSymbol> =
         BTreeMap::new();
@@ -80,23 +94,76 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     // Pin display metadata for library pins: (comp_id, internal_pin_name) -> (display_name, pin_code)
     let mut pin_meta: BTreeMap<(String, String), (String, String)> = BTreeMap::new();
     let mut comp_order: Vec<String> = Vec::new();
-    let mut all_nets: Vec<&NetDecl> = Vec::new();
+    let mut merged_nets_owned: Vec<NetDecl> = Vec::new();
+    let mut net_idx_by_name: BTreeMap<String, usize> = BTreeMap::new();
 
+    let mut raw_comp_stream: Vec<&ComponentDecl> = Vec::new();
     for circuit in &project.elec.circuits {
-        for raw_comp in &circuit.components {
-            if resolved_comps.contains_key(&raw_comp.id) {
-                diagnostics.push(
-                    Diagnostic::error(
-                        "E_DUP_COMPONENT",
-                        "semantics",
-                        format!("Duplicate component designator '{}'", raw_comp.id),
-                        Some(raw_comp.span.clone()),
-                    )
-                    .with_entities(vec![raw_comp.id.clone()]),
-                );
-                continue;
+        for rc in &circuit.components {
+            raw_comp_stream.push(rc);
+        }
+        for net in &circuit.nets {
+            if let Some(&ni) = net_idx_by_name.get(&net.name) {
+                if net.power_flag {
+                    merged_nets_owned[ni].power_flag = true;
+                }
+                for pr in &net.connects {
+                    if !merged_nets_owned[ni]
+                        .connects
+                        .iter()
+                        .any(|e| e.component == pr.component && e.pin == pr.pin)
+                    {
+                        merged_nets_owned[ni].connects.push(pr.clone());
+                    }
+                }
+            } else {
+                net_idx_by_name.insert(net.name.clone(), merged_nets_owned.len());
+                merged_nets_owned.push(net.clone());
             }
-            let mut comp = raw_comp.clone();
+        }
+    }
+    for rc in &expanded_idioms.extra_components {
+        raw_comp_stream.push(rc);
+    }
+    for net in &expanded_idioms.extra_nets {
+        if let Some(&ni) = net_idx_by_name.get(&net.name) {
+            for pr in &net.connects {
+                if !merged_nets_owned[ni]
+                    .connects
+                    .iter()
+                    .any(|e| e.component == pr.component && e.pin == pr.pin)
+                {
+                    merged_nets_owned[ni].connects.push(pr.clone());
+                }
+            }
+        } else {
+            net_idx_by_name.insert(net.name.clone(), merged_nets_owned.len());
+            merged_nets_owned.push(net.clone());
+        }
+    }
+
+    for raw_comp in raw_comp_stream {
+        if resolved_comps.contains_key(&raw_comp.id) {
+            diagnostics.push(
+                Diagnostic::error(
+                    "E_DUP_COMPONENT",
+                    "semantics",
+                    format!("Duplicate component designator '{}'", raw_comp.id),
+                    Some(raw_comp.span.clone()),
+                )
+                .with_entities(vec![raw_comp.id.clone()]),
+            );
+            continue;
+        }
+        let mut comp = raw_comp.clone();
+        if let Some(&(o_ov, m_ov)) = rel_orient_overrides.get(&comp.id) {
+            if let Some(o) = o_ov {
+                comp.orient_deg = o;
+            }
+            if let Some(m) = m_ov {
+                comp.mirror = Some(m);
+            }
+        }
 
             // If category contains ':' OR was written as a quoted KiCad symbol reference, resolve it from `.kicad_sym` libraries!
             if comp.is_quoted_symbol || comp.category.contains(':') {
@@ -212,13 +279,10 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 }
             }
 
-            comp_order.push(comp.id.clone());
-            resolved_comps.insert(comp.id.clone(), comp);
-        }
-        for net in &circuit.nets {
-            all_nets.push(net);
-        }
+        comp_order.push(comp.id.clone());
+        resolved_comps.insert(comp.id.clone(), comp);
     }
+    let all_nets: Vec<&NetDecl> = merged_nets_owned.iter().collect();
 
     let comp_map: BTreeMap<String, &ComponentDecl> = resolved_comps
         .iter()
@@ -797,6 +861,17 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             for pl in &sc.placements {
                 comp_to_sheet.entry(pl.component.clone()).or_insert(s_idx);
             }
+            for rp in &sc.relative_placements {
+                comp_to_sheet.entry(rp.component.clone()).or_insert(s_idx);
+            }
+        }
+    }
+    // Idiom-generated passive satellites inherit their anchor IC's sheet automatically!
+    for (sat_id, anchor_id) in &expanded_idioms.component_anchor {
+        if !comp_to_sheet.contains_key(sat_id) {
+            if let Some(&s_idx) = comp_to_sheet.get(anchor_id) {
+                comp_to_sheet.insert(sat_id.clone(), s_idx);
+            }
         }
     }
     for cid in &comp_order {
@@ -1345,6 +1420,18 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             }
         }
     }
+    // Auto-attach idiom-generated satellites to their anchor IC's group if not already explicitly grouped!
+    for (sat_id, anchor_id) in &expanded_idioms.component_anchor {
+        if !assigned.contains(sat_id) && sheet_comps.contains(sat_id) {
+            if let Some(grp) = ordered_groups
+                .iter_mut()
+                .find(|(_, _, _, ms)| ms.iter().any(|m| m == anchor_id))
+            {
+                grp.3.push(sat_id.clone());
+                assigned.insert(sat_id.clone());
+            }
+        }
+    }
     let leftover: Vec<String> = sheet_comps
         .iter()
         .filter(|id| !assigned.contains(*id))
@@ -1744,6 +1831,67 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         cur_x = snap_grid(col_x1 + effective_group_gap + 2.0 * PIN_LEN_MM);
     }
 
+    // 4b. Attach standalone `note "..." [near: Target]` declarations to their target group!
+    if let Some(sc) = schem {
+        for sn in &sc.standalone_notes {
+            let target_grp = sn.near.as_deref().and_then(|t| {
+                local_groups
+                    .iter_mut()
+                    .find(|g| g.name == t || g.members.iter().any(|m| m == t))
+            });
+            if let Some(g) = target_grp {
+                g.notes.push(sn.text.clone());
+            } else if let Some(first_g) = local_groups.first_mut() {
+                first_g.notes.push(sn.text.clone());
+            }
+        }
+    }
+
+    // 4c. Pin-Anchored Relative Placement Constraint Solver (v3.0)!
+    // Solves idiom hints (`decouple`, `pullup`, `divider`, `series`, `rc_filter`) + explicit
+    // `place ... left_of/right_of/above/below/offset/at_angle`, `align_y`/`align_x`, `array`!
+    let mut sheet_rel_constraints = expanded_idioms.auto_relative_placements.clone();
+    if let Some(sc) = schem {
+        sheet_rel_constraints.extend(sc.relative_placements.clone());
+    }
+    let moved_satellites = crate::domains::elec::rel_layout::apply_relative_placements(
+        &mut local_entities,
+        &mut local_groups,
+        &sheet_rel_constraints,
+        &mut diagnostics,
+    );
+    if !moved_satellites.is_empty() {
+        // Refresh placed_pins and sheet bounds tightly from the post-solver entity coordinates!
+        max_comp_x = 0.0;
+        max_comp_y = 0.0;
+        for ent in &local_entities {
+            if let EntityGeometryIr::Component {
+                body_rect, pins, ..
+            } = &ent.geometry
+            {
+                max_comp_x = max_comp_x.max(body_rect.max_x + PIN_LEN_MM + 12.70);
+                max_comp_y = max_comp_y.max(body_rect.max_y + PIN_LEN_MM);
+                let has_north = pins.iter().any(|p| p.side == Side::North);
+                for p in pins {
+                    // Update every routing key pointing to this pin (matched by pin_code or name)
+                    for ((cid, _rkey), rp) in placed_pins.iter_mut() {
+                        if cid == &ent.id
+                            && (rp.pin.pin_code == p.pin_code && rp.pin.name == p.name
+                                && rp.pin.number == p.number)
+                        {
+                            rp.pin = p.clone();
+                            rp.body_center_x = body_rect.center().x;
+                            rp.body_min_y = body_rect.min_y;
+                            rp.comp_has_north_pin = has_north;
+                            rp.col_left_x = rp.col_left_x.min(snap_grid(body_rect.min_x - PIN_LEN_MM - 2.54));
+                            rp.col_right_x = rp.col_right_x.max(snap_grid(body_rect.max_x + PIN_LEN_MM + 2.54));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // 5. Layered Multi-Style Router (direct | rail | bus | symbol | label_stub)
     // Per-column local lane allocators so lanes stay tight and NEVER collide across nets!
     let mut left_lane_next: BTreeMap<usize, usize> = BTreeMap::new();
@@ -1801,7 +1949,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
 
     let gnd_rail_y = snap_grid(max_comp_y + 12.70);
     let mut local_routes: Vec<SchematicRouteIr> = Vec::new();
-    let mut astar_used_cells: BTreeSet<(i32, i32)> = BTreeSet::new();
+    let mut astar_occ = crate::domains::elec::router::GridOccupancy::default();
+    let mut pending_astar_nets: Vec<(String, bool, bool, Vec<RoutablePin>)> = Vec::new();
     let mut top_bus_track = 0usize;
     let mut gnd_rail_track = 0usize;
 
@@ -2047,47 +2196,32 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
 
         // --- MODE A2: Cross-Sheet Global Flags & Zone-Local Obstacle-Aware A* Routing ---
         let is_cross_sheet = cross_sheet_nets.contains(&net.name);
+        let touches_rel_sat = !moved_satellites.is_empty()
+            && net
+                .connects
+                .iter()
+                .any(|p| moved_satellites.contains(&p.component));
+        let cols_in_net_pre: BTreeSet<usize> = net_endpoints.iter().map(|rp| rp.col_idx).collect();
+        let use_local_astar = !is_cross_sheet
+            && !is_gnd
+            && !is_pwr
+            && cols_in_net_pre.len() == 1
+            && net_endpoints.len() >= 2
+            && (style == NetRoutingStyle::ZoneLocal
+                || (touches_rel_sat && style == NetRoutingStyle::Direct));
+
+        if use_local_astar {
+            // Defer intra-zone A* routing to Pass 2 so all power/GND symbols and label stubs
+            // reserve their grid edges & terminal cells FIRST (zero accidental shorts!).
+            pending_astar_nets.push((
+                net.name.clone(),
+                is_pwr,
+                is_gnd,
+                net_endpoints.into_iter().cloned().collect(),
+            ));
+            continue;
+        }
         if (style == NetRoutingStyle::ZoneLocal || is_cross_sheet) && !is_gnd && !is_pwr {
-            let cols_in_net: BTreeSet<usize> = net_endpoints.iter().map(|rp| rp.col_idx).collect();
-            // Intra-zone net on a single sheet -> route directly with obstacle-aware grid A*!
-            if !is_cross_sheet && cols_in_net.len() == 1 && net_endpoints.len() >= 2 {
-                let body_obs: Vec<Rect2> = local_entities
-                    .iter()
-                    .filter_map(|e| match &e.geometry {
-                        EntityGeometryIr::Component { body_rect, .. } => Some(*body_rect),
-                        _ => None,
-                    })
-                    .collect();
-                let foreign_tips: BTreeSet<(i32, i32)> = placed_pins
-                    .values()
-                    .map(|rp| (
-                        (rp.pin.tip_point.x / GRID_MM).round() as i32,
-                        (rp.pin.tip_point.y / GRID_MM).round() as i32,
-                    ))
-                    .collect();
-                let eps: Vec<(Point2, Side)> = net_endpoints
-                    .iter()
-                    .map(|rp| (rp.pin.tip_point, rp.pin.side))
-                    .collect();
-                let (segs, juncs) = crate::domains::elec::router::route_net_astar(
-                    &eps,
-                    &body_obs,
-                    &foreign_tips,
-                    &mut astar_used_cells,
-                );
-                local_routes.push(SchematicRouteIr {
-                    net_id: net.name.clone(),
-                    sheet: sheet_tag.clone(),
-                    style: "zone_local".to_string(),
-                    is_power: is_pwr,
-                    is_ground: is_gnd,
-                    segments: segs,
-                    junctions: juncs,
-                    terminals: Vec::new(),
-                    label_pos: None,
-                });
-                continue;
-            }
             // Cross-zone or Cross-sheet net -> crisp shaped flag terminals at each endpoint!
             let term_kind = if is_cross_sheet { "global_flag" } else { "label_flag" };
             let mut segments = Vec::new();
@@ -2528,6 +2662,140 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             terminals: Vec::new(),
             label_pos,
         });
+    }
+
+    // 5a-Pass2. Route deferred intra-zone A* nets AFTER all power/GND symbols & flag stubs have reserved occupancy!
+    if !pending_astar_nets.is_empty() {
+        for r in &local_routes {
+            for &seg in &r.segments {
+                astar_occ.record_world_segment(seg);
+            }
+            for t in &r.terminals {
+                astar_occ.record_terminal_point(t.pos);
+            }
+        }
+        let body_obs: Vec<Rect2> = local_entities
+            .iter()
+            .filter_map(|e| match &e.geometry {
+                EntityGeometryIr::Component { body_rect, .. } => Some(*body_rect),
+                _ => None,
+            })
+            .collect();
+        let foreign_tips: BTreeSet<(i32, i32)> = placed_pins
+            .values()
+            .map(|rp| {
+                (
+                    (rp.pin.tip_point.x / GRID_MM).round() as i32,
+                    (rp.pin.tip_point.y / GRID_MM).round() as i32,
+                )
+            })
+            .collect();
+
+        // Sort shortest-span nets first so direct adjacent/pin-aligned connections always get 0-bend wires!
+        pending_astar_nets.sort_by(|a, b| {
+            let span_of = |rps: &[RoutablePin]| -> i64 {
+                let (mut x0, mut x1, mut y0, mut y1) = (f64::INFINITY, f64::NEG_INFINITY, f64::INFINITY, f64::NEG_INFINITY);
+                for rp in rps {
+                    x0 = x0.min(rp.pin.tip_point.x);
+                    x1 = x1.max(rp.pin.tip_point.x);
+                    y0 = y0.min(rp.pin.tip_point.y);
+                    y1 = y1.max(rp.pin.tip_point.y);
+                }
+                (((x1 - x0) + (y1 - y0)) * 100.0) as i64
+            };
+            span_of(&a.3).cmp(&span_of(&b.3)).then_with(|| a.0.cmp(&b.0))
+        });
+
+        for (net_name, is_pwr, is_gnd, rps) in pending_astar_nets {
+            let eps: Vec<(Point2, Side)> = rps
+                .iter()
+                .map(|rp| (rp.pin.tip_point, rp.pin.side))
+                .collect();
+            if let Some((segs, juncs)) = crate::domains::elec::router::try_route_net_astar_strict(
+                &eps,
+                &body_obs,
+                &foreign_tips,
+                &mut astar_occ,
+            ) {
+                local_routes.push(SchematicRouteIr {
+                    net_id: net_name,
+                    sheet: sheet_tag.clone(),
+                    style: "zone_local".to_string(),
+                    is_power: is_pwr,
+                    is_ground: is_gnd,
+                    segments: segs,
+                    junctions: juncs,
+                    terminals: Vec::new(),
+                    label_pos: None,
+                });
+            } else {
+                // Corridor completely congested: emit clean local `label_flag` stubs instead of risking a short!
+                let mut segments = Vec::new();
+                let mut terminals = Vec::new();
+                for rp in &rps {
+                    let tip = rp.pin.tip_point;
+                    let (end, term_dir) = match rp.pin.side {
+                        Side::West => {
+                            let e = Point2::new(snap_grid(tip.x - GRID_MM), tip.y);
+                            add_ortho_seg(&mut segments, tip, e);
+                            (e, Side::West)
+                        }
+                        Side::East => {
+                            let e = Point2::new(snap_grid(tip.x + GRID_MM), tip.y);
+                            add_ortho_seg(&mut segments, tip, e);
+                            (e, Side::East)
+                        }
+                        Side::North => {
+                            let go_left = tip.x < rp.body_center_x - 0.1;
+                            let mid = Point2::new(tip.x, snap_grid(tip.y - GRID_MM));
+                            let (e, d) = if go_left {
+                                (Point2::new(snap_grid(tip.x - GRID_MM), mid.y), Side::West)
+                            } else {
+                                (Point2::new(snap_grid(tip.x + GRID_MM), mid.y), Side::East)
+                            };
+                            add_ortho_seg(&mut segments, tip, mid);
+                            add_ortho_seg(&mut segments, mid, e);
+                            (e, d)
+                        }
+                        Side::South => {
+                            let go_left = tip.x < rp.body_center_x - 0.1;
+                            let mid = Point2::new(tip.x, snap_grid(tip.y + GRID_MM));
+                            let (e, d) = if go_left {
+                                (Point2::new(snap_grid(tip.x - GRID_MM), mid.y), Side::West)
+                            } else {
+                                (Point2::new(snap_grid(tip.x + GRID_MM), mid.y), Side::East)
+                            };
+                            add_ortho_seg(&mut segments, tip, mid);
+                            add_ortho_seg(&mut segments, mid, e);
+                            (e, d)
+                        }
+                    };
+                    terminals.push(NetTerminalIr {
+                        kind: "label_flag".to_string(),
+                        pos: end,
+                        dir: term_dir,
+                        label: net_name.clone(),
+                    });
+                }
+                for &seg in &segments {
+                    astar_occ.record_world_segment(seg);
+                }
+                for t in &terminals {
+                    astar_occ.record_terminal_point(t.pos);
+                }
+                local_routes.push(SchematicRouteIr {
+                    net_id: net_name,
+                    sheet: sheet_tag.clone(),
+                    style: "zone_local".to_string(),
+                    is_power: is_pwr,
+                    is_ground: is_gnd,
+                    segments,
+                    junctions: Vec::new(),
+                    terminals,
+                    label_pos: None,
+                });
+            }
+        }
     }
 
     // 5b. Post-pass: guarantee NO net label ever lands on a perpendicular crossing of another net!
@@ -3856,5 +4124,5 @@ fn is_power_rail_name(name: &str) -> bool {
     if u.contains("_ADC") || u.contains("_SENSE") || u.contains("_SNS") || u.contains("_SIG") || u.contains("_DIV") {
         return false;
     }
-    u.starts_with('V')
+    u.starts_with('V') || u.starts_with('+') || u.starts_with('-')
 }

@@ -958,27 +958,27 @@ pub fn compare_kicad_netlists(
 // Internal KiCad netlist & S-expression parsing helpers
 // =========================================================================
 
-struct NetlistComp {
-    ref_id: String,
-    lib_id: String,
-    value: String,
-    footprint: Option<String>,
-    datasheet: Option<String>,
-    props: Vec<(String, String)>,
+pub(crate) struct NetlistComp {
+    pub(crate) ref_id: String,
+    pub(crate) lib_id: String,
+    pub(crate) value: String,
+    pub(crate) footprint: Option<String>,
+    pub(crate) datasheet: Option<String>,
+    pub(crate) props: Vec<(String, String)>,
 }
 
-struct NetlistNet {
-    name: String,
-    nodes: Vec<(String, String)>, // (ref, pin_number)
+pub(crate) struct NetlistNet {
+    pub(crate) name: String,
+    pub(crate) nodes: Vec<(String, String)>, // (ref, pin_number)
 }
 
-struct ParsedNetlist {
-    components: Vec<NetlistComp>,
-    nets: Vec<NetlistNet>,
-    no_connect_pins: Vec<(String, String)>,
+pub(crate) struct ParsedNetlist {
+    pub(crate) components: Vec<NetlistComp>,
+    pub(crate) nets: Vec<NetlistNet>,
+    pub(crate) no_connect_pins: Vec<(String, String)>,
 }
 
-fn export_and_parse_kicad_netlist(sch_path: &Path) -> Result<ParsedNetlist, String> {
+pub(crate) fn export_and_parse_kicad_netlist(sch_path: &Path) -> Result<ParsedNetlist, String> {
     static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
     let seq = NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let tmp = std::env::temp_dir().join(format!(

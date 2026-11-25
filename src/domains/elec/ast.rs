@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Default)]
 pub struct ElecProjectData {
     pub symbol_libs: Vec<String>,
+    /// Optional machine-managed `.edl.layout` lockfile path (never needed by AI intent authoring).
+    pub layout_lock: Option<String>,
     pub circuits: Vec<CircuitDecl>,
     pub schematics: Vec<SchematicDecl>,
 }
@@ -66,11 +68,76 @@ pub struct NetDecl {
     pub span: Span,
 }
 
+/// Endpoint in a circuit idiom (`series`, `divider`, `rc_filter`): either a net name or `Comp.Pin`.
+#[derive(Debug, Clone)]
+pub enum ChainEndpoint {
+    Net(String),
+    Pin(PinRef),
+}
+
+/// High-density AI-native electrical circuit idioms inside `circuit { ... }`.
+/// Each 1-line idiom expands into real components, nets, AND pin-anchored spatial layout hints.
+#[derive(Debug, Clone)]
+pub enum CircuitIdiomDecl {
+    /// `decouple U1.VDD with [C1: "100nF", C2: "10uF"] [to: GND] [footprint: "..."]`
+    Decouple {
+        target: PinRef,
+        caps: Vec<(String, String)>,
+        ground: String,
+        footprint: Option<String>,
+        span: Span,
+    },
+    /// `pullup U1.SDA with R1: "4.7k" to V3V3 [footprint: "..."]`
+    /// `pulldown U1.EN with R2: "10k" [to: GND] [footprint: "..."]`
+    PullResistor {
+        is_up: bool,
+        target: PinRef,
+        ref_id: String,
+        value: String,
+        rail: String,
+        footprint: Option<String>,
+        span: Span,
+    },
+    /// `divider VIN -> R1: "10k" -> FB [at: U1.FB] -> R2: "3.3k" -> GND [footprint: "..."]`
+    Divider {
+        top_net: String,
+        r_top: (String, String),
+        tap: ChainEndpoint,
+        tap_net_name: Option<String>,
+        r_bot: (String, String),
+        bot_net: String,
+        footprint: Option<String>,
+        span: Span,
+    },
+    /// `series J1.D_P -> R1: "22" -> [L1: "10uH" ->] U1.USB_DP [footprint: "..."]`
+    SeriesChain {
+        from: ChainEndpoint,
+        stages: Vec<(String, String)>,
+        to: ChainEndpoint,
+        footprint: Option<String>,
+        span: Span,
+    },
+    /// `rc_filter VIN -> R1: "1k" -> FILT [at: U1.ADC] -> C1: "100nF" -> GND [footprint: "..."]`
+    RcFilter {
+        from: ChainEndpoint,
+        r_id: String,
+        r_val: String,
+        tap: ChainEndpoint,
+        tap_net_name: Option<String>,
+        c_id: String,
+        c_val: String,
+        ground: String,
+        footprint: Option<String>,
+        span: Span,
+    },
+}
+
 #[derive(Debug, Clone)]
 pub struct CircuitDecl {
     pub name: String,
     pub components: Vec<ComponentDecl>,
     pub nets: Vec<NetDecl>,
+    pub idioms: Vec<CircuitIdiomDecl>,
     pub uses: Vec<crate::syntax::ast::UseDecl>,
     pub span: Span,
 }
@@ -277,6 +344,74 @@ pub struct ExplicitSheetBlockDecl {
     pub span: Span,
 }
 
+/// Cardinal relative placement direction for AI-native coordinate-free schematic layout.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RelDir {
+    LeftOf,
+    RightOf,
+    Above,
+    Below,
+}
+
+/// Anchor target for a relative placement: either a component (`U1`) or an exact pin (`U1.VDD`).
+#[derive(Debug, Clone)]
+pub struct AnchorRef {
+    pub component: String,
+    pub pin: Option<String>,
+}
+
+/// Relative geometric constraint in Intent Mode (zero global coordinates!).
+#[derive(Debug, Clone)]
+pub enum RelativePlacementKind {
+    /// `place C1 below U1.VDD [gap: 5.08mm] [align_pin: "1"]`
+    Directional {
+        dir: RelDir,
+        anchor: AnchorRef,
+        gap: Option<Quantity>,
+        align_pin: Option<String>,
+    },
+    /// `place C2 offset: (10.16mm, -5.08mm) from U1.AVDD`
+    Offset {
+        dx: Quantity,
+        dy: Quantity,
+        anchor: AnchorRef,
+    },
+    /// `place P2 at_angle: 45deg dist: 15.24mm from P1`
+    Polar {
+        angle_deg: f64,
+        dist: Quantity,
+        anchor: AnchorRef,
+    },
+    /// `align_y J1.D_P == U1.USB_DP` or `align_x R2.1 == R1.2`
+    AlignAxis {
+        horizontal: bool, // true = same Y (horizontal wire), false = same X (vertical wire)
+        my_pin: Option<String>,
+        anchor: AnchorRef,
+    },
+    /// `array [USB1, USB2, USB3, USB4] vertical [pitch: 25.4mm]`
+    Array {
+        members: Vec<String>,
+        vertical: bool,
+        pitch: Option<Quantity>,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub struct RelativePlacementDecl {
+    pub component: String,
+    pub kind: RelativePlacementKind,
+    pub orient_deg: Option<i32>,
+    pub mirror: Option<crate::domains::elec::kicad_sym::SymMirror>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct SchematicNoteDecl {
+    pub text: String,
+    pub near: Option<String>, // optional group or component name
+    pub span: Span,
+}
+
 #[derive(Debug, Clone)]
 pub struct SchematicDecl {
     pub name: String,
@@ -289,6 +424,8 @@ pub struct SchematicDecl {
     pub layout: Option<SchematicLayoutDecl>,
     pub routing: Option<SchematicRoutingDecl>,
     pub placements: Vec<ExplicitPlacementDecl>,
+    pub relative_placements: Vec<RelativePlacementDecl>,
+    pub standalone_notes: Vec<SchematicNoteDecl>,
     pub explicit_wires: Vec<ExplicitWireDecl>,
     pub explicit_bus_entries: Vec<ExplicitBusEntryDecl>,
     pub explicit_junctions: Vec<ExplicitPointDecl>,
