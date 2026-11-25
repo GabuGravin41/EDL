@@ -1,0 +1,1379 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Arc2": {
+      "description": "Exact analytical circular arc (authoritative — never tessellated in IR).",
+      "properties": {
+        "center": {
+          "$ref": "#/definitions/Point2"
+        },
+        "radius": {
+          "format": "double",
+          "type": "number"
+        },
+        "start_deg": {
+          "description": "Start angle in degrees CCW from +X (east).",
+          "format": "double",
+          "type": "number"
+        },
+        "sweep_deg": {
+          "description": "Signed sweep angle in degrees (+90 = CCW, -90 = CW).",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "center",
+        "radius",
+        "start_deg",
+        "sweep_deg"
+      ],
+      "type": "object"
+    },
+    "ConstraintStrength": {
+      "enum": [
+        "require",
+        "prefer"
+      ],
+      "type": "string"
+    },
+    "DerivedWallIr": {
+      "properties": {
+        "clear_length_mm": {
+          "format": "double",
+          "type": "number"
+        },
+        "clear_segment": {
+          "$ref": "#/definitions/Segment2"
+        },
+        "derived_from": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "rect": {
+          "$ref": "#/definitions/Rect2"
+        },
+        "thickness_mm": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "clear_length_mm",
+        "clear_segment",
+        "derived_from",
+        "id",
+        "kind",
+        "rect",
+        "thickness_mm"
+      ],
+      "type": "object"
+    },
+    "Diagnostic": {
+      "properties": {
+        "category": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "entities": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "measured": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "repair": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RepairAction"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "required": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "severity": {
+          "$ref": "#/definitions/Severity"
+        },
+        "span": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Span"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "suggestion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "category",
+        "code",
+        "message",
+        "severity"
+      ],
+      "type": "object"
+    },
+    "EntityGeometryIr": {
+      "oneOf": [
+        {
+          "properties": {
+            "area_m2": {
+              "format": "double",
+              "type": "number"
+            },
+            "depth_mm": {
+              "format": "double",
+              "type": "number"
+            },
+            "max": {
+              "items": {
+                "format": "double",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "min": {
+              "items": {
+                "format": "double",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "notch_rect": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Rect2"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "enum": [
+                "rect"
+              ],
+              "type": "string"
+            },
+            "width_mm": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          "required": [
+            "area_m2",
+            "depth_mm",
+            "max",
+            "min",
+            "type",
+            "width_mm"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "cutout_rect": {
+              "$ref": "#/definitions/Rect2"
+            },
+            "leaf_open": {
+              "$ref": "#/definitions/Segment2"
+            },
+            "opening_segment": {
+              "$ref": "#/definitions/Segment2"
+            },
+            "swing_arc": {
+              "$ref": "#/definitions/Arc2"
+            },
+            "type": {
+              "enum": [
+                "door"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "cutout_rect",
+            "leaf_open",
+            "opening_segment",
+            "swing_arc",
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "cutout_rect": {
+              "$ref": "#/definitions/Rect2"
+            },
+            "opening_segment": {
+              "$ref": "#/definitions/Segment2"
+            },
+            "type": {
+              "enum": [
+                "window"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "cutout_rect",
+            "opening_segment",
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "cutout_rect": {
+              "$ref": "#/definitions/Rect2"
+            },
+            "opening_segment": {
+              "$ref": "#/definitions/Segment2"
+            },
+            "type": {
+              "enum": [
+                "passage"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "cutout_rect",
+            "opening_segment",
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "against": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Side"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "body_rect": {
+              "$ref": "#/definitions/Rect2"
+            },
+            "category": {
+              "type": "string"
+            },
+            "clearance_rect": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Rect2"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "enum": [
+                "fixture"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "body_rect",
+            "category",
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "body_rect": {
+              "$ref": "#/definitions/Rect2"
+            },
+            "category": {
+              "type": "string"
+            },
+            "footprint": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pins": {
+              "items": {
+                "$ref": "#/definitions/PlacedPinIr"
+              },
+              "type": "array"
+            },
+            "type": {
+              "enum": [
+                "component"
+              ],
+              "type": "string"
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "body_rect",
+            "category",
+            "pins",
+            "type",
+            "value"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "circuit": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "device_kind": {
+              "type": "string"
+            },
+            "facing": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Side"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "height_mm": {
+              "format": "double",
+              "type": "number"
+            },
+            "load_w": {
+              "format": "double",
+              "type": "number"
+            },
+            "pos": {
+              "$ref": "#/definitions/Point2"
+            },
+            "room": {
+              "type": "string"
+            },
+            "subtype": {
+              "type": "string"
+            },
+            "type": {
+              "enum": [
+                "mep_device"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "device_kind",
+            "height_mm",
+            "load_w",
+            "pos",
+            "room",
+            "subtype",
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Open-ended geometry for externally registered domains (plumbing, hvac, pcb, ...). `shape` names the payload schema owned by the domain; `data` is arbitrary JSON in project model coordinates (mm).",
+          "properties": {
+            "data": true,
+            "shape": {
+              "type": "string"
+            },
+            "type": {
+              "enum": [
+                "custom"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "data",
+            "shape",
+            "type"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "EntityIr": {
+      "properties": {
+        "frame": {
+          "type": "string"
+        },
+        "geometry": {
+          "$ref": "#/definitions/EntityGeometryIr"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "props": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "provenance": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ModuleProvenanceIr"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "span": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Span"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "frame",
+        "geometry",
+        "id",
+        "kind",
+        "props"
+      ],
+      "type": "object"
+    },
+    "EquationRecord": {
+      "properties": {
+        "expr": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "residual_mm": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "span": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Span"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string"
+        },
+        "strength": {
+          "$ref": "#/definitions/ConstraintStrength"
+        },
+        "tier": {
+          "format": "uint8",
+          "minimum": 0.0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expr",
+        "id",
+        "status",
+        "strength",
+        "tier"
+      ],
+      "type": "object"
+    },
+    "EvidenceRecord": {
+      "properties": {
+        "check_id": {
+          "type": "string"
+        },
+        "details": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/VerificationStatus"
+        },
+        "subjects": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "tolerance_mm": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "check_id",
+        "details",
+        "method",
+        "status",
+        "subjects"
+      ],
+      "type": "object"
+    },
+    "FrameIr": {
+      "properties": {
+        "dim": {
+          "format": "uint8",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "handedness": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "dim",
+        "handedness",
+        "id",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "MepCircuitIr": {
+      "description": "Building electrical breaker circuit summary & computed IEC/NEC metrics.",
+      "properties": {
+        "cable_mm2": {
+          "format": "double",
+          "type": "number"
+        },
+        "connected_devices": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "design_current_a": {
+          "format": "double",
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "max_voltage_drop_pct": {
+          "format": "double",
+          "type": "number"
+        },
+        "panel_id": {
+          "type": "string"
+        },
+        "rating_a": {
+          "format": "double",
+          "type": "number"
+        },
+        "rcd_ma": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "run_length_m": {
+          "format": "double",
+          "type": "number"
+        },
+        "status": {
+          "type": "string"
+        },
+        "supply_v": {
+          "format": "double",
+          "type": "number"
+        },
+        "total_load_w": {
+          "format": "double",
+          "type": "number"
+        },
+        "voltage_drop_pct": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "cable_mm2",
+        "connected_devices",
+        "design_current_a",
+        "id",
+        "kind",
+        "max_voltage_drop_pct",
+        "panel_id",
+        "rating_a",
+        "run_length_m",
+        "status",
+        "supply_v",
+        "total_load_w",
+        "voltage_drop_pct"
+      ],
+      "type": "object"
+    },
+    "MepWireRunIr": {
+      "description": "Physical conduit/wire run or switch-control line overlaid on the architectural floor plan.",
+      "properties": {
+        "circuit_id": {
+          "type": "string"
+        },
+        "from_id": {
+          "type": "string"
+        },
+        "run_kind": {
+          "type": "string"
+        },
+        "segments": {
+          "items": {
+            "$ref": "#/definitions/Segment2"
+          },
+          "type": "array"
+        },
+        "to_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "circuit_id",
+        "from_id",
+        "run_kind",
+        "segments",
+        "to_id"
+      ],
+      "type": "object"
+    },
+    "ModuleProvenanceIr": {
+      "properties": {
+        "instance": {
+          "type": "string"
+        },
+        "module": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "instance",
+        "module"
+      ],
+      "type": "object"
+    },
+    "NetTerminalIr": {
+      "description": "Local schematic terminal graphics (GND triangle, upward power bar, or named net-label stub).",
+      "properties": {
+        "dir": {
+          "$ref": "#/definitions/Side"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "pos": {
+          "$ref": "#/definitions/Point2"
+        }
+      },
+      "required": [
+        "dir",
+        "kind",
+        "label",
+        "pos"
+      ],
+      "type": "object"
+    },
+    "PlacedPinIr": {
+      "properties": {
+        "body_point": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Point2"
+            }
+          ],
+          "description": "Pin attachment point on symbol body edge (sheet mm)."
+        },
+        "name": {
+          "type": "string"
+        },
+        "number": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "role": {
+          "$ref": "#/definitions/PortRole"
+        },
+        "side": {
+          "$ref": "#/definitions/Side"
+        },
+        "tip_point": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Point2"
+            }
+          ],
+          "description": "Pin wire-connection tip (sheet mm, snapped to 2.54mm grid)."
+        },
+        "voltage": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/VoltageSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "body_point",
+        "name",
+        "number",
+        "role",
+        "side",
+        "tip_point"
+      ],
+      "type": "object"
+    },
+    "Point2": {
+      "properties": {
+        "x": {
+          "format": "double",
+          "type": "number"
+        },
+        "y": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "PortRole": {
+      "enum": [
+        "power_out",
+        "power_in",
+        "ground",
+        "input",
+        "output",
+        "bidir",
+        "passive",
+        "nc"
+      ],
+      "type": "string"
+    },
+    "ProjectSummaryIr": {
+      "properties": {
+        "component_count": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "default_unit": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "exterior_bounds": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Rect2"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exterior_footprint_mm": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "fixture_count": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "has_errors": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "net_count": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "opening_count": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "remaining_dof": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "room_count": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "total_clear_area_m2": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "component_count",
+        "default_unit",
+        "domain",
+        "fixture_count",
+        "has_errors",
+        "name",
+        "net_count",
+        "opening_count",
+        "remaining_dof",
+        "room_count",
+        "total_clear_area_m2"
+      ],
+      "type": "object"
+    },
+    "Rect2": {
+      "properties": {
+        "max_x": {
+          "format": "double",
+          "type": "number"
+        },
+        "max_y": {
+          "format": "double",
+          "type": "number"
+        },
+        "min_x": {
+          "format": "double",
+          "type": "number"
+        },
+        "min_y": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "max_x",
+        "max_y",
+        "min_x",
+        "min_y"
+      ],
+      "type": "object"
+    },
+    "RelationIr": {
+      "description": "Functional connectivity relation (strictly separate from drawn wire routes).",
+      "properties": {
+        "connects": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "driven_voltage_v": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "is_ground": {
+          "type": "boolean"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "span": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Span"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "connects",
+        "id",
+        "is_ground",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "RepairAction": {
+      "properties": {
+        "action": {
+          "description": "Machine-readable repair verb: e.g. \"adjust_offset\", \"move_fixture\", \"reverse_swing\", \"add_window\", \"add_opening\", \"connect_pin\", \"fix_voltage\", \"add_constraint\", \"split_net\".",
+          "type": "string"
+        },
+        "field": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "suggested_value": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "target": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "rationale",
+        "target"
+      ],
+      "type": "object"
+    },
+    "SchematicGroupIr": {
+      "description": "Presentation-layer schematic group container.",
+      "properties": {
+        "bbox": {
+          "$ref": "#/definitions/Rect2"
+        },
+        "members": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "bbox",
+        "members",
+        "name"
+      ],
+      "type": "object"
+    },
+    "SchematicRouteIr": {
+      "description": "Presentation-layer orthogonal wire route (or symbol/label-stub termination) for a functional net.",
+      "properties": {
+        "is_ground": {
+          "type": "boolean"
+        },
+        "is_power": {
+          "type": "boolean"
+        },
+        "junctions": {
+          "items": {
+            "$ref": "#/definitions/Point2"
+          },
+          "type": "array"
+        },
+        "label_pos": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Point2"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "net_id": {
+          "type": "string"
+        },
+        "segments": {
+          "items": {
+            "$ref": "#/definitions/Segment2"
+          },
+          "type": "array"
+        },
+        "style": {
+          "type": "string"
+        },
+        "terminals": {
+          "items": {
+            "$ref": "#/definitions/NetTerminalIr"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "is_ground",
+        "is_power",
+        "junctions",
+        "net_id",
+        "segments",
+        "style"
+      ],
+      "type": "object"
+    },
+    "Segment2": {
+      "properties": {
+        "p0": {
+          "$ref": "#/definitions/Point2"
+        },
+        "p1": {
+          "$ref": "#/definitions/Point2"
+        }
+      },
+      "required": [
+        "p0",
+        "p1"
+      ],
+      "type": "object"
+    },
+    "Severity": {
+      "enum": [
+        "ERROR",
+        "WARNING",
+        "INFO"
+      ],
+      "type": "string"
+    },
+    "Side": {
+      "enum": [
+        "west",
+        "east",
+        "south",
+        "north"
+      ],
+      "type": "string"
+    },
+    "Span": {
+      "properties": {
+        "end_col": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "end_line": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "file": {
+          "type": "string"
+        },
+        "start_col": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "start_line": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "end_col",
+        "end_line",
+        "file",
+        "start_col",
+        "start_line"
+      ],
+      "type": "object"
+    },
+    "VerificationStatus": {
+      "enum": [
+        "FORMALLY_CHECKED",
+        "EXACTLY_CHECKED",
+        "NUMERICALLY_CHECKED",
+        "ASSUMED",
+        "NOT_MODELED",
+        "UNVERIFIED",
+        "VIOLATED"
+      ],
+      "type": "string"
+    },
+    "ViewIr": {
+      "properties": {
+        "frame": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "scale": {
+          "type": "string"
+        },
+        "sheet": {
+          "type": "string"
+        },
+        "show_dimensions": {
+          "type": "boolean"
+        },
+        "show_labels": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "frame",
+        "id",
+        "kind",
+        "scale",
+        "sheet",
+        "show_dimensions",
+        "show_labels"
+      ],
+      "type": "object"
+    },
+    "VoltageSpec": {
+      "oneOf": [
+        {
+          "properties": {
+            "type": {
+              "enum": [
+                "exact"
+              ],
+              "type": "string"
+            },
+            "volts": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          "required": [
+            "type",
+            "volts"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "max_v": {
+              "format": "double",
+              "type": "number"
+            },
+            "min_v": {
+              "format": "double",
+              "type": "number"
+            },
+            "type": {
+              "enum": [
+                "range"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "max_v",
+            "min_v",
+            "type"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "WallSolidCell": {
+      "description": "Exact non-overlapping wall poché cell (after corner joins, T-junctions, and opening cutouts).",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "rect": {
+          "$ref": "#/definitions/Rect2"
+        }
+      },
+      "required": [
+        "kind",
+        "rect"
+      ],
+      "type": "object"
+    }
+  },
+  "properties": {
+    "constraints": {
+      "items": {
+        "$ref": "#/definitions/EquationRecord"
+      },
+      "type": "array"
+    },
+    "derived_walls": {
+      "items": {
+        "$ref": "#/definitions/DerivedWallIr"
+      },
+      "type": "array"
+    },
+    "diagnostics": {
+      "items": {
+        "$ref": "#/definitions/Diagnostic"
+      },
+      "type": "array"
+    },
+    "entities": {
+      "items": {
+        "$ref": "#/definitions/EntityIr"
+      },
+      "type": "array"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/definitions/EvidenceRecord"
+      },
+      "type": "array"
+    },
+    "frames": {
+      "items": {
+        "$ref": "#/definitions/FrameIr"
+      },
+      "type": "array"
+    },
+    "ir_version": {
+      "type": "string"
+    },
+    "mep_circuits": {
+      "items": {
+        "$ref": "#/definitions/MepCircuitIr"
+      },
+      "type": "array"
+    },
+    "mep_wires": {
+      "items": {
+        "$ref": "#/definitions/MepWireRunIr"
+      },
+      "type": "array"
+    },
+    "project": {
+      "$ref": "#/definitions/ProjectSummaryIr"
+    },
+    "relations": {
+      "items": {
+        "$ref": "#/definitions/RelationIr"
+      },
+      "type": "array"
+    },
+    "schematic_groups": {
+      "items": {
+        "$ref": "#/definitions/SchematicGroupIr"
+      },
+      "type": "array"
+    },
+    "schematic_routes": {
+      "items": {
+        "$ref": "#/definitions/SchematicRouteIr"
+      },
+      "type": "array"
+    },
+    "views": {
+      "items": {
+        "$ref": "#/definitions/ViewIr"
+      },
+      "type": "array"
+    },
+    "wall_solids": {
+      "items": {
+        "$ref": "#/definitions/WallSolidCell"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "diagnostics",
+    "entities",
+    "evidence",
+    "frames",
+    "ir_version",
+    "project",
+    "views"
+  ],
+  "title": "CanonicalIr",
+  "type": "object"
+}

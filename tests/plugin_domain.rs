@@ -260,3 +260,20 @@ fn generic_block_grammar_parses_nested_blocks_lists_tuples_and_dotted_refs() {
         o => panic!("{o:?}"),
     }
 }
+
+#[test]
+fn canonical_ir_json_schema_matches_checked_in_docs() {
+    let generated = edl::core::ir::canonical_ir_schema();
+    assert_eq!(generated["title"], "CanonicalIr");
+    assert!(generated["definitions"]["EntityGeometryIr"].is_object());
+    assert!(generated["definitions"]["EvidenceRecord"].is_object());
+
+    let on_disk_str = std::fs::read_to_string("docs/canonical_ir.schema.json")
+        .expect("docs/canonical_ir.schema.json should exist");
+    let on_disk: serde_json::Value =
+        serde_json::from_str(&on_disk_str).expect("valid JSON schema on disk");
+    assert_eq!(
+        generated, on_disk,
+        "docs/canonical_ir.schema.json is out of sync — regenerate with `edl schema > docs/canonical_ir.schema.json`"
+    );
+}
