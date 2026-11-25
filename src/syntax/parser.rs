@@ -533,10 +533,12 @@ impl Parser {
         let mut extensions = Vec::new();
         let mut verifications = Vec::new();
         let mut views = Vec::new();
+        let mut constraints = Vec::new();
 
         while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
             let tok = self.peek().clone();
             let kw = match &tok.kind {
+                TokenKind::Constraint => "constraint",
                 TokenKind::Ident(s) => s.as_str(),
                 _ => {
                     return Err(self.err(
@@ -596,6 +598,7 @@ impl Parser {
                 "building_electrical" => mep_elec.installations.push(self.parse_building_electrical()?),
                 "verify" => verifications.extend(self.parse_verify()?),
                 "view" => views.push(self.parse_view()?),
+                "constraint" => constraints.push(self.parse_constraint()?),
                 _ => {
                     // Not a built-in keyword: capture as an extension block for a registered domain.
                     // Unclaimed keywords are reported at compile time as `E_UNKNOWN_DOMAIN_BLOCK`.
@@ -620,6 +623,7 @@ impl Parser {
             extensions,
             verifications,
             views,
+            constraints,
         })
     }
 
