@@ -72,3 +72,48 @@ fn kicad_corpus_multisheet_subdirectories_and_reused_hierarchy_roundtrip_100_per
 fn kicad_corpus_cern_vme_wren_1500_component_fpga_roundtrip_100_percent() {
     assert_kicad_demo_roundtrip("vme-wren/vme-wren.kicad_sch", 1500, 1300);
 }
+
+#[test]
+fn kicad_corpus_visual_fidelity_text_boxes_dashed_frames_and_field_visibility() {
+    let vme = Path::new("/usr/share/kicad/demos/vme-wren/vme-wren.kicad_sch");
+    let stickhub = Path::new("/usr/share/kicad/demos/stickhub/StickHub.kicad_sch");
+    if !vme.is_file() || !stickhub.is_file() {
+        return;
+    }
+
+    // 1. CERN vme-wren: wrapped yellow comment text_boxes, dashed black graphic frames,
+    //    hidden long Value + visible Description ("±1%") & Val ("2M2") on R398, and white sheet fill.
+    let vme_dir = std::env::temp_dir().join(format!("edl_vis_vme_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&vme_dir);
+    let rep = import_kicad_project(vme, &vme_dir).expect("import vme-wren");
+    let ir = edl::compile_file(&rep.edl_path).expect("compile vme-wren");
+    let files = edl::export_kicad_project(&ir);
+    let (_, root_sch) = files
+        .iter()
+        .find(|(f, _)| f.as_str() == "vme-wren.kicad_sch")
+        .expect("root vme-wren.kicad_sch");
+    assert!(root_sch.contains("(text_box \"SFP Cage."), "missing SFP Cage text_box");
+    assert!(root_sch.contains("(text_box \"Really slow VME control signals"), "missing VME control signals text_box");
+    assert!(root_sch.contains("(type dash) (color 0 0 0 1)"), "missing black dashed Fiducials/ESD frame");
+    assert!(root_sch.contains("(property \"Description\" \"±1%\""), "missing visible Description field on R398");
+    assert!(root_sch.contains("(property \"Val\" \"2M2\""), "missing visible Val field on R398");
+    assert!(root_sch.contains("(fill (color 255 255 255 1.0000))"), "missing white sheet fill");
+    let _ = fs::remove_dir_all(&vme_dir);
+
+    // 2. StickHub: LOGO1..LOGO4 hidden Reference + visible 0.9906mm left-justified Footprint & Value.
+    let sh_dir = std::env::temp_dir().join(format!("edl_vis_sh_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&sh_dir);
+    let rep2 = import_kicad_project(stickhub, &sh_dir).expect("import StickHub");
+    let ir2 = edl::compile_file(&rep2.edl_path).expect("compile StickHub");
+    let files2 = edl::export_kicad_project(&ir2);
+    let (_, sh_sch) = files2
+        .iter()
+        .find(|(f, _)| f.as_str() == "StickHub.kicad_sch")
+        .expect("StickHub.kicad_sch");
+    assert!(
+        sh_sch.contains("(property \"Reference\" \"LOGO1\"")
+            && sh_sch.contains("(font (size 0.9906 0.9906)) (justify left)"),
+        "StickHub LOGO1 field styling did not round-trip"
+    );
+    let _ = fs::remove_dir_all(&sh_dir);
+}

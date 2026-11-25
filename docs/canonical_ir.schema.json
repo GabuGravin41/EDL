@@ -641,8 +641,64 @@
       ],
       "type": "object"
     },
+    "ExplicitFieldStyleIr": {
+      "description": "Exact lossless explicit schematic sheet representation (used when `routing { mode: explicit }` preserves human/KiCad-authored geometry alongside EDL's semantic `circuit {}` netlist).",
+      "properties": {
+        "font_size": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "hide": {
+          "default": false,
+          "type": "boolean"
+        },
+        "justify": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "orient_deg": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "x": {
+          "format": "double",
+          "type": "number"
+        },
+        "y": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "orient_deg",
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
     "ExplicitGraphicIr": {
       "properties": {
+        "fill_color": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "kind": {
           "type": "string"
         },
@@ -651,6 +707,25 @@
             "$ref": "#/definitions/Point2"
           },
           "type": "array"
+        },
+        "stroke_color": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stroke_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stroke_width": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
         }
       },
       "required": [
@@ -661,6 +736,13 @@
     },
     "ExplicitLabelIr": {
       "properties": {
+        "font_size": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
         "justify": {
           "type": [
             "string",
@@ -718,6 +800,28 @@
         },
         "reference": {
           "type": "string"
+        },
+        "val_at": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "val_hide": {
+          "default": false,
+          "type": "boolean"
+        },
+        "val_justify": {
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "value": {
           "type": "string"
@@ -847,6 +951,12 @@
           },
           "type": "array"
         },
+        "text_boxes": {
+          "items": {
+            "$ref": "#/definitions/ExplicitTextBoxIr"
+          },
+          "type": "array"
+        },
         "title": {
           "type": [
             "string",
@@ -871,12 +981,48 @@
         "file": {
           "type": "string"
         },
+        "file_at": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "file_justify": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fill_color": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "h": {
           "format": "double",
           "type": "number"
         },
         "name": {
           "type": "string"
+        },
+        "name_at": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": [
+            "array",
+            "null"
+          ]
         },
         "pins": {
           "items": {
@@ -909,6 +1055,12 @@
     },
     "ExplicitSheetPinIr": {
       "properties": {
+        "justify": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "name": {
           "type": "string"
         },
@@ -938,7 +1090,6 @@
       "type": "object"
     },
     "ExplicitSymbolInstIr": {
-      "description": "Exact lossless explicit schematic sheet representation (used when `routing { mode: explicit }` preserves human/KiCad-authored geometry alongside EDL's semantic `circuit {}` netlist).",
       "properties": {
         "datasheet": {
           "type": [
@@ -949,6 +1100,12 @@
         "dnp": {
           "default": false,
           "type": "boolean"
+        },
+        "fields": {
+          "items": {
+            "$ref": "#/definitions/ExplicitFieldStyleIr"
+          },
+          "type": "array"
         },
         "footprint": {
           "type": [
@@ -1066,6 +1223,80 @@
         "ref_id",
         "unit",
         "value",
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "ExplicitTextBoxIr": {
+      "properties": {
+        "fill_color": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "font_size": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "h": {
+          "format": "double",
+          "type": "number"
+        },
+        "justify": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "orient_deg": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "stroke_color": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stroke_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stroke_width": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "text": {
+          "type": "string"
+        },
+        "w": {
+          "format": "double",
+          "type": "number"
+        },
+        "x": {
+          "format": "double",
+          "type": "number"
+        },
+        "y": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "h",
+        "orient_deg",
+        "text",
+        "w",
         "x",
         "y"
       ],

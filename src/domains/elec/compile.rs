@@ -857,6 +857,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 let mut exp_junctions: Vec<Point2> = Vec::new();
                 let mut exp_ncs: Vec<Point2> = Vec::new();
                 let mut exp_labels: Vec<ExplicitLabelIr> = Vec::new();
+                let mut exp_text_boxes: Vec<ExplicitTextBoxIr> = Vec::new();
                 let mut exp_graphics: Vec<ExplicitGraphicIr> = Vec::new();
                 let mut exp_sheet_blocks: Vec<ExplicitSheetBlockIr> = Vec::new();
 
@@ -920,6 +921,20 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         instances: pl.instances.clone(),
                         ref_at: pl.ref_at.map(|(rx, ry, rr)| [rx, ry, rr as f64]),
                         val_at: pl.val_at.map(|(vx, vy, vr)| [vx, vy, vr as f64]),
+                        fields: pl
+                            .fields
+                            .iter()
+                            .map(|f| ExplicitFieldStyleIr {
+                                name: f.name.clone(),
+                                value: f.value.clone(),
+                                hide: f.hide,
+                                x: f.x,
+                                y: f.y,
+                                orient_deg: f.orient_deg,
+                                font_size: f.font_size,
+                                justify: f.justify.clone(),
+                            })
+                            .collect(),
                     });
 
                     // Also emit EntityIr (once per logical component) for BOM/MNA/SVG compatibility
@@ -1029,6 +1044,9 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             crate::domains::elec::kicad_sym::SymMirror::X => "x".to_string(),
                             crate::domains::elec::kicad_sym::SymMirror::Y => "y".to_string(),
                         }),
+                        val_at: pw.val_at.map(|(vx, vy, vr)| [vx, vy, vr as f64]),
+                        val_hide: pw.val_hide,
+                        val_justify: pw.val_justify.clone(),
                     });
                 }
 
@@ -1070,6 +1088,23 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         y: lb.y.to_mm().unwrap_or(0.0),
                         orient_deg: lb.orient_deg,
                         justify: lb.justify.clone(),
+                        font_size: lb.font_size,
+                    });
+                }
+                for tb in &sc.explicit_text_boxes {
+                    exp_text_boxes.push(ExplicitTextBoxIr {
+                        text: tb.text.clone(),
+                        x: tb.x.to_mm().unwrap_or(0.0),
+                        y: tb.y.to_mm().unwrap_or(0.0),
+                        w: tb.w.to_mm().unwrap_or(40.0),
+                        h: tb.h.to_mm().unwrap_or(20.0),
+                        orient_deg: tb.orient_deg,
+                        font_size: tb.font_size,
+                        justify: tb.justify.clone(),
+                        stroke_type: tb.stroke_type.clone(),
+                        stroke_width: tb.stroke_width,
+                        stroke_color: tb.stroke_color.clone(),
+                        fill_color: tb.fill_color.clone(),
                     });
                 }
                 for gr in &sc.explicit_graphics {
@@ -1080,6 +1115,10 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             .iter()
                             .map(|(qx, qy)| Point2::new(qx.to_mm().unwrap_or(0.0), qy.to_mm().unwrap_or(0.0)))
                             .collect(),
+                        stroke_type: gr.stroke_type.clone(),
+                        stroke_width: gr.stroke_width,
+                        stroke_color: gr.stroke_color.clone(),
+                        fill_color: gr.fill_color.clone(),
                     });
                 }
                 for sb in &sc.explicit_sheets {
@@ -1090,6 +1129,10 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         y: sb.y.to_mm().unwrap_or(0.0),
                         w: sb.w.to_mm().unwrap_or(40.0),
                         h: sb.h.to_mm().unwrap_or(25.0),
+                        name_at: sb.name_at.map(|(nx, ny, nr)| [nx, ny, nr as f64]),
+                        file_at: sb.file_at.map(|(fx, fy, fr)| [fx, fy, fr as f64]),
+                        file_justify: sb.file_justify.clone(),
+                        fill_color: sb.fill_color.clone(),
                         pins: sb
                             .pins
                             .iter()
@@ -1099,6 +1142,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                                 x: sp.x.to_mm().unwrap_or(0.0),
                                 y: sp.y.to_mm().unwrap_or(0.0),
                                 orient_deg: sp.orient_deg,
+                                justify: sp.justify.clone(),
                             })
                             .collect(),
                     });
@@ -1135,6 +1179,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     junctions: exp_junctions,
                     no_connects: exp_ncs,
                     labels: exp_labels,
+                    text_boxes: exp_text_boxes,
                     graphics: exp_graphics,
                     sheet_blocks: exp_sheet_blocks,
                     bus_aliases: sc.bus_aliases.clone(),

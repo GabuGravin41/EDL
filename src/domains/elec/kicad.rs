@@ -996,13 +996,45 @@ fn export_explicit_kicad_sheet(
         );
     }
 
-    // 2. Non-electrical graphics (lines / rectangles)
+    // 2. Non-electrical graphics (lines / rectangles) and wrapped comment text boxes
+    let fmt_stroke = |stype: Option<&str>, width: Option<f64>, color: Option<&str>| -> String {
+        let w = width.unwrap_or(0.0);
+        let t = stype.unwrap_or("default");
+        let mut s = format!("(stroke (width {w:.4}) (type {t})");
+        if let Some(c) = color {
+            let _ = write!(s, " (color {c})");
+        }
+        s.push(')');
+        s
+    };
+    let fmt_fill = |color: Option<&str>| -> String {
+        if let Some(c) = color {
+            format!("(fill (type color) (color {c}))")
+        } else {
+            "(fill (type none))".to_string()
+        }
+    };
+    let fmt_effects = |font_size: Option<f64>, justify: Option<&str>, hide: bool| -> String {
+        let sz = font_size.unwrap_or(1.27);
+        let mut s = format!("(effects (font (size {sz:.4} {sz:.4}))");
+        if let Some(j) = justify {
+            let _ = write!(s, " (justify {j})");
+        }
+        if hide {
+            s.push_str(" (hide yes)");
+        }
+        s.push(')');
+        s
+    };
+
     for (gi, gr) in es.graphics.iter().enumerate() {
         let gu = det_uuid("exp_gr", &format!("{}_{gi}", es.sheet_id));
+        let st = fmt_stroke(gr.stroke_type.as_deref(), gr.stroke_width, gr.stroke_color.as_deref());
+        let fl = fmt_fill(gr.fill_color.as_deref());
         if gr.kind == "rectangle" && gr.pts.len() >= 2 {
             let _ = writeln!(
                 out,
-                "  (rectangle (start {:.4} {:.4}) (end {:.4} {:.4}) (stroke (width 0) (type default)) (fill (type none)) (uuid \"{gu}\"))",
+                "  (rectangle (start {:.4} {:.4}) (end {:.4} {:.4}) {st} {fl} (uuid \"{gu}\"))",
                 gr.pts[0].x, gr.pts[0].y, gr.pts[1].x, gr.pts[1].y
             );
         } else if gr.pts.len() >= 2 {
@@ -1014,9 +1046,25 @@ fn export_explicit_kicad_sheet(
                 .join(" ");
             let _ = writeln!(
                 out,
-                "  (polyline (pts {pts_s}) (stroke (width 0) (type default)) (uuid \"{gu}\"))"
+                "  (polyline (pts {pts_s}) {st} {fl} (uuid \"{gu}\"))"
             );
         }
+    }
+    for (tbi, tb) in es.text_boxes.iter().enumerate() {
+        let tbu = det_uuid("exp_tb", &format!("{}_{tbi}", es.sheet_id));
+        let st = fmt_stroke(tb.stroke_type.as_deref(), tb.stroke_width, tb.stroke_color.as_deref());
+        let fl = fmt_fill(tb.fill_color.as_deref());
+        let eff = fmt_effects(tb.font_size, tb.justify.as_deref(), false);
+        let _ = writeln!(
+            out,
+            "  (text_box \"{}\" (exclude_from_sim no) (at {:.4} {:.4} {}) (size {:.4} {:.4}) (margins 0.9525 0.9525 0.9525 0.9525) {st} {fl} {eff} (uuid \"{tbu}\"))",
+            escape_sexpr(&tb.text),
+            tb.x,
+            tb.y,
+            tb.orient_deg,
+            tb.w,
+            tb.h
+        );
     }
 
     // 3. Wires, buses, bus entries, junctions, no-connects
@@ -1064,17 +1112,13 @@ fn export_explicit_kicad_sheet(
     // 4. Labels (local, global, hierarchical, text)
     for (li, lb) in es.labels.iter().enumerate() {
         let lu = det_uuid("exp_lbl", &format!("{}_{li}_{}", es.sheet_id, lb.text));
-        let just_str = lb
-            .justify
-            .as_deref()
-            .map(|j| format!(" (justify {j})"))
-            .unwrap_or_default();
+        let eff = fmt_effects(lb.font_size, lb.justify.as_deref(), false);
         match lb.kind.as_str() {
             "global_label" => {
                 let sh = lb.shape.as_deref().unwrap_or("bidirectional");
                 let _ = writeln!(
                     out,
-                    "  (global_label \"{}\" (shape {sh}) (at {:.4} {:.4} {}) (fields_autoplaced yes) (effects (font (size 1.27 1.27)){just_str}) (uuid \"{lu}\"))",
+                    "  (global_label \"{}\" (shape {sh}) (at {:.4} {:.4} {}) (fields_autoplaced yes) {eff} (uuid \"{lu}\"))",
                     escape_sexpr(&lb.text),
                     lb.x,
                     lb.y,
@@ -1085,7 +1129,7 @@ fn export_explicit_kicad_sheet(
                 let sh = lb.shape.as_deref().unwrap_or("bidirectional");
                 let _ = writeln!(
                     out,
-                    "  (hierarchical_label \"{}\" (shape {sh}) (at {:.4} {:.4} {}) (fields_autoplaced yes) (effects (font (size 1.27 1.27)){just_str}) (uuid \"{lu}\"))",
+                    "  (hierarchical_label \"{}\" (shape {sh}) (at {:.4} {:.4} {}) (fields_autoplaced yes) {eff} (uuid \"{lu}\"))",
                     escape_sexpr(&lb.text),
                     lb.x,
                     lb.y,
@@ -1095,7 +1139,7 @@ fn export_explicit_kicad_sheet(
             "text" => {
                 let _ = writeln!(
                     out,
-                    "  (text \"{}\" (exclude_from_sim no) (at {:.4} {:.4} {}) (effects (font (size 1.27 1.27)){just_str}) (uuid \"{lu}\"))",
+                    "  (text \"{}\" (exclude_from_sim no) (at {:.4} {:.4} {}) {eff} (uuid \"{lu}\"))",
                     escape_sexpr(&lb.text),
                     lb.x,
                     lb.y,
@@ -1105,7 +1149,7 @@ fn export_explicit_kicad_sheet(
             _ => {
                 let _ = writeln!(
                     out,
-                    "  (label \"{}\" (at {:.4} {:.4} {}) (fields_autoplaced yes) (effects (font (size 1.27 1.27)){just_str}) (uuid \"{lu}\"))",
+                    "  (label \"{}\" (at {:.4} {:.4} {}) (fields_autoplaced yes) {eff} (uuid \"{lu}\"))",
                     escape_sexpr(&lb.text),
                     lb.x,
                     lb.y,
@@ -1115,7 +1159,7 @@ fn export_explicit_kicad_sheet(
         }
     }
 
-    // 5. Placed component symbol instances (preserving exact coordinates, rotation, mirror, unit, props!)
+    // 5. Placed component symbol instances (preserving exact coordinates, rotation, mirror, unit, props & field styling!)
     for (si, sym) in es.symbols.iter().enumerate() {
         let su = det_uuid("exp_sym", &format!("{}_{}_{}_{si}", es.sheet_id, sym.ref_id, sym.unit));
         let _ = writeln!(out, "  (symbol");
@@ -1131,43 +1175,150 @@ fn export_explicit_kicad_sheet(
         let _ = writeln!(out, "    (dnp {})", if sym.dnp { "yes" } else { "no" });
         let _ = writeln!(out, "    (fields_autoplaced yes)");
         let _ = writeln!(out, "    (uuid \"{su}\")");
+
+        let find_field = |fname: &str| sym.fields.iter().find(|f| f.name == fname);
+
+        // Reference
         let (rx, ry, rrot) = sym
             .ref_at
             .map(|a| (a[0], a[1], a[2].round() as i32))
             .unwrap_or((sym.x, sym.y - 2.54, 0));
+        if let Some(f) = find_field("Reference") {
+            let eff = fmt_effects(f.font_size, f.justify.as_deref(), f.hide);
+            let _ = writeln!(
+                out,
+                "    (property \"Reference\" \"{}\" (at {:.4} {:.4} {}) {eff})",
+                escape_sexpr(&sym.ref_id),
+                f.x,
+                f.y,
+                f.orient_deg
+            );
+        } else {
+            let _ = writeln!(
+                out,
+                "    (property \"Reference\" \"{}\" (at {:.4} {:.4} {rrot}) (effects (font (size 1.27 1.27))))",
+                escape_sexpr(&sym.ref_id),
+                rx,
+                ry
+            );
+        }
+
+        // Value
         let (vx, vy, vrot) = sym
             .val_at
             .map(|a| (a[0], a[1], a[2].round() as i32))
             .unwrap_or((sym.x, sym.y + 2.54, 0));
-        let _ = writeln!(
-            out,
-            "    (property \"Reference\" \"{}\" (at {:.4} {:.4} {rrot}) (effects (font (size 1.27 1.27))))",
-            escape_sexpr(&sym.ref_id),
-            rx,
-            ry
-        );
-        let _ = writeln!(
-            out,
-            "    (property \"Value\" \"{}\" (at {:.4} {:.4} {vrot}) (effects (font (size 1.27 1.27))))",
-            escape_sexpr(&sym.value),
-            vx,
-            vy
-        );
-        let _ = writeln!(
-            out,
-            "    (property \"Footprint\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
-            escape_sexpr(sym.footprint.as_deref().unwrap_or("")),
-            sym.x,
-            sym.y
-        );
-        let _ = writeln!(
-            out,
-            "    (property \"Datasheet\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
-            escape_sexpr(sym.datasheet.as_deref().unwrap_or("")),
-            sym.x,
-            sym.y
-        );
+        if let Some(f) = find_field("Value") {
+            let eff = fmt_effects(f.font_size, f.justify.as_deref(), f.hide);
+            let vtext = f.value.as_deref().unwrap_or(&sym.value);
+            let _ = writeln!(
+                out,
+                "    (property \"Value\" \"{}\" (at {:.4} {:.4} {}) {eff})",
+                escape_sexpr(vtext),
+                f.x,
+                f.y,
+                f.orient_deg
+            );
+        } else {
+            let _ = writeln!(
+                out,
+                "    (property \"Value\" \"{}\" (at {:.4} {:.4} {vrot}) (effects (font (size 1.27 1.27))))",
+                escape_sexpr(&sym.value),
+                vx,
+                vy
+            );
+        }
+
+        // Footprint
+        if let Some(f) = find_field("Footprint") {
+            let eff = fmt_effects(f.font_size, f.justify.as_deref(), f.hide);
+            let ftext = f
+                .value
+                .as_deref()
+                .or(sym.footprint.as_deref())
+                .unwrap_or("");
+            let _ = writeln!(
+                out,
+                "    (property \"Footprint\" \"{}\" (at {:.4} {:.4} {}) {eff})",
+                escape_sexpr(ftext),
+                f.x,
+                f.y,
+                f.orient_deg
+            );
+        } else {
+            let _ = writeln!(
+                out,
+                "    (property \"Footprint\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
+                escape_sexpr(sym.footprint.as_deref().unwrap_or("")),
+                sym.x,
+                sym.y
+            );
+        }
+
+        // Datasheet
+        if let Some(f) = find_field("Datasheet") {
+            let eff = fmt_effects(f.font_size, f.justify.as_deref(), f.hide);
+            let dtext = f
+                .value
+                .as_deref()
+                .or(sym.datasheet.as_deref())
+                .unwrap_or("");
+            let _ = writeln!(
+                out,
+                "    (property \"Datasheet\" \"{}\" (at {:.4} {:.4} {}) {eff})",
+                escape_sexpr(dtext),
+                f.x,
+                f.y,
+                f.orient_deg
+            );
+        } else {
+            let _ = writeln!(
+                out,
+                "    (property \"Datasheet\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
+                escape_sexpr(sym.datasheet.as_deref().unwrap_or("")),
+                sym.x,
+                sym.y
+            );
+        }
+
+        // Additional visible/styled custom fields (e.g. `Description` "±1%", `Val` "2M2") + remaining hidden props
+        let mut emitted_props: BTreeSet<String> = [
+            "Reference".to_string(),
+            "Value".to_string(),
+            "Footprint".to_string(),
+            "Datasheet".to_string(),
+        ]
+        .into_iter()
+        .collect();
+        for f in &sym.fields {
+            if !emitted_props.insert(f.name.clone()) {
+                continue;
+            }
+            let val = f
+                .value
+                .as_deref()
+                .or_else(|| {
+                    sym.props
+                        .iter()
+                        .find(|(k, _)| k == &f.name)
+                        .map(|(_, v)| v.as_str())
+                })
+                .unwrap_or("");
+            let eff = fmt_effects(f.font_size, f.justify.as_deref(), f.hide);
+            let _ = writeln!(
+                out,
+                "    (property \"{}\" \"{}\" (at {:.4} {:.4} {}) {eff})",
+                escape_sexpr(&f.name),
+                escape_sexpr(val),
+                f.x,
+                f.y,
+                f.orient_deg
+            );
+        }
         for (pk, pv) in &sym.props {
+            if !emitted_props.insert(pk.clone()) {
+                continue;
+            }
             let _ = writeln!(
                 out,
                 "    (property \"{}\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
@@ -1233,12 +1384,17 @@ fn export_explicit_kicad_sheet(
             pw.x,
             pw.y
         );
+        let (pvx, pvy, pvrot) = pw
+            .val_at
+            .map(|a| (a[0], a[1], a[2].round() as i32))
+            .unwrap_or((pw.x, pw.y, 0));
+        let pveff = fmt_effects(None, pw.val_justify.as_deref(), pw.val_hide);
         let _ = writeln!(
             out,
-            "    (property \"Value\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27))))",
+            "    (property \"Value\" \"{}\" (at {:.4} {:.4} {pvrot}) {pveff})",
             escape_sexpr(&pw.value),
-            pw.x,
-            pw.y
+            pvx,
+            pvy
         );
         let _ = writeln!(
             out,
@@ -1278,27 +1434,38 @@ fn export_explicit_kicad_sheet(
         let _ = writeln!(out, "    (size {:.4} {:.4})", sb.w, sb.h);
         let _ = writeln!(out, "    (fields_autoplaced yes)");
         let _ = writeln!(out, "    (stroke (width 0.1524) (type solid))");
-        let _ = writeln!(out, "    (fill (color 0 0 0 0.0000))");
+        let sfill = sb.fill_color.as_deref().unwrap_or("0 0 0 0.0000");
+        let _ = writeln!(out, "    (fill (color {sfill}))");
         let _ = writeln!(out, "    (uuid \"{su}\")");
+        let (nx, ny, nrot) = sb
+            .name_at
+            .map(|a| (a[0], a[1], a[2].round() as i32))
+            .unwrap_or((sb.x, sb.y - 1.27, 0));
+        let (fx, fy, frot) = sb
+            .file_at
+            .map(|a| (a[0], a[1], a[2].round() as i32))
+            .unwrap_or((sb.x, sb.y + sb.h + 1.27, 0));
+        let fjust = sb.file_justify.as_deref().unwrap_or("left top");
         let _ = writeln!(
             out,
-            "    (property \"Sheetname\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (justify left bottom)))",
+            "    (property \"Sheetname\" \"{}\" (at {:.4} {:.4} {nrot}) (effects (font (size 1.27 1.27)) (justify left bottom)))",
             escape_sexpr(&sb.name),
-            sb.x,
-            sb.y - 1.27
+            nx,
+            ny
         );
         let _ = writeln!(
             out,
-            "    (property \"Sheetfile\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (justify left top)))",
+            "    (property \"Sheetfile\" \"{}\" (at {:.4} {:.4} {frot}) (effects (font (size 1.27 1.27)) (justify {fjust})))",
             escape_sexpr(&sb.file),
-            sb.x,
-            sb.y + sb.h + 1.27
+            fx,
+            fy
         );
         for (pi, sp) in sb.pins.iter().enumerate() {
             let spu = det_uuid("exp_spin", &format!("{}_{bi}_{pi}_{}", es.sheet_id, sp.name));
+            let peff = fmt_effects(None, sp.justify.as_deref(), false);
             let _ = writeln!(
                 out,
-                "    (pin \"{}\" {} (at {:.4} {:.4} {}) (effects (font (size 1.27 1.27))) (uuid \"{spu}\"))",
+                "    (pin \"{}\" {} (at {:.4} {:.4} {}) {peff} (uuid \"{spu}\"))",
                 escape_sexpr(&sp.name),
                 sp.shape,
                 sp.x,
@@ -1346,7 +1513,11 @@ fn prefix_of(id: &str) -> String {
 }
 
 fn escape_sexpr(s: &str) -> String {
-    s.replace('\\', "\\\\").replace('"', "\\\"")
+    s.replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\n', "\\n")
+        .replace('\t', "\\t")
+        .replace('\r', "")
 }
 
 /// Simple deterministic FNV-1a-based UUIDv4-formatted identifier for reproducible KiCad output.

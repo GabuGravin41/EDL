@@ -1934,6 +1934,7 @@ impl Parser {
         let mut explicit_no_connects = Vec::new();
         let mut explicit_powers = Vec::new();
         let mut explicit_labels = Vec::new();
+        let mut explicit_text_boxes = Vec::new();
         let mut explicit_graphics = Vec::new();
         let mut explicit_sheets = Vec::new();
         let mut bus_aliases = Vec::new();
@@ -2285,6 +2286,73 @@ impl Parser {
                             _ => break,
                         }
                     }
+                    let mut fields = Vec::new();
+                    if self.peek().kind == TokenKind::LBrace {
+                        self.bump();
+                        while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+                            self.expect_keyword("field")?;
+                            let (fname, _) = self.expect_string("field name")?;
+                            let fval = if let TokenKind::Str(s) = self.peek().kind.clone() {
+                                self.bump();
+                                Some(s)
+                            } else {
+                                None
+                            };
+                            let mut fhide = false;
+                            let mut fx = x.to_mm().unwrap_or(0.0);
+                            let mut fy = y.to_mm().unwrap_or(0.0);
+                            let mut frot = 0i32;
+                            let mut fsize = None;
+                            let mut fjust = None;
+                            loop {
+                                match &self.peek().kind {
+                                    TokenKind::Ident(s) if s == "hide" => {
+                                        self.bump();
+                                        fhide = true;
+                                    }
+                                    TokenKind::Ident(s) if s == "at" => {
+                                        self.bump();
+                                        self.expect(TokenKind::Colon, "':'")?;
+                                        self.expect(TokenKind::LParen, "'('")?;
+                                        let (qx, _) = self.parse_quantity()?;
+                                        self.expect(TokenKind::Comma, "','")?;
+                                        let (qy, _) = self.parse_quantity()?;
+                                        if self.peek().kind == TokenKind::Comma {
+                                            self.bump();
+                                            let (qr, _) = self.parse_quantity()?;
+                                            frot = (qr.raw_value.round() as i32).rem_euclid(360);
+                                        }
+                                        self.expect(TokenKind::RParen, "')'")?;
+                                        fx = qx.to_mm().unwrap_or(fx);
+                                        fy = qy.to_mm().unwrap_or(fy);
+                                    }
+                                    TokenKind::Ident(s) if s == "size" => {
+                                        self.bump();
+                                        self.expect(TokenKind::Colon, "':'")?;
+                                        let (qs, _) = self.parse_quantity()?;
+                                        fsize = Some(qs.to_mm().unwrap_or(qs.raw_value));
+                                    }
+                                    TokenKind::Ident(s) if s == "justify" => {
+                                        self.bump();
+                                        self.expect(TokenKind::Colon, "':'")?;
+                                        fjust = Some(self.expect_ident_or_str("justify")?.0);
+                                    }
+                                    _ => break,
+                                }
+                            }
+                            fields.push(ExplicitFieldStyleDecl {
+                                name: fname,
+                                value: fval,
+                                hide: fhide,
+                                x: fx,
+                                y: fy,
+                                orient_deg: frot,
+                                font_size: fsize,
+                                justify: fjust,
+                            });
+                        }
+                        pend = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+                    }
                     placements.push(ExplicitPlacementDecl {
                         component: comp,
                         unit: punit,
@@ -2295,6 +2363,7 @@ impl Parser {
                         instances,
                         ref_at,
                         val_at,
+                        fields,
                         span: kspan.merge(&pend),
                     });
                 }
@@ -2370,6 +2439,43 @@ impl Parser {
                     if let Some(sp) = extra_sp {
                         pend = pend.merge(&sp);
                     }
+                    let mut val_at = None;
+                    let mut val_hide = false;
+                    let mut val_justify = None;
+                    loop {
+                        match &self.peek().kind {
+                            TokenKind::Ident(s) if s == "val_at" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                self.expect(TokenKind::LParen, "'('")?;
+                                let (vx, _) = self.parse_quantity()?;
+                                self.expect(TokenKind::Comma, "','")?;
+                                let (vy, _) = self.parse_quantity()?;
+                                let vrot = if self.peek().kind == TokenKind::Comma {
+                                    self.bump();
+                                    let (vr, _) = self.parse_quantity()?;
+                                    (vr.raw_value.round() as i32).rem_euclid(360)
+                                } else {
+                                    0
+                                };
+                                pend = self.expect(TokenKind::RParen, "')'")?.span(&self.file);
+                                val_at = Some((vx.to_mm().unwrap_or(0.0), vy.to_mm().unwrap_or(0.0), vrot));
+                            }
+                            TokenKind::Ident(s) if s == "val_hide" => {
+                                let sp = self.bump().span(&self.file);
+                                val_hide = true;
+                                pend = pend.merge(&sp);
+                            }
+                            TokenKind::Ident(s) if s == "val_justify" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (j, sp) = self.expect_ident_or_str("val_justify")?;
+                                val_justify = Some(j);
+                                pend = pend.merge(&sp);
+                            }
+                            _ => break,
+                        }
+                    }
                     explicit_powers.push(ExplicitPowerDecl {
                         lib_id,
                         value,
@@ -2378,6 +2484,9 @@ impl Parser {
                         y,
                         orient_deg: orient_opt.unwrap_or(0),
                         mirror,
+                        val_at,
+                        val_hide,
+                        val_justify,
                         span: kspan.merge(&pend),
                     });
                 }
@@ -2385,6 +2494,7 @@ impl Parser {
                     let (txt, _) = self.expect_string("label text")?;
                     let mut shape = None;
                     let mut justify = None;
+                    let mut font_size = None;
                     if matches!(&self.peek().kind, TokenKind::Ident(s) if s == "shape") {
                         self.bump();
                         self.expect(TokenKind::Colon, "':'")?;
@@ -2397,19 +2507,31 @@ impl Parser {
                     if let Some(sp) = extra_sp {
                         pend = pend.merge(&sp);
                     }
-                    if matches!(&self.peek().kind, TokenKind::Ident(s) if s == "shape") {
-                        self.bump();
-                        self.expect(TokenKind::Colon, "':'")?;
-                        let (sh, sp) = self.expect_ident_or_str("label shape")?;
-                        shape = Some(sh);
-                        pend = pend.merge(&sp);
-                    }
-                    if matches!(&self.peek().kind, TokenKind::Ident(s) if s == "justify") {
-                        self.bump();
-                        self.expect(TokenKind::Colon, "':'")?;
-                        let (j, sp) = self.expect_ident_or_str("justify")?;
-                        justify = Some(j);
-                        pend = pend.merge(&sp);
+                    loop {
+                        match &self.peek().kind {
+                            TokenKind::Ident(s) if s == "shape" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (sh, sp) = self.expect_ident_or_str("label shape")?;
+                                shape = Some(sh);
+                                pend = pend.merge(&sp);
+                            }
+                            TokenKind::Ident(s) if s == "justify" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (j, sp) = self.expect_ident_or_str("justify")?;
+                                justify = Some(j);
+                                pend = pend.merge(&sp);
+                            }
+                            TokenKind::Ident(s) if s == "size" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (qs, sp) = self.parse_quantity()?;
+                                font_size = Some(qs.to_mm().unwrap_or(qs.raw_value));
+                                pend = pend.merge(&sp);
+                            }
+                            _ => break,
+                        }
                     }
                     explicit_labels.push(ExplicitLabelDecl {
                         kind: kw,
@@ -2419,6 +2541,88 @@ impl Parser {
                         y,
                         orient_deg: orient_opt.unwrap_or(0),
                         justify,
+                        font_size,
+                        span: kspan.merge(&pend),
+                    });
+                }
+                "text_box" => {
+                    let (txt, _) = self.expect_string("text_box text")?;
+                    self.expect_keyword("at")?;
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let ((x, y), _) = self.parse_xy_pair()?;
+                    self.expect_keyword("size")?;
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let ((w, h), mut pend) = self.parse_xy_pair()?;
+                    let (orient_opt, _, extra_sp) = self.parse_optional_orient_mirror()?;
+                    if let Some(sp) = extra_sp {
+                        pend = pend.merge(&sp);
+                    }
+                    let mut font_size = None;
+                    let mut justify = None;
+                    let mut stroke_type = None;
+                    let mut stroke_width = None;
+                    let mut stroke_color = None;
+                    let mut fill_color = None;
+                    loop {
+                        match &self.peek().kind {
+                            TokenKind::Ident(s) if s == "font" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (qs, sp) = self.parse_quantity()?;
+                                font_size = Some(qs.to_mm().unwrap_or(qs.raw_value));
+                                pend = pend.merge(&sp);
+                            }
+                            TokenKind::Ident(s) if s == "justify" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (j, sp) = self.expect_ident_or_str("justify")?;
+                                justify = Some(j);
+                                pend = pend.merge(&sp);
+                            }
+                            TokenKind::Ident(s) if s == "style" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (st, sp) = self.expect_ident_or_str("stroke style")?;
+                                stroke_type = Some(st);
+                                pend = pend.merge(&sp);
+                            }
+                            TokenKind::Ident(s) if s == "width" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (qw, sp) = self.parse_quantity()?;
+                                stroke_width = Some(qw.to_mm().unwrap_or(qw.raw_value));
+                                pend = pend.merge(&sp);
+                            }
+                            TokenKind::Ident(s) if s == "color" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (c, sp) = self.expect_string("stroke color")?;
+                                stroke_color = Some(c);
+                                pend = pend.merge(&sp);
+                            }
+                            TokenKind::Ident(s) if s == "fill" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (f, sp) = self.expect_string("fill color")?;
+                                fill_color = Some(f);
+                                pend = pend.merge(&sp);
+                            }
+                            _ => break,
+                        }
+                    }
+                    explicit_text_boxes.push(ExplicitTextBoxDecl {
+                        text: txt,
+                        x,
+                        y,
+                        w,
+                        h,
+                        orient_deg: orient_opt.unwrap_or(0),
+                        font_size,
+                        justify,
+                        stroke_type,
+                        stroke_width,
+                        stroke_color,
+                        fill_color,
                         span: kspan.merge(&pend),
                     });
                 }
@@ -2434,9 +2638,50 @@ impl Parser {
                         pts.push(pn);
                         pend = psp;
                     }
+                    let mut stroke_type = None;
+                    let mut stroke_width = None;
+                    let mut stroke_color = None;
+                    let mut fill_color = None;
+                    loop {
+                        match &self.peek().kind {
+                            TokenKind::Ident(s) if s == "style" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (st, sp) = self.expect_ident_or_str("stroke style")?;
+                                stroke_type = Some(st);
+                                pend = pend.merge(&sp);
+                            }
+                            TokenKind::Ident(s) if s == "width" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (qw, sp) = self.parse_quantity()?;
+                                stroke_width = Some(qw.to_mm().unwrap_or(qw.raw_value));
+                                pend = pend.merge(&sp);
+                            }
+                            TokenKind::Ident(s) if s == "color" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (c, sp) = self.expect_string("stroke color")?;
+                                stroke_color = Some(c);
+                                pend = pend.merge(&sp);
+                            }
+                            TokenKind::Ident(s) if s == "fill" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (f, sp) = self.expect_string("fill color")?;
+                                fill_color = Some(f);
+                                pend = pend.merge(&sp);
+                            }
+                            _ => break,
+                        }
+                    }
                     explicit_graphics.push(ExplicitGraphicDecl {
                         kind: gkind,
                         pts,
+                        stroke_type,
+                        stroke_width,
+                        stroke_color,
+                        fill_color,
                         span: kspan.merge(&pend),
                     });
                 }
@@ -2468,6 +2713,48 @@ impl Parser {
                     self.expect_keyword("size")?;
                     self.expect(TokenKind::Colon, "':'")?;
                     let ((w, h), mut pend) = self.parse_xy_pair()?;
+                    let mut name_at = None;
+                    let mut file_at = None;
+                    let mut file_justify = None;
+                    let mut fill_color = None;
+                    loop {
+                        match &self.peek().kind {
+                            TokenKind::Ident(s) if s == "name_at" || s == "file_at" => {
+                                let is_name = s == "name_at";
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                self.expect(TokenKind::LParen, "'('")?;
+                                let (fx, _) = self.parse_quantity()?;
+                                self.expect(TokenKind::Comma, "','")?;
+                                let (fy, _) = self.parse_quantity()?;
+                                let frot = if self.peek().kind == TokenKind::Comma {
+                                    self.bump();
+                                    let (fr, _) = self.parse_quantity()?;
+                                    (fr.raw_value.round() as i32).rem_euclid(360)
+                                } else {
+                                    0
+                                };
+                                pend = self.expect(TokenKind::RParen, "')'")?.span(&self.file);
+                                let t = (fx.to_mm().unwrap_or(0.0), fy.to_mm().unwrap_or(0.0), frot);
+                                if is_name { name_at = Some(t); } else { file_at = Some(t); }
+                            }
+                            TokenKind::Ident(s) if s == "file_justify" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (j, sp) = self.expect_ident_or_str("file_justify")?;
+                                file_justify = Some(j);
+                                pend = pend.merge(&sp);
+                            }
+                            TokenKind::Ident(s) if s == "fill" => {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (f, sp) = self.expect_string("fill color")?;
+                                fill_color = Some(f);
+                                pend = pend.merge(&sp);
+                            }
+                            _ => break,
+                        }
+                    }
                     let mut spins = Vec::new();
                     if self.peek().kind == TokenKind::LBrace {
                         self.bump();
@@ -2482,12 +2769,21 @@ impl Parser {
                             if let Some(sp) = esp {
                                 ppend = ppend.merge(&sp);
                             }
+                            let mut pjust = None;
+                            if matches!(&self.peek().kind, TokenKind::Ident(s) if s == "justify") {
+                                self.bump();
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (j, sp) = self.expect_ident_or_str("justify")?;
+                                pjust = Some(j);
+                                ppend = ppend.merge(&sp);
+                            }
                             spins.push(ExplicitSheetPinDecl {
                                 name: pname,
                                 shape: pshape,
                                 x: px,
                                 y: py,
                                 orient_deg: porient.unwrap_or(0),
+                                justify: pjust,
                                 span: pstart.merge(&ppend),
                             });
                         }
@@ -2500,6 +2796,10 @@ impl Parser {
                         y,
                         w,
                         h,
+                        name_at,
+                        file_at,
+                        file_justify,
+                        fill_color,
                         pins: spins,
                         span: kspan.merge(&pend),
                     });
@@ -2532,6 +2832,7 @@ impl Parser {
             explicit_no_connects,
             explicit_powers,
             explicit_labels,
+            explicit_text_boxes,
             explicit_graphics,
             explicit_sheets,
             bus_aliases,

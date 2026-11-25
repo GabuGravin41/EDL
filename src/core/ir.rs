@@ -386,6 +386,22 @@ pub struct ProjectSummaryIr {
 /// Exact lossless explicit schematic sheet representation (used when `routing { mode: explicit }`
 /// preserves human/KiCad-authored geometry alongside EDL's semantic `circuit {}` netlist).
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ExplicitFieldStyleIr {
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub value: Option<String>,
+    #[serde(default)]
+    pub hide: bool,
+    pub x: f64,
+    pub y: f64,
+    pub orient_deg: i32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub justify: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ExplicitSymbolInstIr {
     pub ref_id: String,
     pub lib_id: String,
@@ -415,6 +431,8 @@ pub struct ExplicitSymbolInstIr {
     pub ref_at: Option<[f64; 3]>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub val_at: Option<[f64; 3]>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<ExplicitFieldStyleIr>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -427,6 +445,12 @@ pub struct ExplicitPowerInstIr {
     pub orient_deg: i32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mirror: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub val_at: Option<[f64; 3]>,
+    #[serde(default)]
+    pub val_hide: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub val_justify: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -440,6 +464,30 @@ pub struct ExplicitLabelIr {
     pub orient_deg: i32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub justify: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ExplicitTextBoxIr {
+    pub text: String,
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+    pub orient_deg: i32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub justify: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_width: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_color: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill_color: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -454,6 +502,14 @@ pub struct ExplicitBusEntryIr {
 pub struct ExplicitGraphicIr {
     pub kind: String, // "polyline" | "rectangle"
     pub pts: Vec<Point2>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_width: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_color: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill_color: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -463,6 +519,8 @@ pub struct ExplicitSheetPinIr {
     pub x: f64,
     pub y: f64,
     pub orient_deg: i32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub justify: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -473,6 +531,14 @@ pub struct ExplicitSheetBlockIr {
     pub y: f64,
     pub w: f64,
     pub h: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name_at: Option<[f64; 3]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub file_at: Option<[f64; 3]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub file_justify: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill_color: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub pins: Vec<ExplicitSheetPinIr>,
 }
@@ -508,6 +574,8 @@ pub struct ExplicitSchematicSheetIr {
     pub no_connects: Vec<Point2>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub labels: Vec<ExplicitLabelIr>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub text_boxes: Vec<ExplicitTextBoxIr>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub graphics: Vec<ExplicitGraphicIr>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

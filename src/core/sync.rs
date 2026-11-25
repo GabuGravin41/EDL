@@ -135,8 +135,15 @@ pub fn parse_sexpr(src: &str) -> Result<Sx, String> {
                 while i < chars.len() && chars[i] != '"' {
                     if chars[i] == '\\' && i + 1 < chars.len() {
                         i += 1;
+                        match chars[i] {
+                            'n' => s.push('\n'),
+                            't' => s.push('\t'),
+                            'r' => s.push('\r'),
+                            other => s.push(other),
+                        }
+                    } else {
+                        s.push(chars[i]);
                     }
-                    s.push(chars[i]);
                     i += 1;
                 }
                 i += 1;

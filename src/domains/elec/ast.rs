@@ -143,6 +143,18 @@ pub struct SchematicRoutingDecl {
 }
 
 #[derive(Debug, Clone)]
+pub struct ExplicitFieldStyleDecl {
+    pub name: String,
+    pub value: Option<String>,
+    pub hide: bool,
+    pub x: f64,
+    pub y: f64,
+    pub orient_deg: i32,
+    pub font_size: Option<f64>,
+    pub justify: Option<String>,
+}
+
+#[derive(Debug, Clone)]
 pub struct ExplicitPlacementDecl {
     pub component: String,
     pub unit: Option<usize>,
@@ -154,6 +166,8 @@ pub struct ExplicitPlacementDecl {
     pub instances: Vec<(String, String)>,
     pub ref_at: Option<(f64, f64, i32)>,
     pub val_at: Option<(f64, f64, i32)>,
+    /// Exact visual field overrides (visibility, position, rotation, font size, justify).
+    pub fields: Vec<ExplicitFieldStyleDecl>,
     pub span: Span,
 }
 
@@ -189,6 +203,9 @@ pub struct ExplicitPowerDecl {
     pub y: Quantity,
     pub orient_deg: i32,
     pub mirror: Option<crate::domains::elec::kicad_sym::SymMirror>,
+    pub val_at: Option<(f64, f64, i32)>,
+    pub val_hide: bool,
+    pub val_justify: Option<String>,
     pub span: Span,
 }
 
@@ -201,6 +218,24 @@ pub struct ExplicitLabelDecl {
     pub y: Quantity,
     pub orient_deg: i32,
     pub justify: Option<String>,
+    pub font_size: Option<f64>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExplicitTextBoxDecl {
+    pub text: String,
+    pub x: Quantity,
+    pub y: Quantity,
+    pub w: Quantity,
+    pub h: Quantity,
+    pub orient_deg: i32,
+    pub font_size: Option<f64>,
+    pub justify: Option<String>,
+    pub stroke_type: Option<String>,
+    pub stroke_width: Option<f64>,
+    pub stroke_color: Option<String>,
+    pub fill_color: Option<String>,
     pub span: Span,
 }
 
@@ -208,6 +243,10 @@ pub struct ExplicitLabelDecl {
 pub struct ExplicitGraphicDecl {
     pub kind: String, // "polyline" | "rectangle"
     pub pts: Vec<(Quantity, Quantity)>,
+    pub stroke_type: Option<String>,
+    pub stroke_width: Option<f64>,
+    pub stroke_color: Option<String>,
+    pub fill_color: Option<String>,
     pub span: Span,
 }
 
@@ -218,6 +257,7 @@ pub struct ExplicitSheetPinDecl {
     pub x: Quantity,
     pub y: Quantity,
     pub orient_deg: i32,
+    pub justify: Option<String>,
     pub span: Span,
 }
 
@@ -229,6 +269,10 @@ pub struct ExplicitSheetBlockDecl {
     pub y: Quantity,
     pub w: Quantity,
     pub h: Quantity,
+    pub name_at: Option<(f64, f64, i32)>,
+    pub file_at: Option<(f64, f64, i32)>,
+    pub file_justify: Option<String>,
+    pub fill_color: Option<String>,
     pub pins: Vec<ExplicitSheetPinDecl>,
     pub span: Span,
 }
@@ -251,6 +295,7 @@ pub struct SchematicDecl {
     pub explicit_no_connects: Vec<ExplicitPointDecl>,
     pub explicit_powers: Vec<ExplicitPowerDecl>,
     pub explicit_labels: Vec<ExplicitLabelDecl>,
+    pub explicit_text_boxes: Vec<ExplicitTextBoxDecl>,
     pub explicit_graphics: Vec<ExplicitGraphicDecl>,
     pub explicit_sheets: Vec<ExplicitSheetBlockDecl>,
     pub bus_aliases: Vec<(String, Vec<String>)>,

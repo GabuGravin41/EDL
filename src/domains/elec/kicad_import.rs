@@ -294,6 +294,7 @@ pub fn import_kicad_project(root_sch: &Path, out_dir: &Path) -> Result<KiCadImpo
         let mut junctions_edl = String::new();
         let mut ncs_edl = String::new();
         let mut labels_edl = String::new();
+        let mut text_boxes_edl = String::new();
         let mut graphics_edl = String::new();
         let mut sheets_edl = String::new();
         let mut bus_aliases_edl = String::new();
@@ -397,9 +398,20 @@ pub fn import_kicad_project(root_sch: &Path, out_dir: &Path) -> Result<KiCadImpo
 
                     if is_power_sym {
                         total_powers += 1;
+                        let pval_at_s = val_at
+                            .map(|(vx, vy, vr)| format!(" val_at: ({vx:.4}mm, {vy:.4}mm, {vr})"))
+                            .unwrap_or_default();
+                        let pval_hide_s = if find_property_hide(item, "Value") {
+                            " val_hide"
+                        } else {
+                            ""
+                        };
+                        let pval_just_s = find_property_justify(item, "Value")
+                            .map(|j| format!(" val_justify: \"{}\"", esc_edl(&j)))
+                            .unwrap_or_default();
                         let _ = writeln!(
                             powers_edl,
-                            "        power \"{}\" \"{}\" ref: \"{}\" at: ({:.4}mm, {:.4}mm){ori_s}{mir_s}",
+                            "        power \"{}\" \"{}\" ref: \"{}\" at: ({:.4}mm, {:.4}mm){ori_s}{mir_s}{pval_at_s}{pval_hide_s}{pval_just_s}",
                             esc_edl(&lib_id),
                             esc_edl(&value),
                             esc_edl(&ref_id),
@@ -470,13 +482,30 @@ pub fn import_kicad_project(root_sch: &Path, out_dir: &Path) -> Result<KiCadImpo
                         } else {
                             String::new()
                         };
-                        let _ = writeln!(
-                            placements_edl,
-                            "        place {}{unit_s} at: ({:.4}mm, {:.4}mm){ori_s}{mir_s}{ref_at_s}{val_at_s}{inst_s}",
-                            fmt_ident_or_quoted(&ref_id),
-                            x,
-                            y
-                        );
+
+                        // Capture non-default property visibility, font size, justification, and visible custom fields
+                        let styled_fields = collect_styled_fields(item, x, y);
+                        if styled_fields.is_empty() {
+                            let _ = writeln!(
+                                placements_edl,
+                                "        place {}{unit_s} at: ({:.4}mm, {:.4}mm){ori_s}{mir_s}{ref_at_s}{val_at_s}{inst_s}",
+                                fmt_ident_or_quoted(&ref_id),
+                                x,
+                                y
+                            );
+                        } else {
+                            let _ = writeln!(
+                                placements_edl,
+                                "        place {}{unit_s} at: ({:.4}mm, {:.4}mm){ori_s}{mir_s}{ref_at_s}{val_at_s}{inst_s} {{",
+                                fmt_ident_or_quoted(&ref_id),
+                                x,
+                                y
+                            );
+                            for fline in styled_fields {
+                                let _ = writeln!(placements_edl, "            {fline}");
+                            }
+                            let _ = writeln!(placements_edl, "        }}");
+                        }
                     }
                 }
                 Some("wire") => {
@@ -538,9 +567,44 @@ pub fn import_kicad_project(root_sch: &Path, out_dir: &Path) -> Result<KiCadImpo
                         let just = find_justify(item)
                             .map(|j| format!(" justify: \"{}\"", esc_edl(&j)))
                             .unwrap_or_default();
+                        let fsz = find_font_size(item)
+                            .filter(|&sz| (sz - 1.27).abs() > 0.005)
+                            .map(|sz| format!(" size: {sz:.4}mm"))
+                            .unwrap_or_default();
                         let _ = writeln!(
                             labels_edl,
-                            "        {kind} \"{}\"{sh} at: ({x:.4}mm, {y:.4}mm){ori}{just}",
+                            "        {kind} \"{}\"{sh} at: ({x:.4}mm, {y:.4}mm){ori}{just}{fsz}",
+                            esc_edl(txt)
+                        );
+                    }
+                }
+                Some("text_box") => {
+                    let txt = sx_list(item)
+                        .and_then(|l| l.get(1))
+                        .and_then(|v| v.as_text())
+                        .unwrap_or("");
+                    if let (Some((x, y, rot)), Some((w, h))) = (find_at_xyr(item), find_size_xy(item)) {
+                        let ori = if rot != 0 {
+                            format!(" orient: {rot}")
+                        } else {
+                            String::new()
+                        };
+                        let fsz = find_font_size(item)
+                            .filter(|&sz| (sz - 1.27).abs() > 0.005)
+                            .map(|sz| format!(" font: {sz:.4}mm"))
+                            .unwrap_or_default();
+                        let just = find_justify(item)
+                            .map(|j| format!(" justify: \"{}\"", esc_edl(&j)))
+                            .unwrap_or_default();
+                        let (st, sw, sc) = find_stroke(item);
+                        let fl = find_fill_color(item);
+                        let st_s = st.map(|s| format!(" style: {s}")).unwrap_or_default();
+                        let sw_s = sw.map(|v| format!(" width: {v:.4}mm")).unwrap_or_default();
+                        let sc_s = sc.map(|c| format!(" color: \"{}\"", esc_edl(&c))).unwrap_or_default();
+                        let fl_s = fl.map(|c| format!(" fill: \"{}\"", esc_edl(&c))).unwrap_or_default();
+                        let _ = writeln!(
+                            text_boxes_edl,
+                            "        text_box \"{}\" at: ({x:.4}mm, {y:.4}mm) size: ({w:.4}mm, {h:.4}mm){ori}{fsz}{just}{st_s}{sw_s}{sc_s}{fl_s}",
                             esc_edl(txt)
                         );
                     }
@@ -553,14 +617,29 @@ pub fn import_kicad_project(root_sch: &Path, out_dir: &Path) -> Result<KiCadImpo
                             .map(|(x, y)| format!("({x:.4}mm, {y:.4}mm)"))
                             .collect::<Vec<_>>()
                             .join(" -> ");
-                        let _ = writeln!(graphics_edl, "        graphic_line {chain}");
+                        let (st, sw, sc) = find_stroke(item);
+                        let fl = find_fill_color(item);
+                        let st_s = st.map(|s| format!(" style: {s}")).unwrap_or_default();
+                        let sw_s = sw.map(|v| format!(" width: {v:.4}mm")).unwrap_or_default();
+                        let sc_s = sc.map(|c| format!(" color: \"{}\"", esc_edl(&c))).unwrap_or_default();
+                        let fl_s = fl.map(|c| format!(" fill: \"{}\"", esc_edl(&c))).unwrap_or_default();
+                        let _ = writeln!(
+                            graphics_edl,
+                            "        graphic_line {chain}{st_s}{sw_s}{sc_s}{fl_s}"
+                        );
                     }
                 }
                 Some("rectangle") => {
                     if let (Some((x0, y0)), Some((x1, y1))) = (find_xy_child(item, "start"), find_xy_child(item, "end")) {
+                        let (st, sw, sc) = find_stroke(item);
+                        let fl = find_fill_color(item);
+                        let st_s = st.map(|s| format!(" style: {s}")).unwrap_or_default();
+                        let sw_s = sw.map(|v| format!(" width: {v:.4}mm")).unwrap_or_default();
+                        let sc_s = sc.map(|c| format!(" color: \"{}\"", esc_edl(&c))).unwrap_or_default();
+                        let fl_s = fl.map(|c| format!(" fill: \"{}\"", esc_edl(&c))).unwrap_or_default();
                         let _ = writeln!(
                             graphics_edl,
-                            "        graphic_rect ({x0:.4}mm, {y0:.4}mm) to ({x1:.4}mm, {y1:.4}mm)"
+                            "        graphic_rect ({x0:.4}mm, {y0:.4}mm) to ({x1:.4}mm, {y1:.4}mm){st_s}{sw_s}{sc_s}{fl_s}"
                         );
                     }
                 }
@@ -592,6 +671,19 @@ pub fn import_kicad_project(root_sch: &Path, out_dir: &Path) -> Result<KiCadImpo
                 Some("sheet") => {
                     let sname = find_property(item, "Sheetname").unwrap_or_else(|| "SubSheet".to_string());
                     let sfile = find_property(item, "Sheetfile").unwrap_or_default();
+                    let name_at_s = find_property_at(item, "Sheetname")
+                        .map(|(nx, ny, nr)| format!(" name_at: ({nx:.4}mm, {ny:.4}mm, {nr})"))
+                        .unwrap_or_default();
+                    let file_at_s = find_property_at(item, "Sheetfile")
+                        .map(|(fx, fy, fr)| format!(" file_at: ({fx:.4}mm, {fy:.4}mm, {fr})"))
+                        .unwrap_or_default();
+                    let file_just_s = find_property_justify(item, "Sheetfile")
+                        .filter(|j| j != "left top")
+                        .map(|j| format!(" file_justify: \"{}\"", esc_edl(&j)))
+                        .unwrap_or_default();
+                    let fill_s = find_fill_color(item)
+                        .map(|c| format!(" fill: \"{}\"", esc_edl(&c)))
+                        .unwrap_or_default();
                     if let (Some((x, y, _)), Some((w, h))) = (find_at_xyr(item), find_size_xy(item)) {
                         let mut pin_lines = String::new();
                         if let Some(l) = sx_list(item) {
@@ -606,9 +698,12 @@ pub fn import_kicad_project(root_sch: &Path, out_dir: &Path) -> Result<KiCadImpo
                                         } else {
                                             String::new()
                                         };
+                                        let pj = find_justify(sub)
+                                            .map(|j| format!(" justify: \"{}\"", esc_edl(&j)))
+                                            .unwrap_or_default();
                                         let _ = writeln!(
                                             pin_lines,
-                                            "            pin \"{}\" {ps} at: ({px:.4}mm, {py:.4}mm){po}",
+                                            "            pin \"{}\" {ps} at: ({px:.4}mm, {py:.4}mm){po}{pj}",
                                             esc_edl(pn)
                                         );
                                     }
@@ -618,14 +713,14 @@ pub fn import_kicad_project(root_sch: &Path, out_dir: &Path) -> Result<KiCadImpo
                         if pin_lines.is_empty() {
                             let _ = writeln!(
                                 sheets_edl,
-                                "        sheet_block \"{}\" file: \"{}\" at: ({x:.4}mm, {y:.4}mm) size: ({w:.4}mm, {h:.4}mm)",
+                                "        sheet_block \"{}\" file: \"{}\" at: ({x:.4}mm, {y:.4}mm) size: ({w:.4}mm, {h:.4}mm){name_at_s}{file_at_s}{file_just_s}{fill_s}",
                                 esc_edl(&sname),
                                 esc_edl(&sfile)
                             );
                         } else {
                             let _ = writeln!(
                                 sheets_edl,
-                                "        sheet_block \"{}\" file: \"{}\" at: ({x:.4}mm, {y:.4}mm) size: ({w:.4}mm, {h:.4}mm) {{",
+                                "        sheet_block \"{}\" file: \"{}\" at: ({x:.4}mm, {y:.4}mm) size: ({w:.4}mm, {h:.4}mm){name_at_s}{file_at_s}{file_just_s}{fill_s} {{",
                                 esc_edl(&sname),
                                 esc_edl(&sfile)
                             );
@@ -683,6 +778,10 @@ pub fn import_kicad_project(root_sch: &Path, out_dir: &Path) -> Result<KiCadImpo
         if !labels_edl.is_empty() {
             let _ = writeln!(schematic_blocks_edl, "\n        // Net labels & annotations");
             schematic_blocks_edl.push_str(&labels_edl);
+        }
+        if !text_boxes_edl.is_empty() {
+            let _ = writeln!(schematic_blocks_edl, "\n        // Comment text boxes");
+            schematic_blocks_edl.push_str(&text_boxes_edl);
         }
         if !graphics_edl.is_empty() {
             let _ = writeln!(schematic_blocks_edl, "\n        // Graphical frames & lines");
@@ -880,9 +979,12 @@ struct ParsedNetlist {
 }
 
 fn export_and_parse_kicad_netlist(sch_path: &Path) -> Result<ParsedNetlist, String> {
+    static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    let seq = NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let tmp = std::env::temp_dir().join(format!(
-        "edl_nl_{}_{}.net",
+        "edl_nl_{}_{}_{}.net",
         std::process::id(),
+        seq,
         sch_path.file_stem().and_then(|s| s.to_str()).unwrap_or("sch")
     ));
     let output = Command::new("kicad-cli")
@@ -1315,6 +1417,172 @@ fn find_justify(sx: &Sx) -> Option<String> {
         }
     }
     None
+}
+
+fn find_font_size(sx: &Sx) -> Option<f64> {
+    for c in sx_list(sx)?.iter().skip(1) {
+        if sx_head(c) == Some("effects") {
+            for e in sx_list(c)?.iter().skip(1) {
+                if sx_head(e) == Some("font") {
+                    for f in sx_list(e)?.iter().skip(1) {
+                        if sx_head(f) == Some("size") {
+                            let l = sx_list(f)?;
+                            return l.get(2).and_then(|v| v.as_f64()).or_else(|| l.get(1).and_then(|v| v.as_f64()));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+fn find_hide(sx: &Sx) -> bool {
+    let Some(items) = sx_list(sx) else { return false };
+    for c in items.iter().skip(1) {
+        if sx_head(c) == Some("effects") {
+            if let Some(el) = sx_list(c) {
+                for e in el.iter().skip(1) {
+                    // KiCad 7/8 legacy bare atom: `(effects ... hide)`
+                    if e.as_text() == Some("hide") {
+                        return true;
+                    }
+                    // KiCad 9 explicit form: `(effects ... (hide yes))`
+                    if sx_head(e) == Some("hide") {
+                        let arg = sx_list(e).and_then(|l| l.get(1)).and_then(|v| v.as_text());
+                        if arg != Some("no") {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    false
+}
+
+fn find_property_node<'a>(sx: &'a Sx, prop_name: &str) -> Option<&'a Sx> {
+    for c in sx_list(sx)?.iter().skip(1) {
+        if sx_head(c) == Some("property") {
+            let l = sx_list(c)?;
+            if l.get(1)?.as_text() == Some(prop_name) {
+                return Some(c);
+            }
+        }
+    }
+    None
+}
+
+fn find_property_hide(sx: &Sx, prop_name: &str) -> bool {
+    find_property_node(sx, prop_name).map(find_hide).unwrap_or(false)
+}
+
+fn find_property_justify(sx: &Sx, prop_name: &str) -> Option<String> {
+    find_property_node(sx, prop_name).and_then(find_justify)
+}
+
+fn find_color_rgba(sx: &Sx) -> Option<String> {
+    for c in sx_list(sx)?.iter().skip(1) {
+        if sx_head(c) == Some("color") {
+            let l = sx_list(c)?;
+            if l.len() >= 5 {
+                let a = l.get(4).and_then(|v| v.as_f64()).unwrap_or(0.0);
+                if a > 0.0001 {
+                    let parts: Vec<&str> = l.iter().skip(1).take(4).filter_map(|v| v.as_text()).collect();
+                    if parts.len() == 4 {
+                        return Some(parts.join(" "));
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+fn find_stroke(sx: &Sx) -> (Option<String>, Option<f64>, Option<String>) {
+    let Some(items) = sx_list(sx) else {
+        return (None, None, None);
+    };
+    for c in items.iter().skip(1) {
+        if sx_head(c) == Some("stroke") {
+            let st = find_child_text(c, "type").filter(|t| t != "default");
+            let sw = find_child_text(c, "width")
+                .and_then(|s| s.parse::<f64>().ok())
+                .filter(|&w| w > 0.0001);
+            let sc = find_color_rgba(c);
+            return (st, sw, sc);
+        }
+    }
+    (None, None, None)
+}
+
+fn find_fill_color(sx: &Sx) -> Option<String> {
+    let items = sx_list(sx)?;
+    for c in items.iter().skip(1) {
+        if sx_head(c) == Some("fill") {
+            let ftype = find_child_text(c, "type").unwrap_or_default();
+            if ftype == "none" {
+                return None;
+            }
+            if let Some(rgba) = find_color_rgba(c) {
+                return Some(rgba);
+            }
+        }
+    }
+    None
+}
+
+/// Collect EDL `field ...` lines for any symbol property that has non-default visibility, font size,
+/// justification, or is a visible secondary/custom property (e.g. visible `Footprint`, `Description`, `Val`).
+fn collect_styled_fields(sx: &Sx, sym_x: f64, sym_y: f64) -> Vec<String> {
+    let mut out = Vec::new();
+    let Some(items) = sx_list(sx) else { return out };
+    for c in items.iter().skip(1) {
+        if sx_head(c) != Some("property") {
+            continue;
+        }
+        let Some(pl) = sx_list(c) else { continue };
+        let name = pl.get(1).and_then(|v| v.as_text()).unwrap_or("");
+        let val = pl.get(2).and_then(|v| v.as_text()).unwrap_or("");
+        if name.is_empty()
+            || matches!(
+                name,
+                "ki_fp_filters" | "ki_keywords" | "ki_description" | "EDL_ID"
+            )
+        {
+            continue;
+        }
+        let hide = find_hide(c);
+        let fsz = find_font_size(c).filter(|&sz| (sz - 1.27).abs() > 0.005);
+        let just = find_justify(c);
+        let (fx, fy, frot) = find_at_xyr(c).unwrap_or((sym_x, sym_y, 0));
+
+        let is_primary = matches!(name, "Reference" | "Value");
+        let needs_emit = if is_primary {
+            hide || fsz.is_some() || just.is_some()
+        } else {
+            !hide && !val.is_empty()
+        };
+        if !needs_emit {
+            continue;
+        }
+        let mut line = format!("field \"{}\"", esc_edl(name));
+        if !is_primary {
+            let _ = write!(line, " \"{}\"", esc_edl(val));
+        }
+        if hide {
+            line.push_str(" hide");
+        }
+        let _ = write!(line, " at: ({fx:.4}mm, {fy:.4}mm, {frot})");
+        if let Some(sz) = fsz {
+            let _ = write!(line, " size: {sz:.4}mm");
+        }
+        if let Some(ref j) = just {
+            let _ = write!(line, " justify: \"{}\"", esc_edl(j));
+        }
+        out.push(line);
+    }
+    out
 }
 
 fn sanitize_ident(s: &str) -> String {
