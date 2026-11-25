@@ -86,6 +86,8 @@ pub struct ProjectAst {
     pub extensions: Vec<crate::syntax::ext::ExtensionBlock>,
     pub verifications: Vec<VerifyRule>,
     pub views: Vec<ViewDecl>,
+    /// Constraint declarations (Phase 1.2)
+    pub constraints: Vec<crate::syntax::constraints_ast::ConstraintDecl>,
 }
 
 /// Top-level parsed file (either a full `project "..." { ... }` or a standalone library file of `module`s).

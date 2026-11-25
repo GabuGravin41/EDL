@@ -1,6 +1,7 @@
 //! Built-in Building Plumbing Overlay Domain (`mep.plumbing`) — v1.4.0.
 
 pub mod compile;
+pub mod constraints;
 pub mod render;
 
 use crate::core::ir::CanonicalIr;
