@@ -4,5 +4,7 @@ pub mod constraint_elaborator;
 pub mod constraints_ast;
 pub mod elaborate;
 pub mod ext;
+pub mod hierarchical_net_elaborator;
+pub mod hierarchical_net_parser;
 pub mod lexer;
 pub mod parser;

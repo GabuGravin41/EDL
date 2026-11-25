@@ -5,6 +5,7 @@ pub mod constraints;
 pub mod idioms;
 pub mod kicad;
 pub mod kicad_erc;
+pub mod kicad_hierarchical_exporter;
 pub mod kicad_import;
 pub mod kicad_lift;
 pub mod kicad_sym;
