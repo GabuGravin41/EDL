@@ -131,6 +131,7 @@ impl DomainRegistry {
         r.register(Box::new(ArchDomain));
         r.register(Box::new(ElecDomain));
         r.register(Box::new(super::industrial::IndustrialControlDomain));
+        r.register(Box::new(super::sld::PowerSldDomain));
         r.register(Box::new(MepElecDomain));
         r.register(Box::new(super::mep_plumbing::MepPlumbingDomain));
         r

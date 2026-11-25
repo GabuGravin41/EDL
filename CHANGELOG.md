@@ -2,6 +2,12 @@
 
 All notable releases of **EDL (Engineering Description Language)** are documented here.
 
+## [1.6.0] — 2026-11-25
+### Added
+- **Building Power Single-Line Diagram Domain (`elec.sld`, `src/domains/sld/`):** `power_sld` blocks modeling MV/LV transformers, standby generators, Solar PV inverters, BESS battery storage, split main LV switchboards (`LVMD`), ATS bus couplers (`QF_Tie`), sub-distribution boards (`SDB`), PFC capacitor banks, motors, UPS, and EV charging hubs.
+- **6 Exact IEC 60909 / IEC 60364 / IEC 61439 Proofs (`S1`–`S6`):** bottom-up power flow & **N-1 single-transformer emergency contingency (`S1`)**, cable/breaker `Ib <= In <= Iz` coordination (`S2`), upstream/downstream breaker selectivity (`S3`), exact IEC 60909 prospective 3-phase short-circuit `Ik3'' <= Icu` breaking capacity (`S4`), cumulative voltage drop (`S5`), and formal ATS 2-of-3 coupler interlock proof (`S6`).
+- **Dual IEC 60617 SLD SVG + 6-Layer AutoCAD R12 DXF Renderer** and benchmark `examples/building_power_sld_2x1600kva.edl`.
+
 ## [1.5.0] — 2026-11-25
 ### Added
 - **Complex Architecture & Structural Axis Grids (`src/domains/arch/grid.rs`):** `structural_grid` blocks (`x_bays`, `y_bays`, `x_labels`, `y_labels`, `columns: all_intersections | perimeter | [...]`, `column_kind: concrete | steel_i`, `levels { Room: "±0.000" }`) injecting `grid_x_<label>` / `grid_y_<label>` directly into the RREF linear layout solver.

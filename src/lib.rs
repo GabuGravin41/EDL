@@ -77,6 +77,8 @@ pub fn render_svg_with_layers(
 pub fn export_dxf(ir: &CanonicalIr) -> String {
     if ir.project.domain == "elec.industrial" {
         domains::industrial::render::export_industrial_dxf(ir)
+    } else if ir.project.domain == "elec.sld" {
+        domains::sld::render::export_sld_dxf(ir)
     } else {
         domains::arch::dxf::export_dxf(ir)
     }

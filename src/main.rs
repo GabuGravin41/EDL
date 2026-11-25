@@ -238,6 +238,11 @@ fn main() {
                         "  Industrial Control: {} device(s) | {} control rung(s)",
                         ir.project.component_count, ir.project.net_count
                     );
+                } else if ir.project.domain == "elec.sld" {
+                    println!(
+                        "  Building Power SLD: {} element(s) | {} switchboard bus(es)",
+                        ir.project.component_count, ir.project.net_count
+                    );
                 } else {
                     if let Some([w, d]) = ir.project.exterior_footprint_mm {
                         println!(

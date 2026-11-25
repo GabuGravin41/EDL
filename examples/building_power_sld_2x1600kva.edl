@@ -1,0 +1,130 @@
+// EDL v1.6.0 Benchmark — Commercial Building MV/LV Power Single-Line Diagram (IEC 60909 / IEC 60364)
+// Combines the exact topology & engineering verification of Siemens SIMARIS, ABB Switchgear, and DER/EV SLDs:
+//   - Dual 1600 kVA 20/0.4 kV Dyn11 Transformers (T1, T2) + 630 kVA Standby Generator (G1) + Solar PV + BESS
+//   - Split Main LV Switchboards (LVMD_A, LVMD_B) coupled by 2000A ATS 2-of-3 Bus Coupler (QF_Tie)
+//   - 250 kvar Power Factor Correction Capacitor Bank (PFC_A) + 4 Sub-Distribution Boards (SDBs)
+//   - Live IEC 60909 short-circuit Ik3'', Ib <= In <= Iz cable/breaker coordination, breaker selectivity,
+//     cumulative voltage drop, ATS 2-of-3 interlock proof, AND N-1 Emergency Single-Transformer Contingency!
+
+project "Commercial_Building_SLD_2x1600kVA" {
+  units: mm
+  frame Sheet: Frame2
+
+  power_sld MainSwitchgear {
+    title: "COMMERCIAL BUILDING MV/LV SINGLE-LINE DIAGRAM (2x1600 kVA + GEN + PV + BESS)"
+    standard: "IEC 60909 / IEC 60364 / IEC 61439"
+
+    // =========================================================================
+    // 1. MAIN & SUB-DISTRIBUTION SWITCHBOARDS (BUSBARS)
+    // =========================================================================
+    bus LVMD_A         { voltage_v: 400  system: "TN-S"  rating_a: 3200  icu_ka: 65  tier: main }
+    bus LVMD_B         { voltage_v: 400  system: "TN-S"  rating_a: 3200  icu_ka: 65  tier: main }
+
+    bus SDB_HVAC       { voltage_v: 400  system: "TN-S"  rating_a: 800   icu_ka: 50  tier: sub }
+    bus SDB_General    { voltage_v: 400  system: "TN-S"  rating_a: 630   icu_ka: 50  tier: sub }
+    bus SDB_DataCenter { voltage_v: 400  system: "TN-S"  rating_a: 800   icu_ka: 50  tier: sub }
+    bus SDB_EV_Hub     { voltage_v: 400  system: "TN-S"  rating_a: 630   icu_ka: 50  tier: sub }
+
+    // =========================================================================
+    // 2. POWER SOURCES (MV/LV TRANSFORMERS + STANDBY GEN + SOLAR PV + BESS)
+    // =========================================================================
+    source T1: transformer {
+      rating_kva: 1600  uk_pct: 6.0  hv_kv: 20.0  lv_v: 400  vector: "Dyn11"
+      bus: LVMD_A  incomer: QF_I  incomer_a: 2500  icu_ka: 65
+    }
+    source T2: transformer {
+      rating_kva: 1600  uk_pct: 6.0  hv_kv: 20.0  lv_v: 400  vector: "Dyn11"
+      bus: LVMD_B  incomer: QF_II  incomer_a: 2500  icu_ka: 65
+    }
+    source G1: generator {
+      rating_kva: 630  xd_pct: 12.0  lv_v: 400
+      bus: LVMD_B  incomer: QF_G1  incomer_a: 1000  icu_ka: 50  standby: true
+    }
+    source PV1: solar_pv {
+      rating_kw: 250  lv_v: 400
+      bus: LVMD_A  incomer: QF_PV1  incomer_a: 400  icu_ka: 50
+    }
+    source BESS1: bess {
+      rating_kw: 200  capacity_kwh: 400  lv_v: 400
+      bus: LVMD_B  incomer: QF_BESS  incomer_a: 400  icu_ka: 50
+    }
+
+    // =========================================================================
+    // 3. BUS COUPLER WITH ATS 2-OF-3 INTERLOCK
+    // =========================================================================
+    coupler QF_Tie {
+      between: [LVMD_A, LVMD_B]
+      rating_a: 2000
+      icu_ka: 65
+      mode: ats_2_of_3
+      normally_open: true
+    }
+
+    // =========================================================================
+    // 4. MAIN FEEDERS (LVMD -> SDBs)
+    // =========================================================================
+    feeder F_HVAC {
+      from: LVMD_A  to: SDB_HVAC  breaker: QF1  kind: mccb  rating_a: 630  icu_ka: 50
+      cable: "Cu 2(3x185+95)"  area_mm2: 185  parallel_runs: 2  length_m: 35
+    }
+    feeder F_General {
+      from: LVMD_A  to: SDB_General  breaker: QF2  kind: mccb  rating_a: 400  icu_ka: 50
+      cable: "Cu 3x240+120"  area_mm2: 240  parallel_runs: 1  length_m: 40
+    }
+    feeder F_DataCenter {
+      from: LVMD_B  to: SDB_DataCenter  breaker: QF3  kind: mccb  rating_a: 630  icu_ka: 50
+      cable: "Cu 2(3x185+95)"  area_mm2: 185  parallel_runs: 2  length_m: 30
+    }
+    feeder F_EV_Hub {
+      from: LVMD_B  to: SDB_EV_Hub  breaker: QF4  kind: mccb  rating_a: 400  icu_ka: 50
+      cable: "Cu 3x240+120"  area_mm2: 240  parallel_runs: 1  length_m: 45
+    }
+
+    // =========================================================================
+    // 5. POWER FACTOR CORRECTION & FINAL LOADS
+    // =========================================================================
+    load PFC_A: capacitor_bank {
+      bus: LVMD_A  breaker: QF_PFC  breaker_kind: mccb  rating_a: 400  icu_ka: 50  kvar: 200
+    }
+
+    // SDB_HVAC loads (Chillers + AHU)
+    load M_Chiller1: motor {
+      bus: SDB_HVAC  breaker: QF11  breaker_kind: mccb  rating_a: 320  icu_ka: 36
+      cable: "Cu 3x150+70"  area_mm2: 150  length_m: 25  power_kw: 160  pf: 0.86  demand: 0.85
+    }
+    load M_AHU: motor {
+      bus: SDB_HVAC  breaker: QF12  breaker_kind: mccb  rating_a: 250  icu_ka: 36
+      cable: "Cu 3x95+50"   area_mm2: 95   length_m: 30  power_kw: 110  pf: 0.85  demand: 0.85
+    }
+
+    // SDB_General loads (Lighting + Floor Power)
+    load L_Lighting: lighting {
+      bus: SDB_General  breaker: QF21  breaker_kind: mccb  rating_a: 125  icu_ka: 36
+      cable: "Cu 3x35+16"  area_mm2: 35  length_m: 30  power_kw: 65  pf: 0.95  demand: 0.90
+    }
+    load L_FloorPwr: general {
+      bus: SDB_General  breaker: QF22  breaker_kind: mccb  rating_a: 250  icu_ka: 36
+      cable: "Cu 3x95+50"  area_mm2: 95  length_m: 35  power_kw: 140  pf: 0.90  demand: 0.75
+    }
+
+    // SDB_DataCenter loads (Twin UPS Feed)
+    load UPS_A: ups {
+      bus: SDB_DataCenter  breaker: QF31  breaker_kind: mccb  rating_a: 320  icu_ka: 36
+      cable: "Cu 3x150+70"  area_mm2: 150  length_m: 20  power_kw: 160  pf: 0.96  demand: 0.90
+    }
+    load UPS_B: ups {
+      bus: SDB_DataCenter  breaker: QF32  breaker_kind: mccb  rating_a: 320  icu_ka: 36
+      cable: "Cu 3x150+70"  area_mm2: 150  length_m: 20  power_kw: 160  pf: 0.96  demand: 0.90
+    }
+
+    // SDB_EV_Hub loads (Fast DC EV Chargers)
+    load EV_Bay1: ev_charger {
+      bus: SDB_EV_Hub  breaker: QF41  breaker_kind: mccb  rating_a: 200  icu_ka: 36
+      cable: "Cu 3x70+35"  area_mm2: 70  length_m: 25  power_kw: 120  pf: 0.98  demand: 0.80
+    }
+    load EV_Bay2: ev_charger {
+      bus: SDB_EV_Hub  breaker: QF42  breaker_kind: mccb  rating_a: 200  icu_ka: 36
+      cable: "Cu 3x70+35"  area_mm2: 70  length_m: 25  power_kw: 120  pf: 0.98  demand: 0.80
+    }
+  }
+}
