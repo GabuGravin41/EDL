@@ -96,6 +96,9 @@ pub struct KiCadLibSymbol {
     pub hide_pin_numbers: bool,
     pub pins: Vec<KiCadLibPin>,
     pub primitives: Vec<KiCadLibPrim>,
+    /// Optional verbatim KiCad `(symbol ...)` S-expression for 100% lossless round-trip export.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raw_sexpr: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -290,11 +293,32 @@ fn extract_quoted_after(line: &str, prefix: &str) -> Option<String> {
     None
 }
 
-/// Load a single symbol by `"Library:Symbol"` reference (resolving `extends` inheritance cleanly).
+/// Load a single symbol by `"Library:Symbol"` (or bare project-embedded `"Symbol"`) reference,
+/// resolving project-local `.kicad_sym` bundles first, then system KiCad libraries.
 pub fn load_symbol(lib_ref: &str, extra_libs: &[PathBuf]) -> Result<KiCadLibSymbol, String> {
+    // 1. Check explicitly declared project `.kicad_sym` files for an exact full-name match
+    //    (supports single bundled `<project>.kicad_sym` extracted from a KiCad schematic's `lib_symbols`,
+    //    including both `"Lib:Part"` and bare `"Logo_2"` symbols!).
+    for p in extra_libs {
+        if p.is_file() {
+            if let Ok(content) = fs::read_to_string(p) {
+                if let Some(raw_sym) = extract_top_symbol_sexpr(&content, lib_ref) {
+                    let sx = parse_sexpr(&raw_sym)?;
+                    let (lib_name, sym_name) = lib_ref
+                        .split_once(':')
+                        .unwrap_or(("", lib_ref));
+                    let mut sym = resolve_symbol_sx(lib_name, &content, sym_name, &sx, 0)?;
+                    sym.lib_id = lib_ref.to_string();
+                    sym.raw_sexpr = Some(raw_sym);
+                    return Ok(sym);
+                }
+            }
+        }
+    }
+
     let (lib_name, sym_name) = lib_ref
         .split_once(':')
-        .ok_or_else(|| format!("Invalid KiCad symbol reference '{lib_ref}' (expected 'Library:Symbol')"))?;
+        .ok_or_else(|| format!("Invalid KiCad symbol reference '{lib_ref}' (expected 'Library:Symbol' or embedded symbol in `symbol_lib`)"))?;
 
     let libs = list_symbol_library_files(extra_libs);
     let path = libs
@@ -313,6 +337,34 @@ pub fn load_symbol(lib_ref: &str, extra_libs: &[PathBuf]) -> Result<KiCadLibSymb
     load_symbol_from_lib_str(lib_name, &content, sym_name)
 }
 
+/// Extract the raw verbatim `(symbol "<lib_ref>" ...)` S-expression from any project `extra_libs`
+/// or system `.kicad_sym` library (used by lossless Option-A `.kicad_sch` export).
+pub fn load_raw_symbol_sexpr(lib_ref: &str, extra_libs: &[PathBuf]) -> Option<String> {
+    for p in extra_libs {
+        if p.is_file() {
+            if let Ok(content) = fs::read_to_string(p) {
+                if let Some(raw) = extract_top_symbol_sexpr(&content, lib_ref) {
+                    return Some(raw);
+                }
+            }
+        }
+    }
+    if let Some((lib_name, sym_name)) = lib_ref.split_once(':') {
+        let libs = list_symbol_library_files(extra_libs);
+        if let Some((_, path)) = libs.iter().find(|(name, _)| name == lib_name) {
+            if let Ok(content) = fs::read_to_string(path) {
+                if let Some(raw) = extract_top_symbol_sexpr(&content, sym_name) {
+                    // Qualify top-level symbol header `(symbol "Sym"` -> `(symbol "Lib:Sym"` for `.kicad_sch`
+                    let old_hdr = format!("(symbol \"{sym_name}\"");
+                    let new_hdr = format!("(symbol \"{lib_ref}\"");
+                    return Some(raw.replacen(&old_hdr, &new_hdr, 1));
+                }
+            }
+        }
+    }
+    None
+}
+
 /// Parse a symbol directly from a `.kicad_sym` file's text (public for unit testing without disk deps).
 pub fn load_symbol_from_lib_str(
     lib_name: &str,
@@ -324,7 +376,13 @@ pub fn load_symbol_from_lib_str(
         .ok_or_else(|| format!("Symbol '{sym_name}' not found in library '{lib_name}'"))?;
     let sx = parse_sexpr(&raw_sym)?;
 
-    resolve_symbol_sx(lib_name, content, sym_name, &sx, 0)
+    let mut sym = resolve_symbol_sx(lib_name, content, sym_name, &sx, 0)?;
+    if sym.raw_sexpr.is_none() {
+        let old_hdr = format!("(symbol \"{sym_name}\"");
+        let new_hdr = format!("(symbol \"{lib_name}:{sym_name}\"");
+        sym.raw_sexpr = Some(raw_sym.replacen(&old_hdr, &new_hdr, 1));
+    }
+    Ok(sym)
 }
 
 fn resolve_symbol_sx(
@@ -371,6 +429,7 @@ fn resolve_symbol_sx(
             hide_pin_numbers: false,
             pins: Vec::new(),
             primitives: Vec::new(),
+            raw_sexpr: None,
         }
     };
 

@@ -383,6 +383,139 @@ pub struct ProjectSummaryIr {
     pub has_errors: bool,
 }
 
+/// Exact lossless explicit schematic sheet representation (used when `routing { mode: explicit }`
+/// preserves human/KiCad-authored geometry alongside EDL's semantic `circuit {}` netlist).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ExplicitSymbolInstIr {
+    pub ref_id: String,
+    pub lib_id: String,
+    pub value: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub footprint: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub datasheet: Option<String>,
+    pub unit: usize,
+    pub x: f64,
+    pub y: f64,
+    pub orient_deg: i32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mirror: Option<String>,
+    #[serde(default)]
+    pub dnp: bool,
+    pub in_bom: bool,
+    pub on_board: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub props: Vec<(String, String)>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pin_numbers: Vec<String>,
+    /// Optional per-hierarchy-path RefDes overrides for reused sub-sheets (`"/sheet1": "C201"`).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub instances: Vec<(String, String)>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ref_at: Option<[f64; 3]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub val_at: Option<[f64; 3]>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ExplicitPowerInstIr {
+    pub lib_id: String,
+    pub value: String,
+    pub reference: String,
+    pub x: f64,
+    pub y: f64,
+    pub orient_deg: i32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mirror: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ExplicitLabelIr {
+    pub kind: String, // "label" | "global_label" | "hierarchical_label" | "text"
+    pub text: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shape: Option<String>,
+    pub x: f64,
+    pub y: f64,
+    pub orient_deg: i32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub justify: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ExplicitBusEntryIr {
+    pub x: f64,
+    pub y: f64,
+    pub dx: f64,
+    pub dy: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ExplicitGraphicIr {
+    pub kind: String, // "polyline" | "rectangle"
+    pub pts: Vec<Point2>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ExplicitSheetPinIr {
+    pub name: String,
+    pub shape: String,
+    pub x: f64,
+    pub y: f64,
+    pub orient_deg: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ExplicitSheetBlockIr {
+    pub name: String,
+    pub file: String,
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pins: Vec<ExplicitSheetPinIr>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ExplicitSchematicSheetIr {
+    pub sheet_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sheet_file: Option<String>,
+    pub paper: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rev: Option<String>,
+    /// Verbatim `(symbol "<lib_id>" ...)` S-expressions required by this sheet.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub raw_lib_symbols: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub symbols: Vec<ExplicitSymbolInstIr>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub powers: Vec<ExplicitPowerInstIr>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub wires: Vec<Segment2>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub buses: Vec<Segment2>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub bus_entries: Vec<ExplicitBusEntryIr>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub junctions: Vec<Point2>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub no_connects: Vec<Point2>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub labels: Vec<ExplicitLabelIr>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub graphics: Vec<ExplicitGraphicIr>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub sheet_blocks: Vec<ExplicitSheetBlockIr>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub bus_aliases: Vec<(String, Vec<String>)>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct CanonicalIr {
     pub ir_version: String,
@@ -399,6 +532,8 @@ pub struct CanonicalIr {
     pub schematic_groups: Vec<SchematicGroupIr>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub schematic_routes: Vec<SchematicRouteIr>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub explicit_sheets: Vec<ExplicitSchematicSheetIr>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub mep_circuits: Vec<MepCircuitIr>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]

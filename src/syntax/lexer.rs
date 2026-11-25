@@ -86,6 +86,23 @@ pub fn lex(file: &str, src: &str) -> Result<Vec<Token>, Diagnostic> {
             let mut closed = false;
             while i < n {
                 let c = chars[i];
+                if c == '\\' && i + 1 < n {
+                    let next = chars[i + 1];
+                    match next {
+                        '"' => s.push('"'),
+                        '\\' => s.push('\\'),
+                        'n' => s.push('\n'),
+                        'r' => s.push('\r'),
+                        't' => s.push('\t'),
+                        other => {
+                            s.push('\\');
+                            s.push(other);
+                        }
+                    }
+                    i += 2;
+                    col += 2;
+                    continue;
+                }
                 if c == '"' {
                     i += 1;
                     col += 1;

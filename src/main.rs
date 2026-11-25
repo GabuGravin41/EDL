@@ -120,6 +120,17 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// Import an existing KiCad 8/9 `.kicad_sch` project into Two-Layer Option-A EDL (exact netlist + exact geometry)
+    ImportKicad {
+        /// Path to the KiCad schematic (.kicad_sch; single-sheet or root hierarchical sheet)
+        file: PathBuf,
+        /// Output directory for generated `.edl` and extracted `.kicad_sym`
+        #[arg(long)]
+        out_dir: PathBuf,
+        /// Automatically round-trip export and verify 100% pin-for-pin KiCad 9 netlist equivalence
+        #[arg(long)]
+        verify: bool,
+    },
     /// Generate a grouped Bill of Materials (CSV or JSON) for an electronics project
     Bom {
         /// Path to .edl project file
@@ -381,6 +392,9 @@ fn main() {
                 let files = edl::export_kicad_project(&ir);
                 for (fname, content) in &files {
                     let out_p = kdir.join(fname);
+                    if let Some(parent) = out_p.parent() {
+                        let _ = fs::create_dir_all(parent);
+                    }
                     fs::write(&out_p, content).unwrap_or_else(|e| {
                         eprintln!("Failed to write {}: {e}", out_p.display());
                         process::exit(1);
@@ -640,6 +654,86 @@ fn main() {
             },
             other => {
                 eprintln!("Unknown symbols action '{other}' (expected 'search' or 'inspect')");
+                process::exit(1);
+            }
+        },
+        Commands::ImportKicad {
+            file,
+            out_dir,
+            verify,
+        } => match edl::domains::elec::kicad_import::import_kicad_project(&file, &out_dir) {
+            Ok(rep) => {
+                println!(
+                    "Imported KiCad project -> {} (+ {}, {} sheet(s), {} component(s), {} net(s), {} wire(s), {} power(s), {} bus(es))",
+                    rep.edl_path.display(),
+                    rep.sym_lib_path.display(),
+                    rep.sheet_count,
+                    rep.component_count,
+                    rep.net_count,
+                    rep.wire_count,
+                    rep.power_count,
+                    rep.bus_count
+                );
+                if verify {
+                    let ir = load_and_compile(&rep.edl_path);
+                    let rt_dir = out_dir.join("roundtrip_kicad");
+                    let _ = fs::create_dir_all(&rt_dir);
+                    let files = edl::export_kicad_project(&ir);
+                    let root_name = file
+                        .file_name()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("root.kicad_sch");
+                    for (fname, content) in &files {
+                        let dest = rt_dir.join(fname);
+                        if let Some(parent) = dest.parent() {
+                            let _ = fs::create_dir_all(parent);
+                        }
+                        if let Err(e) = fs::write(&dest, content) {
+                            eprintln!("Failed to write round-trip '{fname}': {e}");
+                            process::exit(1);
+                        }
+                    }
+                    let rt_root = if rt_dir.join(root_name).is_file() {
+                        rt_dir.join(root_name)
+                    } else {
+                        rt_dir.join(files.keys().next().unwrap())
+                    };
+                    match edl::domains::elec::kicad_import::compare_kicad_netlists(&file, &rt_root) {
+                        Ok(cmp) => {
+                            if cmp.exact_match {
+                                println!(
+                                    "ROUND-TRIP NETLIST: 100% EXACT MATCH ({} components, {} multi-pin nets)",
+                                    cmp.orig_components, cmp.orig_nets
+                                );
+                            } else {
+                                eprintln!(
+                                    "ROUND-TRIP NETLIST MISMATCH: orig=({} comps, {} nets) vs rt=({} comps, {} nets)",
+                                    cmp.orig_components, cmp.orig_nets, cmp.rt_components, cmp.rt_nets
+                                );
+                                if !cmp.missing_components.is_empty() {
+                                    eprintln!("  missing components: {:?}", cmp.missing_components);
+                                }
+                                if !cmp.extra_components.is_empty() {
+                                    eprintln!("  extra components: {:?}", cmp.extra_components);
+                                }
+                                for m in cmp.missing_pin_pairs.iter().take(5) {
+                                    eprintln!("  missing net: {m}");
+                                }
+                                for e in cmp.extra_pin_pairs.iter().take(5) {
+                                    eprintln!("  extra net:   {e}");
+                                }
+                                process::exit(1);
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("Netlist comparison failed: {e}");
+                            process::exit(1);
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("import-kicad error: {e}");
                 process::exit(1);
             }
         },

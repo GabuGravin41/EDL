@@ -24,6 +24,93 @@ pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
 pub fn export_kicad_project(ir: &CanonicalIr) -> BTreeMap<String, String> {
     let mut files = BTreeMap::new();
     let root_file = format!("{}.kicad_sch", sanitize_filename(&ir.project.name));
+    if !ir.explicit_sheets.is_empty() {
+        // Build recursive KiCad hierarchy map: sheet_file -> Vec<(semantic_path, uuid_path)>
+        // so single-use AND reused multi-level child sheets emit exact `(path "/root_uuid/sheet_uuid/...")`!
+        let mut by_file: BTreeMap<String, &ExplicitSchematicSheetIr> = BTreeMap::new();
+        for (idx, es) in ir.explicit_sheets.iter().enumerate() {
+            let fname = es.sheet_file.clone().unwrap_or_else(|| {
+                if idx == 0 {
+                    root_file.clone()
+                } else {
+                    format!("{}.kicad_sch", sanitize_filename(&es.sheet_id))
+                }
+            });
+            by_file.insert(fname, es);
+        }
+
+        let root_es = &ir.explicit_sheets[0];
+        let root_fname = root_es
+            .sheet_file
+            .clone()
+            .unwrap_or_else(|| root_file.clone());
+        let root_uuid = det_uuid("root", &root_es.sheet_id);
+
+        let mut sheet_inst_paths: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
+        fn walk_hierarchy(
+            cur_file: &str,
+            sem_prefix: &str,
+            uuid_prefix: &str,
+            by_file: &BTreeMap<String, &ExplicitSchematicSheetIr>,
+            out_map: &mut BTreeMap<String, Vec<(String, String)>>,
+            depth: usize,
+        ) {
+            if depth > 12 {
+                return;
+            }
+            out_map
+                .entry(cur_file.to_string())
+                .or_default()
+                .push((sem_prefix.to_string(), uuid_prefix.to_string()));
+            let Some(es) = by_file.get(cur_file) else {
+                return;
+            };
+            let cur_dir = std::path::Path::new(cur_file)
+                .parent()
+                .filter(|p| !p.as_os_str().is_empty());
+            for (bi, sb) in es.sheet_blocks.iter().enumerate() {
+                let su = det_uuid("exp_sheet", &format!("{}_{bi}_{}", es.sheet_id, sb.name));
+                let child_file = if by_file.contains_key(&sb.file) {
+                    sb.file.clone()
+                } else if let Some(dir) = cur_dir {
+                    dir.join(&sb.file).to_string_lossy().replace('\\', "/")
+                } else {
+                    sb.file.clone()
+                };
+                let next_sem = if sem_prefix == "/" {
+                    format!("/{}", sb.name)
+                } else {
+                    format!("{sem_prefix}/{}", sb.name)
+                };
+                let next_uuid = format!("{uuid_prefix}/{su}");
+                walk_hierarchy(&child_file, &next_sem, &next_uuid, by_file, out_map, depth + 1);
+            }
+        }
+        walk_hierarchy(
+            &root_fname,
+            "/",
+            &format!("/{root_uuid}"),
+            &by_file,
+            &mut sheet_inst_paths,
+            0,
+        );
+
+        for (idx, es) in ir.explicit_sheets.iter().enumerate() {
+            let fname = es.sheet_file.clone().unwrap_or_else(|| {
+                if idx == 0 {
+                    root_file.clone()
+                } else {
+                    format!("{}.kicad_sch", sanitize_filename(&es.sheet_id))
+                }
+            });
+            let paths = sheet_inst_paths.get(&fname).cloned().unwrap_or_else(|| {
+                let u = det_uuid("root", &es.sheet_id);
+                vec![("/".to_string(), format!("/{u}"))]
+            });
+            files.insert(fname, export_explicit_kicad_sheet(ir, es, &paths, idx + 1));
+        }
+        return files;
+    }
     if ir.views.len() <= 1 {
         files.insert(root_file, export_kicad_sch(ir));
         return files;
@@ -103,6 +190,19 @@ pub fn export_kicad_sheet(
     hier_path: Option<&str>,
     page_num: usize,
 ) -> String {
+    // Option-A Explicit Geometric Mode: emit 100% lossless KiCad 9 schematic preserving
+    // verbatim `lib_symbols`, exact coordinates/rotations/mirrors, multi-unit ICs, buses & wires!
+    if let Some(es) = match sheet_name {
+        Some(sn) => ir.explicit_sheets.iter().find(|s| s.sheet_id == sn),
+        None => ir.explicit_sheets.first(),
+    } {
+        let root_uuid = det_uuid("root", &es.sheet_id);
+        let p = hier_path
+            .map(|h| h.to_string())
+            .unwrap_or_else(|| format!("/{root_uuid}"));
+        return export_explicit_kicad_sheet(ir, es, &[("/".to_string(), p)], page_num);
+    }
+
     let mut out = String::new();
     let multi_sheet = ir.views.len() > 1;
     let sheet_key = sheet_name.unwrap_or(&ir.project.name);
@@ -818,6 +918,395 @@ pub fn export_kicad_sheet(
                 );
             }
         }
+    }
+
+    let _ = writeln!(out, "  (sheet_instances");
+    let _ = writeln!(out, "    (path \"/\" (page \"{page_num}\"))");
+    let _ = writeln!(out, "  )");
+    let _ = writeln!(out, ")");
+    out
+}
+
+/// Export an Option-A `ExplicitSchematicSheetIr` directly to a lossless KiCad 9 `.kicad_sch` file.
+fn export_explicit_kicad_sheet(
+    ir: &CanonicalIr,
+    es: &ExplicitSchematicSheetIr,
+    inst_paths: &[(String, String)], // (semantic_path, kicad_uuid_path)
+    page_num: usize,
+) -> String {
+    let mut out = String::new();
+    let root_uuid = det_uuid("root", &es.sheet_id);
+    let fallback_paths = vec![("/".to_string(), format!("/{root_uuid}"))];
+    let active_paths = if inst_paths.is_empty() {
+        fallback_paths.as_slice()
+    } else {
+        inst_paths
+    };
+
+    // Format KiCad paper spec (e.g. "A3 portrait" -> `(paper "A3" portrait)`, "A4 landscape" -> `(paper "A4")`)
+    let paper_parts: Vec<&str> = es.paper.split_whitespace().collect();
+    let paper_size = paper_parts.first().copied().unwrap_or("A4");
+    let paper_portrait = paper_parts.iter().any(|p| p.eq_ignore_ascii_case("portrait"));
+
+    let _ = writeln!(out, "(kicad_sch");
+    let _ = writeln!(out, "  (version 20250114)");
+    let _ = writeln!(out, "  (generator \"edl\")");
+    let _ = writeln!(out, "  (generator_version \"2.1.0\")");
+    let _ = writeln!(out, "  (uuid \"{root_uuid}\")");
+    if paper_portrait {
+        let _ = writeln!(out, "  (paper \"{}\" portrait)", escape_sexpr(paper_size));
+    } else {
+        let _ = writeln!(out, "  (paper \"{}\")", escape_sexpr(paper_size));
+    }
+    let _ = writeln!(out, "  (title_block");
+    let _ = writeln!(
+        out,
+        "    (title \"{}\")",
+        escape_sexpr(es.title.as_deref().unwrap_or(&ir.project.name))
+    );
+    if let Some(ref rev) = es.rev {
+        let _ = writeln!(out, "    (rev \"{}\")", escape_sexpr(rev));
+    }
+    if let Some(ref auth) = es.author {
+        let _ = writeln!(out, "    (company \"{}\")", escape_sexpr(auth));
+    }
+    let _ = writeln!(out, "    (comment 1 \"Generated by EDL v2.1.0\")");
+    let _ = writeln!(out, "  )");
+
+    // 1. Verbatim embedded `(lib_symbols ...)`
+    let _ = writeln!(out, "  (lib_symbols");
+    for raw in es.raw_lib_symbols.values() {
+        for line in raw.lines() {
+            let _ = writeln!(out, "    {line}");
+        }
+    }
+    let _ = writeln!(out, "  )");
+
+    // 1b. Named bus aliases (`(bus_alias "DDR4" (members ...))`)
+    for (bname, members) in &es.bus_aliases {
+        let mem_s = members
+            .iter()
+            .map(|m| format!("\"{}\"", escape_sexpr(m)))
+            .collect::<Vec<_>>()
+            .join(" ");
+        let _ = writeln!(
+            out,
+            "  (bus_alias \"{}\" (members {mem_s}))",
+            escape_sexpr(bname)
+        );
+    }
+
+    // 2. Non-electrical graphics (lines / rectangles)
+    for (gi, gr) in es.graphics.iter().enumerate() {
+        let gu = det_uuid("exp_gr", &format!("{}_{gi}", es.sheet_id));
+        if gr.kind == "rectangle" && gr.pts.len() >= 2 {
+            let _ = writeln!(
+                out,
+                "  (rectangle (start {:.4} {:.4}) (end {:.4} {:.4}) (stroke (width 0) (type default)) (fill (type none)) (uuid \"{gu}\"))",
+                gr.pts[0].x, gr.pts[0].y, gr.pts[1].x, gr.pts[1].y
+            );
+        } else if gr.pts.len() >= 2 {
+            let pts_s = gr
+                .pts
+                .iter()
+                .map(|p| format!("(xy {:.4} {:.4})", p.x, p.y))
+                .collect::<Vec<_>>()
+                .join(" ");
+            let _ = writeln!(
+                out,
+                "  (polyline (pts {pts_s}) (stroke (width 0) (type default)) (uuid \"{gu}\"))"
+            );
+        }
+    }
+
+    // 3. Wires, buses, bus entries, junctions, no-connects
+    for (wi, seg) in es.wires.iter().enumerate() {
+        let wu = det_uuid("exp_wire", &format!("{}_{wi}", es.sheet_id));
+        let _ = writeln!(
+            out,
+            "  (wire (pts (xy {:.4} {:.4}) (xy {:.4} {:.4})) (stroke (width 0) (type default)) (uuid \"{wu}\"))",
+            seg.p0.x, seg.p0.y, seg.p1.x, seg.p1.y
+        );
+    }
+    for (bi, seg) in es.buses.iter().enumerate() {
+        let bu = det_uuid("exp_bus", &format!("{}_{bi}", es.sheet_id));
+        let _ = writeln!(
+            out,
+            "  (bus (pts (xy {:.4} {:.4}) (xy {:.4} {:.4})) (stroke (width 0) (type default)) (uuid \"{bu}\"))",
+            seg.p0.x, seg.p0.y, seg.p1.x, seg.p1.y
+        );
+    }
+    for (bei, be) in es.bus_entries.iter().enumerate() {
+        let beu = det_uuid("exp_be", &format!("{}_{bei}", es.sheet_id));
+        let _ = writeln!(
+            out,
+            "  (bus_entry (at {:.4} {:.4}) (size {:.4} {:.4}) (stroke (width 0) (type default)) (uuid \"{beu}\"))",
+            be.x, be.y, be.dx, be.dy
+        );
+    }
+    for (ji, pt) in es.junctions.iter().enumerate() {
+        let ju = det_uuid("exp_junc", &format!("{}_{ji}", es.sheet_id));
+        let _ = writeln!(
+            out,
+            "  (junction (at {:.4} {:.4}) (diameter 0) (color 0 0 0 0) (uuid \"{ju}\"))",
+            pt.x, pt.y
+        );
+    }
+    for (ni, pt) in es.no_connects.iter().enumerate() {
+        let nu = det_uuid("exp_nc", &format!("{}_{ni}", es.sheet_id));
+        let _ = writeln!(
+            out,
+            "  (no_connect (at {:.4} {:.4}) (uuid \"{nu}\"))",
+            pt.x, pt.y
+        );
+    }
+
+    // 4. Labels (local, global, hierarchical, text)
+    for (li, lb) in es.labels.iter().enumerate() {
+        let lu = det_uuid("exp_lbl", &format!("{}_{li}_{}", es.sheet_id, lb.text));
+        let just_str = lb
+            .justify
+            .as_deref()
+            .map(|j| format!(" (justify {j})"))
+            .unwrap_or_default();
+        match lb.kind.as_str() {
+            "global_label" => {
+                let sh = lb.shape.as_deref().unwrap_or("bidirectional");
+                let _ = writeln!(
+                    out,
+                    "  (global_label \"{}\" (shape {sh}) (at {:.4} {:.4} {}) (fields_autoplaced yes) (effects (font (size 1.27 1.27)){just_str}) (uuid \"{lu}\"))",
+                    escape_sexpr(&lb.text),
+                    lb.x,
+                    lb.y,
+                    lb.orient_deg
+                );
+            }
+            "hierarchical_label" => {
+                let sh = lb.shape.as_deref().unwrap_or("bidirectional");
+                let _ = writeln!(
+                    out,
+                    "  (hierarchical_label \"{}\" (shape {sh}) (at {:.4} {:.4} {}) (fields_autoplaced yes) (effects (font (size 1.27 1.27)){just_str}) (uuid \"{lu}\"))",
+                    escape_sexpr(&lb.text),
+                    lb.x,
+                    lb.y,
+                    lb.orient_deg
+                );
+            }
+            "text" => {
+                let _ = writeln!(
+                    out,
+                    "  (text \"{}\" (exclude_from_sim no) (at {:.4} {:.4} {}) (effects (font (size 1.27 1.27)){just_str}) (uuid \"{lu}\"))",
+                    escape_sexpr(&lb.text),
+                    lb.x,
+                    lb.y,
+                    lb.orient_deg
+                );
+            }
+            _ => {
+                let _ = writeln!(
+                    out,
+                    "  (label \"{}\" (at {:.4} {:.4} {}) (fields_autoplaced yes) (effects (font (size 1.27 1.27)){just_str}) (uuid \"{lu}\"))",
+                    escape_sexpr(&lb.text),
+                    lb.x,
+                    lb.y,
+                    lb.orient_deg
+                );
+            }
+        }
+    }
+
+    // 5. Placed component symbol instances (preserving exact coordinates, rotation, mirror, unit, props!)
+    for (si, sym) in es.symbols.iter().enumerate() {
+        let su = det_uuid("exp_sym", &format!("{}_{}_{}_{si}", es.sheet_id, sym.ref_id, sym.unit));
+        let _ = writeln!(out, "  (symbol");
+        let _ = writeln!(out, "    (lib_id \"{}\")", escape_sexpr(&sym.lib_id));
+        let _ = writeln!(out, "    (at {:.4} {:.4} {})", sym.x, sym.y, sym.orient_deg);
+        if let Some(ref mir) = sym.mirror {
+            let _ = writeln!(out, "    (mirror {mir})");
+        }
+        let _ = writeln!(out, "    (unit {})", sym.unit);
+        let _ = writeln!(out, "    (exclude_from_sim no)");
+        let _ = writeln!(out, "    (in_bom {})", if sym.in_bom { "yes" } else { "no" });
+        let _ = writeln!(out, "    (on_board {})", if sym.on_board { "yes" } else { "no" });
+        let _ = writeln!(out, "    (dnp {})", if sym.dnp { "yes" } else { "no" });
+        let _ = writeln!(out, "    (fields_autoplaced yes)");
+        let _ = writeln!(out, "    (uuid \"{su}\")");
+        let (rx, ry, rrot) = sym
+            .ref_at
+            .map(|a| (a[0], a[1], a[2].round() as i32))
+            .unwrap_or((sym.x, sym.y - 2.54, 0));
+        let (vx, vy, vrot) = sym
+            .val_at
+            .map(|a| (a[0], a[1], a[2].round() as i32))
+            .unwrap_or((sym.x, sym.y + 2.54, 0));
+        let _ = writeln!(
+            out,
+            "    (property \"Reference\" \"{}\" (at {:.4} {:.4} {rrot}) (effects (font (size 1.27 1.27))))",
+            escape_sexpr(&sym.ref_id),
+            rx,
+            ry
+        );
+        let _ = writeln!(
+            out,
+            "    (property \"Value\" \"{}\" (at {:.4} {:.4} {vrot}) (effects (font (size 1.27 1.27))))",
+            escape_sexpr(&sym.value),
+            vx,
+            vy
+        );
+        let _ = writeln!(
+            out,
+            "    (property \"Footprint\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
+            escape_sexpr(sym.footprint.as_deref().unwrap_or("")),
+            sym.x,
+            sym.y
+        );
+        let _ = writeln!(
+            out,
+            "    (property \"Datasheet\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
+            escape_sexpr(sym.datasheet.as_deref().unwrap_or("")),
+            sym.x,
+            sym.y
+        );
+        for (pk, pv) in &sym.props {
+            let _ = writeln!(
+                out,
+                "    (property \"{}\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
+                escape_sexpr(pk),
+                escape_sexpr(pv),
+                sym.x,
+                sym.y
+            );
+        }
+        let _ = writeln!(
+            out,
+            "    (property \"EDL_ID\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
+            escape_sexpr(&sym.ref_id),
+            sym.x,
+            sym.y
+        );
+        for pnum in &sym.pin_numbers {
+            let pu = det_uuid("exp_pin", &format!("{}_{}_{}_{}", es.sheet_id, sym.ref_id, sym.unit, pnum));
+            let _ = writeln!(out, "    (pin \"{}\" (uuid \"{pu}\"))", escape_sexpr(pnum));
+        }
+        let _ = writeln!(out, "    (instances");
+        let _ = writeln!(out, "      (project \"{}\"", escape_sexpr(&ir.project.name));
+        for (sem_path, uuid_path) in active_paths {
+            let inst_ref = sym
+                .instances
+                .iter()
+                .find(|(sp, _)| sp == sem_path)
+                .map(|(_, r)| r.as_str())
+                .unwrap_or(&sym.ref_id);
+            let _ = writeln!(
+                out,
+                "        (path \"{uuid_path}\" (reference \"{}\") (unit {}))",
+                escape_sexpr(inst_ref),
+                sym.unit
+            );
+        }
+        let _ = writeln!(out, "      )");
+        let _ = writeln!(out, "    )");
+        let _ = writeln!(out, "  )");
+    }
+
+    // 6. Placed power / PWR_FLAG symbol instances
+    for (pi, pw) in es.powers.iter().enumerate() {
+        let pu = det_uuid("exp_pwr", &format!("{}_{pi}_{}", es.sheet_id, pw.reference));
+        let pin_u = det_uuid("exp_pwr_pin", &format!("{}_{pi}_{}", es.sheet_id, pw.reference));
+        let _ = writeln!(out, "  (symbol");
+        let _ = writeln!(out, "    (lib_id \"{}\")", escape_sexpr(&pw.lib_id));
+        let _ = writeln!(out, "    (at {:.4} {:.4} {})", pw.x, pw.y, pw.orient_deg);
+        if let Some(ref mir) = pw.mirror {
+            let _ = writeln!(out, "    (mirror {mir})");
+        }
+        let _ = writeln!(out, "    (unit 1)");
+        let _ = writeln!(out, "    (exclude_from_sim no)");
+        let _ = writeln!(out, "    (in_bom no)");
+        let _ = writeln!(out, "    (on_board no)");
+        let _ = writeln!(out, "    (dnp no)");
+        let _ = writeln!(out, "    (fields_autoplaced yes)");
+        let _ = writeln!(out, "    (uuid \"{pu}\")");
+        let _ = writeln!(
+            out,
+            "    (property \"Reference\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
+            escape_sexpr(&pw.reference),
+            pw.x,
+            pw.y
+        );
+        let _ = writeln!(
+            out,
+            "    (property \"Value\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27))))",
+            escape_sexpr(&pw.value),
+            pw.x,
+            pw.y
+        );
+        let _ = writeln!(
+            out,
+            "    (property \"Footprint\" \"\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
+            pw.x, pw.y
+        );
+        let _ = writeln!(
+            out,
+            "    (property \"Datasheet\" \"\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (hide yes)))",
+            pw.x, pw.y
+        );
+        let _ = writeln!(out, "    (pin \"1\" (uuid \"{pin_u}\"))");
+        let _ = writeln!(out, "    (instances");
+        let _ = writeln!(out, "      (project \"{}\"", escape_sexpr(&ir.project.name));
+        for (idx_p, (_sem_path, uuid_path)) in active_paths.iter().enumerate() {
+            let pref = if active_paths.len() > 1 {
+                format!("{}_{}", pw.reference, idx_p + 1)
+            } else {
+                pw.reference.clone()
+            };
+            let _ = writeln!(
+                out,
+                "        (path \"{uuid_path}\" (reference \"{}\") (unit 1))",
+                escape_sexpr(&pref)
+            );
+        }
+        let _ = writeln!(out, "      )");
+        let _ = writeln!(out, "    )");
+        let _ = writeln!(out, "  )");
+    }
+
+    // 7. Hierarchical sheet blocks (if any)
+    for (bi, sb) in es.sheet_blocks.iter().enumerate() {
+        let su = det_uuid("exp_sheet", &format!("{}_{bi}_{}", es.sheet_id, sb.name));
+        let _ = writeln!(out, "  (sheet");
+        let _ = writeln!(out, "    (at {:.4} {:.4})", sb.x, sb.y);
+        let _ = writeln!(out, "    (size {:.4} {:.4})", sb.w, sb.h);
+        let _ = writeln!(out, "    (fields_autoplaced yes)");
+        let _ = writeln!(out, "    (stroke (width 0.1524) (type solid))");
+        let _ = writeln!(out, "    (fill (color 0 0 0 0.0000))");
+        let _ = writeln!(out, "    (uuid \"{su}\")");
+        let _ = writeln!(
+            out,
+            "    (property \"Sheetname\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (justify left bottom)))",
+            escape_sexpr(&sb.name),
+            sb.x,
+            sb.y - 1.27
+        );
+        let _ = writeln!(
+            out,
+            "    (property \"Sheetfile\" \"{}\" (at {:.4} {:.4} 0) (effects (font (size 1.27 1.27)) (justify left top)))",
+            escape_sexpr(&sb.file),
+            sb.x,
+            sb.y + sb.h + 1.27
+        );
+        for (pi, sp) in sb.pins.iter().enumerate() {
+            let spu = det_uuid("exp_spin", &format!("{}_{bi}_{pi}_{}", es.sheet_id, sp.name));
+            let _ = writeln!(
+                out,
+                "    (pin \"{}\" {} (at {:.4} {:.4} {}) (effects (font (size 1.27 1.27))) (uuid \"{spu}\"))",
+                escape_sexpr(&sp.name),
+                sp.shape,
+                sp.x,
+                sp.y,
+                sp.orient_deg
+            );
+        }
+        let _ = writeln!(out, "  )");
     }
 
     let _ = writeln!(out, "  (sheet_instances");

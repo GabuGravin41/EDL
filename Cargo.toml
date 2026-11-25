@@ -1,10 +1,10 @@
 [package]
 name = "edl"
-version = "2.0.0"
+version = "2.1.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/GabuGravin41/EDL"
-description = "Engineering Description Language (EDL) v2.0 — native KiCad 9 electronics schematics + AutoCAD DXF building/industrial electrical with formal verification, MNA simulation & MCP"
+description = "Engineering Description Language (EDL) v2.1 — lossless Two-Layer KiCad 9 electronics (36/36 official demos 100% round-trip verified) + building/industrial electrical with formal proofs & MCP"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

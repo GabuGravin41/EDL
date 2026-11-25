@@ -26,8 +26,11 @@ pub struct PinDecl {
 pub struct ComponentDecl {
     pub id: String,
     pub category: String,
+    /// True if `category` was written as a quoted KiCad symbol reference (e.g. `"Device:R"` or `"Logo_2"`).
+    pub is_quoted_symbol: bool,
     pub value: String,
     pub footprint: Option<String>,
+    pub datasheet: Option<String>,
     /// Orientation in degrees (0, 90, 180, 270; KiCad CCW convention).
     pub orient_deg: i32,
     /// Optional mirroring ("x" | "y").
@@ -38,6 +41,11 @@ pub struct ComponentDecl {
     pub no_connect: Vec<String>,
     /// True if this component is a galvanic isolation barrier (transformer / optocoupler).
     pub isolated: bool,
+    pub dnp: bool,
+    pub in_bom: bool,
+    pub on_board: bool,
+    /// Arbitrary extra BOM/SPICE/KiCad properties (`props { "Voltage": "16V", ... }`).
+    pub props: Vec<(String, String)>,
     pub pins: Vec<PinDecl>,
     pub provenance: Option<ModuleProvenanceIr>,
     pub span: Span,
@@ -127,6 +135,7 @@ pub enum NetRoutingStyle {
 
 #[derive(Debug, Clone, Default)]
 pub struct SchematicRoutingDecl {
+    pub explicit_mode: bool,
     pub default_style: Option<NetRoutingStyle>,
     pub power_style: Option<NetRoutingStyle>,
     pub ground_style: Option<NetRoutingStyle>,
@@ -136,8 +145,91 @@ pub struct SchematicRoutingDecl {
 #[derive(Debug, Clone)]
 pub struct ExplicitPlacementDecl {
     pub component: String,
+    pub unit: Option<usize>,
     pub x: Quantity,
     pub y: Quantity,
+    pub orient_deg: Option<i32>,
+    pub mirror: Option<crate::domains::elec::kicad_sym::SymMirror>,
+    /// Optional per-hierarchy-path RefDes overrides for reused sub-sheets (e.g. `"/ch1": "C201"`).
+    pub instances: Vec<(String, String)>,
+    pub ref_at: Option<(f64, f64, i32)>,
+    pub val_at: Option<(f64, f64, i32)>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExplicitWireDecl {
+    pub pts: Vec<(Quantity, Quantity)>,
+    pub is_bus: bool,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExplicitBusEntryDecl {
+    pub x: Quantity,
+    pub y: Quantity,
+    pub dx: Quantity,
+    pub dy: Quantity,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExplicitPointDecl {
+    pub x: Quantity,
+    pub y: Quantity,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExplicitPowerDecl {
+    pub lib_id: String,
+    pub value: String,
+    pub reference: Option<String>,
+    pub x: Quantity,
+    pub y: Quantity,
+    pub orient_deg: i32,
+    pub mirror: Option<crate::domains::elec::kicad_sym::SymMirror>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExplicitLabelDecl {
+    pub kind: String, // "label" | "global_label" | "hierarchical_label" | "text"
+    pub text: String,
+    pub shape: Option<String>,
+    pub x: Quantity,
+    pub y: Quantity,
+    pub orient_deg: i32,
+    pub justify: Option<String>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExplicitGraphicDecl {
+    pub kind: String, // "polyline" | "rectangle"
+    pub pts: Vec<(Quantity, Quantity)>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExplicitSheetPinDecl {
+    pub name: String,
+    pub shape: String,
+    pub x: Quantity,
+    pub y: Quantity,
+    pub orient_deg: i32,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExplicitSheetBlockDecl {
+    pub name: String,
+    pub file: String,
+    pub x: Quantity,
+    pub y: Quantity,
+    pub w: Quantity,
+    pub h: Quantity,
+    pub pins: Vec<ExplicitSheetPinDecl>,
     pub span: Span,
 }
 
@@ -145,6 +237,7 @@ pub struct ExplicitPlacementDecl {
 pub struct SchematicDecl {
     pub name: String,
     pub sheet: String,
+    pub sheet_file: Option<String>,
     pub title: Option<String>,
     pub rev: Option<String>,
     pub author: Option<String>,
@@ -152,5 +245,14 @@ pub struct SchematicDecl {
     pub layout: Option<SchematicLayoutDecl>,
     pub routing: Option<SchematicRoutingDecl>,
     pub placements: Vec<ExplicitPlacementDecl>,
+    pub explicit_wires: Vec<ExplicitWireDecl>,
+    pub explicit_bus_entries: Vec<ExplicitBusEntryDecl>,
+    pub explicit_junctions: Vec<ExplicitPointDecl>,
+    pub explicit_no_connects: Vec<ExplicitPointDecl>,
+    pub explicit_powers: Vec<ExplicitPowerDecl>,
+    pub explicit_labels: Vec<ExplicitLabelDecl>,
+    pub explicit_graphics: Vec<ExplicitGraphicDecl>,
+    pub explicit_sheets: Vec<ExplicitSheetBlockDecl>,
+    pub bus_aliases: Vec<(String, Vec<String>)>,
     pub span: Span,
 }

@@ -98,10 +98,11 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             }
             let mut comp = raw_comp.clone();
 
-            // If category contains ':', resolve it from KiCad `.kicad_sym` libraries!
-            if comp.category.contains(':') {
+            // If category contains ':' OR was written as a quoted KiCad symbol reference, resolve it from `.kicad_sym` libraries!
+            if comp.is_quoted_symbol || comp.category.contains(':') {
                 match crate::domains::elec::kicad_sym::load_symbol(&comp.category, &extra_libs) {
                     Ok(sym) => {
+                        let all_units = comp.unit.is_none() && sym.unit_count > 1;
                         let target_unit = comp.unit.unwrap_or(1);
                         if comp.value.is_empty() {
                             comp.value = sym.default_value.clone();
@@ -115,10 +116,17 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             .map(|p| (p.name.clone(), p))
                             .collect();
 
+                        // When a multi-unit IC is declared once in `circuit {}` (`unit: None`) and placed across
+                        // multiple units in `schematic {}`, expose all units' pins (deduped by pin number).
+                        let mut seen_pin_nums: BTreeSet<String> = BTreeSet::new();
                         let unit_pins: Vec<_> = sym
                             .pins
                             .iter()
-                            .filter(|p| (p.unit == 0 || p.unit == target_unit) && !p.hide)
+                            .filter(|p| {
+                                let unit_ok = all_units || p.unit == 0 || p.unit == target_unit;
+                                let vis_ok = !p.hide || matches!(p.role, PinRole::PowerIn | PinRole::PowerOut | PinRole::Ground);
+                                unit_ok && vis_ok && seen_pin_nums.insert(p.number.clone())
+                            })
                             .collect();
                         let mut name_counts: BTreeMap<&str, usize> = BTreeMap::new();
                         for lp in &unit_pins {
@@ -822,6 +830,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     let mut entities: Vec<EntityIr> = Vec::new();
     let mut schematic_groups: Vec<SchematicGroupIr> = Vec::new();
     let mut schematic_routes: Vec<SchematicRouteIr> = Vec::new();
+    let mut explicit_sheets: Vec<ExplicitSchematicSheetIr> = Vec::new();
     let mut views: Vec<ViewIr> = Vec::new();
     let mut sheet_bounds = Rect2::new(0.0, 0.0, 228.6, 152.4);
 
@@ -834,6 +843,323 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         } else {
             None
         };
+
+        // --- EXPLICIT GEOMETRIC MODE (`routing { mode: explicit }`) ---
+        // Preserves 100% lossless human/KiCad schematic geometry alongside EDL's semantic `circuit {}`!
+        if let Some(sc) = schem {
+            if sc.routing.as_ref().map(|r| r.explicit_mode).unwrap_or(false) {
+                let mut raw_lib_symbols: BTreeMap<String, String> = BTreeMap::new();
+                let mut exp_symbols: Vec<ExplicitSymbolInstIr> = Vec::new();
+                let mut exp_powers: Vec<ExplicitPowerInstIr> = Vec::new();
+                let mut exp_wires: Vec<Segment2> = Vec::new();
+                let mut exp_buses: Vec<Segment2> = Vec::new();
+                let mut exp_bus_entries: Vec<ExplicitBusEntryIr> = Vec::new();
+                let mut exp_junctions: Vec<Point2> = Vec::new();
+                let mut exp_ncs: Vec<Point2> = Vec::new();
+                let mut exp_labels: Vec<ExplicitLabelIr> = Vec::new();
+                let mut exp_graphics: Vec<ExplicitGraphicIr> = Vec::new();
+                let mut exp_sheet_blocks: Vec<ExplicitSheetBlockIr> = Vec::new();
+
+                let mut s_max_x = 297.0_f64;
+                let mut s_max_y = 210.0_f64;
+
+                for pl in &sc.placements {
+                    let x = pl.x.to_mm().unwrap_or(0.0);
+                    let y = pl.y.to_mm().unwrap_or(0.0);
+                    s_max_x = s_max_x.max(x + 20.0);
+                    s_max_y = s_max_y.max(y + 20.0);
+                    let Some(comp) = comp_map.get(&pl.component) else {
+                        continue;
+                    };
+                    let unit = pl.unit.or(comp.unit).unwrap_or(1);
+                    let orient_deg = pl.orient_deg.unwrap_or(comp.orient_deg);
+                    let mirror_opt = pl.mirror.or(comp.mirror);
+                    let mirror_str = mirror_opt.map(|m| match m {
+                        crate::domains::elec::kicad_sym::SymMirror::X => "x".to_string(),
+                        crate::domains::elec::kicad_sym::SymMirror::Y => "y".to_string(),
+                    });
+                    let lib_id = comp.category.clone();
+                    if !raw_lib_symbols.contains_key(&lib_id) {
+                        if let Some(sym) = loaded_syms.get(&comp.id) {
+                            if let Some(ref raw) = sym.raw_sexpr {
+                                raw_lib_symbols.insert(lib_id.clone(), raw.clone());
+                            }
+                        } else if let Some(raw) =
+                            crate::domains::elec::kicad_sym::load_raw_symbol_sexpr(&lib_id, &extra_libs)
+                        {
+                            raw_lib_symbols.insert(lib_id.clone(), raw);
+                        }
+                    }
+                    let pin_numbers: Vec<String> = if let Some(sym) = loaded_syms.get(&comp.id) {
+                        let mut seen = BTreeSet::new();
+                        sym.pins
+                            .iter()
+                            .filter(|p| p.unit == 0 || p.unit == unit)
+                            .filter(|p| seen.insert(p.number.clone()))
+                            .map(|p| p.number.clone())
+                            .collect()
+                    } else {
+                        (1..=comp.pins.len()).map(|n| n.to_string()).collect()
+                    };
+                    exp_symbols.push(ExplicitSymbolInstIr {
+                        ref_id: comp.id.clone(),
+                        lib_id: lib_id.clone(),
+                        value: comp.value.clone(),
+                        footprint: comp.footprint.clone(),
+                        datasheet: comp.datasheet.clone(),
+                        unit,
+                        x,
+                        y,
+                        orient_deg,
+                        mirror: mirror_str.clone(),
+                        dnp: comp.dnp,
+                        in_bom: comp.in_bom,
+                        on_board: comp.on_board,
+                        props: comp.props.clone(),
+                        pin_numbers,
+                        instances: pl.instances.clone(),
+                        ref_at: pl.ref_at.map(|(rx, ry, rr)| [rx, ry, rr as f64]),
+                        val_at: pl.val_at.map(|(vx, vy, vr)| [vx, vy, vr as f64]),
+                    });
+
+                    // Also emit EntityIr (once per logical component) for BOM/MNA/SVG compatibility
+                    if !entities.iter().any(|e| e.id == comp.id) {
+                        let mut props = BTreeMap::new();
+                        props.insert("category".to_string(), json!(comp.category));
+                        props.insert("value".to_string(), json!(comp.value));
+                        if let Some(ref fp) = comp.footprint {
+                            props.insert("footprint".to_string(), json!(fp));
+                        }
+                        if let Some(ref st) = sheet_tag {
+                            props.insert("sheet".to_string(), json!(st));
+                        }
+                        let (body, placed_vec, hide_pin_names, symbol_prims) =
+                            if let Some(sym) = loaded_syms.get(&comp.id) {
+                                let lb = crate::domains::elec::kicad_sym::symbol_unit_body_bounds(
+                                    sym, unit, orient_deg, mirror_opt,
+                                );
+                                let body = Rect2::new(x + lb.min_x, y + lb.min_y, x + lb.max_x, y + lb.max_y);
+                                let gr = crate::domains::elec::kicad_sym::build_kicad_symbol_graphic(
+                                    sym, unit, x, y, orient_deg, mirror_opt,
+                                );
+                                let pvec: Vec<PlacedPinIr> = sym
+                                    .pins
+                                    .iter()
+                                    .filter(|p| (p.unit == 0 || p.unit == unit) && !p.hide)
+                                    .enumerate()
+                                    .map(|(pidx, lp)| {
+                                        let tip = crate::domains::elec::kicad_sym::local_to_world(
+                                            x, y, lp.x, lp.y, orient_deg, mirror_opt,
+                                        );
+                                        let rad = lp.angle.to_radians();
+                                        let bpt = crate::domains::elec::kicad_sym::local_to_world(
+                                            x,
+                                            y,
+                                            lp.x + lp.length * rad.cos(),
+                                            lp.y + lp.length * rad.sin(),
+                                            orient_deg,
+                                            mirror_opt,
+                                        );
+                                        let side = crate::domains::elec::kicad_sym::pin_outward_side(
+                                            lp.angle, orient_deg, mirror_opt,
+                                        );
+                                        PlacedPinIr {
+                                            name: lp.name.clone(),
+                                            number: lp.number.parse().unwrap_or(pidx + 1),
+                                            pin_code: Some(lp.number.clone()),
+                                            role: lp.role,
+                                            voltage: None,
+                                            no_connect: comp.no_connect.iter().any(|n| n == &lp.number || n == &lp.name),
+                                            side,
+                                            body_point: bpt,
+                                            tip_point: tip,
+                                        }
+                                    })
+                                    .collect();
+                                (body, pvec, gr.hide_pin_names, Some(gr.primitives))
+                            } else {
+                                (Rect2::new(x - 5.0, y - 5.0, x + 5.0, y + 5.0), Vec::new(), false, None)
+                            };
+                        entities.push(EntityIr {
+                            id: comp.id.clone(),
+                            kind: "elec.component".to_string(),
+                            frame: default_frame.clone(),
+                            span: Some(comp.span.clone()),
+                            provenance: comp.provenance.clone(),
+                            props,
+                            geometry: EntityGeometryIr::Component {
+                                category: comp.category.clone(),
+                                value: comp.value.clone(),
+                                footprint: comp.footprint.clone(),
+                                lib_id: Some(lib_id),
+                                orient_deg,
+                                mirror: mirror_str,
+                                unit: Some(unit),
+                                hide_pin_names,
+                                symbol_prims,
+                                body_rect: body,
+                                pins: placed_vec,
+                            },
+                        });
+                    }
+                }
+
+                for (pidx, pw) in sc.explicit_powers.iter().enumerate() {
+                    let x = pw.x.to_mm().unwrap_or(0.0);
+                    let y = pw.y.to_mm().unwrap_or(0.0);
+                    if !raw_lib_symbols.contains_key(&pw.lib_id) {
+                        if let Some(raw) =
+                            crate::domains::elec::kicad_sym::load_raw_symbol_sexpr(&pw.lib_id, &extra_libs)
+                        {
+                            raw_lib_symbols.insert(pw.lib_id.clone(), raw);
+                        }
+                    }
+                    let reference = pw
+                        .reference
+                        .clone()
+                        .unwrap_or_else(|| format!("#PWR{:02}{:03}", s_idx + 1, pidx + 1));
+                    exp_powers.push(ExplicitPowerInstIr {
+                        lib_id: pw.lib_id.clone(),
+                        value: pw.value.clone(),
+                        reference,
+                        x,
+                        y,
+                        orient_deg: pw.orient_deg,
+                        mirror: pw.mirror.map(|m| match m {
+                            crate::domains::elec::kicad_sym::SymMirror::X => "x".to_string(),
+                            crate::domains::elec::kicad_sym::SymMirror::Y => "y".to_string(),
+                        }),
+                    });
+                }
+
+                for w in &sc.explicit_wires {
+                    let pts: Vec<Point2> = w
+                        .pts
+                        .iter()
+                        .map(|(qx, qy)| Point2::new(qx.to_mm().unwrap_or(0.0), qy.to_mm().unwrap_or(0.0)))
+                        .collect();
+                    for win in pts.windows(2) {
+                        let seg = Segment2::new(win[0], win[1]);
+                        if w.is_bus {
+                            exp_buses.push(seg);
+                        } else {
+                            exp_wires.push(seg);
+                        }
+                    }
+                }
+                for be in &sc.explicit_bus_entries {
+                    exp_bus_entries.push(ExplicitBusEntryIr {
+                        x: be.x.to_mm().unwrap_or(0.0),
+                        y: be.y.to_mm().unwrap_or(0.0),
+                        dx: be.dx.to_mm().unwrap_or(2.54),
+                        dy: be.dy.to_mm().unwrap_or(2.54),
+                    });
+                }
+                for j in &sc.explicit_junctions {
+                    exp_junctions.push(Point2::new(j.x.to_mm().unwrap_or(0.0), j.y.to_mm().unwrap_or(0.0)));
+                }
+                for nc in &sc.explicit_no_connects {
+                    exp_ncs.push(Point2::new(nc.x.to_mm().unwrap_or(0.0), nc.y.to_mm().unwrap_or(0.0)));
+                }
+                for lb in &sc.explicit_labels {
+                    exp_labels.push(ExplicitLabelIr {
+                        kind: lb.kind.clone(),
+                        text: lb.text.clone(),
+                        shape: lb.shape.clone(),
+                        x: lb.x.to_mm().unwrap_or(0.0),
+                        y: lb.y.to_mm().unwrap_or(0.0),
+                        orient_deg: lb.orient_deg,
+                        justify: lb.justify.clone(),
+                    });
+                }
+                for gr in &sc.explicit_graphics {
+                    exp_graphics.push(ExplicitGraphicIr {
+                        kind: gr.kind.clone(),
+                        pts: gr
+                            .pts
+                            .iter()
+                            .map(|(qx, qy)| Point2::new(qx.to_mm().unwrap_or(0.0), qy.to_mm().unwrap_or(0.0)))
+                            .collect(),
+                    });
+                }
+                for sb in &sc.explicit_sheets {
+                    exp_sheet_blocks.push(ExplicitSheetBlockIr {
+                        name: sb.name.clone(),
+                        file: sb.file.clone(),
+                        x: sb.x.to_mm().unwrap_or(0.0),
+                        y: sb.y.to_mm().unwrap_or(0.0),
+                        w: sb.w.to_mm().unwrap_or(40.0),
+                        h: sb.h.to_mm().unwrap_or(25.0),
+                        pins: sb
+                            .pins
+                            .iter()
+                            .map(|sp| ExplicitSheetPinIr {
+                                name: sp.name.clone(),
+                                shape: sp.shape.clone(),
+                                x: sp.x.to_mm().unwrap_or(0.0),
+                                y: sp.y.to_mm().unwrap_or(0.0),
+                                orient_deg: sp.orient_deg,
+                            })
+                            .collect(),
+                    });
+                }
+
+                // Also emit a single SchematicRouteIr carrying explicit wires + junctions for EDL SVG preview
+                if !exp_wires.is_empty() {
+                    schematic_routes.push(SchematicRouteIr {
+                        net_id: format!("__explicit_{sheet_name_str}"),
+                        sheet: sheet_tag.clone(),
+                        style: "direct".to_string(),
+                        is_power: false,
+                        is_ground: false,
+                        segments: exp_wires.clone(),
+                        junctions: exp_junctions.clone(),
+                        terminals: Vec::new(),
+                        label_pos: None,
+                    });
+                }
+
+                explicit_sheets.push(ExplicitSchematicSheetIr {
+                    sheet_id: sheet_name_str.clone(),
+                    sheet_file: sc.sheet_file.clone(),
+                    paper: sc.sheet.clone(),
+                    title: sc.title.clone(),
+                    author: sc.author.clone(),
+                    rev: sc.rev.clone(),
+                    raw_lib_symbols,
+                    symbols: exp_symbols,
+                    powers: exp_powers,
+                    wires: exp_wires,
+                    buses: exp_buses,
+                    bus_entries: exp_bus_entries,
+                    junctions: exp_junctions,
+                    no_connects: exp_ncs,
+                    labels: exp_labels,
+                    graphics: exp_graphics,
+                    sheet_blocks: exp_sheet_blocks,
+                    bus_aliases: sc.bus_aliases.clone(),
+                });
+
+                if s_idx == 0 {
+                    sheet_bounds = Rect2::new(0.0, 0.0, s_max_x, s_max_y);
+                }
+                views.push(ViewIr {
+                    id: sheet_name_str,
+                    kind: "SchematicView".to_string(),
+                    frame: default_frame.clone(),
+                    sheet: sc.sheet.clone(),
+                    scale: "1:1".to_string(),
+                    show_dimensions: false,
+                    show_labels: true,
+                    title: sc.title.clone(),
+                    rev: sc.rev.clone(),
+                    author: sc.author.clone(),
+                    sheet_index: if total_sheets > 1 { Some(s_idx + 1) } else { None },
+                    sheet_total: if total_sheets > 1 { Some(total_sheets) } else { None },
+                });
+                continue;
+            }
+        }
         let sheet_comps: Vec<String> = comp_order
             .iter()
             .filter(|cid| comp_to_sheet.get(*cid).copied().unwrap_or(0) == s_idx)
@@ -2436,6 +2762,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         wall_solids: Vec::new(),
         schematic_groups,
         schematic_routes,
+        explicit_sheets,
         mep_circuits: Vec::new(),
         mep_wires: Vec::new(),
         constraints: Vec::new(),

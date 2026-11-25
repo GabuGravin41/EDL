@@ -2,6 +2,19 @@
 
 All notable releases of **EDL (Engineering Description Language)** are documented here.
 
+## [2.1.0] — 2026-11-25
+### Added
+- **Lossless Two-Layer Option-A EDL (`circuit {}` + Exact Geometric `schematic {}`) & `edl import-kicad`:**
+  - New native Rust CLI command `edl import-kicad <FILE.kicad_sch> --out-dir <DIR> [--verify]` converts any single-sheet or multi-sheet hierarchical KiCad 8/9 schematic into clean Two-Layer EDL (exact semantic `circuit {}` netlist + exact geometric `schematic {}` layout) plus an extracted verbatim `<project>.kicad_sym` bundle, with built-in `--verify` pin-for-pin KiCad 9 netlist equivalence checking.
+  - **Language & Compiler Extensions Unlocked by the 36-Demo Corpus Torture Test:**
+    - String escape sequences (`\"`, `\\`, `\n`, `\t`) in `src/syntax/lexer.rs`.
+    - Quoted net names (`net "+3V3"`, `net "Net-(D18-1)"`), quoted alphanumeric/special pin refs (`D18.GA`, `U1."40"`), `datasheet`, `dnp`, `in_bom`, `on_board`, and arbitrary `props { ... }` on components.
+    - Explicit geometric schematic primitives (`routing { mode: explicit }`, `place <Comp> [unit: N] at: (x, y) [orient] [mirror] [ref_at] [val_at] [instances]`, `wire`, `bus`, `bus_entry`, `bus_alias`, `junction`, `no_connect`, `power`, `label`, `global_label`, `hierarchical_label`, `text`, `graphic_line`, `graphic_rect`, `sheet_block`).
+    - Full multi-level recursive KiCad hierarchy UUID path resolution (`/<root_uuid>/<sheet_uuid>/...`), subdirectory child sheets (`sch/*.kicad_sch`), reused sub-sheets (`complex_hierarchy`, `multichannel_mixer`, `vme-wren`), and verbatim `(lib_symbols ...)` passthrough.
+  - **36 / 36 Official KiCad 9 Demo Projects Verified at 100.0% Pin-for-Pin Netlist Equivalence** (including `StickHub`, `video`, `kit-dev-coldfire-xilinx_5213`, `tiny_tapeout`, `multichannel_mixer`, `RoyalBlue54L-Feather`, `complex_hierarchy`, and CERN's 36-sheet, 1,507-component, 1,307-net, 1,250-bus `vme-wren` FPGA board).
+  - Added integration suite `tests/kicad_corpus.rs` and batch verifier `scripts/verify_kicad_corpus.py`.
+- **Zone Enclosure & Clearance Compiler Pass (`src/domains/elec/compile.rs`):** Post-routing bounding-box pass guarantees border clearance for pins, downward GND triangles, upward power arrows, and wide global-label pills.
+
 ## [2.0.0] — 2026-11-25
 ### Added
 - **World-Class Native KiCad 9 `.kicad_sch` Drafting (`src/domains/elec/kicad.rs`, `sheet_layout.rs`, `compile.rs`):**

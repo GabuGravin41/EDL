@@ -1560,6 +1560,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
         wall_solids,
         schematic_groups: Vec::new(),
         schematic_routes: Vec::new(),
+        explicit_sheets: Vec::new(),
         mep_circuits: Vec::new(),
         mep_wires: Vec::new(),
         constraints: solve.equations,

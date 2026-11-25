@@ -614,6 +614,463 @@
       ],
       "type": "object"
     },
+    "ExplicitBusEntryIr": {
+      "properties": {
+        "dx": {
+          "format": "double",
+          "type": "number"
+        },
+        "dy": {
+          "format": "double",
+          "type": "number"
+        },
+        "x": {
+          "format": "double",
+          "type": "number"
+        },
+        "y": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "dx",
+        "dy",
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "ExplicitGraphicIr": {
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "pts": {
+          "items": {
+            "$ref": "#/definitions/Point2"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "pts"
+      ],
+      "type": "object"
+    },
+    "ExplicitLabelIr": {
+      "properties": {
+        "justify": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "orient_deg": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "shape": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "text": {
+          "type": "string"
+        },
+        "x": {
+          "format": "double",
+          "type": "number"
+        },
+        "y": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "kind",
+        "orient_deg",
+        "text",
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "ExplicitPowerInstIr": {
+      "properties": {
+        "lib_id": {
+          "type": "string"
+        },
+        "mirror": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "orient_deg": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "x": {
+          "format": "double",
+          "type": "number"
+        },
+        "y": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "lib_id",
+        "orient_deg",
+        "reference",
+        "value",
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "ExplicitSchematicSheetIr": {
+      "properties": {
+        "author": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bus_aliases": {
+          "items": {
+            "items": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "bus_entries": {
+          "items": {
+            "$ref": "#/definitions/ExplicitBusEntryIr"
+          },
+          "type": "array"
+        },
+        "buses": {
+          "items": {
+            "$ref": "#/definitions/Segment2"
+          },
+          "type": "array"
+        },
+        "graphics": {
+          "items": {
+            "$ref": "#/definitions/ExplicitGraphicIr"
+          },
+          "type": "array"
+        },
+        "junctions": {
+          "items": {
+            "$ref": "#/definitions/Point2"
+          },
+          "type": "array"
+        },
+        "labels": {
+          "items": {
+            "$ref": "#/definitions/ExplicitLabelIr"
+          },
+          "type": "array"
+        },
+        "no_connects": {
+          "items": {
+            "$ref": "#/definitions/Point2"
+          },
+          "type": "array"
+        },
+        "paper": {
+          "type": "string"
+        },
+        "powers": {
+          "items": {
+            "$ref": "#/definitions/ExplicitPowerInstIr"
+          },
+          "type": "array"
+        },
+        "raw_lib_symbols": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Verbatim `(symbol \"<lib_id>\" ...)` S-expressions required by this sheet.",
+          "type": "object"
+        },
+        "rev": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sheet_blocks": {
+          "items": {
+            "$ref": "#/definitions/ExplicitSheetBlockIr"
+          },
+          "type": "array"
+        },
+        "sheet_file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sheet_id": {
+          "type": "string"
+        },
+        "symbols": {
+          "items": {
+            "$ref": "#/definitions/ExplicitSymbolInstIr"
+          },
+          "type": "array"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "wires": {
+          "items": {
+            "$ref": "#/definitions/Segment2"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "paper",
+        "sheet_id"
+      ],
+      "type": "object"
+    },
+    "ExplicitSheetBlockIr": {
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "h": {
+          "format": "double",
+          "type": "number"
+        },
+        "name": {
+          "type": "string"
+        },
+        "pins": {
+          "items": {
+            "$ref": "#/definitions/ExplicitSheetPinIr"
+          },
+          "type": "array"
+        },
+        "w": {
+          "format": "double",
+          "type": "number"
+        },
+        "x": {
+          "format": "double",
+          "type": "number"
+        },
+        "y": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "file",
+        "h",
+        "name",
+        "w",
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "ExplicitSheetPinIr": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "orient_deg": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "shape": {
+          "type": "string"
+        },
+        "x": {
+          "format": "double",
+          "type": "number"
+        },
+        "y": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "orient_deg",
+        "shape",
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "ExplicitSymbolInstIr": {
+      "description": "Exact lossless explicit schematic sheet representation (used when `routing { mode: explicit }` preserves human/KiCad-authored geometry alongside EDL's semantic `circuit {}` netlist).",
+      "properties": {
+        "datasheet": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dnp": {
+          "default": false,
+          "type": "boolean"
+        },
+        "footprint": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "in_bom": {
+          "type": "boolean"
+        },
+        "instances": {
+          "description": "Optional per-hierarchy-path RefDes overrides for reused sub-sheets (`\"/sheet1\": \"C201\"`).",
+          "items": {
+            "items": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "lib_id": {
+          "type": "string"
+        },
+        "mirror": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "on_board": {
+          "type": "boolean"
+        },
+        "orient_deg": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "pin_numbers": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "props": {
+          "items": {
+            "items": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "ref_at": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "ref_id": {
+          "type": "string"
+        },
+        "unit": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "val_at": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "value": {
+          "type": "string"
+        },
+        "x": {
+          "format": "double",
+          "type": "number"
+        },
+        "y": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "in_bom",
+        "lib_id",
+        "on_board",
+        "orient_deg",
+        "ref_id",
+        "unit",
+        "value",
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
     "FrameIr": {
       "properties": {
         "dim": {
@@ -1560,6 +2017,12 @@
     "evidence": {
       "items": {
         "$ref": "#/definitions/EvidenceRecord"
+      },
+      "type": "array"
+    },
+    "explicit_sheets": {
+      "items": {
+        "$ref": "#/definitions/ExplicitSchematicSheetIr"
       },
       "type": "array"
     },
