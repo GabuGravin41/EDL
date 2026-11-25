@@ -102,6 +102,27 @@ impl Diagnostic {
         }
     }
 
+    pub fn warning(
+        code: impl Into<String>,
+        category: impl Into<String>,
+        message: impl Into<String>,
+        span: Option<Span>,
+    ) -> Self {
+        Self {
+            code: code.into(),
+            category: category.into(),
+            severity: Severity::Warning,
+            message: message.into(),
+            entities: Vec::new(),
+            span,
+            measured: None,
+            required: None,
+            unit: None,
+            suggestion: None,
+            repair: None,
+        }
+    }
+
     pub fn with_entities(mut self, entities: Vec<String>) -> Self {
         self.entities = entities;
         self

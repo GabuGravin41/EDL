@@ -1,0 +1,210 @@
+// EDL v0.6.0 Showcase: 2D Multi-Row Schematic + Passive Ferrite Rail Propagation + MNA DC/RC Simulation + BOM
+import "./lib/elec_blocks.edl"
+
+module RcLowPass(r = 1kohm, c = 100nF) {
+  component R: resistor {
+    value: r
+    footprint: "R_0603"
+    pin IN: passive side: west
+    pin OUT: passive side: east
+  }
+  component C: capacitor {
+    value: c
+    footprint: "C_0603"
+    pin POS: passive side: north
+    pin NEG: ground (0V) side: south
+  }
+  net _OUT { connect: [R.OUT, C.POS] }
+  bind IN  -> R.IN
+  bind OUT -> R.OUT
+  bind GND -> C.NEG
+}
+
+project "Sensor_Node_2Row_Sim" {
+  units: mm
+
+  circuit Board {
+    // --- Row 1: Power Input, Regulation, and Analog Front-End ---
+    component J_USB: connector {
+      value: "USB_5V"
+      footprint: "USB_C_Receptacle"
+      pin VBUS: power_out (5V) side: east
+      pin GND: ground (0V) side: south
+    }
+
+    // Real passive ferrite bead (using uH unit!) — EDL v0.6 automatically propagates 5V rail to VBUS_5V!
+    component FB_USB: inductor {
+      value: 10uH
+      footprint: "L_0603"
+      pin P1: passive side: west
+      pin P2: passive side: east
+    }
+
+    component D_ESD: diode {
+      value: "SMBJ5A"
+      footprint: "SMA"
+      pin K: passive side: north
+      pin A: ground (0V) side: south
+    }
+
+    use Reg3V3 = DecoupledLDO(
+      vin_min: 4.5V,
+      vin_max: 12V,
+      vout: 3.3V,
+      part: "AMS1117-3.3",
+      cap: 10uF
+    )
+
+    component J_SENS: connector {
+      value: "ANALOG_IN"
+      footprint: "PinHeader_1x3"
+      pin VCC: power_in (3.0V..3.6V) side: north
+      pin SIG: output (1.65V) side: east
+      pin GND: ground (0V) side: south
+    }
+
+    component U_AMP: opamp {
+      value: "MCP6001"
+      footprint: "SOT-23-5"
+      pin INP: input side: west
+      pin INN: input side: west
+      pin OUT: output side: east
+      pin VDD: power_in (1.8V..6.0V) side: north
+      pin VSS: ground (0V) side: south
+    }
+
+    use AfeFilter = RcLowPass(r: 1kohm, c: 100nF)
+
+    // --- Row 2: MCU Core, I2C Sensor, Dual LEDs, Debug ---
+    component U_MCU: ic {
+      value: "STM32G071"
+      footprint: "LQFP-32"
+      pin VDD: power_in (2.0V..3.6V) side: north
+      pin ADC_IN: input side: west
+      pin I2C_SDA: bidir (3.3V) side: east
+      pin I2C_SCL: output (3.3V) side: east
+      pin LED_STAT: output (3.3V) side: east
+      pin SWDIO: bidir (3.3V) side: west
+      pin SWCLK: input (3.3V) side: west
+      pin GND: ground (0V) side: south
+    }
+
+    component C_MCU: capacitor {
+      value: 100nF
+      footprint: "C_0603"
+      pin POS: passive side: north
+      pin NEG: ground (0V) side: south
+    }
+
+    component U_BME: ic {
+      value: "BME280"
+      footprint: "LGA-8"
+      pin VDD: power_in (1.71V..3.6V) side: north
+      pin SDA: bidir (3.3V) side: west
+      pin SCL: input (3.3V) side: west
+      pin GND: ground (0V) side: south
+    }
+
+    component R_SDA: resistor {
+      value: 4.7kohm
+      footprint: "R_0603"
+      pin P1: passive side: north
+      pin P2: passive side: south
+    }
+
+    component R_SCL: resistor {
+      value: 4.7kohm
+      footprint: "R_0603"
+      pin P1: passive side: north
+      pin P2: passive side: south
+    }
+
+    use PwrLed  = LedIndicator(r: 680ohm, color: "Green_PWR")
+    use StatLed = LedIndicator(r: 330ohm, color: "Red_STAT")
+
+    component J_SWD: connector {
+      value: "SWD_1x4"
+      footprint: "PinHeader_1x4"
+      pin VTREF: power_in (2.0V..3.6V) side: north
+      pin SWDIO: bidir (3.3V) side: east
+      pin SWCLK: output (3.3V) side: east
+      pin GND: ground (0V) side: south
+    }
+
+    // --- Functional Nets ---
+    net VBUS_RAW { connect: [J_USB.VBUS, D_ESD.K, FB_USB.P1] }
+    net VBUS_5V  { connect: [FB_USB.P2, Reg3V3.IN] }
+    net V3V3 {
+      connect: [
+        Reg3V3.OUT, J_SENS.VCC, U_AMP.VDD, U_MCU.VDD, C_MCU.POS,
+        U_BME.VDD, R_SDA.P1, R_SCL.P1, PwrLed.IN, J_SWD.VTREF
+      ]
+    }
+    net SENS_IN  { connect: [J_SENS.SIG, U_AMP.INP] }
+    net AMP_OUT  { connect: [U_AMP.OUT, U_AMP.INN, AfeFilter.IN] }
+    net ADC_SIG  { connect: [AfeFilter.OUT, U_MCU.ADC_IN] }
+    net I2C_SDA  { connect: [U_MCU.I2C_SDA, U_BME.SDA, R_SDA.P2] }
+    net I2C_SCL  { connect: [U_MCU.I2C_SCL, U_BME.SCL, R_SCL.P2] }
+    net STAT_DRV { connect: [U_MCU.LED_STAT, StatLed.IN] }
+    net SWDIO    { connect: [J_SWD.SWDIO, U_MCU.SWDIO] }
+    net SWCLK    { connect: [J_SWD.SWCLK, U_MCU.SWCLK] }
+    net GND {
+      connect: [
+        J_USB.GND, D_ESD.A, Reg3V3.GND, J_SENS.GND, U_AMP.VSS,
+        AfeFilter.GND, U_MCU.GND, C_MCU.NEG, U_BME.GND,
+        PwrLed.GND, StatLed.GND, J_SWD.GND
+      ]
+    }
+  }
+
+  schematic TwoRowSheet {
+    sheet: A3 landscape
+
+    // Row 1 groups (Power + Analog — compact 2-component height fits comfortably inside A3!)
+    group UsbStage   { members: [J_USB, D_ESD] }
+    group PowerReg   { members: [FB_USB, Reg3V3.U] }
+    group RegCaps    { members: [Reg3V3.C_IN, Reg3V3.C_OUT] }
+    group AnalogIn   { members: [J_SENS, U_AMP] }
+    group AfeStage   { members: [AfeFilter] }
+
+    // Row 2 groups (Digital + Telemetry — compact 2-row height, straight horizontal R -> D LEDs!)
+    group DebugPort  { members: [J_SWD] }
+    group McuCore    { members: [U_MCU, C_MCU] }
+    group I2cBus     { members: [U_BME, R_SDA, R_SCL] }
+    group LedDrivers { members: [PwrLed.R, StatLed.R] }
+    group LedArray   { members: [PwrLed.D, StatLed.D] }
+
+    // 2D Multi-Row Layout!
+    layout {
+      row [UsbStage, PowerReg, RegCaps, AnalogIn, AfeStage]
+      row [DebugPort, McuCore, I2cBus, LedDrivers, LedArray]
+      group_gap: 22.86mm
+      row_gap: 22.86mm
+      member_gap: 20.32mm
+    }
+
+    routing {
+      default: direct
+      power_nets: symbol
+      ground_nets: symbol
+      net I2C_SDA: label_stub
+      net I2C_SCL: label_stub
+      net AMP_OUT: label_stub
+      net STAT_DRV: label_stub
+    }
+  }
+
+  verify {
+    require all_required_pins_connected
+    require no_power_ground_short
+    require no_multiple_power_drivers
+    require voltage_compatibility
+    require no_single_pin_nets
+    // Declarative MNA DC simulation assertions verified directly in EDL's evidence ledger!
+    require dc_voltage(VBUS_5V) in 4.9V..5.1V
+    require dc_voltage(V3V3) in 3.25V..3.35V
+    require dc_voltage(ADC_SIG) in 1.55V..1.75V
+    require led_current(PwrLed_D) in 1.0mA..3.0mA
+    require led_current(StatLed_D) in 3.0mA..6.0mA
+  }
+}

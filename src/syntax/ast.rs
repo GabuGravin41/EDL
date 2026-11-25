@@ -112,6 +112,19 @@ pub enum VerifyRule {
     NoMultiplePowerDrivers { span: Span },
     VoltageCompatibility { span: Span },
     NoSinglePinNets { span: Span },
+    // Electrical SPICE/MNA simulation assertions
+    DcVoltageRange {
+        net: String,
+        min: Quantity,
+        max: Quantity,
+        span: Span,
+    },
+    BranchCurrentRange {
+        component: String,
+        min: Quantity,
+        max: Quantity,
+        span: Span,
+    },
 }
 
 #[derive(Debug, Clone)]

@@ -1,7 +1,10 @@
 use clap::{Parser, Subcommand};
 use edl::core::diff;
 use edl::core::query::{inspect_summary, measure_ir, query_ir};
-use edl::{compile_file, export_dxf, export_kicad_sch, render_svg};
+use edl::{
+    build_bom, compile_file, export_bom_csv, export_dxf, export_kicad_sch, export_spice_netlist,
+    render_svg, simulate_dc_and_rc,
+};
 use std::fs;
 use std::path::PathBuf;
 use std::process;
@@ -10,7 +13,7 @@ use std::process;
 #[command(
     name = "edl",
     version,
-    about = "Engineering Description Language (EDL) v0.5 compiler & MCP server"
+    about = "Engineering Description Language (EDL) v0.6 compiler, simulator & MCP server"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -41,7 +44,7 @@ enum Commands {
         #[arg(long)]
         annotated: bool,
     },
-    /// Export to a native CAD/EDA format (DXF for floor plans, KiCad .kicad_sch for schematics)
+    /// Export to a native CAD/EDA format (DXF, KiCad .kicad_sch, SPICE .cir, or BOM .csv)
     Export {
         /// Path to .edl project file
         file: PathBuf,
@@ -51,6 +54,12 @@ enum Commands {
         /// Output KiCad schematic (.kicad_sch) file path (electronics)
         #[arg(long)]
         kicad: Option<PathBuf>,
+        /// Output SPICE3 netlist (.cir) file path (electronics)
+        #[arg(long)]
+        spice: Option<PathBuf>,
+        /// Output CSV Bill of Materials (.csv) file path (electronics)
+        #[arg(long)]
+        bom: Option<PathBuf>,
     },
     /// Compute a semantic diff between two .edl revisions by stable entity ID
     Diff {
@@ -90,6 +99,22 @@ enum Commands {
         target_a: String,
         /// Optional second entity ID for pairwise measurements
         target_b: Option<String>,
+    },
+    /// Run built-in exact MNA DC operating-point + analytical RC cutoff simulation (electronics)
+    Simulate {
+        /// Path to .edl project file
+        file: PathBuf,
+        /// Emit machine-readable JSON simulation report
+        #[arg(long)]
+        json: bool,
+    },
+    /// Generate a grouped Bill of Materials (CSV or JSON) for an electronics project
+    Bom {
+        /// Path to .edl project file
+        file: PathBuf,
+        /// Emit CSV instead of JSON
+        #[arg(long)]
+        csv: bool,
     },
     /// Start the Model Context Protocol (MCP) JSON-RPC 2.0 server over stdio
     Mcp,
@@ -190,10 +215,16 @@ fn main() {
                 ir.project.has_errors
             );
         }
-        Commands::Export { file, dxf, kicad } => {
+        Commands::Export {
+            file,
+            dxf,
+            kicad,
+            spice,
+            bom,
+        } => {
             let ir = load_and_compile(&file);
-            if dxf.is_none() && kicad.is_none() {
-                eprintln!("error: specify --dxf <path> or --kicad <path>");
+            if dxf.is_none() && kicad.is_none() && spice.is_none() && bom.is_none() {
+                eprintln!("error: specify --dxf, --kicad, --spice, or --bom");
                 process::exit(2);
             }
             if let Some(dxf_path) = dxf {
@@ -227,6 +258,32 @@ fn main() {
                     process::exit(2);
                 });
                 println!("Exported KiCad schematic -> {}", kicad_path.display());
+            }
+            if let Some(spice_path) = spice {
+                let content = export_spice_netlist(&ir);
+                if let Some(parent) = spice_path.parent() {
+                    if !parent.as_os_str().is_empty() {
+                        let _ = fs::create_dir_all(parent);
+                    }
+                }
+                fs::write(&spice_path, content).unwrap_or_else(|e| {
+                    eprintln!("error: failed to write '{}': {e}", spice_path.display());
+                    process::exit(2);
+                });
+                println!("Exported SPICE3 netlist -> {}", spice_path.display());
+            }
+            if let Some(bom_path) = bom {
+                let content = export_bom_csv(&ir);
+                if let Some(parent) = bom_path.parent() {
+                    if !parent.as_os_str().is_empty() {
+                        let _ = fs::create_dir_all(parent);
+                    }
+                }
+                fs::write(&bom_path, content).unwrap_or_else(|e| {
+                    eprintln!("error: failed to write '{}': {e}", bom_path.display());
+                    process::exit(2);
+                });
+                println!("Exported CSV BOM -> {}", bom_path.display());
             }
         }
         Commands::Diff {
@@ -301,6 +358,49 @@ fn main() {
                     eprintln!("error: {msg}");
                     process::exit(1);
                 }
+            }
+        }
+        Commands::Simulate { file, json } => {
+            let ir = load_and_compile(&file);
+            let sim = simulate_dc_and_rc(&ir);
+            if json {
+                println!("{}", serde_json::to_string_pretty(&sim).unwrap());
+            } else {
+                println!(
+                    "EDL MNA Simulation: {} (converged: {}, {} iter)",
+                    sim.project, sim.converged, sim.iterations
+                );
+                println!("  Node DC Voltages:");
+                for (net, v) in &sim.node_voltages_v {
+                    println!("    {:<16} = {:>8.3} V", net, v);
+                }
+                if !sim.branches.is_empty() {
+                    println!("  Branch Currents & Power:");
+                    for b in &sim.branches {
+                        println!(
+                            "    {:<18} ({:<9} {:<10}) | dV={:>6.3}V | I={:>7.3} mA | P={:>7.3} mW [{}]",
+                            b.component, b.category, b.value, b.v_drop_v, b.current_ma, b.power_mw, b.state
+                        );
+                    }
+                }
+                if !sim.rc_filters.is_empty() {
+                    println!("  Analytical RC Filters (-3dB cutoff):");
+                    for f in &sim.rc_filters {
+                        println!(
+                            "    node {:<12} ({} + {}) -> fc = {:.2} Hz",
+                            f.node, f.resistor, f.capacitor, f.cutoff_hz
+                        );
+                    }
+                }
+            }
+        }
+        Commands::Bom { file, csv } => {
+            let ir = load_and_compile(&file);
+            if csv {
+                print!("{}", export_bom_csv(&ir));
+            } else {
+                let bom = build_bom(&ir);
+                println!("{}", serde_json::to_string_pretty(&bom).unwrap());
             }
         }
         Commands::Mcp => {

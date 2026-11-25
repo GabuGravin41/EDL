@@ -176,6 +176,80 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         });
     }
 
+    // 2b. Series-passive DC rail propagation (ferrite beads, inductors, fuses, switches, <=10 ohm resistors)
+    // so downstream `power_in` pins are accurately voltage-checked by E4 and driven cleanly in KiCad 9!
+    let mut propagated_power_nets: BTreeSet<String> = BTreeSet::new();
+    for net in &all_nets {
+        if net.power_flag {
+            propagated_power_nets.insert(net.name.clone());
+        }
+    }
+    for _pass in 0..8 {
+        let mut changed = false;
+        for cid in &comp_order {
+            let comp = comp_map[cid];
+            if comp.pins.len() != 2 {
+                continue;
+            }
+            let cat = comp.category.to_lowercase();
+            let is_series_dc_short = matches!(
+                cat.as_str(),
+                "inductor" | "l" | "ferrite" | "fuse" | "switch" | "button" | "sw"
+            ) || (matches!(cat.as_str(), "resistor" | "r")
+                && crate::domains::elec::spice::parse_si_component_value(&comp.value, "R")
+                    .map(|r| r <= 10.0)
+                    .unwrap_or(false));
+            if !is_series_dc_short {
+                continue;
+            }
+            let n0 = pin_to_nets
+                .get(&(cid.clone(), comp.pins[0].name.clone()))
+                .and_then(|v| v.first())
+                .cloned();
+            let n1 = pin_to_nets
+                .get(&(cid.clone(), comp.pins[1].name.clone()))
+                .and_then(|v| v.first())
+                .cloned();
+            let (Some(net_a), Some(net_b)) = (n0, n1) else {
+                continue;
+            };
+            if net_a == net_b || ground_nets.contains(&net_a) || ground_nets.contains(&net_b) {
+                continue;
+            }
+            let va = net_driven_voltage
+                .get(&net_a)
+                .and_then(|d| d.first().map(|(_, v)| *v));
+            let vb = net_driven_voltage
+                .get(&net_b)
+                .and_then(|d| d.first().map(|(_, v)| *v));
+            if let (Some(v), None) = (va, vb) {
+                net_driven_voltage
+                    .entry(net_b.clone())
+                    .or_default()
+                    .push((format!("{cid}.{} (via {cid})", comp.pins[1].name), v));
+                propagated_power_nets.insert(net_b.clone());
+                if let Some(rel) = relations.iter_mut().find(|r| r.id == net_b) {
+                    rel.driven_voltage_v = Some(v);
+                }
+                changed = true;
+            } else if let (None, Some(v)) = (va, vb) {
+                net_driven_voltage
+                    .entry(net_a.clone())
+                    .or_default()
+                    .push((format!("{cid}.{} (via {cid})", comp.pins[0].name), v));
+                propagated_power_nets.insert(net_a.clone());
+                if let Some(rel) = relations.iter_mut().find(|r| r.id == net_a) {
+                    rel.driven_voltage_v = Some(v);
+                }
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    let _ = propagated_power_nets;
+
     // 2. Run Electrical Rule Checks (ERC) — 100% invariant to presentation/routing style!
     let mut rules = project.verifications.clone();
     if rules.is_empty() {
@@ -543,29 +617,42 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     )
     .max(min_member_gap);
 
-    let mut ordered_groups: Vec<(String, Vec<String>)> = Vec::new();
+    // Build 2D row/column group layout (supports multi-row `row [...]` bands OR classic 1D `arrange`)
+    let mut ordered_groups: Vec<(usize, usize, String, Vec<String>)> = Vec::new(); // (row_idx, col_in_row, name, members)
     let mut assigned: BTreeSet<String> = BTreeSet::new();
+
+    let row_gap_mm = snap_grid(
+        schem
+            .and_then(|s| s.layout.as_ref())
+            .and_then(|l| l.row_gap)
+            .and_then(|q| q.to_mm().ok())
+            .unwrap_or(25.4),
+    )
+    .max(17.78);
 
     if let Some(s) = schem {
         let gmap: BTreeMap<&str, &SchematicGroupDecl> =
             s.groups.iter().map(|g| (g.name.as_str(), g)).collect();
-        let arrange_order: Vec<String> = s
-            .layout
-            .as_ref()
-            .filter(|l| !l.arrange.is_empty())
-            .map(|l| l.arrange.clone())
-            .unwrap_or_else(|| s.groups.iter().map(|g| g.name.clone()).collect());
+        let row_specs: Vec<Vec<String>> = match s.layout.as_ref() {
+            Some(l) if !l.rows.is_empty() => l.rows.clone(),
+            Some(l) if !l.arrange.is_empty() => vec![l.arrange.clone()],
+            _ => vec![s.groups.iter().map(|g| g.name.clone()).collect()],
+        };
 
-        for gname in arrange_order {
-            if let Some(g) = gmap.get(gname.as_str()) {
-                let mut valid_members = Vec::new();
-                for m in &g.members {
-                    if comp_map.contains_key(m) && assigned.insert(m.clone()) {
-                        valid_members.push(m.clone());
+        for (r_idx, r_names) in row_specs.into_iter().enumerate() {
+            let mut c_in_row = 0usize;
+            for gname in r_names {
+                if let Some(g) = gmap.get(gname.as_str()) {
+                    let mut valid_members = Vec::new();
+                    for m in &g.members {
+                        if comp_map.contains_key(m) && assigned.insert(m.clone()) {
+                            valid_members.push(m.clone());
+                        }
                     }
-                }
-                if !valid_members.is_empty() {
-                    ordered_groups.push((g.name.clone(), valid_members));
+                    if !valid_members.is_empty() {
+                        ordered_groups.push((r_idx, c_in_row, g.name.clone(), valid_members));
+                        c_in_row += 1;
+                    }
                 }
             }
         }
@@ -576,14 +663,20 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         .cloned()
         .collect();
     if !leftover.is_empty() {
-        ordered_groups.push(("Components".to_string(), leftover));
+        let next_col = ordered_groups
+            .iter()
+            .filter(|(r, _, _, _)| *r == 0)
+            .count();
+        ordered_groups.push((0, next_col, "Components".to_string(), leftover));
     }
 
-    // Build comp -> col_idx map so we can predict how many nets actually need the overhead bus
+    // Build comp -> (group_flat_idx, row_idx, col_in_row) maps
     let mut comp_col_map: BTreeMap<String, usize> = BTreeMap::new();
-    for (c_idx, (_, members)) in ordered_groups.iter().enumerate() {
+    let mut comp_row_map: BTreeMap<String, usize> = BTreeMap::new();
+    for (g_idx, &(r_idx, _c_in_row, _, ref members)) in ordered_groups.iter().enumerate() {
         for m in members {
-            comp_col_map.insert(m.clone(), c_idx);
+            comp_col_map.insert(m.clone(), g_idx);
+            comp_row_map.insert(m.clone(), r_idx);
         }
     }
 
@@ -593,6 +686,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         let comp = comp_map[cid];
         comp_pin_sides.insert(cid.clone(), assign_pin_sides(comp, &pin_to_nets, &ground_nets));
     }
+
+    let is_multi_row = ordered_groups.iter().any(|(r, _, _, _)| *r > 0);
 
     // Count how many nets will actually use the top bus so we only reserve exact space needed!
     let mut predicted_bus_nets = 0usize;
@@ -604,6 +699,14 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             .unwrap_or(false)
             || net.name.to_uppercase().starts_with('V');
         let st = resolve_style(&net.name, is_gnd, is_pwr);
+        let rows_spanned: BTreeSet<usize> = net
+            .connects
+            .iter()
+            .filter_map(|p| comp_row_map.get(&p.component).copied())
+            .collect();
+        if rows_spanned.len() > 1 && matches!(st, NetRoutingStyle::Direct | NetRoutingStyle::Bus) {
+            continue; // cross-row nets automatically use clean local label_stub terminals!
+        }
         if matches!(st, NetRoutingStyle::Bus) {
             predicted_bus_nets += 1;
         } else if st == NetRoutingStyle::Direct && !is_gnd {
@@ -612,7 +715,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 .iter()
                 .filter_map(|p| comp_col_map.get(&p.component).copied())
                 .collect();
-            if cols.len() > 2 || (cols.len() == 2 && !can_direct_bridge_gap(net, &comp_col_map, &comp_pin_sides)) {
+            if cols.len() > 2 || (cols.len() == 2 && !can_direct_bridge_gap(net, &comp_col_map, &comp_row_map, &comp_pin_sides)) {
                 predicted_bus_nets += 1;
             }
         }
@@ -623,13 +726,16 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     let effective_group_gap = group_gap_mm.max(local_gutter_budget);
 
     let bus_top_y = snap_grid(25.4);
-    let bus_tracks_h = if predicted_bus_nets == 0 {
+    let bus_tracks_h = if predicted_bus_nets == 0 || is_multi_row {
         0.0
     } else {
         (predicted_bus_nets as f64) * 5.08 + 7.62
     };
-    let comp_start_y = snap_grid(bus_top_y + bus_tracks_h + 12.70);
-    let mut cur_x = snap_grid(30.48 + ((predicted_bus_nets.min(4) + 1) as f64) * GRID_MM);
+    let start_x = snap_grid(30.48 + ((predicted_bus_nets.min(4) + 1) as f64) * GRID_MM);
+    let mut cur_x = start_x;
+    let mut row_start_y = snap_grid(bus_top_y + bus_tracks_h + 12.70);
+    let mut cur_row_idx = 0usize;
+    let mut cur_row_max_y = row_start_y + 25.4;
 
     let mut entities: Vec<EntityIr> = Vec::new();
     let mut schematic_groups: Vec<SchematicGroupIr> = Vec::new();
@@ -638,18 +744,26 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     #[derive(Clone)]
     struct RoutablePin {
         pin: PlacedPinIr,
+        row_idx: usize,
         col_idx: usize,
         col_left_x: f64,
         col_right_x: f64,
         body_min_y: f64,
+        comp_has_north_pin: bool,
         is_top_in_col: bool,
         is_bottom_in_col: bool,
     }
     let mut placed_pins: BTreeMap<(String, String), RoutablePin> = BTreeMap::new();
-    let mut max_comp_y = comp_start_y + 25.4;
+    let mut max_comp_y = row_start_y + 25.4;
     let mut max_comp_x = cur_x + 50.8;
 
-    for (col_idx, (gname, members)) in ordered_groups.iter().enumerate() {
+    for (col_idx, &(r_idx, _c_in_row, ref gname, ref members)) in ordered_groups.iter().enumerate() {
+        if r_idx != cur_row_idx {
+            cur_row_idx = r_idx;
+            cur_x = start_x;
+            row_start_y = snap_grid(cur_row_max_y + row_gap_mm);
+            cur_row_max_y = row_start_y + 25.4;
+        }
         let mut col_body_w = 15.24_f64;
         let mut sizes: Vec<(f64, f64)> = Vec::new();
         for cid in members {
@@ -664,7 +778,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         let col_x1 = snap_grid(col_x0 + col_body_w);
         col_bounds.push((col_x0, col_x1));
 
-        let mut cur_y = comp_start_y;
+        let mut cur_y = row_start_y;
         let mut g_min_x = f64::INFINITY;
         let mut g_max_x = f64::NEG_INFINITY;
         let mut g_min_y = f64::INFINITY;
@@ -685,15 +799,18 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             let local_left = snap_grid(col_x0.min(bx0) - PIN_LEN_MM - 2.54);
             let local_right = snap_grid(col_x1.max(body.max_x) + PIN_LEN_MM + 2.54);
 
+            let has_north = placed.iter().any(|p| p.side == Side::North);
             for p in &placed {
                 placed_pins.insert(
                     (cid.clone(), p.name.clone()),
                     RoutablePin {
                         pin: p.clone(),
+                        row_idx: r_idx,
                         col_idx,
                         col_left_x: local_left,
                         col_right_x: local_right,
                         body_min_y: body.min_y,
+                        comp_has_north_pin: has_north,
                         is_top_in_col: m_idx == 0,
                         is_bottom_in_col: m_idx + 1 == members.len(),
                     },
@@ -707,8 +824,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             if let Some(ref fp) = comp.footprint {
                 props.insert("footprint".to_string(), json!(fp));
             }
-
-            let has_north = placed.iter().any(|p| p.side == Side::North);
             entities.push(EntityIr {
                 id: cid.clone(),
                 kind: "elec.component".to_string(),
@@ -733,6 +848,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             g_max_x = g_max_x.max(body.max_x + PIN_LEN_MM + 5.08);
             g_min_y = g_min_y.min(body.min_y - top_pad);
             g_max_y = g_max_y.max(body.max_y + PIN_LEN_MM + 5.08);
+            cur_row_max_y = cur_row_max_y.max(body.max_y + PIN_LEN_MM + 5.08);
             max_comp_y = max_comp_y.max(body.max_y + PIN_LEN_MM);
             max_comp_x = max_comp_x.max(body.max_x + PIN_LEN_MM + 12.70);
         }
@@ -914,7 +1030,13 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         }
 
         // --- MODE B: Local Named Net-Label Stubs (zero cross-sheet wires!) ---
-        if style == NetRoutingStyle::LabelStub {
+        // Also automatically used for cross-row nets in 2D multi-row layouts so wires never cut through rows!
+        let rows_in_net: BTreeSet<usize> = net_endpoints.iter().map(|rp| rp.row_idx).collect();
+        let force_cross_row_stub = is_multi_row
+            && !is_gnd
+            && rows_in_net.len() > 1
+            && matches!(style, NetRoutingStyle::Direct | NetRoutingStyle::Bus);
+        if style == NetRoutingStyle::LabelStub || force_cross_row_stub {
             let mut segments = Vec::new();
             let mut terminals = Vec::new();
             for rp in &net_endpoints {
@@ -999,7 +1121,9 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                                 let llane = *left_lane_next.entry(col).or_insert(0);
                                 *left_lane_next.get_mut(&col).unwrap() += 1;
                                 let wx = snap_grid(rp.col_left_x - (llane as f64) * GRID_MM);
-                                let by = snap_grid(rp.body_min_y - 3.0 * GRID_MM);
+                                // Clear both the component body AND any North pin + power symbol (`-7.62mm`)!
+                                let clearance_grids = if rp.comp_has_north_pin { 4.0 } else { 3.0 };
+                                let by = snap_grid(rp.body_min_y - clearance_grids * GRID_MM);
                                 add_ortho_seg(&mut segs, tip, Point2::new(wx, tip.y));
                                 add_ortho_seg(&mut segs, Point2::new(wx, tip.y), Point2::new(wx, by));
                                 add_ortho_seg(&mut segs, Point2::new(wx, by), Point2::new(rx, by));
@@ -1039,8 +1163,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 continue;
             }
 
-            // Subcase C2: Adjacent-column direct bridge! (e.g. VBUS: J1.VBUS + C1.POS -> U1.IN, or GPIO_LED: U2 -> R2)
-            if cols.len() == 2 && can_direct_bridge_gap(net, &comp_col_map, &comp_pin_sides) {
+            // Subcase C2: Adjacent-column direct bridge within the SAME row!
+            if cols.len() == 2 && can_direct_bridge_gap(net, &comp_col_map, &comp_row_map, &comp_pin_sides) {
                 let mut it = cols.iter().copied();
                 let c_left = it.next().unwrap();
                 let lane = *right_lane_next.entry(c_left).or_insert(0);
@@ -1351,23 +1475,46 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     }
     let sheet_bounds = Rect2::new(0.0, 0.0, snap_grid(max_x.max(228.6)), snap_grid(max_y.max(152.4)));
 
+    let sheet_str = schem
+        .map(|s| s.sheet.clone())
+        .unwrap_or_else(|| "A4 landscape".to_string());
+    if let Some((sw, sh)) = sheet_dimensions_mm(&sheet_str) {
+        if sheet_bounds.width() > sw - 12.0 || sheet_bounds.depth() > sh - 12.0 {
+            diagnostics.push(
+                Diagnostic::warning(
+                    "W_SHEET_OVERFLOW",
+                    "layout",
+                    format!(
+                        "Schematic bounds ({:.1}mm × {:.1}mm) exceed declared sheet '{}' ({:.0}mm × {:.0}mm)",
+                        sheet_bounds.width(),
+                        sheet_bounds.depth(),
+                        sheet_str,
+                        sw,
+                        sh
+                    ),
+                    schem.map(|s| s.span.clone()),
+                )
+                .with_suggestion(
+                    "Split groups across multiple `row [...]` bands in `layout { ... }` or increase `sheet:` (e.g., `A3 landscape` or `A2 landscape`)",
+                ),
+            );
+        }
+    }
+
     let views = vec![ViewIr {
         id: schem.map(|s| s.name.clone()).unwrap_or_else(|| "Main".to_string()),
         kind: "SchematicView".to_string(),
         frame: default_frame,
-        sheet: schem
-            .map(|s| s.sheet.clone())
-            .unwrap_or_else(|| "A4 landscape".to_string()),
+        sheet: sheet_str,
         scale: "1:1".to_string(),
         show_dimensions: false,
         show_labels: true,
     }];
 
-    let has_errors = diagnostics.iter().any(|d| d.severity == Severity::Error);
     let _ = col_bounds;
 
-    CanonicalIr {
-        ir_version: "0.3.2".to_string(),
+    let mut ir = CanonicalIr {
+        ir_version: "0.6.0".to_string(),
         project: ProjectSummaryIr {
             name: project.name.clone(),
             domain: "electronics".to_string(),
@@ -1381,7 +1528,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             component_count: comp_order.len(),
             net_count: all_nets.len(),
             remaining_dof: Vec::new(),
-            has_errors,
+            has_errors: false,
         },
         frames,
         entities,
@@ -1394,16 +1541,173 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         views,
         evidence,
         diagnostics,
+    };
+
+    // 6. Optional declarative MNA DC simulation assertions (`dc_voltage` / `branch_current`)
+    let has_sim_rules = project.verifications.iter().any(|r| {
+        matches!(
+            r,
+            VerifyRule::DcVoltageRange { .. } | VerifyRule::BranchCurrentRange { .. }
+        )
+    });
+    if has_sim_rules {
+        let sim = crate::domains::elec::spice::simulate_dc_and_rc(&ir);
+        ir.evidence.push(EvidenceRecord {
+            check_id: "S1_dc_operating_point".to_string(),
+            status: if sim.converged {
+                VerificationStatus::ExactlyChecked
+            } else {
+                VerificationStatus::Violated
+            },
+            method: sim.method.clone(),
+            tolerance_mm: None,
+            subjects: vec![ir.project.name.clone()],
+            details: format!(
+                "MNA DC operating point solved in {} iteration(s) ({} nets, {} branches, {} RC filter(s))",
+                sim.iterations,
+                sim.node_voltages_v.len(),
+                sim.branches.len(),
+                sim.rc_filters.len()
+            ),
+        });
+
+        for rule in &project.verifications {
+            match rule {
+                VerifyRule::DcVoltageRange {
+                    net,
+                    min,
+                    max,
+                    span,
+                } => {
+                    if let (Ok(vmin), Ok(vmax)) = (min.to_volts(), max.to_volts()) {
+                        let measured = sim.node_voltages_v.get(net).copied();
+                        let ok = measured
+                            .map(|v| v >= vmin - 1e-4 && v <= vmax + 1e-4)
+                            .unwrap_or(false);
+                        if !ok {
+                            ir.diagnostics.push(
+                                Diagnostic::error(
+                                    "E_SIM_DC_VOLTAGE",
+                                    "simulation",
+                                    match measured {
+                                        Some(v) => format!(
+                                            "Simulated DC voltage on net '{net}' is {v:.3}V (required {vmin:.3}V..{vmax:.3}V)"
+                                        ),
+                                        None => format!("Net '{net}' not found in DC simulation"),
+                                    },
+                                    Some(span.clone()),
+                                )
+                                .with_entities(vec![net.clone()]),
+                            );
+                        }
+                        ir.evidence.push(EvidenceRecord {
+                            check_id: format!("S2_dc_voltage_{net}"),
+                            status: if ok {
+                                VerificationStatus::ExactlyChecked
+                            } else {
+                                VerificationStatus::Violated
+                            },
+                            method: sim.method.clone(),
+                            tolerance_mm: None,
+                            subjects: vec![net.clone()],
+                            details: match measured {
+                                Some(v) => format!("{net} = {v:.3}V (spec {vmin:.3}V..{vmax:.3}V)"),
+                                None => format!("Net '{net}' missing"),
+                            },
+                        });
+                    }
+                }
+                VerifyRule::BranchCurrentRange {
+                    component,
+                    min,
+                    max,
+                    span,
+                } => {
+                    if let (Ok(imin_a), Ok(imax_a)) = (min.to_amps(), max.to_amps()) {
+                        let imin_ma = imin_a * 1000.0;
+                        let imax_ma = imax_a * 1000.0;
+                        let measured = sim
+                            .branches
+                            .iter()
+                            .find(|b| b.component == *component)
+                            .map(|b| b.current_ma.abs());
+                        let ok = measured
+                            .map(|i| i >= imin_ma - 1e-4 && i <= imax_ma + 1e-4)
+                            .unwrap_or(false);
+                        if !ok {
+                            ir.diagnostics.push(
+                                Diagnostic::error(
+                                    "E_SIM_BRANCH_CURRENT",
+                                    "simulation",
+                                    match measured {
+                                        Some(i) => format!(
+                                            "Simulated DC current in '{component}' is {i:.3}mA (required {imin_ma:.3}mA..{imax_ma:.3}mA)"
+                                        ),
+                                        None => format!("Component '{component}' has no simulated branch current"),
+                                    },
+                                    Some(span.clone()),
+                                )
+                                .with_entities(vec![component.clone()]),
+                            );
+                        }
+                        ir.evidence.push(EvidenceRecord {
+                            check_id: format!("S3_branch_current_{component}"),
+                            status: if ok {
+                                VerificationStatus::ExactlyChecked
+                            } else {
+                                VerificationStatus::Violated
+                            },
+                            method: sim.method.clone(),
+                            tolerance_mm: None,
+                            subjects: vec![component.clone()],
+                            details: match measured {
+                                Some(i) => format!("{component} = {i:.3}mA (spec {imin_ma:.3}mA..{imax_ma:.3}mA)"),
+                                None => format!("Component '{component}' missing"),
+                            },
+                        });
+                    }
+                }
+                _ => {}
+            }
+        }
     }
+
+    ir.project.has_errors = ir.diagnostics.iter().any(|d| d.severity == Severity::Error);
+    ir
 }
 
-/// True iff all pins of `net` live in two adjacent columns (c, c+1) and face each other across the gap
-/// between c and c+1 (col c uses East/North/South; col c+1 uses West).
+fn sheet_dimensions_mm(sheet: &str) -> Option<(f64, f64)> {
+    let low = sheet.to_lowercase();
+    let portrait = low.contains("portrait");
+    let (w, h) = if low.contains("a4") {
+        (297.0, 210.0)
+    } else if low.contains("a3") {
+        (420.0, 297.0)
+    } else if low.contains("a2") {
+        (594.0, 420.0)
+    } else if low.contains("a1") {
+        (841.0, 594.0)
+    } else {
+        return None;
+    };
+    Some(if portrait { (h, w) } else { (w, h) })
+}
+
+/// True iff all pins of `net` live in two adjacent columns (c, c+1) in the SAME row and face each other.
 fn can_direct_bridge_gap(
     net: &NetDecl,
     comp_col: &BTreeMap<String, usize>,
+    comp_row: &BTreeMap<String, usize>,
     comp_pin_sides: &BTreeMap<String, Vec<(&PinDecl, Side)>>,
 ) -> bool {
+    let rows: BTreeSet<usize> = net
+        .connects
+        .iter()
+        .filter_map(|p| comp_row.get(&p.component).copied())
+        .collect();
+    if rows.len() != 1 {
+        return false;
+    }
     let mut cols: Vec<usize> = net
         .connects
         .iter()

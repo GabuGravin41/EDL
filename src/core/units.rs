@@ -253,6 +253,17 @@ impl Quantity {
         Ok(self.raw_value * self.unit.to_canonical_factor())
     }
 
+    pub fn to_amps(self) -> Result<f64, String> {
+        if self.dimension() != Dimension::Current {
+            return Err(format!(
+                "Expected a current quantity (A/mA/uA), got {} ({})",
+                self.dimension(),
+                self.unit
+            ));
+        }
+        Ok(self.raw_value * self.unit.to_canonical_factor())
+    }
+
     pub fn to_deg(self) -> Result<f64, String> {
         if self.dimension() != Dimension::Angle {
             return Err(format!(

@@ -1195,6 +1195,36 @@ impl Parser {
                 "no_multiple_power_drivers" => rules.push(VerifyRule::NoMultiplePowerDrivers { span: rstart.merge(&rspan) }),
                 "voltage_compatibility" => rules.push(VerifyRule::VoltageCompatibility { span: rstart.merge(&rspan) }),
                 "no_single_pin_nets" => rules.push(VerifyRule::NoSinglePinNets { span: rstart.merge(&rspan) }),
+                "dc_voltage" => {
+                    self.expect(TokenKind::LParen, "'('")?;
+                    let (net, _) = self.expect_ident("net name")?;
+                    self.expect(TokenKind::RParen, "')'")?;
+                    self.expect_keyword("in")?;
+                    let (min, _) = self.parse_quantity()?;
+                    self.expect(TokenKind::DotDot, "'..'")?;
+                    let (max, qend) = self.parse_quantity()?;
+                    rules.push(VerifyRule::DcVoltageRange {
+                        net,
+                        min,
+                        max,
+                        span: rstart.merge(&qend),
+                    });
+                }
+                "branch_current" | "led_current" => {
+                    self.expect(TokenKind::LParen, "'('")?;
+                    let comp = self.parse_room_ref()?;
+                    self.expect(TokenKind::RParen, "')'")?;
+                    self.expect_keyword("in")?;
+                    let (min, _) = self.parse_quantity()?;
+                    self.expect(TokenKind::DotDot, "'..'")?;
+                    let (max, qend) = self.parse_quantity()?;
+                    rules.push(VerifyRule::BranchCurrentRange {
+                        component: comp,
+                        min,
+                        max,
+                        span: rstart.merge(&qend),
+                    });
+                }
                 other => {
                     return Err(Diagnostic::error(
                         "E_VERIFY_UNKNOWN",
@@ -1463,39 +1493,50 @@ impl Parser {
         let (name, _) = self.expect_ident("net name")?;
         self.expect(TokenKind::LBrace, "'{'")?;
         let mut connects = Vec::new();
+        let mut power_flag = false;
         while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
-            let (key, kspan) = self.expect_ident("connect")?;
-            if key != "connect" {
-                return Err(Diagnostic::error(
-                    "E_PARSE_NET",
-                    "syntax",
-                    format!("Expected 'connect' inside net '{name}', found '{key}'"),
-                    Some(kspan),
-                ));
-            }
-            self.expect(TokenKind::Colon, "':'")?;
-            self.expect(TokenKind::LBracket, "'['")?;
-            while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
-                let (comp, cspan) = self.expect_ident("component id")?;
-                self.expect(TokenKind::Dot, "'.'")?;
-                let (pin, pspan) = self.expect_ident("pin name")?;
-                connects.push(PinRef {
-                    component: comp,
-                    pin,
-                    span: cspan.merge(&pspan),
-                });
-                if self.peek().kind == TokenKind::Comma {
-                    self.bump();
-                } else {
-                    break;
+            let (key, kspan) = self.expect_ident("connect or power_flag")?;
+            match key.as_str() {
+                "connect" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    self.expect(TokenKind::LBracket, "'['")?;
+                    while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
+                        let (comp, cspan) = self.expect_ident("component id")?;
+                        self.expect(TokenKind::Dot, "'.'")?;
+                        let (pin, pspan) = self.expect_ident("pin name")?;
+                        connects.push(PinRef {
+                            component: comp,
+                            pin,
+                            span: cspan.merge(&pspan),
+                        });
+                        if self.peek().kind == TokenKind::Comma {
+                            self.bump();
+                        } else {
+                            break;
+                        }
+                    }
+                    self.expect(TokenKind::RBracket, "']'")?;
+                }
+                "power_flag" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let (b, _) = self.expect_ident("true or false")?;
+                    power_flag = b == "true";
+                }
+                other => {
+                    return Err(Diagnostic::error(
+                        "E_PARSE_NET",
+                        "syntax",
+                        format!("Expected 'connect' or 'power_flag' inside net '{name}', found '{other}'"),
+                        Some(kspan),
+                    ));
                 }
             }
-            self.expect(TokenKind::RBracket, "']'")?;
         }
         let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
         Ok(NetDecl {
             name,
             connects,
+            power_flag,
             span: start.merge(&end),
         })
     }
@@ -1557,14 +1598,16 @@ impl Parser {
                 "layout" => {
                     self.expect(TokenKind::LBrace, "'{'")?;
                     let mut arrange = Vec::new();
+                    let mut rows = Vec::new();
                     let mut direction = "left_to_right".to_string();
                     let mut group_gap = None;
                     let mut member_gap = None;
+                    let mut row_gap = None;
                     while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
                         let (lk, lspan) = self.expect_ident("schematic layout property")?;
-                        self.expect(TokenKind::Colon, "':'")?;
                         match lk.as_str() {
                             "arrange" => {
+                                self.expect(TokenKind::Colon, "':'")?;
                                 self.expect(TokenKind::LBracket, "'['")?;
                                 while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
                                     let (g, _) = self.expect_ident("group name")?;
@@ -1583,13 +1626,38 @@ impl Parser {
                                     }
                                 }
                             }
+                            "row" => {
+                                if self.peek().kind == TokenKind::Colon {
+                                    self.bump();
+                                }
+                                self.expect(TokenKind::LBracket, "'['")?;
+                                let mut r = Vec::new();
+                                while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
+                                    let (g, _) = self.expect_ident("group name")?;
+                                    r.push(g);
+                                    if self.peek().kind == TokenKind::Comma {
+                                        self.bump();
+                                    } else {
+                                        break;
+                                    }
+                                }
+                                self.expect(TokenKind::RBracket, "']'")?;
+                                rows.push(r);
+                            }
                             "group_gap" => {
+                                self.expect(TokenKind::Colon, "':'")?;
                                 let (q, _) = self.parse_quantity()?;
                                 group_gap = Some(q);
                             }
                             "member_gap" => {
+                                self.expect(TokenKind::Colon, "':'")?;
                                 let (q, _) = self.parse_quantity()?;
                                 member_gap = Some(q);
+                            }
+                            "row_gap" => {
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (q, _) = self.parse_quantity()?;
+                                row_gap = Some(q);
                             }
                             other => {
                                 return Err(Diagnostic::error(
@@ -1604,9 +1672,11 @@ impl Parser {
                     let lend = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
                     layout = Some(SchematicLayoutDecl {
                         arrange,
+                        rows,
                         direction,
                         group_gap,
                         member_gap,
+                        row_gap,
                         span: kspan.merge(&lend),
                     });
                 }

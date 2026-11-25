@@ -2,7 +2,10 @@ use crate::core::diff::diff_ir;
 use crate::core::ir::CanonicalIr;
 use crate::core::query::{inspect_summary, measure_ir, query_ir};
 use crate::domains::elec::kicad_erc::run_and_ingest_kicad_erc;
-use crate::{compile_file, compile_source, export_dxf, export_kicad_sch, render_svg};
+use crate::{
+    build_bom, compile_file, compile_source, export_bom_csv, export_dxf, export_kicad_sch,
+    export_spice_netlist, render_svg, simulate_dc_and_rc,
+};
 use serde_json::{json, Value};
 use std::io::{self, BufRead, Write};
 use std::path::Path;
@@ -145,16 +148,38 @@ fn mcp_tool_schemas() -> Value {
         },
         {
             "name": "edl_export",
-            "description": "Export an EDL project to AutoCAD DXF (format='dxf') or KiCad 9 schematic (format='kicad'), optionally running real KiCad 9 ERC.",
+            "description": "Export an EDL project to AutoCAD DXF ('dxf'), KiCad 9 schematic ('kicad'), SPICE3 netlist ('spice'), or CSV BOM ('bom'), optionally running real KiCad 9 ERC.",
             "inputSchema": {
                 "type": "object",
                 "required": ["format", "output_path"],
                 "properties": {
                     "file_path": { "type": "string" },
                     "source": { "type": "string" },
-                    "format": { "type": "string", "enum": ["dxf", "kicad"] },
+                    "format": { "type": "string", "enum": ["dxf", "kicad", "spice", "bom"] },
                     "output_path": { "type": "string" },
                     "kicad_erc": { "type": "boolean" }
+                }
+            }
+        },
+        {
+            "name": "edl_simulate",
+            "description": "Run built-in exact MNA DC operating-point + analytical RC filter cutoff simulation on an EDL electronics project. Returns exact net voltages (V), resistor/LED/diode currents (mA) and power (mW), and RC -3dB cutoffs (Hz).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "file_path": { "type": "string" },
+                    "source": { "type": "string" }
+                }
+            }
+        },
+        {
+            "name": "edl_bom",
+            "description": "Generate a grouped Bill of Materials (BOM) by (category, value, footprint) with quantities, designators, and module provenance.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "file_path": { "type": "string" },
+                    "source": { "type": "string" }
                 }
             }
         },
@@ -252,7 +277,9 @@ fn call_mcp_tool(name: &str, args: &Value) -> Result<Value, String> {
             let content = match fmt {
                 "dxf" => export_dxf(&ir),
                 "kicad" => export_kicad_sch(&ir),
-                other => return Err(format!("Unknown export format '{other}' (expected 'dxf' or 'kicad')")),
+                "spice" => export_spice_netlist(&ir),
+                "bom" => export_bom_csv(&ir),
+                other => return Err(format!("Unknown export format '{other}' (expected 'dxf', 'kicad', 'spice', or 'bom')")),
             };
             let p = Path::new(out_path);
             if let Some(parent) = p.parent() {
@@ -271,6 +298,16 @@ fn call_mcp_tool(name: &str, args: &Value) -> Result<Value, String> {
                 "has_errors": ir.project.has_errors,
                 "evidence": ir.evidence,
             }))
+        }
+        "edl_simulate" => {
+            let ir = compile_from_args(args, "file_path", "source")?;
+            let sim = simulate_dc_and_rc(&ir);
+            serde_json::to_value(&sim).map_err(|e| e.to_string())
+        }
+        "edl_bom" => {
+            let ir = compile_from_args(args, "file_path", "source")?;
+            let bom = build_bom(&ir);
+            serde_json::to_value(&bom).map_err(|e| e.to_string())
         }
         "edl_diff" => {
             let before = compile_from_args(args, "before_path", "before_source")?;

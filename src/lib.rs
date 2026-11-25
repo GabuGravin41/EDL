@@ -56,6 +56,22 @@ pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
     domains::elec::kicad::export_kicad_sch(ir)
 }
 
+pub fn export_spice_netlist(ir: &CanonicalIr) -> String {
+    domains::elec::spice::export_spice_netlist(ir)
+}
+
+pub fn simulate_dc_and_rc(ir: &CanonicalIr) -> domains::elec::spice::SimulationReport {
+    domains::elec::spice::simulate_dc_and_rc(ir)
+}
+
+pub fn build_bom(ir: &CanonicalIr) -> domains::elec::bom::BomReport {
+    domains::elec::bom::build_bom(ir)
+}
+
+pub fn export_bom_csv(ir: &CanonicalIr) -> String {
+    domains::elec::bom::export_bom_csv(ir)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -722,7 +738,7 @@ project "BadNotch" {
         }))
         .unwrap();
         let tools = list["result"]["tools"].as_array().unwrap();
-        assert_eq!(tools.len(), 6);
+        assert_eq!(tools.len(), 8);
 
         let call = crate::mcp::handle_jsonrpc_request(&json!({
             "jsonrpc": "2.0",
@@ -854,5 +870,94 @@ project "ParamEverywhere" {
 "#;
         let ir_p = compile_source("param_everywhere.edl", param_src).unwrap();
         assert!(!ir_p.project.has_errors, "param diags: {:?}", ir_p.diagnostics);
+    }
+
+    #[test]
+    fn sensor_node_2row_tests_multi_row_ferrite_propagation_spice_mna_and_bom() {
+        use crate::core::ir::VerificationStatus;
+
+        let mut ir = compile_file(std::path::Path::new("examples/sensor_node_2row.edl")).unwrap();
+        assert!(!ir.project.has_errors, "diagnostics: {:?}", ir.diagnostics);
+
+        // 1) All 5 ERCs + S1 + 5 DC/LED simulation assertions must be ExactlyChecked!
+        assert!(ir.evidence.len() >= 11, "evidence: {:?}", ir.evidence);
+        assert!(ir
+            .evidence
+            .iter()
+            .all(|e| e.status == VerificationStatus::ExactlyChecked));
+
+        // 2) Verify series-passive ferrite bead propagated 5V to VBUS_5V
+        let vbus5 = ir.relations.iter().find(|r| r.id == "VBUS_5V").expect("VBUS_5V");
+        assert_eq!(vbus5.driven_voltage_v, Some(5.0));
+
+        // 3) Verify real KiCad 9 ERC passes with 0 errors even with passive ferrite bead FB_USB!
+        crate::domains::elec::kicad_erc::run_and_ingest_kicad_erc(&mut ir);
+        let k1 = ir
+            .evidence
+            .iter()
+            .find(|e| e.check_id == "K1_kicad_erc_external")
+            .unwrap();
+        assert!(
+            k1.status == VerificationStatus::ExactlyChecked
+                || k1.status == VerificationStatus::Unverified,
+            "KiCad ERC failed on 2-row ferrite-bead schematic: {:?}",
+            k1
+        );
+
+        // 4) Verify MNA simulation values: op-amp unity buffer ADC_SIG ~= 1.65V, RC cutoff ~= 1591.55 Hz, LED currents exact!
+        let sim = simulate_dc_and_rc(&ir);
+        assert!(sim.converged);
+        assert!((sim.node_voltages_v["VBUS_5V"] - 5.0).abs() < 0.05);
+        assert!((sim.node_voltages_v["ADC_SIG"] - 1.65).abs() < 0.05);
+        let pwr_led = sim.branches.iter().find(|b| b.component == "PwrLed_D").unwrap();
+        assert_eq!(pwr_led.state, "forward_biased");
+        assert!((pwr_led.current_ma - 1.727).abs() < 0.15, "PwrLed_D I = {}", pwr_led.current_ma);
+        let rc = sim.rc_filters.iter().find(|f| f.node == "ADC_SIG").expect("RC filter on ADC_SIG");
+        assert!((rc.cutoff_hz - 1591.55).abs() < 5.0, "fc = {}", rc.cutoff_hz);
+
+        // 5) Verify SPICE3 netlist & BOM export
+        let cir = export_spice_netlist(&ir);
+        assert!(cir.contains("R_PwrLed_R"));
+        assert!(cir.contains("E_U_AMP"));
+        assert!(cir.contains(".op"));
+
+        let bom = build_bom(&ir);
+        assert_eq!(bom.total_components, ir.entities.len());
+        assert!(bom.unique_parts < bom.total_components);
+        let csv = export_bom_csv(&ir);
+        assert!(csv.starts_with("Item,Qty,Designators,Category,Value,Footprint,Modules"));
+    }
+
+    #[test]
+    fn sheet_overflow_emits_warning_without_failing_build() {
+        let src = r#"
+project "TinySheet" {
+  units: mm
+  circuit C {
+    component U1: ic { value: "A" pin P1: output (3.3V) side: east pin GND: ground (0V) side: south }
+    component U2: ic { value: "B" pin P1: input (3.3V) side: west pin P2: output (3.3V) side: east pin GND: ground (0V) side: south }
+    component U3: ic { value: "C" pin P1: input (3.3V) side: west pin P2: output (3.3V) side: east pin GND: ground (0V) side: south }
+    component U4: ic { value: "D" pin P1: input (3.3V) side: west pin P2: output (3.3V) side: east pin GND: ground (0V) side: south }
+    component U5: ic { value: "E" pin P1: input (3.3V) side: west pin GND: ground (0V) side: south }
+    net N1 { connect: [U1.P1, U2.P1] }
+    net N2 { connect: [U2.P2, U3.P1] }
+    net N3 { connect: [U3.P2, U4.P1] }
+    net N4 { connect: [U4.P2, U5.P1] }
+    net GND { connect: [U1.GND, U2.GND, U3.GND, U4.GND, U5.GND] }
+  }
+  schematic S {
+    sheet: A4 portrait
+    group G1 { members: [U1] }
+    group G2 { members: [U2] }
+    group G3 { members: [U3] }
+    group G4 { members: [U4] }
+    group G5 { members: [U5] }
+    layout { arrange: [G1, G2, G3, G4, G5] left_to_right group_gap: 35.56mm }
+  }
+}
+"#;
+        let ir = compile_source("tiny_sheet.edl", src).unwrap();
+        assert!(!ir.project.has_errors);
+        assert!(ir.diagnostics.iter().any(|d| d.code == "W_SHEET_OVERFLOW"));
     }
 }

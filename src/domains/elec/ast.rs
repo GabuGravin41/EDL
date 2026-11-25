@@ -42,6 +42,7 @@ pub struct PinRef {
 pub struct NetDecl {
     pub name: String,
     pub connects: Vec<PinRef>,
+    pub power_flag: bool,
     pub span: Span,
 }
 
@@ -64,9 +65,11 @@ pub struct SchematicGroupDecl {
 #[derive(Debug, Clone)]
 pub struct SchematicLayoutDecl {
     pub arrange: Vec<String>,
+    pub rows: Vec<Vec<String>>,
     pub direction: String,
     pub group_gap: Option<Quantity>,
     pub member_gap: Option<Quantity>,
+    pub row_gap: Option<Quantity>,
     pub span: Span,
 }
 
