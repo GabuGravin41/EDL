@@ -5,6 +5,7 @@ pub mod diff;
 pub mod geom;
 pub mod ir;
 pub mod mcp_tools;
+pub mod performance_optimization;
 pub mod propagator;
 pub mod query;
 pub mod repair_impact;
