@@ -1035,7 +1035,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
 
     // Compact inter-column gap: wide enough for direct local lanes & any bus risers without bloating!
     let local_gutter_budget = snap_grid(((predicted_bus_nets + 3).min(7) as f64) * 2.0 * GRID_MM);
-    let effective_group_gap = group_gap_mm.max(local_gutter_budget);
+    let effective_group_gap = group_gap_mm.max(local_gutter_budget).max(27.94);
 
     let bus_top_y = snap_grid(25.4);
     let bus_tracks_h = if predicted_bus_nets == 0 || is_multi_row {
@@ -1043,7 +1043,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     } else {
         (predicted_bus_nets as f64) * 5.08 + 7.62
     };
-    let start_x = snap_grid(30.48 + ((predicted_bus_nets.min(4) + 1) as f64) * GRID_MM);
+    let start_x = snap_grid(38.10 + ((predicted_bus_nets.min(4) + 1) as f64) * GRID_MM);
     let mut cur_x = start_x;
     let mut row_start_y = snap_grid(bus_top_y + bus_tracks_h + 12.70);
     let mut cur_row_idx = 0usize;
@@ -2216,9 +2216,139 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         }
     }
 
-    // Compute tight actual sheet bounds from all routed coordinates
+    // 5c. Post-routing Zone Enclosure & Clearance Pass:
+    //     Expand every zone frame (`local_groups`) to strictly enclose all member pin tips,
+    //     GND triangles, upward power arrows, and global/local label pills with guaranteed
+    //     visual breathing margin so borders NEVER clip pins, power symbols, or labels!
+    {
+        let clearance_mm = 3.81_f64;
+        let title_band_mm = 6.35_f64;
+        // Precompute member body + pin bounds per group
+        let entity_by_id: BTreeMap<&str, &EntityIr> = local_entities
+            .iter()
+            .map(|e| (e.id.as_str(), e))
+            .collect();
+        // Track current group content bounds (excluding note footer)
+        let mut content_bounds: Vec<Rect2> = local_groups
+            .iter()
+            .map(|g| {
+                let note_h = if g.notes.is_empty() {
+                    0.0
+                } else {
+                    (g.notes.len() as f64) * 6.35 + 5.08
+                };
+                Rect2::new(g.bbox.min_x, g.bbox.min_y, g.bbox.max_x, g.bbox.max_y - note_h)
+            })
+            .collect();
+
+        // Include every member component's pin tips & label bounds
+        for (gi, g) in local_groups.iter().enumerate() {
+            let cb = &mut content_bounds[gi];
+            for mid in &g.members {
+                if let Some(ent) = entity_by_id.get(mid.as_str()) {
+                    if let EntityGeometryIr::Component { body_rect, pins, .. } = &ent.geometry {
+                        cb.min_x = cb.min_x.min(body_rect.min_x - clearance_mm);
+                        cb.max_x = cb.max_x.max(body_rect.max_x + clearance_mm);
+                        cb.min_y = cb.min_y.min(body_rect.min_y - title_band_mm);
+                        cb.max_y = cb.max_y.max(body_rect.max_y + clearance_mm);
+                        for p in pins {
+                            cb.min_x = cb.min_x.min(p.tip_point.x - clearance_mm);
+                            cb.max_x = cb.max_x.max(p.tip_point.x + clearance_mm);
+                            cb.min_y = cb.min_y.min(p.tip_point.y - title_band_mm);
+                            cb.max_y = cb.max_y.max(p.tip_point.y + clearance_mm);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Associate every routed terminal (GND symbol, power arrow, global/local label pill)
+        // with its owning zone (nearest group whose pre-pass bbox contains or is closest to it)
+        // and expand that zone's content bounds to enclose the full rendered symbol/text!
+        for route in &local_routes {
+            for term in &route.terminals {
+                if local_groups.is_empty() {
+                    break;
+                }
+                let best_gi = local_groups
+                    .iter()
+                    .enumerate()
+                    .min_by(|(_, ga), (_, gb)| {
+                        let da = dist_point_to_rect(term.pos, ga.bbox);
+                        let db = dist_point_to_rect(term.pos, gb.bbox);
+                        da.partial_cmp(&db).unwrap_or(std::cmp::Ordering::Equal)
+                    })
+                    .map(|(i, _)| i)
+                    .unwrap();
+
+                let tw = (term.label.len() as f64) * 1.55;
+                let (tx0, ty0, tx1, ty1) = match term.kind.as_str() {
+                    "gnd_symbol" => {
+                        let hw = (tw * 0.5).max(2.0) + 1.5;
+                        (term.pos.x - hw, term.pos.y - 1.0, term.pos.x + hw, term.pos.y + 5.8)
+                    }
+                    "power_symbol" => {
+                        let hw = (tw * 0.5).max(2.0) + 1.5;
+                        (term.pos.x - hw, term.pos.y - 5.8, term.pos.x + hw, term.pos.y + 1.0)
+                    }
+                    _ => {
+                        // global_flag / label_flag / label_stub pill extends in `term.dir`
+                        let pill_w = tw + 4.8;
+                        match term.dir {
+                            Side::West => (term.pos.x - pill_w, term.pos.y - 2.2, term.pos.x + 0.5, term.pos.y + 2.2),
+                            Side::East => (term.pos.x - 0.5, term.pos.y - 2.2, term.pos.x + pill_w, term.pos.y + 2.2),
+                            Side::North => (term.pos.x - 2.2, term.pos.y - pill_w, term.pos.x + 2.2, term.pos.y + 0.5),
+                            Side::South => (term.pos.x - 2.2, term.pos.y - 0.5, term.pos.x + 2.2, term.pos.y + pill_w),
+                        }
+                    }
+                };
+
+                let cb = &mut content_bounds[best_gi];
+                cb.min_x = cb.min_x.min(tx0 - clearance_mm);
+                cb.max_x = cb.max_x.max(tx1 + clearance_mm);
+                cb.min_y = cb.min_y.min(ty0 - title_band_mm);
+                cb.max_y = cb.max_y.max(ty1 + clearance_mm);
+            }
+        }
+
+        // Write final snapped zone boxes (preserving note footer room cleanly below content)
+        for (gi, g) in local_groups.iter_mut().enumerate() {
+            let note_h = if g.notes.is_empty() {
+                0.0
+            } else {
+                (g.notes.len() as f64) * 4.5 + 4.5
+            };
+            let cb = content_bounds[gi];
+            g.bbox = Rect2::new(
+                snap_grid(cb.min_x).max(15.24),
+                snap_grid(cb.min_y).max(15.24),
+                snap_grid(cb.max_x),
+                snap_grid(cb.max_y + note_h),
+            );
+        }
+
+        // Ensure sibling zones on the same row never overlap horizontally after left/right expansion
+        for i in 0..local_groups.len() {
+            for j in (i + 1)..local_groups.len() {
+                let a = local_groups[i].bbox;
+                let b = local_groups[j].bbox;
+                let y_overlap = a.min_y < b.max_y && b.min_y < a.max_y;
+                if y_overlap && a.min_x < b.min_x && a.max_x > b.min_x - 2.54 {
+                    let mid = snap_grid(0.5 * (a.max_x + b.min_x));
+                    local_groups[i].bbox.max_x = (mid - 1.27).max(a.min_x + 10.16);
+                    local_groups[j].bbox.min_x = (mid + 1.27).min(b.max_x - 10.16);
+                }
+            }
+        }
+    }
+
+    // Compute tight actual sheet bounds from all routed coordinates & expanded zone frames
     let mut max_x = max_comp_x;
     let mut max_y = max_comp_y + 15.24;
+    for g in &local_groups {
+        max_x = max_x.max(g.bbox.max_x + 15.24);
+        max_y = max_y.max(g.bbox.max_y + 15.24);
+    }
     for r in &local_routes {
         for s in &r.segments {
             max_x = max_x.max(s.p0.x.max(s.p1.x) + 15.24);
@@ -3329,6 +3459,24 @@ fn place_pins_on_body(
         }
     }
     placed
+}
+
+fn dist_point_to_rect(p: Point2, r: Rect2) -> f64 {
+    let dx = if p.x < r.min_x {
+        r.min_x - p.x
+    } else if p.x > r.max_x {
+        p.x - r.max_x
+    } else {
+        0.0
+    };
+    let dy = if p.y < r.min_y {
+        r.min_y - p.y
+    } else if p.y > r.max_y {
+        p.y - r.max_y
+    } else {
+        0.0
+    };
+    (dx * dx + dy * dy).sqrt()
 }
 
 fn is_power_rail_name(name: &str) -> bool {
