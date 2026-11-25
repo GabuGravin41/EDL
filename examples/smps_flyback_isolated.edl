@@ -276,5 +276,6 @@ project "SMPS_Flyback_Isolated_52" {
         require no_multiple_power_drivers
         require no_single_pin_nets
         require galvanic_isolation(GND_HOT, GND_COLD)
+        require bom_manufacturability
     }
 }

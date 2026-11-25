@@ -2,6 +2,20 @@
 
 All notable releases of **EDL (Engineering Description Language)** are documented here.
 
+## [2.0.0] — 2026-11-25
+### Added
+- **World-Class Native KiCad 9 `.kicad_sch` Drafting (`src/domains/elec/kicad.rs`, `sheet_layout.rs`, `compile.rs`):**
+  - **Native KiCad 9 `(power)` Symbols (`power:GND`, `power:GND_HOT`, `power:GND_COLD`, `power:V3V3_SENS`, `power:V5_PROT`, etc.):** Official downward GND triangles and upward supply arrows with hidden `#PWR` multi-sheet-unique references, `(in_bom no)`, `(on_board no)`, and automatic passive/ground driver promotion for **0 real `kicad-cli sch erc` errors** across all sheets.
+  - **Native KiCad Zone Frames, Dashed Subzones, Bold Blue Titles & Pale-Yellow Design Notes:** Emits `schematic_groups` directly into `.kicad_sch` as KiCad `(rectangle ...)` and `(text ...)` primitives so KiCad 9 renders the exact structured engineering sheet natively.
+  - **Body-Aware Compact 2D Packing & Shared Same-Zone Rail Clustering:** Tighter passive cell padding (`7.62mm`), automatic horizontal rail busing for parallel decoupling caps & current-sense resistor banks, KiCad-native right-side RefDes/Value stacking on vertical 2-pin passives, outward North/South global-label fan-out, and `A4 -> A3 -> A2 -> A1` auto-paper sizing with zero sheet overflow.
+  - **Direct Series-Filter Wiring:** Single-zone 2–3 pin series filter nodes (`AC_L_FUSE`, `AC_NTC`, `AC_FILT`, `SEC1_AC`, etc.) stay continuous direct wires instead of breaking into floating power stubs.
+- **Senior-Engineer Circuit Design Rule Checks (`E7`–`E10`):**
+  - **`E7_ic_decoupling`** (`require ic_decoupling`): Verifies every active IC `power_in` supply rail has a power-to-ground decoupling capacitor (`>= 1nF`).
+  - **`E8_i2c_pullups`** (`require i2c_pullups`): Verifies I2C `SDA`/`SCL` buses have pull-up resistors (`470ohm..50kohm`) to a logic supply rail.
+  - **`E9_inductive_flyback`** (`require inductive_flyback`): Verifies transistor-switched inductive loads (relays, buzzers, solenoids, inductors) have flyback clamp diodes across them.
+  - **`E10_bom_manufacturability`** (`require bom_manufacturability`): Verifies capacitor DC voltage derating (`>= 1.25×` operating rail voltage) and MNA-computed resistor power dissipation against SMD package ratings (`0201`..`2512`).
+  - Advisory warnings fire automatically on every circuit even when not explicitly `require`d; benchmarks `examples/vectron_120_multisheet.edl` (E1–E5 + E7–E10 + K1) and `examples/smps_flyback_isolated.edl` (E1–E6 + E10 + K1) pass 100% cleanly.
+
 ## [1.8.0] — 2026-11-25
 ### Added
 - **Commercial Collector-Header Plumbing, Venting, Cleanouts & DFU Verification (`mep.plumbing`):** Added `header` (`soil_header`, `waste_header`, `cold_header`, `hot_header`, `vent_header`) with automatic closest-point tapping & 45° wye branching, `cleanout` (`COP`), explicit `vent:` pipes (`Ø50 VP` green dashed), and **`P7_dfu_header_capacity`** verifying cumulative IPC/EN 12056 Drainage Fixture Units (DFU) on collector headers.

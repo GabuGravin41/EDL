@@ -1060,6 +1060,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         col_idx: usize,
         col_left_x: f64,
         col_right_x: f64,
+        body_center_x: f64,
         body_min_y: f64,
         comp_has_north_pin: bool,
         is_top_in_col: bool,
@@ -1120,7 +1121,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 cur_x,
                 snap_grid(row_start_y + title_offset),
                 &sz_fn,
-                5.08,
+                7.62,
                 7.62,
                 &mut tree_pos,
                 &mut g_subzones,
@@ -1275,6 +1276,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         col_idx,
                         col_left_x: local_left,
                         col_right_x: local_right,
+                        body_center_x: body.center().x,
                         body_min_y: body.min_y,
                         comp_has_north_pin: has_north,
                         is_top_in_col: m_idx == 0,
@@ -1324,7 +1326,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             if !explicit_pos.contains_key(cid) {
                 cur_y = snap_grid(body.max_y + member_gap_mm + PIN_LEN_MM);
             }
-            let top_pad = if has_north { PIN_LEN_MM + 9.0 } else { PIN_LEN_MM + 5.08 };
+            let top_pad = if has_north { PIN_LEN_MM + 11.43 } else { PIN_LEN_MM + 7.62 };
             g_min_x = g_min_x.min(body.min_x - PIN_LEN_MM - 5.08);
             g_max_x = g_max_x.max(body.max_x + PIN_LEN_MM + 5.08);
             g_min_y = g_min_y.min(body.min_y - top_pad);
@@ -1434,11 +1436,28 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
 
     for net in &all_nets {
         let is_gnd = ground_nets.contains(&net.name);
-        let is_pwr = net_driven_voltage
+        let net_cols_spanned: BTreeSet<usize> = net
+            .connects
+            .iter()
+            .filter_map(|p| comp_col_map.get(&p.component).copied())
+            .collect();
+        let has_power_pin = net_pins
+            .get(&net.name)
+            .map(|ps| {
+                ps.iter()
+                    .any(|(_, _, p)| matches!(p.role, PinRole::PowerIn | PinRole::PowerOut))
+            })
+            .unwrap_or(false);
+        let is_driven = net_driven_voltage
             .get(&net.name)
             .map(|v| !v.is_empty())
-            .unwrap_or(false)
-            || is_power_rail_name(&net.name);
+            .unwrap_or(false);
+        // Treat a net as a symbol-routed power distribution rail if it's a named rail (V3V3/VDD/VCC),
+        // or a cross-zone / multi-drop driven power rail. Single-zone 2-3 pin series filter nodes
+        // (like AC_L_FUSE -> F1 -> AC_NTC -> R10 -> L1) stay crisp direct wires!
+        let is_pwr = is_power_rail_name(&net.name)
+            || (net.power_flag && (net_cols_spanned.len() > 1 || net.connects.len() >= 4))
+            || (is_driven && has_power_pin && (net_cols_spanned.len() > 1 || net.connects.len() >= 3));
 
         let style = resolve_style(&net.name, is_gnd, is_pwr);
 
@@ -1454,12 +1473,19 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             continue;
         }
 
-        // --- MODE A: Local Symbol (GND triangles / upward power flags; bridges adjacent same-side pins!) ---
+        // --- MODE A: Local Symbol (GND triangles / upward power flags; bridges adjacent same-zone pins!) ---
         if style == NetRoutingStyle::Symbol {
             let mut segments = Vec::new();
             let mut junctions = Vec::new();
             let mut terminals = Vec::new();
             let mut handled = vec![false; net_endpoints.len()];
+            let all_bodies: Vec<Rect2> = local_entities
+                .iter()
+                .filter_map(|e| match &e.geometry {
+                    EntityGeometryIr::Component { body_rect, .. } => Some(*body_rect),
+                    _ => None,
+                })
+                .collect();
 
             for i in 0..net_endpoints.len() {
                 if handled[i] {
@@ -1469,44 +1495,67 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 let can_cluster = (is_gnd && rpi.pin.side == Side::South)
                     || (!is_gnd && rpi.pin.side == Side::North);
                 if can_cluster {
+                    let ys = rpi.pin.tip_point.y;
+                    let bridge_y = if is_gnd {
+                        snap_grid(ys + GRID_MM)
+                    } else {
+                        snap_grid(ys - GRID_MM)
+                    };
                     let mut cluster = vec![i];
-                    for j in (i + 1)..net_endpoints.len() {
-                        if handled[j] {
-                            continue;
+                    loop {
+                        let mut added = false;
+                        for j in 0..net_endpoints.len() {
+                            if handled[j] || cluster.contains(&j) {
+                                continue;
+                            }
+                            let rpj = net_endpoints[j];
+                            if rpj.col_idx == rpi.col_idx
+                                && rpj.pin.side == rpi.pin.side
+                                && (rpj.pin.tip_point.y - ys).abs() < 0.1
+                                && cluster.iter().any(|&k| {
+                                    let xk = net_endpoints[k].pin.tip_point.x;
+                                    let xj = rpj.pin.tip_point.x;
+                                    let dist_ok = (xj - xk).abs() <= 30.48;
+                                    let (bx0, bx1) = (xk.min(xj), xk.max(xj));
+                                    let clear_of_bodies = !all_bodies.iter().any(|b| {
+                                        bridge_y >= b.min_y - 0.2
+                                            && bridge_y <= b.max_y + 0.2
+                                            && bx1 >= b.min_x - 0.2
+                                            && bx0 <= b.max_x + 0.2
+                                    });
+                                    dist_ok && clear_of_bodies
+                                })
+                            {
+                                cluster.push(j);
+                                added = true;
+                            }
                         }
-                        let rpj = net_endpoints[j];
-                        if rpj.pin.side == rpi.pin.side
-                            && (rpj.pin.tip_point.y - rpi.pin.tip_point.y).abs() < 0.1
-                            && (rpj.pin.tip_point.x - rpi.pin.tip_point.x).abs() <= 10.16
-                        {
-                            cluster.push(j);
+                        if !added {
+                            break;
                         }
                     }
                     if cluster.len() >= 2 {
                         for &idx in &cluster {
                             handled[idx] = true;
                         }
-                        let ys = rpi.pin.tip_point.y;
-                        let bridge_y = if is_gnd {
-                            snap_grid(ys + GRID_MM)
-                        } else {
-                            snap_grid(ys - GRID_MM)
-                        };
                         let mut xs: Vec<f64> = cluster
                             .iter()
                             .map(|&idx| net_endpoints[idx].pin.tip_point.x)
                             .collect();
                         xs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                        xs.dedup_by(|a, b| (*a - *b).abs() <= EPS_MM);
                         for &x in &xs {
                             add_ortho_seg(&mut segments, Point2::new(x, ys), Point2::new(x, bridge_y));
                         }
+                        for pair in xs.windows(2) {
+                            add_ortho_seg(
+                                &mut segments,
+                                Point2::new(pair[0], bridge_y),
+                                Point2::new(pair[1], bridge_y),
+                            );
+                        }
                         let min_x = *xs.first().unwrap();
-                        let max_x = *xs.last().unwrap();
-                        add_ortho_seg(
-                            &mut segments,
-                            Point2::new(min_x, bridge_y),
-                            Point2::new(max_x, bridge_y),
-                        );
+                        // Place single shared power/GND symbol cleanly on leftmost pin
                         let sym_x = min_x;
                         let sym_y = if is_gnd {
                             snap_grid(bridge_y + GRID_MM)
@@ -1519,6 +1568,9 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             Point2::new(sym_x, sym_y),
                         );
                         junctions.push(Point2::new(sym_x, bridge_y));
+                        for &xm in &xs[1..xs.len().saturating_sub(1)] {
+                            junctions.push(Point2::new(xm, bridge_y));
+                        }
                         terminals.push(NetTerminalIr {
                             kind: if is_gnd { "gnd_symbol" } else { "power_symbol" }.to_string(),
                             pos: Point2::new(sym_x, sym_y),
@@ -1552,8 +1604,13 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             e
                         }
                         Side::North => {
-                            let e = Point2::new(tip.x, snap_grid(tip.y - GRID_MM));
-                            add_ortho_seg(&mut segments, tip, e);
+                            // Elbow out left so downward GND triangle never overlaps component body!
+                            let up = Point2::new(tip.x, snap_grid(tip.y - GRID_MM));
+                            let side_pt = Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), up.y);
+                            let e = Point2::new(side_pt.x, snap_grid(side_pt.y + GRID_MM));
+                            add_ortho_seg(&mut segments, tip, up);
+                            add_ortho_seg(&mut segments, up, side_pt);
+                            add_ortho_seg(&mut segments, side_pt, e);
                             e
                         }
                     };
@@ -1585,8 +1642,13 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             e
                         }
                         Side::South => {
-                            let e = Point2::new(tip.x, snap_grid(tip.y + GRID_MM));
-                            add_ortho_seg(&mut segments, tip, e);
+                            // Elbow out right so upward power arrow never overlaps component body!
+                            let dn = Point2::new(tip.x, snap_grid(tip.y + GRID_MM));
+                            let side_pt = Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), dn.y);
+                            let e = Point2::new(side_pt.x, snap_grid(side_pt.y - GRID_MM));
+                            add_ortho_seg(&mut segments, tip, dn);
+                            add_ortho_seg(&mut segments, dn, side_pt);
+                            add_ortho_seg(&mut segments, side_pt, e);
                             e
                         }
                     };
@@ -1661,17 +1723,47 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             let mut terminals = Vec::new();
             for rp in &net_endpoints {
                 let tip = rp.pin.tip_point;
-                let end = match rp.pin.side {
-                    Side::West => Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), tip.y),
-                    Side::East => Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), tip.y),
-                    Side::North => Point2::new(tip.x, snap_grid(tip.y - 2.0 * GRID_MM)),
-                    Side::South => Point2::new(tip.x, snap_grid(tip.y + 2.0 * GRID_MM)),
+                let (end, term_dir) = match rp.pin.side {
+                    Side::West => {
+                        let e = Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), tip.y);
+                        add_ortho_seg(&mut segments, tip, e);
+                        (e, Side::West)
+                    }
+                    Side::East => {
+                        let e = Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), tip.y);
+                        add_ortho_seg(&mut segments, tip, e);
+                        (e, Side::East)
+                    }
+                    Side::North => {
+                        // Fan outward away from body center so adjacent North pins (e.g. VBAT/VCC) never short!
+                        let go_left = tip.x < rp.body_center_x - 0.1;
+                        let mid = Point2::new(tip.x, snap_grid(tip.y - GRID_MM));
+                        let (e, d) = if go_left {
+                            (Point2::new(snap_grid(tip.x - GRID_MM), mid.y), Side::West)
+                        } else {
+                            (Point2::new(snap_grid(tip.x + GRID_MM), mid.y), Side::East)
+                        };
+                        add_ortho_seg(&mut segments, tip, mid);
+                        add_ortho_seg(&mut segments, mid, e);
+                        (e, d)
+                    }
+                    Side::South => {
+                        let go_left = tip.x < rp.body_center_x - 0.1;
+                        let mid = Point2::new(tip.x, snap_grid(tip.y + GRID_MM));
+                        let (e, d) = if go_left {
+                            (Point2::new(snap_grid(tip.x - GRID_MM), mid.y), Side::West)
+                        } else {
+                            (Point2::new(snap_grid(tip.x + GRID_MM), mid.y), Side::East)
+                        };
+                        add_ortho_seg(&mut segments, tip, mid);
+                        add_ortho_seg(&mut segments, mid, e);
+                        (e, d)
+                    }
                 };
-                add_ortho_seg(&mut segments, tip, end);
                 terminals.push(NetTerminalIr {
                     kind: term_kind.to_string(),
                     pos: end,
-                    dir: rp.pin.side,
+                    dir: term_dir,
                     label: net.name.clone(),
                 });
             }
@@ -2351,8 +2443,626 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         }
     }
 
+    // 7. Senior-Engineer Design Rule Checks (E7-E10):
+    //    Always run as advisory warnings on violations; promoted to hard Errors + EvidenceRecords
+    //    when explicitly declared via `require ic_decoupling / i2c_pullups / inductive_flyback / bom_manufacturability`.
+    run_senior_erc_checks(
+        project,
+        &comp_order,
+        &comp_map,
+        &all_nets,
+        &pin_to_nets,
+        &net_pins,
+        &ground_nets,
+        &net_driven_voltage,
+        &mut ir,
+    );
+
     ir.project.has_errors = ir.diagnostics.iter().any(|d| d.severity == Severity::Error);
     ir
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_senior_erc_checks(
+    project: &ProjectAst,
+    comp_order: &[String],
+    comp_map: &BTreeMap<String, &ComponentDecl>,
+    all_nets: &[&NetDecl],
+    pin_to_nets: &BTreeMap<(String, String), Vec<String>>,
+    net_pins: &BTreeMap<String, Vec<(String, String, &PinDecl)>>,
+    ground_nets: &BTreeSet<String>,
+    net_driven_voltage: &BTreeMap<String, Vec<(String, f64)>>,
+    ir: &mut CanonicalIr,
+) {
+    let req_decoupling = project
+        .verifications
+        .iter()
+        .any(|r| matches!(r, VerifyRule::IcDecoupling { .. }));
+    let req_i2c = project
+        .verifications
+        .iter()
+        .any(|r| matches!(r, VerifyRule::I2cPullups { .. }));
+    let req_flyback = project
+        .verifications
+        .iter()
+        .any(|r| matches!(r, VerifyRule::InductiveFlyback { .. }));
+    let req_bom = project
+        .verifications
+        .iter()
+        .any(|r| matches!(r, VerifyRule::BomManufacturability { .. }));
+
+    // Helper: get the 2 nets connected to a 2-pin passive component
+    let two_pin_nets = |cid: &str, comp: &ComponentDecl| -> Option<(String, String)> {
+        if comp.pins.len() != 2 {
+            return None;
+        }
+        let n0 = pin_to_nets
+            .get(&(cid.to_string(), comp.pins[0].name.clone()))
+            .and_then(|v| v.first())
+            .cloned()?;
+        let n1 = pin_to_nets
+            .get(&(cid.to_string(), comp.pins[1].name.clone()))
+            .and_then(|v| v.first())
+            .cloned()?;
+        Some((n0, n1))
+    };
+
+    let is_power_like_net = |nname: &str| -> bool {
+        if ground_nets.contains(nname) {
+            return false;
+        }
+        net_driven_voltage
+            .get(nname)
+            .map(|v| !v.is_empty())
+            .unwrap_or(false)
+            || is_power_rail_name(nname)
+            || all_nets.iter().any(|n| n.name == nname && n.power_flag)
+    };
+
+    // ---- E7: IC Decoupling Capacitors ----
+    {
+        let mut checked_rails = 0usize;
+        let mut missing: Vec<String> = Vec::new();
+        for cid in comp_order {
+            let comp = comp_map[cid];
+            if !is_active_ic_comp(comp) {
+                continue;
+            }
+            let mut supply_nets: BTreeSet<String> = BTreeSet::new();
+            for pin in &comp.pins {
+                if pin.role == PinRole::PowerIn {
+                    if let Some(ns) = pin_to_nets.get(&(cid.clone(), pin.name.clone())) {
+                        for n in ns {
+                            if !ground_nets.contains(n) {
+                                supply_nets.insert(n.clone());
+                            }
+                        }
+                    }
+                }
+            }
+            for snet in supply_nets {
+                checked_rails += 1;
+                let has_cap = comp_order.iter().any(|other_id| {
+                    let other = comp_map[other_id];
+                    if !is_capacitor_comp(other) {
+                        return false;
+                    }
+                    let Some((na, nb)) = two_pin_nets(other_id, other) else {
+                        return false;
+                    };
+                    let bridges = (na == snet && ground_nets.contains(&nb))
+                        || (nb == snet && ground_nets.contains(&na));
+                    if !bridges {
+                        return false;
+                    }
+                    // Accept any capacitance >= 1nF (or unparseable custom cap string)
+                    crate::domains::elec::spice::parse_si_component_value(&other.value, "C")
+                        .map(|c| c >= 1e-9)
+                        .unwrap_or(true)
+                });
+                if !has_cap {
+                    let desc = format!("{cid} ({snet})");
+                    missing.push(desc.clone());
+                    let diag = if req_decoupling {
+                        Diagnostic::error(
+                            "E_ERC_MISSING_DECOUPLING",
+                            "erc",
+                            format!("Active IC '{cid}' supply rail '{snet}' has no decoupling capacitor to GND"),
+                            Some(comp.span.clone()),
+                        )
+                    } else {
+                        Diagnostic::warning(
+                            "W_ERC_MISSING_DECOUPLING",
+                            "erc",
+                            format!("Active IC '{cid}' supply rail '{snet}' has no decoupling capacitor to GND"),
+                            Some(comp.span.clone()),
+                        )
+                    };
+                    ir.diagnostics.push(
+                        diag.with_entities(vec![cid.clone(), snet.clone()])
+                            .with_suggestion(format!(
+                                "Add a 100nF ceramic decoupling capacitor between '{snet}' and GND near '{cid}'"
+                            )),
+                    );
+                }
+            }
+        }
+        if req_decoupling {
+            ir.evidence.push(EvidenceRecord {
+                check_id: "E7_ic_decoupling".to_string(),
+                status: if missing.is_empty() {
+                    VerificationStatus::ExactlyChecked
+                } else {
+                    VerificationStatus::Violated
+                },
+                method: "exact_ic_power_bypass_cap_check_v2.0".to_string(),
+                tolerance_mm: None,
+                subjects: comp_order
+                    .iter()
+                    .filter(|c| is_active_ic_comp(comp_map[*c]))
+                    .cloned()
+                    .collect(),
+                details: if missing.is_empty() {
+                    format!("All {checked_rails} active IC supply rail(s) have power-to-ground decoupling capacitor(s)")
+                } else {
+                    format!("Missing decoupling capacitor on: {}", missing.join(", "))
+                },
+            });
+        }
+    }
+
+    // ---- E8: I2C Bus Pull-Up Resistors ----
+    {
+        let mut i2c_nets: Vec<&NetDecl> = Vec::new();
+        let mut missing: Vec<String> = Vec::new();
+        for net in all_nets {
+            if !is_i2c_signal_net(&net.name) {
+                continue;
+            }
+            i2c_nets.push(net);
+            let has_pullup = comp_order.iter().any(|cid| {
+                let comp = comp_map[cid];
+                if !is_resistor_comp(comp) {
+                    return false;
+                }
+                let Some((na, nb)) = two_pin_nets(cid, comp) else {
+                    return false;
+                };
+                let other_net = if na == net.name {
+                    &nb
+                } else if nb == net.name {
+                    &na
+                } else {
+                    return false;
+                };
+                if !is_power_like_net(other_net) {
+                    return false;
+                }
+                crate::domains::elec::spice::parse_si_component_value(&comp.value, "R")
+                    .map(|r| (470.0..=50_000.0).contains(&r))
+                    .unwrap_or(true)
+            });
+            if !has_pullup {
+                missing.push(net.name.clone());
+                let diag = if req_i2c {
+                    Diagnostic::error(
+                        "E_ERC_MISSING_I2C_PULLUP",
+                        "erc",
+                        format!("I2C bus net '{}' has no pull-up resistor (470ohm..50kohm) to a logic supply rail", net.name),
+                        Some(net.span.clone()),
+                    )
+                } else {
+                    Diagnostic::warning(
+                        "W_ERC_MISSING_I2C_PULLUP",
+                        "erc",
+                        format!("I2C bus net '{}' has no pull-up resistor (470ohm..50kohm) to a logic supply rail", net.name),
+                        Some(net.span.clone()),
+                    )
+                };
+                ir.diagnostics.push(
+                    diag.with_entities(vec![net.name.clone()])
+                        .with_suggestion(format!(
+                            "Add a 2.2kohm..10kohm pull-up resistor from '{}' to your logic supply rail (e.g. V3V3)",
+                            net.name
+                        )),
+                );
+            }
+        }
+        if req_i2c {
+            ir.evidence.push(EvidenceRecord {
+                check_id: "E8_i2c_pullups".to_string(),
+                status: if missing.is_empty() {
+                    VerificationStatus::ExactlyChecked
+                } else {
+                    VerificationStatus::Violated
+                },
+                method: "exact_i2c_pullup_verification_v2.0".to_string(),
+                tolerance_mm: None,
+                subjects: i2c_nets.iter().map(|n| n.name.clone()).collect(),
+                details: if missing.is_empty() {
+                    format!("All {} I2C bus line(s) have valid pull-up resistor(s)", i2c_nets.len())
+                } else {
+                    format!("I2C bus line(s) missing pull-up resistor: {}", missing.join(", "))
+                },
+            });
+        }
+    }
+
+    // ---- E9: Inductive Load Flyback Clamp Diodes ----
+    {
+        let mut checked_loads = 0usize;
+        let mut unprotected: Vec<String> = Vec::new();
+        for q_id in comp_order {
+            let q = comp_map[q_id];
+            if !is_transistor_switch_comp(q) {
+                continue;
+            }
+            // Find collector/drain switched nets
+            let sw_nets: Vec<String> = q
+                .pins
+                .iter()
+                .filter(|p| {
+                    let u = p.name.to_uppercase();
+                    matches!(u.as_str(), "C" | "COL" | "COLLECTOR" | "D" | "DRAIN")
+                })
+                .filter_map(|p| pin_to_nets.get(&(q_id.clone(), p.name.clone())))
+                .flatten()
+                .cloned()
+                .collect();
+
+            for sw_net in sw_nets {
+                for l_id in comp_order {
+                    let load = comp_map[l_id];
+                    if !is_inductive_load_comp(load) {
+                        continue;
+                    }
+                    let Some((na, nb)) = two_pin_nets(l_id, load) else {
+                        continue;
+                    };
+                    let other_net = if na == sw_net {
+                        &nb
+                    } else if nb == sw_net {
+                        &na
+                    } else {
+                        continue;
+                    };
+                    if !is_power_like_net(other_net) && !ground_nets.contains(other_net) {
+                        continue;
+                    }
+                    checked_loads += 1;
+                    let has_clamp = comp_order.iter().any(|d_id| {
+                        let d = comp_map[d_id];
+                        if !is_diode_comp(d) {
+                            return false;
+                        }
+                        let Some((da, db)) = two_pin_nets(d_id, d) else {
+                            return false;
+                        };
+                        (da == sw_net && db == *other_net) || (db == sw_net && da == *other_net)
+                    });
+                    if !has_clamp {
+                        let desc = format!("{l_id} (switched by {q_id} on {sw_net})");
+                        unprotected.push(desc.clone());
+                        let diag = if req_flyback {
+                            Diagnostic::error(
+                                "E_ERC_MISSING_FLYBACK",
+                                "erc",
+                                format!(
+                                    "Inductive load '{l_id}' switched by '{q_id}' between '{sw_net}' and '{other_net}' lacks a flyback clamp diode"
+                                ),
+                                Some(load.span.clone()),
+                            )
+                        } else {
+                            Diagnostic::warning(
+                                "W_ERC_MISSING_FLYBACK",
+                                "erc",
+                                format!(
+                                    "Inductive load '{l_id}' switched by '{q_id}' between '{sw_net}' and '{other_net}' lacks a flyback clamp diode"
+                                ),
+                                Some(load.span.clone()),
+                            )
+                        };
+                        ir.diagnostics.push(
+                            diag.with_entities(vec![l_id.clone(), q_id.clone(), sw_net.clone()])
+                                .with_suggestion(format!(
+                                    "Place a flyback diode (e.g. Device:D_Schottky SS24 or 1N4148) across '{l_id}' between '{sw_net}' and '{other_net}'"
+                                )),
+                        );
+                    }
+                }
+            }
+        }
+        if req_flyback {
+            ir.evidence.push(EvidenceRecord {
+                check_id: "E9_inductive_flyback".to_string(),
+                status: if unprotected.is_empty() {
+                    VerificationStatus::ExactlyChecked
+                } else {
+                    VerificationStatus::Violated
+                },
+                method: "exact_switched_inductive_flyback_check_v2.0".to_string(),
+                tolerance_mm: None,
+                subjects: comp_order
+                    .iter()
+                    .filter(|c| is_inductive_load_comp(comp_map[*c]))
+                    .cloned()
+                    .collect(),
+                details: if unprotected.is_empty() {
+                    format!("All {checked_loads} transistor-switched inductive load(s) have flyback clamp diodes")
+                } else {
+                    format!("Unprotected inductive load(s): {}", unprotected.join(", "))
+                },
+            });
+        }
+    }
+
+    // ---- E10: BOM Manufacturability (Cap Voltage Derating >= 1.25x & MNA Resistor Power Limits) ----
+    {
+        let sim = crate::domains::elec::spice::simulate_dc_and_rc(ir);
+        let net_voltage_est = |nname: &str| -> Option<f64> {
+            if ground_nets.contains(nname) {
+                return Some(0.0);
+            }
+            if let Some(drvs) = net_driven_voltage.get(nname) {
+                if let Some((_, v)) = drvs.first() {
+                    return Some(*v);
+                }
+            }
+            if let Some(&v) = sim.node_voltages_v.get(nname) {
+                if v.abs() > 0.05 {
+                    return Some(v);
+                }
+            }
+            if let Some(ps) = net_pins.get(nname) {
+                for (_, _, pdecl) in ps {
+                    if pdecl.role == PinRole::PowerIn {
+                        if let Some(spec) = pdecl.voltage {
+                            return Some(match spec {
+                                VoltageSpec::Exact { volts } => volts,
+                                VoltageSpec::Range { min_v, max_v } => 0.5 * (min_v + max_v),
+                            });
+                        }
+                    }
+                }
+            }
+            None
+        };
+
+        let mut checked_caps = 0usize;
+        let mut checked_res = 0usize;
+        let mut violations: Vec<String> = Vec::new();
+
+        for cid in comp_order {
+            let comp = comp_map[cid];
+            if is_capacitor_comp(comp) {
+                if let Some(v_rated) = extract_cap_voltage_rating(&comp.value) {
+                    if let Some((na, nb)) = two_pin_nets(cid, comp) {
+                        if let (Some(va), Some(vb)) = (net_voltage_est(&na), net_voltage_est(&nb)) {
+                            let v_op = (va - vb).abs();
+                            if v_op > 0.5 {
+                                checked_caps += 1;
+                                let min_req = v_op * 1.25;
+                                if v_rated + 1e-6 < min_req {
+                                    violations.push(format!(
+                                        "{cid}: rated {v_rated:.1}V < 1.25x operating {v_op:.1}V (need >= {min_req:.1}V)"
+                                    ));
+                                    let diag = if req_bom {
+                                        Diagnostic::error(
+                                            "E_ERC_CAP_VOLTAGE_MARGIN",
+                                            "erc",
+                                            format!(
+                                                "Capacitor '{cid}' ({}) rated {v_rated:.1}V has insufficient derating on {v_op:.1}V DC rail (need >= {min_req:.1}V)",
+                                                comp.value
+                                            ),
+                                            Some(comp.span.clone()),
+                                        )
+                                    } else {
+                                        Diagnostic::warning(
+                                            "W_ERC_CAP_VOLTAGE_MARGIN",
+                                            "erc",
+                                            format!(
+                                                "Capacitor '{cid}' ({}) rated {v_rated:.1}V has insufficient derating on {v_op:.1}V DC rail (need >= {min_req:.1}V)",
+                                                comp.value
+                                            ),
+                                            Some(comp.span.clone()),
+                                        )
+                                    };
+                                    ir.diagnostics.push(
+                                        diag.with_entities(vec![cid.clone()])
+                                            .with_measurement(v_rated, min_req, "V")
+                                            .with_suggestion(format!(
+                                                "Upgrade '{cid}' voltage rating to at least {:.0}V (>= 1.25x rail voltage)",
+                                                min_req.ceil()
+                                            )),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if is_resistor_comp(comp) {
+                if let Some(br) = sim.branches.iter().find(|b| b.component == *cid) {
+                    checked_res += 1;
+                    let max_mw = resistor_package_max_mw(comp.footprint.as_deref());
+                    if br.power_mw > max_mw + 1e-6 {
+                        violations.push(format!(
+                            "{cid}: dissipates {:.1}mW > package limit {:.1}mW",
+                            br.power_mw, max_mw
+                        ));
+                        let diag = if req_bom {
+                            Diagnostic::error(
+                                "E_ERC_RESISTOR_POWER",
+                                "erc",
+                                format!(
+                                    "Resistor '{cid}' ({}) dissipates {:.1}mW exceeding package rating {:.1}mW",
+                                    comp.value, br.power_mw, max_mw
+                                ),
+                                Some(comp.span.clone()),
+                            )
+                        } else {
+                            Diagnostic::warning(
+                                "W_ERC_RESISTOR_POWER",
+                                "erc",
+                                format!(
+                                    "Resistor '{cid}' ({}) dissipates {:.1}mW exceeding package rating {:.1}mW",
+                                    comp.value, br.power_mw, max_mw
+                                ),
+                                Some(comp.span.clone()),
+                            )
+                        };
+                        ir.diagnostics.push(
+                            diag.with_entities(vec![cid.clone()])
+                                .with_measurement(br.power_mw, max_mw, "mW")
+                                .with_suggestion(format!(
+                                    "Use a larger resistor package (e.g. 1206/2512) or higher resistance for '{cid}'"
+                                )),
+                        );
+                    }
+                }
+            }
+        }
+
+        if req_bom {
+            ir.evidence.push(EvidenceRecord {
+                check_id: "E10_bom_manufacturability".to_string(),
+                status: if violations.is_empty() {
+                    VerificationStatus::ExactlyChecked
+                } else {
+                    VerificationStatus::Violated
+                },
+                method: "exact_bom_derating_and_mna_power_check_v2.0".to_string(),
+                tolerance_mm: None,
+                subjects: comp_order.to_vec(),
+                details: if violations.is_empty() {
+                    format!(
+                        "BOM ratings OK ({checked_caps} rated cap(s) >= 1.25x rail V, {checked_res} resistor(s) within package power limit)"
+                    )
+                } else {
+                    format!("BOM rating violation(s): {}", violations.join("; "))
+                },
+            });
+        }
+    }
+}
+
+fn is_capacitor_comp(comp: &ComponentDecl) -> bool {
+    let cat = comp.category.to_lowercase();
+    cat == "capacitor"
+        || cat == "c"
+        || cat == "device:c"
+        || cat.starts_with("device:c_")
+        || cat.ends_with(":c")
+}
+
+fn is_resistor_comp(comp: &ComponentDecl) -> bool {
+    let cat = comp.category.to_lowercase();
+    cat == "resistor"
+        || cat == "r"
+        || cat == "device:r"
+        || cat.starts_with("device:r_")
+        || cat.ends_with(":r")
+}
+
+fn is_diode_comp(comp: &ComponentDecl) -> bool {
+    let cat = comp.category.to_lowercase();
+    cat == "diode"
+        || cat == "led"
+        || cat == "d"
+        || cat == "device:d"
+        || cat.starts_with("device:d_")
+        || cat.starts_with("device:led")
+        || cat.starts_with("diode:")
+}
+
+fn is_transistor_switch_comp(comp: &ComponentDecl) -> bool {
+    let cat = comp.category.to_lowercase();
+    cat.contains("transistor")
+        || cat.contains("mosfet")
+        || cat.contains("bjt")
+        || matches!(cat.as_str(), "npn" | "pnp" | "nmos" | "pmos" | "fet")
+}
+
+fn is_inductive_load_comp(comp: &ComponentDecl) -> bool {
+    let cat = comp.category.to_lowercase();
+    cat == "inductor"
+        || cat == "relay"
+        || cat == "solenoid"
+        || cat == "buzzer"
+        || cat == "motor"
+        || cat.contains("buzzer")
+        || cat.contains("relay")
+        || cat.contains("solenoid")
+        || cat.contains("speaker")
+}
+
+fn is_active_ic_comp(comp: &ComponentDecl) -> bool {
+    if comp.pins.len() < 4 {
+        return false;
+    }
+    let cat = comp.category.to_lowercase();
+    if matches!(
+        cat.as_str(),
+        "connector" | "transformer" | "header" | "switch" | "jumper" | "terminal"
+    ) || cat.starts_with("connector")
+        || cat.starts_with("jumper")
+        || cat.starts_with("transformer")
+    {
+        return false;
+    }
+    comp.pins.iter().any(|p| p.role == PinRole::PowerIn)
+}
+
+fn is_i2c_signal_net(name: &str) -> bool {
+    let u = name.to_uppercase();
+    if u.contains("_CS") || u.starts_with("AUX_") || u.contains("_EN") {
+        return false;
+    }
+    u == "SDA"
+        || u == "SCL"
+        || u.starts_with("SDA")
+        || u.starts_with("SCL")
+        || u.ends_with("_SDA")
+        || u.ends_with("_SCL")
+        || u.contains("I2C_SDA")
+        || u.contains("I2C_SCL")
+}
+
+fn extract_cap_voltage_rating(value: &str) -> Option<f64> {
+    for tok in value.split(|c: char| c == '_' || c == '/' || c == ' ' || c == '-') {
+        let up = tok.trim().to_uppercase();
+        let Some(num_str) = up.strip_suffix("VDC").or_else(|| up.strip_suffix('V')) else {
+            continue;
+        };
+        if !num_str.is_empty() && num_str.chars().all(|c| c.is_ascii_digit() || c == '.') {
+            if let Ok(v) = num_str.parse::<f64>() {
+                if v > 0.0 {
+                    return Some(v);
+                }
+            }
+        }
+    }
+    None
+}
+
+fn resistor_package_max_mw(footprint: Option<&str>) -> f64 {
+    let fp = footprint.unwrap_or("").to_uppercase();
+    if fp.contains("0201") {
+        50.0
+    } else if fp.contains("0402") {
+        62.5
+    } else if fp.contains("0603") {
+        100.0
+    } else if fp.contains("0805") {
+        125.0
+    } else if fp.contains("1206") {
+        250.0
+    } else if fp.contains("1210") {
+        500.0
+    } else if fp.contains("2512") {
+        1000.0
+    } else {
+        250.0
+    }
 }
 
 fn sheet_dimensions_mm(sheet: &str) -> Option<(f64, f64)> {

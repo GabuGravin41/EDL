@@ -391,6 +391,11 @@ impl DomainEngine for ElecDomain {
             RuleInfo { id: "E3_no_multiple_power_drivers", description: "No conflicting power drivers" },
             RuleInfo { id: "E4_voltage_compatibility", description: "Rated pins within voltage limits" },
             RuleInfo { id: "E5_no_single_pin_nets", description: "Nets connect at least two pins" },
+            RuleInfo { id: "E6_galvanic_isolation", description: "Conductive isolation barrier intact (transformers/optocouplers)" },
+            RuleInfo { id: "E7_ic_decoupling", description: "Active ICs have power-to-ground decoupling capacitors" },
+            RuleInfo { id: "E8_i2c_pullups", description: "I2C SDA/SCL buses have pull-up resistors to a logic supply rail" },
+            RuleInfo { id: "E9_inductive_flyback", description: "Transistor-switched inductive loads have flyback clamp diodes" },
+            RuleInfo { id: "E10_bom_manufacturability", description: "Capacitor voltage derating (>=1.25x) and MNA resistor package power limits" },
             RuleInfo { id: "K1_kicad_erc_external", description: "Real KiCad 9 ERC (opt-in `--kicad-erc`)" },
         ]
     }

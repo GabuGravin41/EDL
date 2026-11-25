@@ -1303,6 +1303,10 @@ impl Parser {
                         span: rstart.merge(&qend),
                     });
                 }
+                "ic_decoupling" => rules.push(VerifyRule::IcDecoupling { span: rstart.merge(&rspan) }),
+                "i2c_pullups" => rules.push(VerifyRule::I2cPullups { span: rstart.merge(&rspan) }),
+                "inductive_flyback" => rules.push(VerifyRule::InductiveFlyback { span: rstart.merge(&rspan) }),
+                "bom_manufacturability" => rules.push(VerifyRule::BomManufacturability { span: rstart.merge(&rspan) }),
                 "dc_voltage" => {
                     self.expect(TokenKind::LParen, "'('")?;
                     let (net, _) = self.expect_ident("net name")?;

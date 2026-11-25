@@ -123,6 +123,11 @@ pub enum VerifyRule {
         net_b: String,
         span: Span,
     },
+    // Senior-engineer circuit design rules (E7-E10)
+    IcDecoupling { span: Span },
+    I2cPullups { span: Span },
+    InductiveFlyback { span: Span },
+    BomManufacturability { span: Span },
     // Electrical SPICE/MNA simulation assertions
     DcVoltageRange {
         net: String,

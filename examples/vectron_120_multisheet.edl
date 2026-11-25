@@ -656,5 +656,9 @@ project "VECTRON_V2_120" {
         require no_power_ground_short
         require no_multiple_power_drivers
         require no_single_pin_nets
+        require ic_decoupling
+        require i2c_pullups
+        require inductive_flyback
+        require bom_manufacturability
     }
 }

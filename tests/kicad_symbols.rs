@@ -229,6 +229,21 @@ fn benchmark_a_vectron_120_multisheet_passes_real_kicad_9_erc() {
     let files = edl::export_kicad_project(&ir);
     assert_eq!(files.len(), 5, "files: {:?}", files.keys().collect::<Vec<_>>());
     assert!(files.values().any(|s| s.contains("(global_label \"SDA1\"")));
+    // v2.0: native KiCad `(power)` symbols + zone `(rectangle ...)` frames directly in `.kicad_sch`
+    assert!(files.values().any(|s| s.contains("(lib_id \"power:GND\")")));
+    assert!(files.values().any(|s| s.contains("(lib_id \"power:V3V3_SENS\")")));
+    assert!(files.values().any(|s| s.contains("(color 37 99 235 1)")));
+
+    // v2.0 senior-engineer circuit rules E7-E10 all pass cleanly on Vectron!
+    for rule_id in [
+        "E7_ic_decoupling",
+        "E8_i2c_pullups",
+        "E9_inductive_flyback",
+        "E10_bom_manufacturability",
+    ] {
+        let ev = ir.evidence.iter().find(|e| e.check_id == rule_id).expect(rule_id);
+        assert_eq!(ev.status, VerificationStatus::ExactlyChecked, "{rule_id}: {}", ev.details);
+    }
 
     // Real multi-sheet KiCad 9 CLI ERC across ALL 4 sheets -> 0 errors!
     run_and_ingest_kicad_erc(&mut ir);
@@ -252,8 +267,117 @@ fn benchmark_b_isolated_flyback_smps_passes_galvanic_isolation_and_kicad_9_erc()
         .find(|e| e.check_id == "E6_galvanic_isolation_GND_HOT_GND_COLD")
         .expect("galvanic isolation evidence");
     assert_eq!(iso.status, VerificationStatus::ExactlyChecked);
+    let bom = ir
+        .evidence
+        .iter()
+        .find(|e| e.check_id == "E10_bom_manufacturability")
+        .expect("E10 BOM manufacturability evidence");
+    assert_eq!(bom.status, VerificationStatus::ExactlyChecked, "{}", bom.details);
+
+    let kicad = edl::export_kicad_sch(&ir);
+    assert!(kicad.contains("(lib_id \"power:GND_HOT\")"));
+    assert!(kicad.contains("(lib_id \"power:GND_COLD\")"));
+    assert!(kicad.contains("(color 37 99 235 1)"));
 
     run_and_ingest_kicad_erc(&mut ir);
     let k1 = ir.evidence.iter().find(|e| e.check_id == "K1_kicad_erc_external").unwrap();
     assert_eq!(k1.status, VerificationStatus::ExactlyChecked, "{}", k1.details);
+}
+
+#[test]
+fn senior_engineer_erc_rules_e7_to_e10_catch_real_hardware_bugs() {
+    let buggy = r#"
+project "BuggyHardwareCheck" {
+    units: mm
+    frame Sheet: Frame2
+
+    circuit Board {
+        component J1: connector {
+            value: "PWR_12V"
+            pin V12: power_out (12V)
+            pin GND: ground (0V)
+        }
+        // Active IC missing decoupling cap on V12 (E7 violation!)
+        component U1: ic {
+            value: "MCU_NO_CAP"
+            pin VDD:  power_in (10V..14V)
+            pin GND:  ground (0V)
+            pin SDA:  bidir
+            pin SCL:  output
+            pin CTRL: output
+        }
+        // Under-rated 12V capacitor on a 12V rail (< 1.25x derating -> E10 violation!)
+        component C_BAD: capacitor {
+            value: "100uF_12V"
+            pin A: passive
+            pin B: passive
+        }
+        // Over-dissipated 0402 resistor: 12V across 100ohm = 1440mW >> 62.5mW (E10 violation!)
+        component R_HOT: resistor {
+            value: 100ohm
+            footprint: "Resistor_SMD:R_0402_1005Metric"
+            pin A: passive
+            pin B: passive
+        }
+        // Transistor switching an inductive relay with NO flyback clamp diode (E9 violation!)
+        component Q1: npn {
+            value: "2N2222"
+            pin B: passive
+            pin C: passive
+            pin E: passive
+        }
+        component K1: relay {
+            value: "12V_COIL"
+            pin A: passive
+            pin B: passive
+        }
+        component J_I2C: connector {
+            value: "I2C_PORT"
+            pin SDA: bidir
+            pin SCL: input
+        }
+
+        // Intentional bugs:
+        // - V12_IC has NO decoupling cap (C_BAD is on V12_RAW, not V12_IC)
+        // - SDA and SCL have NO pull-up resistors (E8)
+        // - K1 switched by Q1 has NO flyback diode (E9)
+        // - C_BAD is only 12V rated on 12V rail; R_HOT dissipates 1.44W in 0402 (E10)
+        component F1: fuse { value: "1A"  pin A: passive  pin B: passive }
+        net V12_RAW { connect: [J1.V12, C_BAD.A, R_HOT.A, K1.A, F1.A] }
+        net V12_IC  { connect: [F1.B, U1.VDD] }
+        net GND     { connect: [J1.GND, U1.GND, C_BAD.B, R_HOT.B, Q1.E] }
+        net I2C_SDA { connect: [U1.SDA, J_I2C.SDA] }
+        net I2C_SCL { connect: [U1.SCL, J_I2C.SCL] }
+        net RELAY_SW { connect: [Q1.C, K1.B] }
+        net BASE_DRV { connect: [U1.CTRL, Q1.B] }
+    }
+
+    verify {
+        require all_required_pins_connected
+        require ic_decoupling
+        require i2c_pullups
+        require inductive_flyback
+        require bom_manufacturability
+    }
+}
+"#;
+    let ir = edl::compile_source("buggy_hw.edl", buggy).expect("compile buggy hw");
+    assert!(ir.project.has_errors);
+
+    let codes: Vec<&str> = ir.diagnostics.iter().map(|d| d.code.as_str()).collect();
+    assert!(codes.contains(&"E_ERC_MISSING_DECOUPLING"), "codes: {codes:?}");
+    assert!(codes.contains(&"E_ERC_MISSING_I2C_PULLUP"), "codes: {codes:?}");
+    assert!(codes.contains(&"E_ERC_MISSING_FLYBACK"), "codes: {codes:?}");
+    assert!(codes.contains(&"E_ERC_CAP_VOLTAGE_MARGIN"), "codes: {codes:?}");
+    assert!(codes.contains(&"E_ERC_RESISTOR_POWER"), "codes: {codes:?}");
+
+    for rule_id in [
+        "E7_ic_decoupling",
+        "E8_i2c_pullups",
+        "E9_inductive_flyback",
+        "E10_bom_manufacturability",
+    ] {
+        let ev = ir.evidence.iter().find(|e| e.check_id == rule_id).expect(rule_id);
+        assert_eq!(ev.status, VerificationStatus::Violated, "{rule_id}: {}", ev.details);
+    }
 }
