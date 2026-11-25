@@ -4,6 +4,7 @@ pub mod geom;
 pub mod ir;
 pub mod propagator;
 pub mod query;
+pub mod reporter;
 pub mod span;
 pub mod sync;
 pub mod units;
