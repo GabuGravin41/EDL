@@ -87,18 +87,62 @@ pub struct ModuleProvenanceIr {
     pub instance: String,
 }
 
+/// Vector primitive for electronic/industrial schematic symbols in world mm (Y-down).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "prim", rename_all = "snake_case")]
+pub enum SymPrim {
+    /// Open or closed polyline in world mm.
+    Polyline {
+        pts: Vec<Point2>,
+        filled: bool,
+        stroke_mm: f64,
+    },
+    /// Rectangle in world mm.
+    Rect {
+        rect: Rect2,
+        filled: bool,
+        stroke_mm: f64,
+    },
+    /// Circle in world mm.
+    Circle {
+        center: Point2,
+        radius: f64,
+        filled: bool,
+        stroke_mm: f64,
+    },
+    /// Small symbol-internal glyph label (e.g. `+` / `-` on polarized cap or op-amp).
+    Mark {
+        pos: Point2,
+        text: String,
+    },
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct PlacedPinIr {
     pub name: String,
     pub number: usize,
+    /// Optional exact library pin code (e.g. `"A1"`, `"7"`, `"EP"`); defaults to `number` if absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pin_code: Option<String>,
     pub role: PortRole,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voltage: Option<VoltageSpec>,
+    /// True when explicitly flagged as No-Connect (`no_connect: [...]` or `role: nc`).
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub no_connect: bool,
     pub side: Side,
     /// Pin attachment point on symbol body edge (sheet mm).
     pub body_point: Point2,
     /// Pin wire-connection tip (sheet mm, snapped to 2.54mm grid).
     pub tip_point: Point2,
+}
+
+fn is_false(b: &bool) -> bool {
+    !*b
+}
+
+fn is_zero_i32(v: &i32) -> bool {
+    *v == 0
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -140,6 +184,18 @@ pub enum EntityGeometryIr {
         value: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         footprint: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        lib_id: Option<String>,
+        #[serde(default, skip_serializing_if = "is_zero_i32")]
+        orient_deg: i32,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        mirror: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        unit: Option<usize>,
+        #[serde(default, skip_serializing_if = "is_false")]
+        hide_pin_names: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        symbol_prims: Option<Vec<SymPrim>>,
         body_rect: Rect2,
         pins: Vec<PlacedPinIr>,
     },

@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default)]
 pub struct ElecProjectData {
+    pub symbol_libs: Vec<String>,
     pub circuits: Vec<CircuitDecl>,
     pub schematics: Vec<SchematicDecl>,
 }
@@ -27,6 +28,16 @@ pub struct ComponentDecl {
     pub category: String,
     pub value: String,
     pub footprint: Option<String>,
+    /// Orientation in degrees (0, 90, 180, 270; KiCad CCW convention).
+    pub orient_deg: i32,
+    /// Optional mirroring ("x" | "y").
+    pub mirror: Option<crate::domains::elec::kicad_sym::SymMirror>,
+    /// Optional unit index (1-based) for multi-unit library symbols (e.g. LM358 unit 1/2/3).
+    pub unit: Option<usize>,
+    /// Pins explicitly flagged No-Connect (`no_connect: [INT, NC, 7]`).
+    pub no_connect: Vec<String>,
+    /// True if this component is a galvanic isolation barrier (transformer / optocoupler).
+    pub isolated: bool,
     pub pins: Vec<PinDecl>,
     pub provenance: Option<ModuleProvenanceIr>,
     pub span: Span,

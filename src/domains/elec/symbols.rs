@@ -1,37 +1,6 @@
 use crate::core::geom::{Point2, Rect2, Side};
 use crate::core::ir::PlacedPinIr;
-
-/// Vector primitives for IEEE/IEC electronic schematic symbols,
-/// expressed in world schematic mm (Y-down, same frame as `body_rect` and `PlacedPinIr`).
-/// Both `elec/svg.rs` and `elec/kicad.rs` render directly from this shared geometry,
-/// ensuring identical, grid-accurate symbol appearance with zero ERC drift.
-#[derive(Debug, Clone)]
-pub enum SymPrim {
-    /// Open or closed polyline in world mm.
-    Polyline {
-        pts: Vec<Point2>,
-        filled: bool,
-        stroke_mm: f64,
-    },
-    /// Rectangle in world mm.
-    Rect {
-        rect: Rect2,
-        filled: bool,
-        stroke_mm: f64,
-    },
-    /// Circle in world mm.
-    Circle {
-        center: Point2,
-        radius: f64,
-        filled: bool,
-        stroke_mm: f64,
-    },
-    /// Small symbol-internal glyph label (e.g. `+` / `-` on polarized cap or op-amp).
-    Mark {
-        pos: Point2,
-        text: String,
-    },
-}
+pub use crate::core::ir::SymPrim;
 
 #[derive(Debug, Clone)]
 pub struct SymbolGraphic {
@@ -59,6 +28,15 @@ pub fn build_symbol_graphic(
         "led" => build_diode(body_rect, pins, cx, cy, true),
         "switch" | "button" | "sw" => build_switch(body_rect, pins, cx, cy),
         "opamp" | "op_amp" | "comparator" => build_opamp(body_rect, pins, cx, cy),
+        "npn" | "bjt_npn" => build_bjt(body_rect, pins, cx, cy, true),
+        "pnp" | "bjt_pnp" => build_bjt(body_rect, pins, cx, cy, false),
+        "nmos" | "mosfet_n" => build_mosfet(body_rect, pins, cx, cy, true),
+        "pmos" | "mosfet_p" => build_mosfet(body_rect, pins, cx, cy, false),
+        "fuse" | "f" => build_fuse(body_rect, pins, cx, cy),
+        "crystal" | "xtal" => build_crystal(body_rect, pins, cx, cy),
+        "jumper" | "solder_jumper" | "jp" => build_jumper(body_rect, pins, cx, cy),
+        "potentiometer" | "pot" | "trimmer" => build_potentiometer(body_rect, pins, cx, cy),
+        "transformer" | "xfmr" => build_transformer(body_rect, pins, cx, cy),
         _ => SymbolGraphic {
             primitives: vec![SymPrim::Rect {
                 rect: body_rect,
@@ -538,5 +516,253 @@ fn build_opamp(body: Rect2, pins: &[PlacedPinIr], _cx: f64, cy: f64) -> SymbolGr
     SymbolGraphic {
         primitives: prims,
         hide_pin_names: true,
+    }
+}
+
+fn build_bjt(body: Rect2, pins: &[PlacedPinIr], cx: f64, cy: f64, is_npn: bool) -> SymbolGraphic {
+    let mut prims = Vec::new();
+    let r = (body.width().min(body.depth()) * 0.45).clamp(2.5, 4.2);
+    prims.push(SymPrim::Circle {
+        center: Point2::new(cx, cy),
+        radius: r,
+        filled: false,
+        stroke_mm: 0.25,
+    });
+    let bar_x = cx - r * 0.32;
+    prims.push(line(Point2::new(bar_x, cy - r * 0.62), Point2::new(bar_x, cy + r * 0.62), 0.50));
+    let c_pt = Point2::new(cx + r * 0.45, cy - r * 0.72);
+    let e_pt = Point2::new(cx + r * 0.45, cy + r * 0.72);
+    prims.push(line(Point2::new(bar_x, cy - r * 0.28), c_pt, 0.28));
+    prims.push(line(Point2::new(bar_x, cy + r * 0.28), e_pt, 0.28));
+    // Emitter arrow (outward for NPN, inward for PNP)
+    let (a_tip, a_b1, a_b2) = if is_npn {
+        (
+            Point2::new(bar_x + r * 0.62, cy + r * 0.60),
+            Point2::new(bar_x + r * 0.32, cy + r * 0.56),
+            Point2::new(bar_x + r * 0.46, cy + r * 0.34),
+        )
+    } else {
+        (
+            Point2::new(bar_x + r * 0.14, cy + r * 0.34),
+            Point2::new(bar_x + r * 0.44, cy + r * 0.36),
+            Point2::new(bar_x + r * 0.30, cy + r * 0.58),
+        )
+    };
+    prims.push(SymPrim::Polyline {
+        pts: vec![a_tip, a_b1, a_b2, a_tip],
+        filled: true,
+        stroke_mm: 0.20,
+    });
+    for p in pins {
+        let n = p.name.to_uppercase();
+        let target = if n == "B" || n.contains("BASE") || p.side == Side::West {
+            Point2::new(bar_x, cy)
+        } else if n == "C" || n.contains("COL") || p.side == Side::North {
+            c_pt
+        } else {
+            e_pt
+        };
+        connect_lead(&mut prims, p.body_point, target, p.side);
+    }
+    SymbolGraphic {
+        primitives: prims,
+        hide_pin_names: true,
+    }
+}
+
+fn build_mosfet(body: Rect2, pins: &[PlacedPinIr], cx: f64, cy: f64, is_nmos: bool) -> SymbolGraphic {
+    let mut prims = Vec::new();
+    let r = (body.width().min(body.depth()) * 0.45).clamp(2.5, 4.2);
+    prims.push(SymPrim::Circle {
+        center: Point2::new(cx, cy),
+        radius: r,
+        filled: false,
+        stroke_mm: 0.25,
+    });
+    let gx = cx - r * 0.38;
+    let ch_x = cx - r * 0.10;
+    let dx = cx + r * 0.45;
+    prims.push(line(Point2::new(gx, cy - r * 0.55), Point2::new(gx, cy + r * 0.55), 0.35));
+    // Split channel segments
+    for dy in [-r * 0.48, 0.0, r * 0.48] {
+        prims.push(line(Point2::new(ch_x, cy + dy - 0.45), Point2::new(ch_x, cy + dy + 0.45), 0.38));
+    }
+    let d_pt = Point2::new(dx, cy - r * 0.55);
+    let s_pt = Point2::new(dx, cy + r * 0.55);
+    prims.push(line(Point2::new(ch_x, cy - r * 0.48), d_pt, 0.26));
+    prims.push(line(Point2::new(ch_x, cy + r * 0.48), s_pt, 0.26));
+    prims.push(line(Point2::new(ch_x, cy), Point2::new(dx, cy), 0.24));
+    prims.push(line(Point2::new(dx, cy), s_pt, 0.24));
+    let arrow_x = if is_nmos { ch_x + 0.3 } else { dx - 0.3 };
+    let arrow_base = if is_nmos { ch_x + 1.1 } else { dx - 1.1 };
+    prims.push(SymPrim::Polyline {
+        pts: vec![
+            Point2::new(arrow_x, cy),
+            Point2::new(arrow_base, cy - 0.45),
+            Point2::new(arrow_base, cy + 0.45),
+            Point2::new(arrow_x, cy),
+        ],
+        filled: true,
+        stroke_mm: 0.18,
+    });
+    for p in pins {
+        let n = p.name.to_uppercase();
+        let target = if n == "G" || n.contains("GATE") || p.side == Side::West {
+            Point2::new(gx, cy)
+        } else if n == "D" || n.contains("DRAIN") || p.side == Side::North {
+            d_pt
+        } else {
+            s_pt
+        };
+        connect_lead(&mut prims, p.body_point, target, p.side);
+    }
+    SymbolGraphic {
+        primitives: prims,
+        hide_pin_names: true,
+    }
+}
+
+fn build_fuse(body: Rect2, pins: &[PlacedPinIr], cx: f64, cy: f64) -> SymbolGraphic {
+    let mut prims = Vec::new();
+    let vertical = is_vertical_pair(pins);
+    if vertical {
+        let h = (body.depth() * 0.65).clamp(4.0, 7.62);
+        let w = 2.6;
+        prims.push(SymPrim::Rect {
+            rect: Rect2::new(cx - w * 0.5, cy - h * 0.5, cx + w * 0.5, cy + h * 0.5),
+            filled: false,
+            stroke_mm: 0.28,
+        });
+        prims.push(line(Point2::new(cx, body.min_y), Point2::new(cx, body.max_y), 0.26));
+    } else {
+        let w = (body.width() * 0.65).clamp(4.0, 7.62);
+        let h = 2.6;
+        prims.push(SymPrim::Rect {
+            rect: Rect2::new(cx - w * 0.5, cy - h * 0.5, cx + w * 0.5, cy + h * 0.5),
+            filled: false,
+            stroke_mm: 0.28,
+        });
+        prims.push(line(Point2::new(body.min_x, cy), Point2::new(body.max_x, cy), 0.26));
+    }
+    SymbolGraphic {
+        primitives: prims,
+        hide_pin_names: pins.len() <= 2,
+    }
+}
+
+fn build_crystal(_body: Rect2, pins: &[PlacedPinIr], cx: f64, cy: f64) -> SymbolGraphic {
+    let mut prims = Vec::new();
+    let vertical = is_vertical_pair(pins);
+    if vertical {
+        prims.push(SymPrim::Rect {
+            rect: Rect2::new(cx - 2.0, cy - 0.9, cx + 2.0, cy + 0.9),
+            filled: false,
+            stroke_mm: 0.30,
+        });
+        prims.push(line(Point2::new(cx - 2.2, cy - 1.8), Point2::new(cx + 2.2, cy - 1.8), 0.32));
+        prims.push(line(Point2::new(cx - 2.2, cy + 1.8), Point2::new(cx + 2.2, cy + 1.8), 0.32));
+        for p in pins {
+            let t = if p.side == Side::North { Point2::new(cx, cy - 1.8) } else { Point2::new(cx, cy + 1.8) };
+            connect_lead(&mut prims, p.body_point, t, p.side);
+        }
+    } else {
+        prims.push(SymPrim::Rect {
+            rect: Rect2::new(cx - 0.9, cy - 2.0, cx + 0.9, cy + 2.0),
+            filled: false,
+            stroke_mm: 0.30,
+        });
+        prims.push(line(Point2::new(cx - 1.8, cy - 2.2), Point2::new(cx - 1.8, cy + 2.2), 0.32));
+        prims.push(line(Point2::new(cx + 1.8, cy - 2.2), Point2::new(cx + 1.8, cy + 2.2), 0.32));
+        for p in pins {
+            let t = if p.side == Side::West { Point2::new(cx - 1.8, cy) } else { Point2::new(cx + 1.8, cy) };
+            connect_lead(&mut prims, p.body_point, t, p.side);
+        }
+    }
+    SymbolGraphic {
+        primitives: prims,
+        hide_pin_names: pins.len() <= 2,
+    }
+}
+
+fn build_jumper(body: Rect2, pins: &[PlacedPinIr], cx: f64, cy: f64) -> SymbolGraphic {
+    let mut prims = Vec::new();
+    let r = 0.7;
+    let dx = (body.width() * 0.26).clamp(1.2, 2.5);
+    prims.push(SymPrim::Circle { center: Point2::new(cx - dx, cy), radius: r, filled: true, stroke_mm: 0.25 });
+    prims.push(SymPrim::Circle { center: Point2::new(cx + dx, cy), radius: r, filled: true, stroke_mm: 0.25 });
+    prims.push(SymPrim::Polyline {
+        pts: vec![
+            Point2::new(cx - dx, cy - 0.4),
+            Point2::new(cx, cy - 1.5),
+            Point2::new(cx + dx, cy - 0.4),
+        ],
+        filled: false,
+        stroke_mm: 0.28,
+    });
+    for (i, p) in pins.iter().enumerate() {
+        let t = if p.side == Side::West || i == 0 {
+            Point2::new(cx - dx, cy)
+        } else {
+            Point2::new(cx + dx, cy)
+        };
+        connect_lead(&mut prims, p.body_point, t, p.side);
+    }
+    SymbolGraphic {
+        primitives: prims,
+        hide_pin_names: pins.len() <= 2,
+    }
+}
+
+fn build_potentiometer(body: Rect2, pins: &[PlacedPinIr], cx: f64, cy: f64) -> SymbolGraphic {
+    let mut g = build_resistor(body, pins, cx, cy);
+    // Add wiper arrow pointing into the resistor center
+    let wiper_pin = pins.iter().find(|p| {
+        let n = p.name.to_uppercase();
+        n == "W" || n.contains("WIPER") || n == "2"
+    });
+    if let Some(wp) = wiper_pin {
+        let target = Point2::new(cx, cy);
+        connect_lead(&mut g.primitives, wp.body_point, target, wp.side);
+    }
+    g
+}
+
+fn build_transformer(body: Rect2, pins: &[PlacedPinIr], cx: f64, cy: f64) -> SymbolGraphic {
+    let mut prims = Vec::new();
+    // Dual magnetic core bars in center separating primary (West) and secondary (East)
+    let h = body.depth() * 0.78;
+    prims.push(line(Point2::new(cx - 0.6, cy - h * 0.5), Point2::new(cx - 0.6, cy + h * 0.5), 0.34));
+    prims.push(line(Point2::new(cx + 0.6, cy - h * 0.5), Point2::new(cx + 0.6, cy + h * 0.5), 0.34));
+    // Draw coil scallops on West and East faces
+    for side_x in [cx - 2.4, cx + 2.4] {
+        let is_west = side_x < cx;
+        let dir = if is_west { 1.0 } else { -1.0 };
+        let loops = 4usize;
+        let y0 = cy - h * 0.45;
+        let step = (h * 0.90) / loops as f64;
+        for i in 0..loops {
+            let ya = y0 + i as f64 * step;
+            let ym = ya + step * 0.5;
+            let yb = ya + step;
+            prims.push(SymPrim::Polyline {
+                pts: vec![
+                    Point2::new(side_x, ya),
+                    Point2::new(side_x + dir * 1.1, ya + step * 0.22),
+                    Point2::new(side_x + dir * 1.3, ym),
+                    Point2::new(side_x + dir * 1.1, yb - step * 0.22),
+                    Point2::new(side_x, yb),
+                ],
+                filled: false,
+                stroke_mm: 0.28,
+            });
+        }
+    }
+    for p in pins {
+        let tx = if p.side == Side::West { cx - 2.4 } else { cx + 2.4 };
+        connect_lead(&mut prims, p.body_point, Point2::new(tx, p.body_point.y), p.side);
+    }
+    SymbolGraphic {
+        primitives: prims,
+        hide_pin_names: false,
     }
 }

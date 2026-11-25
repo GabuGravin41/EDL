@@ -533,6 +533,11 @@ impl Parser {
                 "layout" => arch.layouts.push(self.parse_layout()?),
                 "opening" => arch.openings.push(self.parse_opening()?),
                 "fixture" => arch.fixtures.push(self.parse_fixture()?),
+                "symbol_lib" => {
+                    self.bump();
+                    let (path_s, _) = self.expect_string("symbol library path")?;
+                    elec.symbol_libs.push(path_s);
+                }
                 "circuit" => elec.circuits.push(self.parse_circuit()?),
                 "schematic" => elec.schematics.push(self.parse_schematic()?),
                 "building_electrical" => mep_elec.installations.push(self.parse_building_electrical()?),
@@ -1244,6 +1249,18 @@ impl Parser {
                 "no_multiple_power_drivers" => rules.push(VerifyRule::NoMultiplePowerDrivers { span: rstart.merge(&rspan) }),
                 "voltage_compatibility" => rules.push(VerifyRule::VoltageCompatibility { span: rstart.merge(&rspan) }),
                 "no_single_pin_nets" => rules.push(VerifyRule::NoSinglePinNets { span: rstart.merge(&rspan) }),
+                "galvanic_isolation" => {
+                    self.expect(TokenKind::LParen, "'('")?;
+                    let (net_a, _) = self.expect_ident("first isolated net")?;
+                    self.expect(TokenKind::Comma, "','")?;
+                    let (net_b, _) = self.expect_ident("second isolated net")?;
+                    let qend = self.expect(TokenKind::RParen, "')'")?.span(&self.file);
+                    rules.push(VerifyRule::GalvanicIsolation {
+                        net_a,
+                        net_b,
+                        span: rstart.merge(&qend),
+                    });
+                }
                 "dc_voltage" => {
                     self.expect(TokenKind::LParen, "'('")?;
                     let (net, _) = self.expect_ident("net name")?;
@@ -1414,11 +1431,22 @@ impl Parser {
         let start = self.expect_keyword("component")?;
         let (id, _) = self.expect_ident("component designator")?;
         self.expect(TokenKind::Colon, "':'")?;
-        let (category, _) = self.expect_ident("component category")?;
+        let category = match self.peek().kind.clone() {
+            TokenKind::Str(s) => {
+                self.bump();
+                s
+            }
+            _ => self.expect_ident("component category or quoted KiCad 'Library:Symbol'")?.0,
+        };
         self.expect(TokenKind::LBrace, "'{'")?;
 
         let mut value = String::new();
         let mut footprint = None;
+        let mut orient_deg: i32 = 0;
+        let mut mirror: Option<crate::domains::elec::kicad_sym::SymMirror> = None;
+        let mut unit: Option<usize> = None;
+        let mut no_connect: Vec<String> = Vec::new();
+        let mut isolated = false;
         let mut pins = Vec::new();
 
         while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
@@ -1457,6 +1485,102 @@ impl Parser {
                     }
                     let (s, _) = self.expect_string("footprint")?;
                     footprint = Some(s);
+                }
+                "orient" | "rotation" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    match self.peek().kind.clone() {
+                        TokenKind::Number(n, u) if u.is_empty() || u == "deg" => {
+                            self.bump();
+                            orient_deg = (n.round() as i32).rem_euclid(360);
+                        }
+                        TokenKind::Ident(ref d) => {
+                            let dl = d.to_lowercase();
+                            self.bump();
+                            orient_deg = match dl.as_str() {
+                                "horizontal" | "h" => 90,
+                                "vertical" | "v" => 0,
+                                _ => {
+                                    return Err(Diagnostic::error(
+                                        "E_PARSE_ORIENT",
+                                        "syntax",
+                                        format!("Unknown orient '{d}' (expected 0, 90, 180, 270, horizontal, vertical)"),
+                                        Some(kspan),
+                                    ))
+                                }
+                            };
+                        }
+                        _ => {
+                            let tok = self.peek().clone();
+                            return Err(self.err("E_PARSE_ORIENT", "Expected angle (0, 90, 180, 270) or horizontal/vertical", &tok));
+                        }
+                    }
+                }
+                "mirror" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let (m, mspan) = self.expect_ident("mirror axis ('x' or 'y')")?;
+                    mirror = match m.to_lowercase().as_str() {
+                        "x" => Some(crate::domains::elec::kicad_sym::SymMirror::X),
+                        "y" => Some(crate::domains::elec::kicad_sym::SymMirror::Y),
+                        _ => {
+                            return Err(Diagnostic::error(
+                                "E_PARSE_MIRROR",
+                                "syntax",
+                                format!("Unknown mirror '{m}' (expected 'x' or 'y')"),
+                                Some(mspan),
+                            ))
+                        }
+                    };
+                }
+                "unit" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    match self.peek().kind.clone() {
+                        TokenKind::Number(n, u) if u.is_empty() && n >= 1.0 => {
+                            self.bump();
+                            unit = Some(n.round() as usize);
+                        }
+                        TokenKind::Ident(ref s) if s.len() == 1 => {
+                            let ch = s.chars().next().unwrap().to_ascii_uppercase();
+                            self.bump();
+                            if ('A'..='Z').contains(&ch) {
+                                unit = Some((ch as u8 - b'A' + 1) as usize);
+                            }
+                        }
+                        _ => {
+                            let tok = self.peek().clone();
+                            return Err(self.err("E_PARSE_UNIT", "Expected unit number (1..N) or letter (A..Z)", &tok));
+                        }
+                    }
+                }
+                "no_connect" | "nc" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    self.expect(TokenKind::LBracket, "'['")?;
+                    while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
+                        let tok = self.peek().clone();
+                        match tok.kind {
+                            TokenKind::Ident(name) => {
+                                self.bump();
+                                no_connect.push(name);
+                            }
+                            TokenKind::Number(n, u) if u.is_empty() => {
+                                self.bump();
+                                no_connect.push(format!("{}", n.round() as i64));
+                            }
+                            _ => {
+                                return Err(self.err("E_PARSE_NC", "Expected pin name or number inside no_connect list", &tok));
+                            }
+                        }
+                        if self.peek().kind == TokenKind::Comma {
+                            self.bump();
+                        } else {
+                            break;
+                        }
+                    }
+                    self.expect(TokenKind::RBracket, "']'")?;
+                }
+                "isolated" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let (b, _) = self.expect_ident("true or false")?;
+                    isolated = b == "true";
                 }
                 "pin" => {
                     let (pin_name, _) = self.expect_ident("pin name")?;
@@ -1529,14 +1653,21 @@ impl Parser {
             }
         }
         let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
-        if value.is_empty() {
+        if value.is_empty() && !category.contains(':') {
             value = category.clone();
         }
+        let cat_lower = category.to_lowercase();
+        let is_iso = isolated || cat_lower.contains("transformer") || cat_lower.contains("optocoupler") || cat_lower.contains("isolator");
         Ok(ComponentDecl {
             id,
             category,
             value,
             footprint,
+            orient_deg,
+            mirror,
+            unit,
+            no_connect,
+            isolated: is_iso,
             pins,
             provenance: None,
             span: start.merge(&end),
@@ -1558,7 +1689,25 @@ impl Parser {
                     while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
                         let (comp, cspan) = self.expect_ident("component id")?;
                         self.expect(TokenKind::Dot, "'.'")?;
-                        let (pin, pspan) = self.expect_ident("pin name")?;
+                        let (pin, pspan) = match self.peek().kind.clone() {
+                            TokenKind::Ident(p) => {
+                                let sp = self.bump().span(&self.file);
+                                (p, sp)
+                            }
+                            TokenKind::Number(n, u) if u.is_empty() => {
+                                let sp = self.bump().span(&self.file);
+                                (format!("{}", n.round() as i64), sp)
+                            }
+                            TokenKind::Plus => {
+                                let sp = self.bump().span(&self.file);
+                                ("+".to_string(), sp)
+                            }
+                            TokenKind::Minus => {
+                                let sp = self.bump().span(&self.file);
+                                ("-".to_string(), sp)
+                            }
+                            _ => self.expect_ident("pin name or number")?,
+                        };
                         connects.push(PinRef {
                             component: comp,
                             pin,
@@ -1746,12 +1895,12 @@ impl Parser {
                                 let (st, sspan) = self.expect_ident("routing style")?;
                                 rdecl.default_style = Some(parse_routing_style(&st, sspan)?);
                             }
-                            "power_nets" => {
+                            "power_nets" | "power" => {
                                 self.expect(TokenKind::Colon, "':'")?;
                                 let (st, sspan) = self.expect_ident("routing style")?;
                                 rdecl.power_style = Some(parse_routing_style(&st, sspan)?);
                             }
-                            "ground_nets" => {
+                            "ground_nets" | "ground" => {
                                 self.expect(TokenKind::Colon, "':'")?;
                                 let (st, sspan) = self.expect_ident("routing style")?;
                                 rdecl.ground_style = Some(parse_routing_style(&st, sspan)?);

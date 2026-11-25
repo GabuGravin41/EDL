@@ -91,6 +91,8 @@ pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
         let EntityGeometryIr::Component {
             category,
             value,
+            hide_pin_names,
+            symbol_prims,
             body_rect,
             pins,
             ..
@@ -106,7 +108,14 @@ pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
         let ly_bot = -(body_rect.max_y - cy);
         let ly_top = -(body_rect.min_y - cy);
 
-        let graphic = build_symbol_graphic(category, *body_rect, pins);
+        let graphic = if let Some(ref prims) = symbol_prims {
+            crate::domains::elec::symbols::SymbolGraphic {
+                primitives: prims.clone(),
+                hide_pin_names: *hide_pin_names,
+            }
+        } else {
+            build_symbol_graphic(category, *body_rect, pins)
+        };
 
         let _ = writeln!(out, "    (symbol \"{sym_name}\"");
         if graphic.hide_pin_names {
@@ -198,9 +207,17 @@ pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
 
         // Symbol pins sub-unit
         let _ = writeln!(out, "      (symbol \"{}_1_1\"", ent.id);
+        let mut gnd_driven_used = false;
         for p in pins {
+            let code = p.pin_code.clone().unwrap_or_else(|| p.number.to_string());
             let full_key = format!("{}.{}", ent.id, p.name);
-            let etype = kicad_pin_etype(p.role, gnd_driver_pins.contains(&full_key));
+            let alt_key = format!("{}.{}#{}", ent.id, p.name, code);
+            let is_drv = !gnd_driven_used
+                && (gnd_driver_pins.contains(&full_key) || gnd_driver_pins.contains(&alt_key));
+            if is_drv {
+                gnd_driven_used = true;
+            }
+            let etype = kicad_pin_etype(p.role, is_drv);
             let px = p.tip_point.x - cx;
             let py = -(p.tip_point.y - cy);
             let len = p.tip_point.dist(p.body_point);
@@ -217,7 +234,7 @@ pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
                 py,
                 len,
                 escape_sexpr(&p.name),
-                p.number
+                escape_sexpr(&code)
             );
         }
         let _ = writeln!(out, "      )");
@@ -309,8 +326,9 @@ pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
             cy
         );
         for p in pins {
-            let pu = det_uuid("pin", &format!("{}.{}", ent.id, p.number));
-            let _ = writeln!(out, "    (pin \"{}\" (uuid \"{pu}\"))", p.number);
+            let code = p.pin_code.clone().unwrap_or_else(|| p.number.to_string());
+            let pu = det_uuid("pin", &format!("{}.{}", ent.id, code));
+            let _ = writeln!(out, "    (pin \"{}\" (uuid \"{pu}\"))", escape_sexpr(&code));
         }
         let _ = writeln!(out, "    (instances");
         let _ = writeln!(out, "      (project \"{}\"", escape_sexpr(&ir.project.name));
@@ -322,6 +340,21 @@ pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
         let _ = writeln!(out, "      )");
         let _ = writeln!(out, "    )");
         let _ = writeln!(out, "  )");
+    }
+
+    // 2b. Explicit No-Connect markers (prevents KiCad ERC pin_not_connected errors!)
+    for ent in &ir.entities {
+        if let EntityGeometryIr::Component { pins, .. } = &ent.geometry {
+            for p in pins.iter().filter(|p| p.no_connect) {
+                let code = p.pin_code.clone().unwrap_or_else(|| p.number.to_string());
+                let ncu = det_uuid("nc", &format!("{}.{}", ent.id, code));
+                let _ = writeln!(
+                    out,
+                    "  (no_connect (at {:.2} {:.2}) (uuid \"{ncu}\"))",
+                    p.tip_point.x, p.tip_point.y
+                );
+            }
+        }
     }
 
     // 3. Orthogonal wires, junctions, and net labels

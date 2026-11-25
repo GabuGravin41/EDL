@@ -225,6 +225,8 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
         let EntityGeometryIr::Component {
             category,
             value,
+            hide_pin_names,
+            symbol_prims,
             body_rect,
             pins,
             ..
@@ -241,7 +243,14 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
         let w = sl(body_rect.width());
         let h = sl(body_rect.depth());
 
-        let graphic = build_symbol_graphic(category, *body_rect, pins);
+        let graphic = if let Some(ref prims) = symbol_prims {
+            crate::domains::elec::symbols::SymbolGraphic {
+                primitives: prims.clone(),
+                hide_pin_names: *hide_pin_names,
+            }
+        } else {
+            build_symbol_graphic(category, *body_rect, pins)
+        };
         let _ = writeln!(out, r#"    <g id="comp-{id}">"#, id = e.id);
         for prim in &graphic.primitives {
             match prim {
@@ -300,15 +309,23 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
             }
         }
         let _ = writeln!(out, r#"    </g>"#);
-        let has_north = pins.iter().any(|p| p.side == Side::North);
-        let has_south = pins.iter().any(|p| p.side == Side::South);
-        let (rx, r_anchor) = if has_north {
-            (x + w * 0.5 + 8.0, "start")
+        let max_north_px = pins
+            .iter()
+            .filter(|p| p.side == Side::North)
+            .map(|p| sx(p.body_point.x))
+            .fold(f64::NEG_INFINITY, f64::max);
+        let max_south_px = pins
+            .iter()
+            .filter(|p| p.side == Side::South)
+            .map(|p| sx(p.body_point.x))
+            .fold(f64::NEG_INFINITY, f64::max);
+        let (rx, r_anchor) = if max_north_px.is_finite() {
+            (max_north_px + 6.0, "start")
         } else {
             (x + w * 0.5, "middle")
         };
-        let (vx, v_anchor) = if has_south {
-            (x + w * 0.5 + 8.0, "start")
+        let (vx, v_anchor) = if max_south_px.is_finite() {
+            (max_south_px + 6.0, "start")
         } else {
             (x + w * 0.5, "middle")
         };
@@ -340,23 +357,58 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
                 out,
                 r#"    <line class="{pl_cls}" x1="{bx:.2}" y1="{by:.2}" x2="{tx:.2}" y2="{ty:.2}"/>"#
             );
-            let _ = writeln!(
-                out,
-                r#"    <circle class="{pd_cls}" cx="{tx:.2}" cy="{ty:.2}" r="{}"/>"#,
-                if p_err { "4.2" } else { "2.4" }
-            );
-            if (!graphic.hide_pin_names || annotated) || p_err {
-                let (lx, ly, anchor) = match p.side {
-                    Side::West => (bx + 3.0, by + 3.0, "start"),
-                    Side::East => (bx - 3.0, by + 3.0, "end"),
-                    Side::North => (bx, by + 10.0, "middle"),
-                    Side::South => (bx, by - 3.0, "middle"),
-                };
+            if p.no_connect {
+                let d = 3.8;
                 let _ = writeln!(
                     out,
-                    r#"    <text class="pin-name" x="{lx:.2}" y="{ly:.2}" text-anchor="{anchor}">{}</text>"#,
-                    escape_xml(&p.name)
+                    r##"    <line x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}" stroke="#2563eb" stroke-width="1.5"/>"##,
+                    tx - d, ty - d, tx + d, ty + d
                 );
+                let _ = writeln!(
+                    out,
+                    r##"    <line x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}" stroke="#2563eb" stroke-width="1.5"/>"##,
+                    tx - d, ty + d, tx + d, ty - d
+                );
+            } else {
+                let _ = writeln!(
+                    out,
+                    r#"    <circle class="{pd_cls}" cx="{tx:.2}" cy="{ty:.2}" r="{}"/>"#,
+                    if p_err { "4.2" } else { "2.4" }
+                );
+            }
+            if (!graphic.hide_pin_names || annotated) || p_err {
+                match p.side {
+                    Side::West => {
+                        let _ = writeln!(
+                            out,
+                            r#"    <text class="pin-name" x="{:.2}" y="{:.2}" text-anchor="start">{}</text>"#,
+                            bx + 3.0, by + 3.0, escape_xml(&p.name)
+                        );
+                    }
+                    Side::East => {
+                        let _ = writeln!(
+                            out,
+                            r#"    <text class="pin-name" x="{:.2}" y="{:.2}" text-anchor="end">{}</text>"#,
+                            bx - 3.0, by + 3.0, escape_xml(&p.name)
+                        );
+                    }
+                    Side::North => {
+                        let (lx, ly) = (bx + 3.0, by + 4.0);
+                        let _ = writeln!(
+                            out,
+                            r#"    <text class="pin-name" x="{lx:.2}" y="{ly:.2}" text-anchor="end" transform="rotate(-90 {lx:.2} {ly:.2})">{}</text>"#,
+                            escape_xml(&p.name)
+                        );
+                    }
+                    Side::South => {
+                        let (lx, ly) = (bx + 3.0, by - 4.0);
+                        let _ = writeln!(
+                            out,
+                            r#"    <text class="pin-name" x="{lx:.2}" y="{ly:.2}" text-anchor="start" transform="rotate(-90 {lx:.2} {ly:.2})">{}</text>"#,
+                            escape_xml(&p.name)
+                        );
+                    }
+                }
             }
         }
     }

@@ -116,6 +116,11 @@ pub enum VerifyRule {
     NoMultiplePowerDrivers { span: Span },
     VoltageCompatibility { span: Span },
     NoSinglePinNets { span: Span },
+    GalvanicIsolation {
+        net_a: String,
+        net_b: String,
+        span: Span,
+    },
     // Electrical SPICE/MNA simulation assertions
     DcVoltageRange {
         net: String,

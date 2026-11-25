@@ -3,6 +3,7 @@ pub mod bom;
 pub mod compile;
 pub mod kicad;
 pub mod kicad_erc;
+pub mod kicad_sym;
 pub mod spice;
 pub mod svg;
 pub mod symbols;

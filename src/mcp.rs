@@ -211,6 +211,31 @@ fn mcp_tool_schemas() -> Value {
             }
         },
         {
+            "name": "edl_symbol_search",
+            "description": "Search installed KiCad 9 `.kicad_sym` libraries (~20,000+ real components) or project-local `.kicad_sym` files by part number, category, or keyword. Use this BEFORE writing a schematic component so you pick real library symbols instead of guessing pinouts.",
+            "inputSchema": {
+                "type": "object",
+                "required": ["query"],
+                "properties": {
+                    "query": { "type": "string", "description": "Search query (e.g. 'BMP280', 'LM358', 'BC547', 'STM32')" },
+                    "limit": { "type": "integer", "description": "Maximum results (default 15)" },
+                    "extra_libs": { "type": "array", "items": { "type": "string" }, "description": "Optional project-local .kicad_sym file or directory paths" }
+                }
+            }
+        },
+        {
+            "name": "edl_symbol_inspect",
+            "description": "Inspect a KiCad `.kicad_sym` symbol by exact 'Library:Symbol' ID (e.g. 'Sensor_Pressure:BMP280', 'Transistor_BJT:BC547', 'Amplifier_Operational:LM358'). Returns exact pin names, pin numbers, electrical roles, unit count, and default footprint (with `extends` inheritance resolved).",
+            "inputSchema": {
+                "type": "object",
+                "required": ["lib_id"],
+                "properties": {
+                    "lib_id": { "type": "string", "description": "Exact 'Library:Symbol' reference" },
+                    "extra_libs": { "type": "array", "items": { "type": "string" } }
+                }
+            }
+        },
+        {
             "name": "edl_domains",
             "description": "List the registered EDL domain engines (arch, elec, mep.elec, plus any plugins): role (base/overlay), owned syntax keywords, export formats and the verification rules each domain checks. Use this to discover what can be designed and verified before writing EDL.",
             "inputSchema": { "type": "object", "properties": {} }
@@ -360,6 +385,33 @@ fn call_mcp_tool(name: &str, args: &Value) -> Result<Value, String> {
             let apply = args.get("apply").and_then(|v| v.as_bool()).unwrap_or(false);
             let (plan, result) = crate::core::sync::run_sync(Path::new(file), k, d, apply)?;
             Ok(json!({ "plan": plan, "result": result }))
+        }
+        "edl_symbol_search" => {
+            let query = args
+                .get("query")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "Missing required 'query' parameter".to_string())?;
+            let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(15) as usize;
+            let extra: Vec<std::path::PathBuf> = args
+                .get("extra_libs")
+                .and_then(|v| v.as_array())
+                .map(|a| a.iter().filter_map(|x| x.as_str()).map(std::path::PathBuf::from).collect())
+                .unwrap_or_default();
+            let hits = crate::domains::elec::kicad_sym::search_symbols(query, &extra, limit);
+            serde_json::to_value(&hits).map_err(|e| e.to_string())
+        }
+        "edl_symbol_inspect" => {
+            let lib_id = args
+                .get("lib_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "Missing required 'lib_id' parameter".to_string())?;
+            let extra: Vec<std::path::PathBuf> = args
+                .get("extra_libs")
+                .and_then(|v| v.as_array())
+                .map(|a| a.iter().filter_map(|x| x.as_str()).map(std::path::PathBuf::from).collect())
+                .unwrap_or_default();
+            let sym = crate::domains::elec::kicad_sym::load_symbol(lib_id, &extra)?;
+            Ok(crate::domains::elec::kicad_sym::inspect_symbol_json(&sym))
         }
         "edl_domains" => {
             serde_json::to_value(crate::domains::registry::DomainRegistry::builtin().info()).map_err(|e| e.to_string())

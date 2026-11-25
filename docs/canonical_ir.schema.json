@@ -343,17 +343,53 @@
                 "null"
               ]
             },
+            "hide_pin_names": {
+              "type": "boolean"
+            },
+            "lib_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mirror": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "orient_deg": {
+              "format": "int32",
+              "type": "integer"
+            },
             "pins": {
               "items": {
                 "$ref": "#/definitions/PlacedPinIr"
               },
               "type": "array"
             },
+            "symbol_prims": {
+              "items": {
+                "$ref": "#/definitions/SymPrim"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            },
             "type": {
               "enum": [
                 "component"
               ],
               "type": "string"
+            },
+            "unit": {
+              "format": "uint",
+              "minimum": 0.0,
+              "type": [
+                "integer",
+                "null"
+              ]
             },
             "value": {
               "type": "string"
@@ -764,10 +800,21 @@
         "name": {
           "type": "string"
         },
+        "no_connect": {
+          "description": "True when explicitly flagged as No-Connect (`no_connect: [...]` or `role: nc`).",
+          "type": "boolean"
+        },
         "number": {
           "format": "uint",
           "minimum": 0.0,
           "type": "integer"
+        },
+        "pin_code": {
+          "description": "Optional exact library pin code (e.g. `\"A1\"`, `\"7\"`, `\"EP\"`); defaults to `number` if absent.",
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "role": {
           "$ref": "#/definitions/PortRole"
@@ -1167,6 +1214,126 @@
         "start_line"
       ],
       "type": "object"
+    },
+    "SymPrim": {
+      "description": "Vector primitive for electronic/industrial schematic symbols in world mm (Y-down).",
+      "oneOf": [
+        {
+          "description": "Open or closed polyline in world mm.",
+          "properties": {
+            "filled": {
+              "type": "boolean"
+            },
+            "prim": {
+              "enum": [
+                "polyline"
+              ],
+              "type": "string"
+            },
+            "pts": {
+              "items": {
+                "$ref": "#/definitions/Point2"
+              },
+              "type": "array"
+            },
+            "stroke_mm": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          "required": [
+            "filled",
+            "prim",
+            "pts",
+            "stroke_mm"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Rectangle in world mm.",
+          "properties": {
+            "filled": {
+              "type": "boolean"
+            },
+            "prim": {
+              "enum": [
+                "rect"
+              ],
+              "type": "string"
+            },
+            "rect": {
+              "$ref": "#/definitions/Rect2"
+            },
+            "stroke_mm": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          "required": [
+            "filled",
+            "prim",
+            "rect",
+            "stroke_mm"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Circle in world mm.",
+          "properties": {
+            "center": {
+              "$ref": "#/definitions/Point2"
+            },
+            "filled": {
+              "type": "boolean"
+            },
+            "prim": {
+              "enum": [
+                "circle"
+              ],
+              "type": "string"
+            },
+            "radius": {
+              "format": "double",
+              "type": "number"
+            },
+            "stroke_mm": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          "required": [
+            "center",
+            "filled",
+            "prim",
+            "radius",
+            "stroke_mm"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Small symbol-internal glyph label (e.g. `+` / `-` on polarized cap or op-amp).",
+          "properties": {
+            "pos": {
+              "$ref": "#/definitions/Point2"
+            },
+            "prim": {
+              "enum": [
+                "mark"
+              ],
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "pos",
+            "prim",
+            "text"
+          ],
+          "type": "object"
+        }
+      ]
     },
     "VerificationStatus": {
       "enum": [

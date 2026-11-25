@@ -51,33 +51,172 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         })
         .collect();
 
-    // Collect components & nets across circuit blocks
-    let mut comp_map: BTreeMap<String, &ComponentDecl> = BTreeMap::new();
+    // Resolve extra project-local `.kicad_sym` libraries relative to source file directory
+    let base_dir = std::path::Path::new(&project.span.file)
+        .parent()
+        .map(|p| p.to_path_buf());
+    let extra_libs: Vec<std::path::PathBuf> = project
+        .elec
+        .symbol_libs
+        .iter()
+        .map(|rel| {
+            let p = std::path::PathBuf::from(rel);
+            if p.is_relative() {
+                if let Some(ref b) = base_dir {
+                    return b.join(p);
+                }
+            }
+            p
+        })
+        .collect();
+
+    // Collect components (auto-hydrating native `.kicad_sym` library symbols!) & nets across circuit blocks
+    let mut resolved_comps: BTreeMap<String, ComponentDecl> = BTreeMap::new();
+    let mut loaded_syms: BTreeMap<String, crate::domains::elec::kicad_sym::KiCadLibSymbol> =
+        BTreeMap::new();
+    // Alias map: (comp_id, user_ref_name_or_number) -> Vec<internal_unique_pin_name>
+    let mut pin_aliases: BTreeMap<(String, String), Vec<String>> = BTreeMap::new();
+    // Pin display metadata for library pins: (comp_id, internal_pin_name) -> (display_name, pin_code)
+    let mut pin_meta: BTreeMap<(String, String), (String, String)> = BTreeMap::new();
     let mut comp_order: Vec<String> = Vec::new();
     let mut all_nets: Vec<&NetDecl> = Vec::new();
 
     for circuit in &project.elec.circuits {
-        for comp in &circuit.components {
-            if comp_map.insert(comp.id.clone(), comp).is_some() {
+        for raw_comp in &circuit.components {
+            if resolved_comps.contains_key(&raw_comp.id) {
                 diagnostics.push(
                     Diagnostic::error(
                         "E_DUP_COMPONENT",
                         "semantics",
-                        format!("Duplicate component designator '{}'", comp.id),
-                        Some(comp.span.clone()),
+                        format!("Duplicate component designator '{}'", raw_comp.id),
+                        Some(raw_comp.span.clone()),
                     )
-                    .with_entities(vec![comp.id.clone()]),
+                    .with_entities(vec![raw_comp.id.clone()]),
                 );
-            } else {
-                comp_order.push(comp.id.clone());
+                continue;
             }
+            let mut comp = raw_comp.clone();
+
+            // If category contains ':', resolve it from KiCad `.kicad_sym` libraries!
+            if comp.category.contains(':') {
+                match crate::domains::elec::kicad_sym::load_symbol(&comp.category, &extra_libs) {
+                    Ok(sym) => {
+                        let target_unit = comp.unit.unwrap_or(1);
+                        if comp.value.is_empty() {
+                            comp.value = sym.default_value.clone();
+                        }
+                        if comp.footprint.is_none() {
+                            comp.footprint = sym.default_footprint.clone();
+                        }
+                        let user_overrides: BTreeMap<String, PinDecl> = comp
+                            .pins
+                            .drain(..)
+                            .map(|p| (p.name.clone(), p))
+                            .collect();
+
+                        let unit_pins: Vec<_> = sym
+                            .pins
+                            .iter()
+                            .filter(|p| (p.unit == 0 || p.unit == target_unit) && !p.hide)
+                            .collect();
+                        let mut name_counts: BTreeMap<&str, usize> = BTreeMap::new();
+                        for lp in &unit_pins {
+                            *name_counts.entry(lp.name.as_str()).or_insert(0) += 1;
+                        }
+                        for lp in unit_pins {
+                            let dup = name_counts.get(lp.name.as_str()).copied().unwrap_or(0) > 1;
+                            let unique_name = if dup {
+                                format!("{}#{}", lp.name, lp.number)
+                            } else {
+                                lp.name.clone()
+                            };
+                            let ov = user_overrides
+                                .get(&lp.number)
+                                .or_else(|| user_overrides.get(&lp.name));
+                            let is_nc = comp.no_connect.iter().any(|n| n == &lp.name || n == &lp.number)
+                                || lp.role == PinRole::Nc;
+                            let role = if is_nc {
+                                PinRole::Nc
+                            } else {
+                                ov.map(|o| o.role).unwrap_or(lp.role)
+                            };
+                            let voltage = ov.and_then(|o| o.voltage);
+                            comp.pins.push(PinDecl {
+                                name: unique_name.clone(),
+                                role,
+                                voltage,
+                                side: None,
+                                span: comp.span.clone(),
+                            });
+                            pin_meta.insert(
+                                (comp.id.clone(), unique_name.clone()),
+                                (lp.name.clone(), lp.number.clone()),
+                            );
+                            pin_aliases
+                                .entry((comp.id.clone(), lp.name.clone()))
+                                .or_default()
+                                .push(unique_name.clone());
+                            if lp.number != lp.name {
+                                pin_aliases
+                                    .entry((comp.id.clone(), lp.number.clone()))
+                                    .or_default()
+                                    .push(unique_name.clone());
+                            }
+                            if unique_name != lp.name && unique_name != lp.number {
+                                pin_aliases
+                                    .entry((comp.id.clone(), unique_name.clone()))
+                                    .or_default()
+                                    .push(unique_name);
+                            }
+                        }
+                        loaded_syms.insert(comp.id.clone(), sym);
+                    }
+                    Err(msg) => {
+                        diagnostics.push(
+                            Diagnostic::error(
+                                "E_SYMBOL_NOT_FOUND",
+                                "symbols",
+                                format!("Component '{}': {msg}", comp.id),
+                                Some(comp.span.clone()),
+                            )
+                            .with_entities(vec![comp.id.clone()]),
+                        );
+                    }
+                }
+            } else {
+                // Built-in/custom component: apply explicit `no_connect: [...]` & register numeric/name aliases
+                for (idx, p) in comp.pins.iter_mut().enumerate() {
+                    let num_s = format!("{}", idx + 1);
+                    if comp.no_connect.iter().any(|n| n == &p.name || n == &num_s) {
+                        p.role = PinRole::Nc;
+                    }
+                    pin_aliases
+                        .entry((comp.id.clone(), p.name.clone()))
+                        .or_default()
+                        .push(p.name.clone());
+                    if num_s != p.name {
+                        pin_aliases
+                            .entry((comp.id.clone(), num_s))
+                            .or_default()
+                            .push(p.name.clone());
+                    }
+                }
+            }
+
+            comp_order.push(comp.id.clone());
+            resolved_comps.insert(comp.id.clone(), comp);
         }
         for net in &circuit.nets {
             all_nets.push(net);
         }
     }
 
-    // 1. Validate pin references & build functional connectivity graph
+    let comp_map: BTreeMap<String, &ComponentDecl> = resolved_comps
+        .iter()
+        .map(|(k, v)| (k.clone(), v))
+        .collect();
+
+    // 1. Validate pin references & build functional connectivity graph (supporting pin names AND pin numbers!)
     let mut pin_to_nets: BTreeMap<(String, String), Vec<String>> = BTreeMap::new();
     let mut net_pins: BTreeMap<String, Vec<(String, String, &PinDecl)>> = BTreeMap::new();
     let mut ground_nets: BTreeSet<String> = BTreeSet::new();
@@ -103,7 +242,11 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 );
                 continue;
             };
-            let Some(pin) = comp.pins.iter().find(|p| p.name == pref.pin) else {
+            let matched_names: Vec<String> = pin_aliases
+                .get(&(pref.component.clone(), pref.pin.clone()))
+                .cloned()
+                .unwrap_or_default();
+            if matched_names.is_empty() {
                 diagnostics.push(
                     Diagnostic::error(
                         "E_REF_UNKNOWN_PIN",
@@ -117,15 +260,20 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     .with_entities(vec![net.name.clone(), pref.component.clone()]),
                 );
                 continue;
-            };
-            if pin.role == PinRole::Ground {
-                ground_nets.insert(net.name.clone());
             }
-            pin_to_nets
-                .entry((pref.component.clone(), pref.pin.clone()))
-                .or_default()
-                .push(net.name.clone());
-            entry.push((pref.component.clone(), pref.pin.clone(), pin));
+            for unique_pin_name in matched_names {
+                let Some(pin) = comp.pins.iter().find(|p| p.name == unique_pin_name) else {
+                    continue;
+                };
+                if pin.role == PinRole::Ground {
+                    ground_nets.insert(net.name.clone());
+                }
+                pin_to_nets
+                    .entry((pref.component.clone(), unique_pin_name.clone()))
+                    .or_default()
+                    .push(net.name.clone());
+                entry.push((pref.component.clone(), unique_pin_name, pin));
+            }
         }
     }
 
@@ -487,6 +635,96 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 });
             }
 
+            VerifyRule::GalvanicIsolation { net_a, net_b, span } => {
+                // Conductive net-to-net BFS across all NON-isolated components (transformers/optocouplers act as barriers!)
+                let mut adj: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
+                for (cid, comp) in &comp_map {
+                    if comp.isolated {
+                        continue;
+                    }
+                    let mut c_nets: BTreeSet<String> = BTreeSet::new();
+                    for pin in &comp.pins {
+                        if let Some(ns) = pin_to_nets.get(&(cid.clone(), pin.name.clone())) {
+                            for n in ns {
+                                c_nets.insert(n.clone());
+                            }
+                        }
+                    }
+                    let nvec: Vec<String> = c_nets.into_iter().collect();
+                    for i in 0..nvec.len() {
+                        for j in (i + 1)..nvec.len() {
+                            adj.entry(nvec[i].clone())
+                                .or_default()
+                                .push((nvec[j].clone(), cid.clone()));
+                            adj.entry(nvec[j].clone())
+                                .or_default()
+                                .push((nvec[i].clone(), cid.clone()));
+                        }
+                    }
+                }
+                let mut parent: BTreeMap<String, (String, String)> = BTreeMap::new();
+                let mut q = std::collections::VecDeque::new();
+                let mut visited: BTreeSet<String> = BTreeSet::new();
+                visited.insert(net_a.clone());
+                q.push_back(net_a.clone());
+                let mut breached = false;
+                while let Some(cur) = q.pop_front() {
+                    if &cur == net_b {
+                        breached = true;
+                        break;
+                    }
+                    if let Some(nbrs) = adj.get(&cur) {
+                        for (nxt, via) in nbrs {
+                            if visited.insert(nxt.clone()) {
+                                parent.insert(nxt.clone(), (cur.clone(), via.clone()));
+                                q.push_back(nxt.clone());
+                            }
+                        }
+                    }
+                }
+                let check_id = format!("E6_galvanic_isolation_{}_{}", net_a, net_b);
+                if breached {
+                    let mut path_comps = Vec::new();
+                    let mut cur = net_b.clone();
+                    while let Some((prev, via)) = parent.get(&cur) {
+                        path_comps.push(via.clone());
+                        cur = prev.clone();
+                    }
+                    path_comps.reverse();
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "E_ERC_ISOLATION_BREACH",
+                            "erc",
+                            format!(
+                                "Galvanic isolation breached between '{}' and '{}' via non-isolated component(s): [{}]",
+                                net_a,
+                                net_b,
+                                path_comps.join(" -> ")
+                            ),
+                            Some(span.clone()),
+                        )
+                        .with_entities(vec![net_a.clone(), net_b.clone()])
+                        .with_suggestion("Route cross-barrier signals/power only through components marked `isolated: true` (e.g. transformers or optocouplers)"),
+                    );
+                    evidence.push(EvidenceRecord {
+                        check_id,
+                        status: VerificationStatus::Violated,
+                        method: "exact_conductive_graph_bfs_v1.1".to_string(),
+                        tolerance_mm: None,
+                        subjects: vec![net_a.clone(), net_b.clone()],
+                        details: format!("Conductive path found via [{}]", path_comps.join(" -> ")),
+                    });
+                } else {
+                    evidence.push(EvidenceRecord {
+                        check_id,
+                        status: VerificationStatus::ExactlyChecked,
+                        method: "exact_conductive_graph_bfs_v1.1".to_string(),
+                        tolerance_mm: None,
+                        subjects: vec![net_a.clone(), net_b.clone()],
+                        details: format!("0 conductive paths between '{}' and '{}' (galvanic barrier intact)", net_a, net_b),
+                    });
+                }
+            }
             VerifyRule::NoSinglePinNets { .. } => {
                 let mut dangling: Vec<String> = Vec::new();
                 for net in &all_nets {
@@ -768,8 +1006,19 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         let mut sizes: Vec<(f64, f64)> = Vec::new();
         for cid in members {
             let comp = comp_map[cid];
-            let assigned_sides = &comp_pin_sides[cid];
-            let (bw, bh) = compute_symbol_size(comp, assigned_sides);
+            let (bw, bh) = if let Some(sym) = loaded_syms.get(cid) {
+                let u = comp.unit.unwrap_or(1);
+                let lb = crate::domains::elec::kicad_sym::symbol_unit_body_bounds(
+                    sym,
+                    u,
+                    comp.orient_deg,
+                    comp.mirror,
+                );
+                (snap_grid(lb.width().max(5.08)), snap_grid(lb.depth().max(5.08)))
+            } else {
+                let assigned_sides = &comp_pin_sides[cid];
+                compute_symbol_size(comp, assigned_sides)
+            };
             col_body_w = col_body_w.max(bw);
             sizes.push((bw, bh));
         }
@@ -793,16 +1042,108 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             } else {
                 (snap_grid(col_x0 + (col_body_w - bw) * 0.5), snap_grid(cur_y))
             };
-            let body = Rect2::new(bx0, by0, snap_grid(bx0 + bw), snap_grid(by0 + bh));
-            let placed = place_pins_on_body(comp, assigned_sides, body);
+            let (body, placed, lib_id_opt, hide_pin_names, symbol_prims, routing_keys): (
+                Rect2,
+                Vec<PlacedPinIr>,
+                Option<String>,
+                bool,
+                Option<Vec<SymPrim>>,
+                Vec<String>,
+            ) = if let Some(sym) = loaded_syms.get(cid) {
+                let u = comp.unit.unwrap_or(1);
+                let lb = crate::domains::elec::kicad_sym::symbol_unit_body_bounds(
+                    sym,
+                    u,
+                    comp.orient_deg,
+                    comp.mirror,
+                );
+                let cx = snap_grid(bx0 - lb.min_x);
+                let cy = snap_grid(by0 - lb.min_y);
+                let body = Rect2::new(
+                    cx + lb.min_x,
+                    cy + lb.min_y,
+                    cx + lb.max_x,
+                    cy + lb.max_y,
+                );
+                let graphic = crate::domains::elec::kicad_sym::build_kicad_symbol_graphic(
+                    sym,
+                    u,
+                    cx,
+                    cy,
+                    comp.orient_deg,
+                    comp.mirror,
+                );
+                let unit_pins: Vec<_> = sym
+                    .pins
+                    .iter()
+                    .filter(|p| (p.unit == 0 || p.unit == u) && !p.hide)
+                    .collect();
+                let mut placed_vec = Vec::new();
+                let mut rkeys = Vec::new();
+                for (pidx, (lp, cpin)) in unit_pins.iter().zip(comp.pins.iter()).enumerate() {
+                    let tip = crate::domains::elec::kicad_sym::local_to_world(
+                        cx,
+                        cy,
+                        lp.x,
+                        lp.y,
+                        comp.orient_deg,
+                        comp.mirror,
+                    );
+                    let rad = lp.angle.to_radians();
+                    let body_pt = crate::domains::elec::kicad_sym::local_to_world(
+                        cx,
+                        cy,
+                        lp.x + lp.length * rad.cos(),
+                        lp.y + lp.length * rad.sin(),
+                        comp.orient_deg,
+                        comp.mirror,
+                    );
+                    let side = crate::domains::elec::kicad_sym::pin_outward_side(
+                        lp.angle,
+                        comp.orient_deg,
+                        comp.mirror,
+                    );
+                    let (disp_name, code_str) = pin_meta
+                        .get(&(cid.clone(), cpin.name.clone()))
+                        .cloned()
+                        .unwrap_or_else(|| (lp.name.clone(), lp.number.clone()));
+                    let num_usize = code_str.parse::<usize>().unwrap_or(pidx + 1);
+                    let is_nc = cpin.role == PinRole::Nc;
+                    placed_vec.push(PlacedPinIr {
+                        name: disp_name,
+                        number: num_usize,
+                        pin_code: Some(code_str),
+                        role: cpin.role,
+                        voltage: cpin.voltage,
+                        no_connect: is_nc,
+                        side,
+                        body_point: body_pt,
+                        tip_point: Point2::new(snap_grid(tip.x), snap_grid(tip.y)),
+                    });
+                    rkeys.push(cpin.name.clone());
+                }
+                (
+                    body,
+                    placed_vec,
+                    Some(sym.lib_id.clone()),
+                    graphic.hide_pin_names,
+                    Some(graphic.primitives),
+                    rkeys,
+                )
+            } else {
+                let body = Rect2::new(bx0, by0, snap_grid(bx0 + bw), snap_grid(by0 + bh));
+                let placed = place_pins_on_body(comp, assigned_sides, body);
+                let rkeys = placed.iter().map(|p| p.name.clone()).collect();
+                (body, placed, None, false, None, rkeys)
+            };
 
-            let local_left = snap_grid(col_x0.min(bx0) - PIN_LEN_MM - 2.54);
+            let local_left = snap_grid(col_x0.min(body.min_x) - PIN_LEN_MM - 2.54);
             let local_right = snap_grid(col_x1.max(body.max_x) + PIN_LEN_MM + 2.54);
 
             let has_north = placed.iter().any(|p| p.side == Side::North);
-            for p in &placed {
+            for (p, rkey) in placed.iter().zip(routing_keys.into_iter()) {
                 placed_pins.insert(
-                    (cid.clone(), p.name.clone()),
+                    (cid.clone(), rkey),
                     RoutablePin {
                         pin: p.clone(),
                         row_idx: r_idx,
@@ -824,6 +1165,9 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             if let Some(ref fp) = comp.footprint {
                 props.insert("footprint".to_string(), json!(fp));
             }
+            if let Some(ref lid) = lib_id_opt {
+                props.insert("lib_id".to_string(), json!(lid));
+            }
             entities.push(EntityIr {
                 id: cid.clone(),
                 kind: "elec.component".to_string(),
@@ -835,6 +1179,15 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     category: comp.category.clone(),
                     value: comp.value.clone(),
                     footprint: comp.footprint.clone(),
+                    lib_id: lib_id_opt,
+                    orient_deg: comp.orient_deg,
+                    mirror: comp.mirror.map(|m| match m {
+                        crate::domains::elec::kicad_sym::SymMirror::X => "x".to_string(),
+                        crate::domains::elec::kicad_sym::SymMirror::Y => "y".to_string(),
+                    }),
+                    unit: comp.unit,
+                    hide_pin_names,
+                    symbol_prims,
                     body_rect: body,
                     pins: placed,
                 },
@@ -896,22 +1249,24 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         if min_lane == 0 {
             continue;
         }
-        for pref in &net.connects {
-            if let Some(rp) = placed_pins.get(&(pref.component.clone(), pref.pin.clone())) {
-                match rp.pin.side {
-                    Side::East => {
-                        let e = right_lane_next.entry(rp.col_idx).or_insert(0);
-                        if *e < min_lane {
-                            *e = min_lane;
+        if let Some(npins) = net_pins.get(&net.name) {
+            for (cid, pname, _) in npins {
+                if let Some(rp) = placed_pins.get(&(cid.clone(), pname.clone())) {
+                    match rp.pin.side {
+                        Side::East => {
+                            let e = right_lane_next.entry(rp.col_idx).or_insert(0);
+                            if *e < min_lane {
+                                *e = min_lane;
+                            }
                         }
-                    }
-                    Side::West => {
-                        let e = left_lane_next.entry(rp.col_idx).or_insert(0);
-                        if *e < min_lane {
-                            *e = min_lane;
+                        Side::West => {
+                            let e = left_lane_next.entry(rp.col_idx).or_insert(0);
+                            if *e < min_lane {
+                                *e = min_lane;
+                            }
                         }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
         }
@@ -933,23 +1288,95 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         let style = resolve_style(&net.name, is_gnd, is_pwr);
 
         let mut net_endpoints: Vec<&RoutablePin> = Vec::new();
-        for pref in &net.connects {
-            if let Some(rp) = placed_pins.get(&(pref.component.clone(), pref.pin.clone())) {
-                net_endpoints.push(rp);
+        if let Some(npins) = net_pins.get(&net.name) {
+            for (cid, pname, _) in npins {
+                if let Some(rp) = placed_pins.get(&(cid.clone(), pname.clone())) {
+                    net_endpoints.push(rp);
+                }
             }
         }
         if net_endpoints.is_empty() {
             continue;
         }
 
-        // --- MODE A: Local Symbol (GND triangles / upward power flags) ---
+        // --- MODE A: Local Symbol (GND triangles / upward power flags; bridges adjacent same-side pins!) ---
         if style == NetRoutingStyle::Symbol {
             let mut segments = Vec::new();
+            let mut junctions = Vec::new();
             let mut terminals = Vec::new();
-            for rp in &net_endpoints {
-                let tip = rp.pin.tip_point;
+            let mut handled = vec![false; net_endpoints.len()];
+
+            for i in 0..net_endpoints.len() {
+                if handled[i] {
+                    continue;
+                }
+                let rpi = net_endpoints[i];
+                let can_cluster = (is_gnd && rpi.pin.side == Side::South)
+                    || (!is_gnd && rpi.pin.side == Side::North);
+                if can_cluster {
+                    let mut cluster = vec![i];
+                    for j in (i + 1)..net_endpoints.len() {
+                        if handled[j] {
+                            continue;
+                        }
+                        let rpj = net_endpoints[j];
+                        if rpj.pin.side == rpi.pin.side
+                            && (rpj.pin.tip_point.y - rpi.pin.tip_point.y).abs() < 0.1
+                            && (rpj.pin.tip_point.x - rpi.pin.tip_point.x).abs() <= 10.16
+                        {
+                            cluster.push(j);
+                        }
+                    }
+                    if cluster.len() >= 2 {
+                        for &idx in &cluster {
+                            handled[idx] = true;
+                        }
+                        let ys = rpi.pin.tip_point.y;
+                        let bridge_y = if is_gnd {
+                            snap_grid(ys + GRID_MM)
+                        } else {
+                            snap_grid(ys - GRID_MM)
+                        };
+                        let mut xs: Vec<f64> = cluster
+                            .iter()
+                            .map(|&idx| net_endpoints[idx].pin.tip_point.x)
+                            .collect();
+                        xs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                        for &x in &xs {
+                            add_ortho_seg(&mut segments, Point2::new(x, ys), Point2::new(x, bridge_y));
+                        }
+                        let min_x = *xs.first().unwrap();
+                        let max_x = *xs.last().unwrap();
+                        add_ortho_seg(
+                            &mut segments,
+                            Point2::new(min_x, bridge_y),
+                            Point2::new(max_x, bridge_y),
+                        );
+                        let sym_x = min_x;
+                        let sym_y = if is_gnd {
+                            snap_grid(bridge_y + GRID_MM)
+                        } else {
+                            snap_grid(bridge_y - GRID_MM)
+                        };
+                        add_ortho_seg(
+                            &mut segments,
+                            Point2::new(sym_x, bridge_y),
+                            Point2::new(sym_x, sym_y),
+                        );
+                        junctions.push(Point2::new(sym_x, bridge_y));
+                        terminals.push(NetTerminalIr {
+                            kind: if is_gnd { "gnd_symbol" } else { "power_symbol" }.to_string(),
+                            pos: Point2::new(sym_x, sym_y),
+                            dir: if is_gnd { Side::South } else { Side::North },
+                            label: net.name.clone(),
+                        });
+                        continue;
+                    }
+                }
+                handled[i] = true;
+                let tip = rpi.pin.tip_point;
                 if is_gnd {
-                    let end = match rp.pin.side {
+                    let end = match rpi.pin.side {
                         Side::South => {
                             let e = Point2::new(tip.x, snap_grid(tip.y + GRID_MM));
                             add_ortho_seg(&mut segments, tip, e);
@@ -982,7 +1409,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         label: net.name.clone(),
                     });
                 } else {
-                    let end = match rp.pin.side {
+                    let end = match rpi.pin.side {
                         Side::North => {
                             let e = Point2::new(tip.x, snap_grid(tip.y - GRID_MM));
                             add_ortho_seg(&mut segments, tip, e);
@@ -1022,7 +1449,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 is_power: is_pwr,
                 is_ground: is_gnd,
                 segments,
-                junctions: Vec::new(),
+                junctions,
                 terminals,
                 label_pos: None,
             });
@@ -1774,13 +2201,19 @@ fn assign_pin_sides<'a>(
             .get(&(comp.id.clone(), comp.pins[1].name.clone()))
             .map(|ns| ns.iter().any(|n| ground_nets.contains(n)))
             .unwrap_or(false);
-        if p1_gnd && !p0_gnd {
-            return vec![(&comp.pins[0], Side::North), (&comp.pins[1], Side::South)];
+        let mut pair = if p1_gnd && !p0_gnd {
+            vec![(&comp.pins[0], Side::North), (&comp.pins[1], Side::South)]
+        } else if p0_gnd && !p1_gnd {
+            vec![(&comp.pins[0], Side::South), (&comp.pins[1], Side::North)]
+        } else {
+            vec![(&comp.pins[0], Side::West), (&comp.pins[1], Side::East)]
+        };
+        if comp.orient_deg != 0 {
+            for (_, s) in &mut pair {
+                *s = rotate_side_ccw(*s, comp.orient_deg);
+            }
         }
-        if p0_gnd && !p1_gnd {
-            return vec![(&comp.pins[0], Side::South), (&comp.pins[1], Side::North)];
-        }
-        return vec![(&comp.pins[0], Side::West), (&comp.pins[1], Side::East)];
+        return pair;
     }
 
     let mut out = Vec::new();
@@ -1809,7 +2242,26 @@ fn assign_pin_sides<'a>(
         };
         out.push((pin, side));
     }
+    if comp.orient_deg != 0 {
+        for (_, side) in &mut out {
+            *side = rotate_side_ccw(*side, comp.orient_deg);
+        }
+    }
     out
+}
+
+fn rotate_side_ccw(side: Side, deg: i32) -> Side {
+    let steps = (deg.rem_euclid(360) / 90) as usize;
+    let mut cur = side;
+    for _ in 0..steps {
+        cur = match cur {
+            Side::East => Side::North,
+            Side::North => Side::West,
+            Side::West => Side::South,
+            Side::South => Side::East,
+        };
+    }
+    cur
 }
 
 fn compute_symbol_size(comp: &ComponentDecl, assigned: &[(&PinDecl, Side)]) -> (f64, f64) {
@@ -1906,8 +2358,10 @@ fn place_pins_on_body(
             placed.push(PlacedPinIr {
                 name: pin.name.clone(),
                 number: pin_num,
+                pin_code: None,
                 role: pin.role,
                 voltage: pin.voltage,
+                no_connect: pin.role == PinRole::Nc,
                 side,
                 body_point: body_pt,
                 tip_point: tip_pt,

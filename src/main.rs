@@ -158,6 +158,22 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// Search or inspect native KiCad `.kicad_sym` symbol libraries (pins, roles, units, footprints)
+    Symbols {
+        /// Action: 'search' or 'inspect'
+        action: String,
+        /// Search query (e.g. "BMP280", "NPN", "LM358") or exact Library:Symbol (e.g. "Sensor_Pressure:BMP280")
+        target: String,
+        /// Max results for 'search'
+        #[arg(long, default_value_t = 20)]
+        limit: usize,
+        /// Optional extra .kicad_sym file or directory to search
+        #[arg(long)]
+        lib: Vec<PathBuf>,
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
     /// Emit the formal JSON Schema for EDL Canonical IR (derived from Rust IR types)
     Schema,
     /// Start the Model Context Protocol (MCP) JSON-RPC 2.0 server over stdio
@@ -517,6 +533,40 @@ fn main() {
                 }
             }
         }
+        Commands::Symbols {
+            action,
+            target,
+            limit,
+            lib,
+            json,
+        } => match action.as_str() {
+            "search" => {
+                let hits = edl::domains::elec::kicad_sym::search_symbols(&target, &lib, limit);
+                if json {
+                    println!("{}", serde_json::to_string_pretty(&hits).unwrap());
+                } else if hits.is_empty() {
+                    println!("No symbols matching '{target}'.");
+                } else {
+                    for h in hits {
+                        println!("{:<42} {}", h.lib_id, h.description);
+                    }
+                }
+            }
+            "inspect" => match edl::domains::elec::kicad_sym::load_symbol(&target, &lib) {
+                Ok(sym) => {
+                    let info = edl::domains::elec::kicad_sym::inspect_symbol_json(&sym);
+                    println!("{}", serde_json::to_string_pretty(&info).unwrap());
+                }
+                Err(e) => {
+                    eprintln!("symbol inspect error: {e}");
+                    process::exit(1);
+                }
+            },
+            other => {
+                eprintln!("Unknown symbols action '{other}' (expected 'search' or 'inspect')");
+                process::exit(1);
+            }
+        },
         Commands::Schema => {
             let schema = edl::core::ir::canonical_ir_schema();
             println!("{}", serde_json::to_string_pretty(&schema).unwrap());
