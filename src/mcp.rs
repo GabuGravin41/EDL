@@ -3,8 +3,9 @@ use crate::core::ir::CanonicalIr;
 use crate::core::query::{inspect_summary, measure_ir, query_ir};
 use crate::domains::elec::kicad_erc::run_and_ingest_kicad_erc;
 use crate::{
-    build_bom, compile_file, compile_source, export_bom_csv, export_dxf, export_kicad_sch,
-    export_spice_netlist, render_svg, simulate_dc_and_rc,
+    build_bom, build_panel_schedule, compile_file, compile_source, export_bom_csv, export_dxf,
+    export_kicad_sch, export_panel_schedule_csv, export_spice_netlist, render_svg,
+    simulate_dc_and_rc,
 };
 use serde_json::{json, Value};
 use std::io::{self, BufRead, Write};
@@ -184,6 +185,18 @@ fn mcp_tool_schemas() -> Value {
             }
         },
         {
+            "name": "edl_schedule",
+            "description": "Generate a Building Electrical (mep.elec) DB Panel & Circuit Schedule with breaker ratings, RCDs, cable gauges, 3D run lengths, loads, and voltage drops.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "file_path": { "type": "string" },
+                    "source": { "type": "string" },
+                    "csv": { "type": "boolean" }
+                }
+            }
+        },
+        {
             "name": "edl_diff",
             "description": "Compute a semantic diff by stable entity ID between two EDL revisions.",
             "inputSchema": {
@@ -308,6 +321,15 @@ fn call_mcp_tool(name: &str, args: &Value) -> Result<Value, String> {
             let ir = compile_from_args(args, "file_path", "source")?;
             let bom = build_bom(&ir);
             serde_json::to_value(&bom).map_err(|e| e.to_string())
+        }
+        "edl_schedule" => {
+            let ir = compile_from_args(args, "file_path", "source")?;
+            if args.get("csv").and_then(|v| v.as_bool()).unwrap_or(false) {
+                Ok(json!({ "csv": export_panel_schedule_csv(&ir) }))
+            } else {
+                let sched = build_panel_schedule(&ir);
+                serde_json::to_value(&sched).map_err(|e| e.to_string())
+            }
         }
         "edl_diff" => {
             let before = compile_from_args(args, "before_path", "before_source")?;

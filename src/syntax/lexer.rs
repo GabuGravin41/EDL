@@ -141,10 +141,22 @@ pub fn lex(file: &str, src: &str) -> Result<Vec<Token>, Diagnostic> {
                 }
             }
             let mut unit_str = String::new();
-            while i < n && chars[i].is_ascii_alphabetic() {
-                unit_str.push(chars[i]);
+            if i < n && chars[i] == '%' {
+                unit_str.push('%');
                 i += 1;
                 col += 1;
+            } else {
+                while i < n && chars[i].is_ascii_alphabetic() {
+                    unit_str.push(chars[i]);
+                    i += 1;
+                    col += 1;
+                }
+                // Support area units like `mm2`, `cm2`, `m2`
+                if !unit_str.is_empty() && i < n && chars[i] == '2' {
+                    unit_str.push('2');
+                    i += 1;
+                    col += 1;
+                }
             }
             let val: f64 = num_str.parse().map_err(|_| {
                 Diagnostic::error(

@@ -1,8 +1,8 @@
 [package]
 name = "edl"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
-description = "Engineering Description Language (EDL) v0.6 compiler — modular Architecture + Electronics CAD/EDA, SPICE/MNA simulation, BOM & MCP server"
+description = "Engineering Description Language (EDL) v0.7 — multi-domain Architecture + Building Electrical (MEP) + Electronics CAD/EDA, SPICE/MNA & MCP"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

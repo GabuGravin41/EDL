@@ -142,6 +142,18 @@ pub enum EntityGeometryIr {
         body_rect: Rect2,
         pins: Vec<PlacedPinIr>,
     },
+    MepDevice {
+        device_kind: String, // "panel" | "light" | "switch" | "outlet"
+        subtype: String,     // e.g. "ceiling" | "1gang" | "duplex" | "shaver" | "main_db"
+        pos: Point2,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        facing: Option<Side>, // wall normal direction into room (for wall-mounted devices)
+        room: String,
+        height_mm: f64,
+        load_w: f64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        circuit: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -199,6 +211,36 @@ pub struct SchematicRouteIr {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub terminals: Vec<NetTerminalIr>,
     pub label_pos: Option<Point2>,
+}
+
+/// Building electrical breaker circuit summary & computed IEC/NEC metrics.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MepCircuitIr {
+    pub id: String,
+    pub kind: String, // "lighting" | "socket" | "appliance" | "dedicated"
+    pub panel_id: String,
+    pub supply_v: f64,
+    pub rating_a: f64,
+    pub cable_mm2: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rcd_ma: Option<f64>,
+    pub max_voltage_drop_pct: f64,
+    pub connected_devices: Vec<String>,
+    pub total_load_w: f64,
+    pub design_current_a: f64,
+    pub run_length_m: f64,
+    pub voltage_drop_pct: f64,
+    pub status: String, // "OK" | "OVERLOAD" | "VDROP_EXCEEDED" | "RCD_MISSING"
+}
+
+/// Physical conduit/wire run or switch-control line overlaid on the architectural floor plan.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MepWireRunIr {
+    pub circuit_id: String,
+    pub run_kind: String, // "power" | "lighting" | "switch_leg"
+    pub from_id: String,
+    pub to_id: String,
+    pub segments: Vec<Segment2>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -265,6 +307,10 @@ pub struct CanonicalIr {
     pub schematic_groups: Vec<SchematicGroupIr>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub schematic_routes: Vec<SchematicRouteIr>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub mep_circuits: Vec<MepCircuitIr>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub mep_wires: Vec<MepWireRunIr>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub constraints: Vec<EquationRecord>,
     pub views: Vec<ViewIr>,

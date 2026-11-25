@@ -4,6 +4,7 @@ use crate::core::span::{Diagnostic, Span};
 use crate::core::units::{Quantity, Unit, VoltageSpec};
 use crate::domains::arch::ast::*;
 use crate::domains::elec::ast::*;
+use crate::domains::mep_elec::ast::*;
 use crate::syntax::ast::*;
 use crate::syntax::lexer::{lex, Token, TokenKind};
 use std::collections::BTreeMap;
@@ -486,6 +487,7 @@ impl Parser {
         let mut parameters = Vec::new();
         let mut arch = ArchProjectData::default();
         let mut elec = ElecProjectData::default();
+        let mut mep_elec = MepElecProjectData::default();
         let mut verifications = Vec::new();
         let mut views = Vec::new();
 
@@ -532,6 +534,7 @@ impl Parser {
                 "fixture" => arch.fixtures.push(self.parse_fixture()?),
                 "circuit" => elec.circuits.push(self.parse_circuit()?),
                 "schematic" => elec.schematics.push(self.parse_schematic()?),
+                "building_electrical" => mep_elec.installations.push(self.parse_building_electrical()?),
                 "verify" => verifications.extend(self.parse_verify()?),
                 "view" => views.push(self.parse_view()?),
                 other => {
@@ -556,6 +559,7 @@ impl Parser {
             parameters,
             arch,
             elec,
+            mep_elec,
             verifications,
             views,
         })
@@ -1225,6 +1229,12 @@ impl Parser {
                         span: rstart.merge(&qend),
                     });
                 }
+                "breaker_load_ok" => rules.push(VerifyRule::BreakerLoadOk { span: rstart.merge(&rspan) }),
+                "voltage_drop_ok" => rules.push(VerifyRule::VoltageDropOk { span: rstart.merge(&rspan) }),
+                "wet_zone_clearance" => rules.push(VerifyRule::WetZoneClearance { span: rstart.merge(&rspan) }),
+                "switch_accessible" => rules.push(VerifyRule::SwitchAccessible { span: rstart.merge(&rspan) }),
+                "electrical_device_clear" => rules.push(VerifyRule::ElectricalDeviceClear { span: rstart.merge(&rspan) }),
+                "wet_circuits_rcd_protected" => rules.push(VerifyRule::WetCircuitsRcdProtected { span: rstart.merge(&rspan) }),
                 other => {
                     return Err(Diagnostic::error(
                         "E_VERIFY_UNKNOWN",
@@ -1755,6 +1765,494 @@ impl Parser {
             layout,
             routing,
             placements,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_building_electrical(&mut self) -> Result<BuildingElecDecl, Diagnostic> {
+        let start = self.expect_keyword("building_electrical")?;
+        let (name, _) = self.expect_ident("installation name")?;
+        self.expect(TokenKind::LBrace, "'{'")?;
+
+        let mut supply_v = Quantity::new(230.0, Unit::V);
+        let mut frequency_hz = Quantity::new(50.0, Unit::Hz);
+        let mut ceiling_height = Quantity::mm(2700.0);
+        let mut panels = Vec::new();
+        let mut breakers = Vec::new();
+        let mut lights = Vec::new();
+        let mut switches = Vec::new();
+        let mut outlets = Vec::new();
+
+        while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+            let (kw, kspan) = self.expect_ident("building_electrical declaration")?;
+            match kw.as_str() {
+                "supply" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let (v, _) = self.parse_quantity()?;
+                    supply_v = v;
+                    if matches!(self.peek().kind, TokenKind::Number(_, _)) {
+                        let (f, _) = self.parse_quantity()?;
+                        frequency_hz = f;
+                    }
+                }
+                "ceiling_height" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let (h, _) = self.parse_quantity()?;
+                    ceiling_height = h;
+                }
+                "panel" => panels.push(self.parse_mep_panel(kspan)?),
+                "breaker" => breakers.push(self.parse_mep_breaker(kspan)?),
+                "light" => lights.push(self.parse_mep_light(kspan)?),
+                "switch" => switches.push(self.parse_mep_switch(kspan)?),
+                "outlet" => outlets.push(self.parse_mep_outlet(kspan)?),
+                other => {
+                    return Err(Diagnostic::error(
+                        "E_PARSE_MEP",
+                        "syntax",
+                        format!("Unknown declaration '{other}' inside building_electrical"),
+                        Some(kspan),
+                    ))
+                }
+            }
+        }
+        let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+        Ok(BuildingElecDecl {
+            name,
+            supply_v,
+            frequency_hz,
+            ceiling_height,
+            panels,
+            breakers,
+            lights,
+            switches,
+            outlets,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_mep_host_expr(&mut self) -> Result<(Option<(String, Side)>, Option<(String, bool, Quantity)>), Diagnostic> {
+        let (fn_name, fspan) = self.expect_ident("wall or beside")?;
+        self.expect(TokenKind::LParen, "'('")?;
+        match fn_name.as_str() {
+            "wall" => {
+                let room = self.parse_room_ref()?;
+                self.expect(TokenKind::Comma, "','")?;
+                let (side_s, sspan) = self.expect_ident("wall side")?;
+                let side = parse_side(&side_s, sspan)?;
+                self.expect(TokenKind::RParen, "')'")?;
+                Ok((Some((room, side)), None))
+            }
+            "beside" => {
+                let door_id = self.parse_room_ref()?;
+                let mut latch_side = true;
+                let mut offset = Quantity::mm(150.0);
+                if self.peek().kind == TokenKind::Comma {
+                    self.bump();
+                    let (s_kind, _) = self.expect_ident("latch_side or hinge_side")?;
+                    latch_side = s_kind != "hinge_side";
+                    if self.peek().kind == TokenKind::Comma {
+                        self.bump();
+                        let (q, _) = self.parse_quantity()?;
+                        offset = q;
+                    }
+                }
+                self.expect(TokenKind::RParen, "')'")?;
+                Ok((None, Some((door_id, latch_side, offset))))
+            }
+            other => Err(Diagnostic::error(
+                "E_PARSE_MEP_HOST",
+                "syntax",
+                format!("Unknown electrical host '{other}' (expected wall(...) or beside(...))"),
+                Some(fspan),
+            )),
+        }
+    }
+
+    fn parse_mep_panel(&mut self, start: Span) -> Result<PanelDecl, Diagnostic> {
+        let (id, _) = self.expect_ident("panel id")?;
+        self.expect(TokenKind::LBrace, "'{'")?;
+        let mut wall_host: Option<(String, Side)> = None;
+        let mut beside_host: Option<(String, bool, Quantity)> = None;
+        let mut placement = OpeningPlacement::Center;
+        let mut main_breaker = Quantity::new(63.0, Unit::A);
+        let mut height = Quantity::mm(1500.0);
+
+        while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+            let (k, kspan) = self.expect_ident("panel property")?;
+            self.expect(TokenKind::Colon, "':'")?;
+            match k.as_str() {
+                "host" => {
+                    let (w, b) = self.parse_mep_host_expr()?;
+                    wall_host = w;
+                    beside_host = b;
+                }
+                "align" => {
+                    self.expect_keyword("center")?;
+                    placement = OpeningPlacement::Center;
+                }
+                "offset" => {
+                    let (dist, _) = self.parse_quantity()?;
+                    self.expect_keyword("from")?;
+                    let (e_s, espan) = self.expect_ident("start or end")?;
+                    placement = OpeningPlacement::Offset {
+                        distance: dist,
+                        from: parse_wall_end(&e_s, espan)?,
+                    };
+                }
+                "main_breaker" => {
+                    let (q, _) = self.parse_quantity()?;
+                    main_breaker = q;
+                }
+                "height" => {
+                    let (q, _) = self.parse_quantity()?;
+                    height = q;
+                }
+                other => {
+                    return Err(Diagnostic::error(
+                        "E_PARSE_PROP",
+                        "syntax",
+                        format!("Unknown panel property '{other}'"),
+                        Some(kspan),
+                    ))
+                }
+            }
+        }
+        let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+        let mount = if let Some((room, side)) = wall_host {
+            WallMountSpec::RoomWall { room, side, placement }
+        } else if let Some((door_id, latch_side, offset)) = beside_host {
+            WallMountSpec::BesideDoor { door_id, latch_side, offset }
+        } else {
+            return Err(Diagnostic::error(
+                "E_MEP_MISSING_HOST",
+                "syntax",
+                format!("Panel '{id}' requires a `host: wall(Room, side)` property"),
+                Some(start.merge(&end)),
+            ));
+        };
+        Ok(PanelDecl {
+            id,
+            mount,
+            main_breaker,
+            height,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_mep_breaker(&mut self, start: Span) -> Result<BreakerDecl, Diagnostic> {
+        let (id, _) = self.expect_ident("breaker circuit id")?;
+        self.expect(TokenKind::Colon, "':'")?;
+        let (kind, _) = self.expect_ident("breaker kind (lighting, socket, appliance, dedicated)")?;
+        self.expect(TokenKind::LBrace, "'{'")?;
+        let mut from_panel = String::new();
+        let mut rating = Quantity::new(16.0, Unit::A);
+        let mut cable = Quantity::new(2.5, Unit::Mm2);
+        let mut rcd = None;
+        let mut max_voltage_drop_pct = None;
+
+        while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+            let (k, kspan) = self.expect_ident("breaker property")?;
+            self.expect(TokenKind::Colon, "':'")?;
+            match k.as_str() {
+                "from" => {
+                    let (p, _) = self.expect_ident("panel id")?;
+                    from_panel = p;
+                }
+                "rating" => {
+                    let (q, _) = self.parse_quantity()?;
+                    rating = q;
+                }
+                "cable" => {
+                    let (q, _) = self.parse_quantity()?;
+                    cable = q;
+                }
+                "rcd" => {
+                    let (q, _) = self.parse_quantity()?;
+                    rcd = Some(q);
+                }
+                "max_voltage_drop" => {
+                    let (q, _) = self.parse_quantity()?;
+                    max_voltage_drop_pct = Some(q.raw_value);
+                }
+                other => {
+                    return Err(Diagnostic::error(
+                        "E_PARSE_PROP",
+                        "syntax",
+                        format!("Unknown breaker property '{other}'"),
+                        Some(kspan),
+                    ))
+                }
+            }
+        }
+        let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+        Ok(BreakerDecl {
+            id,
+            kind,
+            from_panel,
+            rating,
+            cable,
+            rcd,
+            max_voltage_drop_pct,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_mep_light(&mut self, start: Span) -> Result<LightDecl, Diagnostic> {
+        let (id, _) = self.expect_ident("light id")?;
+        self.expect(TokenKind::Colon, "':'")?;
+        let (subtype, _) = self.expect_ident("light type (ceiling, downlight, wall_sconce)")?;
+        self.expect(TokenKind::LBrace, "'{'")?;
+        let mut room = String::new();
+        let mut position = RoomPointSpec::Center;
+        let mut load = Quantity::new(18.0, Unit::W);
+        let mut circuit = String::new();
+        let mut ip_rating = None;
+
+        while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+            let (k, kspan) = self.expect_ident("light property")?;
+            self.expect(TokenKind::Colon, "':'")?;
+            match k.as_str() {
+                "room" => room = self.parse_room_ref()?,
+                "at" => {
+                    if self.peek().kind == TokenKind::LParen {
+                        self.bump();
+                        let (x, _) = self.parse_quantity()?;
+                        self.expect(TokenKind::Comma, "','")?;
+                        let (y, _) = self.parse_quantity()?;
+                        self.expect(TokenKind::RParen, "')'")?;
+                        position = RoomPointSpec::OffsetXY { x, y };
+                    } else {
+                        self.expect_keyword("center")?;
+                        position = RoomPointSpec::Center;
+                    }
+                }
+                "load" => {
+                    let (q, _) = self.parse_quantity()?;
+                    load = q;
+                }
+                "circuit" => {
+                    let (c, _) = self.expect_ident("circuit id")?;
+                    circuit = c;
+                }
+                "ip" => {
+                    let (ip, _) = self.expect_ident("IP rating")?;
+                    ip_rating = Some(ip);
+                }
+                other => {
+                    return Err(Diagnostic::error(
+                        "E_PARSE_PROP",
+                        "syntax",
+                        format!("Unknown light property '{other}'"),
+                        Some(kspan),
+                    ))
+                }
+            }
+        }
+        let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+        Ok(LightDecl {
+            id,
+            subtype,
+            room,
+            position,
+            load,
+            circuit,
+            ip_rating,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_mep_switch(&mut self, start: Span) -> Result<SwitchDecl, Diagnostic> {
+        let (id, _) = self.expect_ident("switch id")?;
+        self.expect(TokenKind::Colon, "':'")?;
+        let subtype = match self.peek().kind.clone() {
+            // `1gang` / `2gang` lex as Number + unit suffix; accept them as switch kinds.
+            TokenKind::Number(n, unit) if unit == "gang" || unit == "way" => {
+                self.bump();
+                format!("{}{}", n as i64, unit)
+            }
+            _ => self.expect_ident("switch type (1gang, 2gang, 2way, dimmer)")?.0,
+        };
+        self.expect(TokenKind::LBrace, "'{'")?;
+        let mut room = String::new();
+        let mut wall_host: Option<(String, Side)> = None;
+        let mut beside_host: Option<(String, bool, Quantity)> = None;
+        let mut placement = OpeningPlacement::Center;
+        let mut controls = Vec::new();
+        let mut circuit = String::new();
+        let mut height = Quantity::mm(1200.0);
+        let mut ip_rating = None;
+
+        while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+            let (k, kspan) = self.expect_ident("switch property")?;
+            self.expect(TokenKind::Colon, "':'")?;
+            match k.as_str() {
+                "room" => room = self.parse_room_ref()?,
+                "host" => {
+                    let (w, b) = self.parse_mep_host_expr()?;
+                    if let Some((ref r, _)) = w {
+                        if room.is_empty() {
+                            room = r.clone();
+                        }
+                    }
+                    wall_host = w;
+                    beside_host = b;
+                }
+                "align" => {
+                    self.expect_keyword("center")?;
+                    placement = OpeningPlacement::Center;
+                }
+                "offset" => {
+                    let (dist, _) = self.parse_quantity()?;
+                    self.expect_keyword("from")?;
+                    let (e_s, espan) = self.expect_ident("start or end")?;
+                    placement = OpeningPlacement::Offset {
+                        distance: dist,
+                        from: parse_wall_end(&e_s, espan)?,
+                    };
+                }
+                "controls" => {
+                    self.expect(TokenKind::LBracket, "'['")?;
+                    while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
+                        let (lid, _) = self.expect_ident("light id")?;
+                        controls.push(lid);
+                        if self.peek().kind == TokenKind::Comma {
+                            self.bump();
+                        } else {
+                            break;
+                        }
+                    }
+                    self.expect(TokenKind::RBracket, "']'")?;
+                }
+                "circuit" => {
+                    let (c, _) = self.expect_ident("circuit id")?;
+                    circuit = c;
+                }
+                "height" => {
+                    let (q, _) = self.parse_quantity()?;
+                    height = q;
+                }
+                "ip" => {
+                    let (ip, _) = self.expect_ident("IP rating")?;
+                    ip_rating = Some(ip);
+                }
+                other => {
+                    return Err(Diagnostic::error(
+                        "E_PARSE_PROP",
+                        "syntax",
+                        format!("Unknown switch property '{other}'"),
+                        Some(kspan),
+                    ))
+                }
+            }
+        }
+        let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+        let mount = if let Some((r, side)) = wall_host {
+            WallMountSpec::RoomWall { room: r, side, placement }
+        } else if let Some((door_id, latch_side, offset)) = beside_host {
+            WallMountSpec::BesideDoor { door_id, latch_side, offset }
+        } else {
+            return Err(Diagnostic::error(
+                "E_MEP_MISSING_HOST",
+                "syntax",
+                format!("Switch '{id}' requires a `host: wall(...)` or `host: beside(...)` property"),
+                Some(start.merge(&end)),
+            ));
+        };
+        Ok(SwitchDecl {
+            id,
+            subtype,
+            room,
+            mount,
+            controls,
+            circuit,
+            height,
+            ip_rating,
+            span: start.merge(&end),
+        })
+    }
+
+    fn parse_mep_outlet(&mut self, start: Span) -> Result<OutletDecl, Diagnostic> {
+        let (id, _) = self.expect_ident("outlet id")?;
+        self.expect(TokenKind::Colon, "':'")?;
+        let (subtype, _) = self.expect_ident("outlet type (duplex, single, cooker, shaver)")?;
+        self.expect(TokenKind::LBrace, "'{'")?;
+        let mut wall_host: Option<(String, Side)> = None;
+        let mut beside_host: Option<(String, bool, Quantity)> = None;
+        let mut placement = OpeningPlacement::Center;
+        let mut height = Quantity::mm(300.0);
+        let mut load = Quantity::new(300.0, Unit::W);
+        let mut circuit = String::new();
+        let mut ip_rating = None;
+
+        while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+            let (k, kspan) = self.expect_ident("outlet property")?;
+            self.expect(TokenKind::Colon, "':'")?;
+            match k.as_str() {
+                "host" => {
+                    let (w, b) = self.parse_mep_host_expr()?;
+                    wall_host = w;
+                    beside_host = b;
+                }
+                "align" => {
+                    self.expect_keyword("center")?;
+                    placement = OpeningPlacement::Center;
+                }
+                "offset" => {
+                    let (dist, _) = self.parse_quantity()?;
+                    self.expect_keyword("from")?;
+                    let (e_s, espan) = self.expect_ident("start or end")?;
+                    placement = OpeningPlacement::Offset {
+                        distance: dist,
+                        from: parse_wall_end(&e_s, espan)?,
+                    };
+                }
+                "height" => {
+                    let (q, _) = self.parse_quantity()?;
+                    height = q;
+                }
+                "load" => {
+                    let (q, _) = self.parse_quantity()?;
+                    load = q;
+                }
+                "circuit" => {
+                    let (c, _) = self.expect_ident("circuit id")?;
+                    circuit = c;
+                }
+                "ip" => {
+                    let (ip, _) = self.expect_ident("IP rating")?;
+                    ip_rating = Some(ip);
+                }
+                other => {
+                    return Err(Diagnostic::error(
+                        "E_PARSE_PROP",
+                        "syntax",
+                        format!("Unknown outlet property '{other}'"),
+                        Some(kspan),
+                    ))
+                }
+            }
+        }
+        let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+        let mount = if let Some((room, side)) = wall_host {
+            WallMountSpec::RoomWall { room, side, placement }
+        } else if let Some((door_id, latch_side, offset)) = beside_host {
+            WallMountSpec::BesideDoor { door_id, latch_side, offset }
+        } else {
+            return Err(Diagnostic::error(
+                "E_MEP_MISSING_HOST",
+                "syntax",
+                format!("Outlet '{id}' requires a `host: wall(Room, side)` property"),
+                Some(start.merge(&end)),
+            ));
+        };
+        Ok(OutletDecl {
+            id,
+            subtype,
+            mount,
+            height,
+            load,
+            circuit,
+            ip_rating,
             span: start.merge(&end),
         })
     }

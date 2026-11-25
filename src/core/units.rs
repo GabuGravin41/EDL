@@ -13,6 +13,8 @@ pub enum Dimension {
     Inductance,
     Frequency,
     Power,
+    Area,
+    Percent,
     Scalar,
 }
 
@@ -28,6 +30,8 @@ impl fmt::Display for Dimension {
             Dimension::Inductance => write!(f, "inductance"),
             Dimension::Frequency => write!(f, "frequency"),
             Dimension::Power => write!(f, "power"),
+            Dimension::Area => write!(f, "area"),
+            Dimension::Percent => write!(f, "percent"),
             Dimension::Scalar => write!(f, "scalar"),
         }
     }
@@ -74,6 +78,12 @@ pub enum Unit {
     // Power (canonical: W)
     W,
     Mw,
+    Kw,
+    // Area (canonical: mm2)
+    Mm2,
+    M2,
+    // Percentage (canonical: %)
+    Percent,
     // Dimensionless
     None,
 }
@@ -111,6 +121,10 @@ impl Unit {
             "MHz" => Some(Unit::Mhz),
             "W" => Some(Unit::W),
             "mW" => Some(Unit::Mw),
+            "kW" => Some(Unit::Kw),
+            "mm2" => Some(Unit::Mm2),
+            "m2" => Some(Unit::M2),
+            "%" => Some(Unit::Percent),
             "" => Some(Unit::None),
             _ => None,
         }
@@ -126,7 +140,9 @@ impl Unit {
             Unit::F | Unit::Mf | Unit::Uf | Unit::Nf | Unit::Pf => Dimension::Capacitance,
             Unit::H | Unit::Mh | Unit::Uh | Unit::Nh => Dimension::Inductance,
             Unit::Hz | Unit::Khz | Unit::Mhz => Dimension::Frequency,
-            Unit::W | Unit::Mw => Dimension::Power,
+            Unit::W | Unit::Mw | Unit::Kw => Dimension::Power,
+            Unit::Mm2 | Unit::M2 => Dimension::Area,
+            Unit::Percent => Dimension::Percent,
             Unit::None => Dimension::Scalar,
         }
     }
@@ -164,6 +180,10 @@ impl Unit {
             Unit::Mhz => 1e6,
             Unit::W => 1.0,
             Unit::Mw => 1e-3,
+            Unit::Kw => 1e3,
+            Unit::Mm2 => 1.0,
+            Unit::M2 => 1e6,
+            Unit::Percent => 1.0,
             Unit::None => 1.0,
         }
     }
@@ -202,6 +222,10 @@ impl fmt::Display for Unit {
             Unit::Mhz => "MHz",
             Unit::W => "W",
             Unit::Mw => "mW",
+            Unit::Kw => "kW",
+            Unit::Mm2 => "mm2",
+            Unit::M2 => "m2",
+            Unit::Percent => "%",
             Unit::None => "",
         };
         write!(f, "{s}")
@@ -257,6 +281,28 @@ impl Quantity {
         if self.dimension() != Dimension::Current {
             return Err(format!(
                 "Expected a current quantity (A/mA/uA), got {} ({})",
+                self.dimension(),
+                self.unit
+            ));
+        }
+        Ok(self.raw_value * self.unit.to_canonical_factor())
+    }
+
+    pub fn to_watts(self) -> Result<f64, String> {
+        if self.dimension() != Dimension::Power {
+            return Err(format!(
+                "Expected a power quantity (W/mW/kW), got {} ({})",
+                self.dimension(),
+                self.unit
+            ));
+        }
+        Ok(self.raw_value * self.unit.to_canonical_factor())
+    }
+
+    pub fn to_mm2(self) -> Result<f64, String> {
+        if self.dimension() != Dimension::Area {
+            return Err(format!(
+                "Expected a cross-section area quantity (mm2/m2), got {} ({})",
                 self.dimension(),
                 self.unit
             ));

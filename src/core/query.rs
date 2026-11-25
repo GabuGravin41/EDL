@@ -519,6 +519,12 @@ fn entity_bbox(e: &EntityIr) -> Option<Rect2> {
         | EntityGeometryIr::Passage { cutout_rect, .. } => Some(*cutout_rect),
         EntityGeometryIr::Fixture { body_rect, .. }
         | EntityGeometryIr::Component { body_rect, .. } => Some(*body_rect),
+        EntityGeometryIr::MepDevice { pos, .. } => Some(Rect2::new(
+            pos.x - 50.0,
+            pos.y - 50.0,
+            pos.x + 50.0,
+            pos.y + 50.0,
+        )),
     }
 }
 

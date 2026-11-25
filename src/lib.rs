@@ -35,8 +35,21 @@ fn compile_ast(ast: &syntax::ast::ProjectAst) -> CanonicalIr {
     if !ast.elec.circuits.is_empty() && ast.arch.rooms.is_empty() {
         domains::elec::compile::compile_electronics(ast)
     } else {
-        domains::arch::compile::compile_project(ast)
+        // Staged multi-domain compilation: Architecture first, then Building Electrical layered on top!
+        let mut ir = domains::arch::compile::compile_project(ast);
+        if !ast.mep_elec.installations.is_empty() {
+            domains::mep_elec::compile::compile_building_electrical(ast, &mut ir);
+        }
+        ir
     }
+}
+
+pub fn build_panel_schedule(ir: &CanonicalIr) -> domains::mep_elec::schedule::PanelScheduleReport {
+    domains::mep_elec::schedule::build_panel_schedule(ir)
+}
+
+pub fn export_panel_schedule_csv(ir: &CanonicalIr) -> String {
+    domains::mep_elec::schedule::export_panel_schedule_csv(ir)
 }
 
 /// Domain-dispatched SVG preview renderer.
@@ -738,7 +751,7 @@ project "BadNotch" {
         }))
         .unwrap();
         let tools = list["result"]["tools"].as_array().unwrap();
-        assert_eq!(tools.len(), 8);
+        assert_eq!(tools.len(), 9);
 
         let call = crate::mcp::handle_jsonrpc_request(&json!({
             "jsonrpc": "2.0",
@@ -959,5 +972,65 @@ project "TinySheet" {
         let ir = compile_source("tiny_sheet.edl", src).unwrap();
         assert!(!ir.project.has_errors);
         assert!(ir.diagnostics.iter().any(|d| d.code == "W_SHEET_OVERFLOW"));
+    }
+
+    #[test]
+    fn multi_domain_arch_plus_building_electrical_verifies_all_13_rules_and_catches_iec_violations() {
+        use crate::core::ir::VerificationStatus;
+
+        // 1) Compliant multi-domain 2BR apartment + full building electrical installation
+        let ir = compile_file(std::path::Path::new("examples/apartment_2br_electrical.edl")).unwrap();
+        assert!(!ir.project.has_errors, "diagnostics: {:?}", ir.diagnostics);
+        assert_eq!(ir.project.domain, "arch+mep.elec");
+        assert_eq!(ir.evidence.len(), 13); // 7 arch + 6 mep.elec!
+        assert!(ir
+            .evidence
+            .iter()
+            .all(|e| e.status == VerificationStatus::ExactlyChecked));
+        assert_eq!(ir.mep_circuits.len(), 4);
+        assert!(!ir.mep_wires.is_empty());
+
+        // Verify layered DXF & panel schedule export
+        let dxf = export_dxf(&ir);
+        assert!(dxf.contains("ELEC_PANEL"));
+        assert!(dxf.contains("ELEC_LIGHTING"));
+        assert!(dxf.contains("ELEC_POWER"));
+        let sched = build_panel_schedule(&ir);
+        assert_eq!(sched.circuit_count, 4);
+        assert!(sched.total_cable_run_m > 10.0);
+
+        // 2) Deliberate IEC 60364 violations: wet-zone outlet near shower, missing RCD, overloaded breaker, unswitched light!
+        let bad = r#"
+project "Unsafe_Elec_Bath" {
+  units: mm
+  frame P: Frame2
+  room Bath {
+    role: wet
+    clear_size: (2200mm, 2400mm)
+    anchor: southwest at P.origin
+  }
+  opening Door: door { host: exterior(Bath, south) width: 800mm offset: 200mm from end hinge: end swing: into Bath }
+  fixture Shower: shower { room: Bath size: (900mm, 900mm) against: north offset: 100mm from start }
+  building_electrical Bad {
+    supply: 230V 50Hz
+    panel DB1 { host: wall(Bath, east) offset: 400mm from start main_breaker: 63A }
+    breaker C1: socket { from: DB1 rating: 10A cable: 1.5mm2 }
+    light L1: ceiling { room: Bath at: center load: 20W circuit: C1 }
+    outlet BadSock: duplex { host: wall(Bath, north) offset: 1100mm from start height: 1100mm load: 3000W circuit: C1 }
+  }
+  verify {
+    require breaker_load_ok
+    require wet_zone_clearance
+    require switch_accessible
+    require wet_circuits_rcd_protected
+  }
+}
+"#;
+        let ir_bad = compile_source("unsafe_elec.edl", bad).unwrap();
+        assert!(ir_bad.project.has_errors);
+        assert!(ir_bad.diagnostics.iter().any(|d| d.code == "E_MEP_WET_ZONE"));
+        assert!(ir_bad.diagnostics.iter().any(|d| d.code == "E_MEP_BREAKER_OVERLOAD"));
+        assert!(ir_bad.diagnostics.iter().any(|d| d.code == "E_MEP_RCD_REQUIRED"));
+        assert!(ir_bad.diagnostics.iter().any(|d| d.code == "E_MEP_UNSWITCHED_LIGHT"));
     }
 }

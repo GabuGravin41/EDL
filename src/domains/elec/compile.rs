@@ -1537,6 +1537,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         wall_solids: Vec::new(),
         schematic_groups,
         schematic_routes,
+        mep_circuits: Vec::new(),
+        mep_wires: Vec::new(),
         constraints: Vec::new(),
         views,
         evidence,

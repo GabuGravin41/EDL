@@ -2,8 +2,8 @@ use clap::{Parser, Subcommand};
 use edl::core::diff;
 use edl::core::query::{inspect_summary, measure_ir, query_ir};
 use edl::{
-    build_bom, compile_file, export_bom_csv, export_dxf, export_kicad_sch, export_spice_netlist,
-    render_svg, simulate_dc_and_rc,
+    build_bom, build_panel_schedule, compile_file, export_bom_csv, export_dxf, export_kicad_sch,
+    export_panel_schedule_csv, export_spice_netlist, render_svg, simulate_dc_and_rc,
 };
 use std::fs;
 use std::path::PathBuf;
@@ -116,6 +116,14 @@ enum Commands {
         #[arg(long)]
         csv: bool,
     },
+    /// Generate a Building Electrical DB Panel & Circuit Schedule (CSV or JSON)
+    Schedule {
+        /// Path to .edl project file
+        file: PathBuf,
+        /// Emit CSV instead of JSON
+        #[arg(long)]
+        csv: bool,
+    },
     /// Start the Model Context Protocol (MCP) JSON-RPC 2.0 server over stdio
     Mcp,
 }
@@ -171,6 +179,19 @@ fn main() {
                         ir.project.total_clear_area_m2,
                         ir.project.remaining_dof.len()
                     );
+                    if !ir.mep_circuits.is_empty() {
+                        let dev_count = ir
+                            .entities
+                            .iter()
+                            .filter(|e| e.kind.starts_with("mep.elec."))
+                            .count();
+                        println!(
+                            "  Building Electrical: {} device(s) | {} circuit(s) | {} wire run(s)",
+                            dev_count,
+                            ir.mep_circuits.len(),
+                            ir.mep_wires.len()
+                        );
+                    }
                 }
                 println!("  Evidence:");
                 for ev in &ir.evidence {
@@ -401,6 +422,15 @@ fn main() {
             } else {
                 let bom = build_bom(&ir);
                 println!("{}", serde_json::to_string_pretty(&bom).unwrap());
+            }
+        }
+        Commands::Schedule { file, csv } => {
+            let ir = load_and_compile(&file);
+            if csv {
+                print!("{}", export_panel_schedule_csv(&ir));
+            } else {
+                let sched = build_panel_schedule(&ir);
+                println!("{}", serde_json::to_string_pretty(&sched).unwrap());
             }
         }
         Commands::Mcp => {

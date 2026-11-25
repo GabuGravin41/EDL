@@ -8,7 +8,7 @@ An AI-native, typed, declarative language, Rust compiler, and native MCP server 
 - **Honest verification + machine-readable repair plans:** Every check produces a typed evidence record (`EXACTLY_CHECKED`, `VIOLATED`, `UNVERIFIED`) plus structured `RepairAction` suggestions so AI agents can self-repair deterministically.
 - **One-way compilation + automated target-side validation:** `.edl` is the single source of truth; adapters export to DXF and KiCad 9 and automatically ingest `kicad-cli sch erc` results (`--kicad-erc`) into EDL's evidence ledger.
 
-## What Works Today (v0.6.0 — 26/26 Rust Tests Passing, 6/6 KiCad 9 ERCs Passing)
+## What Works Today (v0.7.0 — 27/27 Rust Tests Passing, 6/6 KiCad 9 ERCs Passing)
 
 ### Cross-Domain Core, Composition & AI Tooling (`v0.4`–`v0.6`)
 - **Modular compiler architecture:** `src/core/` (spans + repair actions, SI units including `H/mH/uH/nH`, 2D analytical geometry, Canonical IR, semantic query/measure, semantic diff), `src/syntax/` (lexer, AST, parser, import/module elaborator), `src/domains/{arch,elec}/`, and `src/mcp.rs`.
@@ -26,6 +26,14 @@ An AI-native, typed, declarative language, Rust compiler, and native MCP server 
 - **5 Semantic ERCs + Built-In MNA DC/RC Simulation + Live KiCad 9 ERC:** `all_required_pins_connected`, `no_power_ground_short`, `no_multiple_power_drivers`, `voltage_compatibility` (with passive rail propagation), `no_single_pin_nets`, declarative `require dc_voltage(NET) in MIN..MAX` & `require led_current(COMP) in MIN..MAX` solved via exact built-in Modified Nodal Analysis (MNA) + analytical RC `-3dB` cutoff frequencies, plus `K1_kicad_erc_external` via `--kicad-erc`.
 - **IEEE/IEC Symbols & 2D Multi-Row Layered Routing:** Shared polarity-aware vector symbol library (`resistor`, polarized `capacitor`, `inductor`, `diode`/`led`, `switch`, `opamp`, shaded ICs) rendered identically in SVG and KiCad 9 `.kicad_sch`, with **2D multi-row schematic bands** (`row [...]`), `W_SHEET_OVERFLOW` warnings, per-net routing styles (`direct`, `bus`, `rail`, `symbol`, `label_stub`), `side:` overrides, and `place <Comp> at: (x, y)` overrides.
 - **Manufacturing & Simulation Outputs:** EDA SVG preview, **real KiCad 9 `.kicad_sch`** (**6/6 schematics passing real `kicad-cli sch erc` with 0 errors**, including a 32-component mixed-signal board and a 2-row simulated board), **SPICE3 `.cir` netlist** (`--spice`), and **grouped CSV/JSON BOM** (`edl bom` / `--bom`).
+
+### Domain 3 — Building Electrical layered on Architecture (`mep.elec`, v0.7)
+One project, two domains, one shared Canonical IR: `building_electrical` is solved *on top of* the architectural floor plan
+(rooms, doors, wet fixtures). DB panels, breakers, ceiling lights, switches anchored `beside(Door, latch_side, 150mm)`, and sockets
+are placed on real wall faces; orthogonal circuit runs and switch legs are routed with 3D cable lengths and IEC 60364 copper voltage drop.
+Six exact rules: `M1` breaker load, `M2` voltage drop, `M3` wet-zone clearance, `M4` switch/door accessibility, `M5` device/opening clearance, `M6` RCD on wet circuits.
+Outputs: layered SVG, 5-layer DXF (`ELEC_PANEL/LIGHTING/SWITCHES/POWER/WIRING`), and `edl schedule [--csv]` DB circuit schedule.
+See `examples/apartment_2br_electrical.edl` (13/13 rules `EXACTLY_CHECKED`).
 
 ## Quick Start
 

@@ -2,6 +2,7 @@ use crate::core::span::Span;
 use crate::core::units::{Quantity, Unit};
 use crate::domains::arch::ast::ArchProjectData;
 use crate::domains::elec::ast::{ComponentDecl, ElecProjectData, NetDecl, PinRef};
+use crate::domains::mep_elec::ast::MepElecProjectData;
 use crate::syntax::lexer::Token;
 
 #[derive(Debug, Clone)]
@@ -78,6 +79,7 @@ pub struct ProjectAst {
     pub parameters: Vec<ParamDecl>,
     pub arch: ArchProjectData,
     pub elec: ElecProjectData,
+    pub mep_elec: MepElecProjectData,
     pub verifications: Vec<VerifyRule>,
     pub views: Vec<ViewDecl>,
 }
@@ -125,6 +127,13 @@ pub enum VerifyRule {
         max: Quantity,
         span: Span,
     },
+    // Building electrical (mep.elec) rules layered on top of architecture
+    BreakerLoadOk { span: Span },
+    VoltageDropOk { span: Span },
+    WetZoneClearance { span: Span },
+    SwitchAccessible { span: Span },
+    ElectricalDeviceClear { span: Span },
+    WetCircuitsRcdProtected { span: Span },
 }
 
 #[derive(Debug, Clone)]

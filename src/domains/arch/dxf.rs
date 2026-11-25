@@ -20,7 +20,7 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
     let _ = writeln!(out, "0\nENDSEC");
 
     let _ = writeln!(out, "0\nSECTION\n2\nTABLES");
-    let _ = writeln!(out, "0\nTABLE\n2\nLAYER\n70\n8");
+    let _ = writeln!(out, "0\nTABLE\n2\nLAYER\n70\n13");
     for (name, color) in [
         ("WALLS_EXT", 7),
         ("WALLS_INT", 8),
@@ -30,6 +30,11 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
         ("PASSAGES", 9),
         ("FIXTURES", 6),
         ("ANNOTATIONS", 2),
+        ("ELEC_PANEL", 1),
+        ("ELEC_LIGHTING", 2),
+        ("ELEC_SWITCHES", 30),
+        ("ELEC_POWER", 4),
+        ("ELEC_WIRING", 6),
     ] {
         let _ = writeln!(
             out,
@@ -142,7 +147,44 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
                 let c = body_rect.center();
                 write_text(&mut out, "ANNOTATIONS", c.x, c.y, 90.0, &e.id);
             }
+            EntityGeometryIr::MepDevice {
+                device_kind, pos, ..
+            } => {
+                let layer = match device_kind.as_str() {
+                    "panel" => "ELEC_PANEL",
+                    "light" => "ELEC_LIGHTING",
+                    "switch" => "ELEC_SWITCHES",
+                    _ => "ELEC_POWER",
+                };
+                if device_kind == "panel" {
+                    write_rect_lines(
+                        &mut out,
+                        layer,
+                        Rect2::new(pos.x - 150.0, pos.y - 75.0, pos.x + 150.0, pos.y + 75.0),
+                    );
+                } else {
+                    write_arc(&mut out, layer, pos.x, pos.y, 85.0, 0.0, 359.9);
+                    if device_kind == "light" {
+                        write_line(&mut out, layer, pos.x - 60.0, pos.y - 60.0, pos.x + 60.0, pos.y + 60.0);
+                        write_line(&mut out, layer, pos.x - 60.0, pos.y + 60.0, pos.x + 60.0, pos.y - 60.0);
+                    }
+                }
+                write_text(&mut out, layer, pos.x, pos.y + 110.0, 75.0, &e.id);
+            }
             _ => {}
+        }
+    }
+
+    for w in &ir.mep_wires {
+        let layer = if w.run_kind == "lighting" {
+            "ELEC_LIGHTING"
+        } else if w.run_kind == "switch_leg" {
+            "ELEC_SWITCHES"
+        } else {
+            "ELEC_WIRING"
+        };
+        for seg in &w.segments {
+            write_line(&mut out, layer, seg.p0.x, seg.p0.y, seg.p1.x, seg.p1.y);
         }
     }
 

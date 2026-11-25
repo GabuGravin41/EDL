@@ -81,6 +81,15 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
       .status-ok {{ font-family: monospace; font-size: 11px; font-weight: 700; fill: #15803d; text-anchor: end; }}
       .status-err {{ font-family: monospace; font-size: 11px; font-weight: 700; fill: #dc2626; text-anchor: end; }}
       .status-err-sub {{ font-family: monospace; font-size: 10px; font-weight: 600; fill: #b91c1c; text-anchor: end; }}
+      .mep-wire-light {{ fill: none; stroke: #0284c7; stroke-width: 1.3; stroke-opacity: 0.72; }}
+      .mep-wire-power {{ fill: none; stroke: #ea580c; stroke-width: 1.4; stroke-opacity: 0.72; }}
+      .mep-wire-swleg {{ fill: none; stroke: #9333ea; stroke-width: 1.1; stroke-dasharray: 4 3; stroke-opacity: 0.85; }}
+      .mep-panel {{ fill: #dc2626; stroke: #7f1d1d; stroke-width: 1.3; }}
+      .mep-light {{ fill: #fef08a; stroke: #ca8a04; stroke-width: 1.6; }}
+      .mep-switch {{ fill: #ffffff; stroke: #7e22ce; stroke-width: 1.6; }}
+      .mep-outlet {{ fill: #ffedd5; stroke: #c2410c; stroke-width: 1.5; }}
+      .mep-err {{ fill: #fecaca; stroke: #dc2626; stroke-width: 2.2; }}
+      .mep-lbl {{ font-family: monospace; font-size: 8.5px; font-weight: 700; fill: #1e293b; text-anchor: middle; }}
     </style>
   </defs>"##
     );
@@ -416,6 +425,11 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
     for e in &ir.entities {
         match &e.geometry {
             EntityGeometryIr::Fixture { body_rect, .. } => label_obstacles.push(*body_rect),
+            // Electrical devices (esp. ceiling lights at room centers) must not collide with room titles
+            EntityGeometryIr::MepDevice { device_kind, pos, .. } => {
+                let r = if device_kind == "light" { 650.0 } else { 300.0 };
+                label_obstacles.push(Rect2::new(pos.x - r, pos.y - r, pos.x + r, pos.y + r));
+            }
             EntityGeometryIr::Door { swing_arc, .. } => {
                 // Approximate quarter-disk bbox around door swing so labels stay clear of door leaves
                 let p0 = swing_arc.start_point();
@@ -473,6 +487,137 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
         }
     }
     let _ = writeln!(out, r#"  </g>"#);
+
+    // 5b. Building Electrical Overlay (mep.elec) — layered directly on top of the floor plan!
+    let has_mep = !ir.mep_wires.is_empty()
+        || ir
+            .entities
+            .iter()
+            .any(|e| matches!(e.geometry, EntityGeometryIr::MepDevice { .. }));
+    if has_mep {
+        let _ = writeln!(out, r#"  <g id="mep-electrical">"#);
+        // Conduit / circuit runs & switch legs
+        for w in &ir.mep_wires {
+            let cls = match w.run_kind.as_str() {
+                "lighting" => "mep-wire-light",
+                "switch_leg" => "mep-wire-swleg",
+                _ => "mep-wire-power",
+            };
+            for seg in &w.segments {
+                if w.run_kind == "switch_leg" {
+                    // Drafting convention: switch legs are drawn as shallow arcs, never straight diagonals,
+                    // so they stay visually distinct from circuit conduit runs.
+                    let (x0, y0, x1, y1) = (sx(seg.p0.x), sy(seg.p0.y), sx(seg.p1.x), sy(seg.p1.y));
+                    let (dx, dy) = (x1 - x0, y1 - y0);
+                    let len = (dx * dx + dy * dy).sqrt().max(1e-6);
+                    let bow = (len * 0.12).min(40.0);
+                    let (cx, cy) = ((x0 + x1) * 0.5 - dy / len * bow, (y0 + y1) * 0.5 + dx / len * bow);
+                    let _ = writeln!(
+                        out,
+                        r#"    <path class="{cls}" d="M {x0:.2} {y0:.2} Q {cx:.2} {cy:.2} {x1:.2} {y1:.2}"/>"#
+                    );
+                    continue;
+                }
+                let _ = writeln!(
+                    out,
+                    r#"    <line class="{cls}" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#,
+                    sx(seg.p0.x),
+                    sy(seg.p0.y),
+                    sx(seg.p1.x),
+                    sy(seg.p1.y)
+                );
+            }
+        }
+        // Standard IEC/AutoCAD electrical symbols
+        for e in &ir.entities {
+            let EntityGeometryIr::MepDevice {
+                device_kind,
+                pos,
+                facing,
+                ..
+            } = &e.geometry
+            else {
+                continue;
+            };
+            let is_err = violated_entities.contains(e.id.as_str());
+            let px = sx(pos.x);
+            let py = sy(pos.y);
+            // Offset wall-mounted symbols slightly inward from wall face so they stand clear of poché
+            let (nx, ny) = match facing {
+                Some(Side::North) => (0.0, -1.0), // SVG Y-down: North is -Y
+                Some(Side::South) => (0.0, 1.0),
+                Some(Side::East) => (1.0, 0.0),
+                Some(Side::West) => (-1.0, 0.0),
+                None => (0.0, 0.0),
+            };
+            match device_kind.as_str() {
+                "panel" => {
+                    let cls = if is_err { "mep-err" } else { "mep-panel" };
+                    let cx = px + nx * 6.0;
+                    let cy = py + ny * 6.0;
+                    let (rw, rh) = if ny.abs() > 0.5 { (20.0, 8.0) } else { (8.0, 20.0) };
+                    let _ = writeln!(
+                        out,
+                        r#"    <rect id="mep-{id}" class="{cls}" x="{:.2}" y="{:.2}" width="{rw:.1}" height="{rh:.1}" rx="1.5"/>"#,
+                        cx - rw * 0.5,
+                        cy - rh * 0.5,
+                        id = e.id
+                    );
+                    let _ = writeln!(
+                        out,
+                        r#"    <text class="mep-lbl" x="{:.2}" y="{:.2}">{}</text>"#,
+                        cx + nx * 13.0,
+                        cy + ny * 12.0 + 3.0,
+                        e.id
+                    );
+                }
+                "light" => {
+                    let cls = if is_err { "mep-err" } else { "mep-light" };
+                    let r = 7.5;
+                    let _ = writeln!(out, r#"    <circle id="mep-{id}" class="{cls}" cx="{px:.2}" cy="{py:.2}" r="{r:.1}"/>"#, id = e.id);
+                    let d = r * 0.7;
+                    let _ = writeln!(out, r#"    <line class="{cls}" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#, px - d, py - d, px + d, py + d);
+                    let _ = writeln!(out, r#"    <line class="{cls}" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#, px - d, py + d, px + d, py - d);
+                    let _ = writeln!(out, r#"    <text class="mep-lbl" x="{px:.2}" y="{:.2}">{}</text>"#, py - r - 3.0, e.id);
+                }
+                "switch" => {
+                    let cls = if is_err { "mep-err" } else { "mep-switch" };
+                    let cx = px + nx * 5.0;
+                    let cy = py + ny * 5.0;
+                    let _ = writeln!(out, r#"    <circle id="mep-{id}" class="{cls}" cx="{cx:.2}" cy="{cy:.2}" r="4.0"/>"#, id = e.id);
+                    let _ = writeln!(out, r#"    <line class="{cls}" x1="{cx:.2}" y1="{cy:.2}" x2="{:.2}" y2="{:.2}"/>"#, cx + 6.5, cy - 6.5);
+                    let _ = writeln!(out, r#"    <line class="{cls}" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#, cx + 6.5, cy - 6.5, cx + 9.0, cy - 4.0);
+                    if annotated || is_err {
+                        let _ = writeln!(out, r#"    <text class="mep-lbl" x="{:.2}" y="{:.2}">{}</text>"#, cx + nx * 10.0, cy + ny * 10.0 + 3.0, e.id);
+                    }
+                }
+                "outlet" => {
+                    let cls = if is_err { "mep-err" } else { "mep-outlet" };
+                    let cx = px + nx * 5.5;
+                    let cy = py + ny * 5.5;
+                    let _ = writeln!(out, r#"    <circle id="mep-{id}" class="{cls}" cx="{cx:.2}" cy="{cy:.2}" r="4.8"/>"#, id = e.id);
+                    // Twin prongs pointing inward from wall
+                    let tx = -ny;
+                    let ty = nx;
+                    for sign in [-1.0, 1.0] {
+                        let bx = cx + tx * sign * 2.0;
+                        let by = cy + ty * sign * 2.0;
+                        let _ = writeln!(
+                            out,
+                            r#"    <line class="{cls}" x1="{bx:.2}" y1="{by:.2}" x2="{:.2}" y2="{:.2}"/>"#,
+                            bx + nx * 5.0,
+                            by + ny * 5.0
+                        );
+                    }
+                    if annotated || is_err {
+                        let _ = writeln!(out, r#"    <text class="mep-lbl" x="{:.2}" y="{:.2}">{}</text>"#, cx + nx * 13.0, cy + ny * 12.0 + 3.0, e.id);
+                    }
+                }
+                _ => {}
+            }
+        }
+        let _ = writeln!(out, r#"  </g>"#);
+    }
 
     // 6. Overall exterior + interior room dimension chains
     let show_dims = ir.views.first().map(|v| v.show_dimensions).unwrap_or(true);
