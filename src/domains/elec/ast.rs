@@ -183,6 +183,8 @@ pub struct SchematicLayoutDecl {
     pub arrange: Vec<String>,
     pub rows: Vec<Vec<String>>,
     pub direction: String,
+    /// Optional packing mode: `"skyline"` (2D sheet-aware bin packing) or `"rows"` (default explicit rows).
+    pub pack: Option<String>,
     pub group_gap: Option<Quantity>,
     pub member_gap: Option<Quantity>,
     pub row_gap: Option<Quantity>,

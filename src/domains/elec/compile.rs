@@ -1532,8 +1532,72 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         .map(|s| s.groups.iter().map(|g| (g.name.as_str(), g)).collect())
         .unwrap_or_default();
 
+    // Optional 2D Sheet-Aware Skyline Packing (`layout { pack: skyline }`) — packs groups across the
+    // full landscape width of the declared sheet to eliminate dead negative space and frame overflows!
+    let use_skyline = schem
+        .and_then(|s| s.layout.as_ref())
+        .and_then(|l| l.pack.as_deref())
+        == Some("skyline");
+    let skyline_origins: BTreeMap<usize, (f64, f64)> = if use_skyline {
+        let target_sheet_str = schem
+            .map(|s| s.sheet.as_str())
+            .unwrap_or("A2 landscape");
+        let (target_sw, target_sh) = sheet_dimensions_mm(target_sheet_str).unwrap_or((594.0, 420.0));
+        let mut group_dims: Vec<(usize, f64, f64)> = Vec::new();
+        for (gidx, &(_, _, ref gname, ref members)) in ordered_groups.iter().enumerate() {
+            let mut smap: BTreeMap<String, (f64, f64)> = BTreeMap::new();
+            let mut col_w = 15.24_f64;
+            let mut col_h = 0.0_f64;
+            for cid in members {
+                let comp = comp_map[cid];
+                let (bw, bh) = if let Some(sym) = loaded_syms.get(cid) {
+                    let u = comp.unit.unwrap_or(1);
+                    let lb = crate::domains::elec::kicad_sym::symbol_unit_body_bounds(
+                        sym,
+                        u,
+                        comp.orient_deg,
+                        comp.mirror,
+                    );
+                    (snap_grid(lb.width().max(5.08)), snap_grid(lb.depth().max(5.08)))
+                } else {
+                    compute_symbol_size(comp, &comp_pin_sides[cid])
+                };
+                col_w = col_w.max(bw);
+                col_h += bh + member_gap_mm + PIN_LEN_MM;
+                smap.insert(cid.clone(), (bw, bh));
+            }
+            let gdecl_opt = grp_decl_map.get(gname.as_str()).copied();
+            let title_h = if gdecl_opt.and_then(|g| g.title.as_ref()).is_some() { 10.16 } else { 2.54 };
+            let note_h = gdecl_opt
+                .map(|g| if g.notes.is_empty() { 0.0 } else { (g.notes.len() as f64) * 6.35 + 5.08 })
+                .unwrap_or(0.0);
+            let (gw, gh) = if let Some(lt) = gdecl_opt.and_then(|g| g.layout_tree.as_ref()) {
+                let sz_fn = |cid: &str| smap.get(cid).copied().unwrap_or((15.24, 10.16));
+                let (tw, th) = crate::domains::elec::sheet_layout::measure_layout_node(lt, &sz_fn, 7.62, 7.62);
+                (snap_grid(tw + 15.24), snap_grid(th + title_h + note_h + 15.24))
+            } else {
+                (snap_grid(col_w + 2.0 * PIN_LEN_MM + 15.24), snap_grid(col_h + title_h + note_h + 15.24))
+            };
+            group_dims.push((gidx, gw, gh));
+        }
+        crate::domains::elec::sheet_layout::pack_groups_skyline(
+            &group_dims,
+            target_sw,
+            target_sh,
+            snap_grid(20.32),
+            snap_grid(17.78),
+            12.70,
+            12.70,
+        )
+    } else {
+        BTreeMap::new()
+    };
+
     for (col_idx, &(r_idx, _c_in_row, ref gname, ref members)) in ordered_groups.iter().enumerate() {
-        if r_idx != cur_row_idx {
+        if let Some(&(sx, sy)) = skyline_origins.get(&col_idx) {
+            cur_x = sx;
+            row_start_y = sy;
+        } else if r_idx != cur_row_idx {
             cur_row_idx = r_idx;
             cur_x = start_x;
             row_start_y = snap_grid(cur_row_max_y + row_gap_mm);
@@ -3007,13 +3071,88 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         .map(|s| s.sheet.clone())
         .unwrap_or_else(|| "A4 landscape".to_string());
     if let Some((sw, sh)) = sheet_dimensions_mm(&sheet_str) {
-        if this_bounds.width() > sw - 12.0 || this_bounds.depth() > sh - 12.0 {
+        // Real KiCad printable interior (10.16mm border margin all around) + bottom-right title block keepout
+        let frame_min_x = 10.16_f64;
+        let frame_min_y = 10.16_f64;
+        let frame_max_x = sw - 10.16;
+        let frame_max_y = sh - 10.16;
+        let tb_x0 = sw - 118.0;
+        let tb_y0 = sh - 40.0;
+
+        let mut frame_offenders: Vec<String> = Vec::new();
+        let mut title_block_offenders: Vec<String> = Vec::new();
+        let mut max_overflow_x = 0.0_f64;
+        let mut max_overflow_y = 0.0_f64;
+
+        for e in &local_entities {
+            if let EntityGeometryIr::Component { body_rect, pins, .. } = &e.geometry {
+                let mut r = *body_rect;
+                for p in pins {
+                    r.min_x = r.min_x.min(p.tip_point.x);
+                    r.max_x = r.max_x.max(p.tip_point.x);
+                    r.min_y = r.min_y.min(p.tip_point.y);
+                    r.max_y = r.max_y.max(p.tip_point.y);
+                }
+                if r.min_x < frame_min_x || r.max_x > frame_max_x || r.min_y < frame_min_y || r.max_y > frame_max_y {
+                    frame_offenders.push(e.id.clone());
+                    max_overflow_x = max_overflow_x.max((r.max_x - frame_max_x).max(0.0));
+                    max_overflow_y = max_overflow_y.max((r.max_y - frame_max_y).max(0.0));
+                }
+                if r.max_x > tb_x0 && r.max_y > tb_y0 {
+                    title_block_offenders.push(e.id.clone());
+                }
+            }
+        }
+        let any_zone_overflow = local_groups.iter().any(|g| {
+            g.bbox.min_x < frame_min_x
+                || g.bbox.max_x > frame_max_x
+                || g.bbox.min_y < frame_min_y
+                || g.bbox.max_y > frame_max_y
+        });
+        let overflowed = !frame_offenders.is_empty()
+            || !title_block_offenders.is_empty()
+            || any_zone_overflow
+            || this_bounds.width() > sw - 12.0
+            || this_bounds.depth() > sh - 12.0;
+
+        let util_w_pct = (this_bounds.width() / frame_max_x * 100.0).min(999.0);
+        let util_h_pct = (this_bounds.depth() / frame_max_y * 100.0).min(999.0);
+        let unused_w_mm = (frame_max_x - this_bounds.width()).max(0.0);
+
+        if overflowed {
+            let offenders_str = if !frame_offenders.is_empty() {
+                let sample: Vec<&str> = frame_offenders.iter().take(8).map(|s| s.as_str()).collect();
+                format!(
+                    " ({} component(s) outside frame: [{}]{}; +{:.1}mm X / +{:.1}mm Y)",
+                    frame_offenders.len(),
+                    sample.join(", "),
+                    if frame_offenders.len() > 8 { ", ..." } else { "" },
+                    max_overflow_x,
+                    max_overflow_y
+                )
+            } else if !title_block_offenders.is_empty() {
+                format!(
+                    " ({} component(s) collide with bottom-right title block: [{}])",
+                    title_block_offenders.len(),
+                    title_block_offenders.join(", ")
+                )
+            } else {
+                String::new()
+            };
+            let space_hint = if unused_w_mm > 120.0 && max_overflow_y > 0.0 {
+                format!(
+                    "Sheet has {:.0}mm of unused horizontal space on the right ({:.0}% W × {:.0}% H) — use `layout {{ pack: skyline }}` to pack across the full width, split across sheets, or increase `sheet:`",
+                    unused_w_mm, util_w_pct, util_h_pct
+                )
+            } else {
+                "Use `layout { pack: skyline }`, split groups across multiple `schematic` sheets, or increase `sheet:` (e.g., `A2 landscape` / `A1 landscape`)".to_string()
+            };
             diagnostics.push(
                 Diagnostic::warning(
                     "W_SHEET_OVERFLOW",
                     "layout",
                     format!(
-                        "Schematic '{}' bounds ({:.1}mm × {:.1}mm) exceed declared sheet '{}' ({:.0}mm × {:.0}mm)",
+                        "Schematic '{}' bounds ({:.1}mm × {:.1}mm) exceed declared sheet '{}' ({:.0}mm × {:.0}mm){offenders_str}",
                         sheet_name_str,
                         this_bounds.width(),
                         this_bounds.depth(),
@@ -3023,10 +3162,38 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     ),
                     schem.map(|s| s.span.clone()),
                 )
-                .with_suggestion(
-                    "Split groups across multiple `schematic` sheets, `row [...]` bands, or increase `sheet:` (e.g., `A3 landscape`)",
-                ),
+                .with_entities(frame_offenders.clone())
+                .with_suggestion(space_hint),
             );
+            evidence.push(EvidenceRecord {
+                check_id: format!("E11_sheet_frame_fit_{sheet_name_str}"),
+                status: VerificationStatus::Violated,
+                method: "exact_kicad_frame_and_titleblock_bounds_v3.0".to_string(),
+                tolerance_mm: Some(10.16),
+                subjects: frame_offenders,
+                details: format!(
+                    "Overflow on '{}' ({:.0}×{:.0}mm): utilization {:.0}% W × {:.0}% H{offenders_str}",
+                    sheet_str, sw, sh, util_w_pct, util_h_pct
+                ),
+            });
+        } else {
+            evidence.push(EvidenceRecord {
+                check_id: format!("E11_sheet_frame_fit_{sheet_name_str}"),
+                status: VerificationStatus::ExactlyChecked,
+                method: "exact_kicad_frame_and_titleblock_bounds_v3.0".to_string(),
+                tolerance_mm: Some(10.16),
+                subjects: vec![sheet_name_str.clone()],
+                details: format!(
+                    "All {} component(s) & {} zone(s) fit cleanly inside '{}' ({:.0}×{:.0}mm) clear of title block; utilization {:.0}% W × {:.0}% H",
+                    local_entities.len(),
+                    local_groups.len(),
+                    sheet_str,
+                    sw,
+                    sh,
+                    util_w_pct,
+                    util_h_pct
+                ),
+            });
         }
     }
 
@@ -3846,6 +4013,8 @@ fn sheet_dimensions_mm(sheet: &str) -> Option<(f64, f64)> {
         (594.0, 420.0)
     } else if low.contains("a1") {
         (841.0, 594.0)
+    } else if low.contains("a0") {
+        (1189.0, 841.0)
     } else {
         return None;
     };

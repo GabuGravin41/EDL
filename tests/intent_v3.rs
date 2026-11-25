@@ -139,8 +139,20 @@ fn v3_semantic_lifter_stickhub_and_smps_compress_50x_and_roundtrip_100_percent_w
             rep.intent_edl_lines
         );
 
-        // Compile ONLY the short coordinate-free .edl (WITHOUT the lockfile) and verify 100% netlist match!
+        // Compile ONLY the short coordinate-free .edl (WITHOUT the lockfile) and verify 100% netlist match
+        // AND verify E11_sheet_frame_fit (ZERO components outside the red KiCad border frame!).
         let ir = edl::compile_file(&rep.edl_path).expect("compile lifted .edl");
+        let fit_ev = ir
+            .evidence
+            .iter()
+            .find(|e| e.check_id.starts_with("E11_sheet_frame_fit"))
+            .expect("E11_sheet_frame_fit evidence record must be present");
+        assert_eq!(
+            fit_ev.status,
+            VerificationStatus::ExactlyChecked,
+            "Lifted {rel} overflowed sheet frame: {}",
+            fit_ev.details
+        );
         let rt_dir = out_dir.join("rt");
         fs::create_dir_all(&rt_dir).unwrap();
         let files = edl::export_kicad_project(&ir);

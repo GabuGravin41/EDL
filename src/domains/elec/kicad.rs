@@ -258,15 +258,40 @@ pub fn export_kicad_sheet(
         max_x = max_x.max(g.bbox.max_x + 15.0);
         max_y = max_y.max(g.bbox.max_y + 15.0);
     }
-    // Check paper capacities with margin for border + title block clearance
-    let paper = if max_x > 570.0 || max_y > 395.0 {
-        "A1"
-    } else if max_x > 395.0 || max_y > 272.0 {
-        "A2"
-    } else if max_x > 268.0 || max_y > 175.0 {
-        "A3"
+    // Check paper capacities with margin for KiCad border (10.16mm) + title block clearance (never draw past frame!)
+    let declared_sheet = sheet_name
+        .and_then(|sn| ir.views.iter().find(|v| v.id == sn))
+        .or_else(|| ir.views.first())
+        .map(|v| v.sheet.to_lowercase())
+        .unwrap_or_default();
+    let min_paper_rank: u8 = if declared_sheet.contains("a0") {
+        4
+    } else if declared_sheet.contains("a1") {
+        3
+    } else if declared_sheet.contains("a2") {
+        2
+    } else if declared_sheet.contains("a3") {
+        1
     } else {
-        "A4"
+        0
+    };
+    let fit_rank: u8 = if max_x > 820.0 || max_y > 574.0 {
+        4
+    } else if max_x > 574.0 || max_y > 400.0 {
+        3
+    } else if max_x > 400.0 || max_y > 277.0 {
+        2
+    } else if max_x > 277.0 || max_y > 190.0 {
+        1
+    } else {
+        0
+    };
+    let paper = match min_paper_rank.max(fit_rank) {
+        4 => "A0",
+        3 => "A1",
+        2 => "A2",
+        1 => "A3",
+        _ => "A4",
     };
 
     let sheet_title = sheet_name

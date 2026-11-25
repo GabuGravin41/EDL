@@ -374,9 +374,16 @@ pub fn lift_kicad_project(root_sch: &Path, out_dir: &Path) -> Result<KiCadLiftRe
     }
     let _ = writeln!(edl, "    }}\n");
 
-    // Layer 2: Pure Intent Schematic (functional zones + 2D grid rows + zone_local/symbol routing, ZERO coordinates!)
+    // Layer 2: Pure Intent Schematic (functional zones + 2D sheet-aware skyline packing, ZERO coordinates!)
+    let target_sheet = if nl.components.len() <= 28 {
+        "A3 landscape"
+    } else if nl.components.len() <= 110 {
+        "A2 landscape"
+    } else {
+        "A1 landscape"
+    };
     let _ = writeln!(edl, "    schematic Main {{");
-    let _ = writeln!(edl, "        sheet: A2 landscape");
+    let _ = writeln!(edl, "        sheet: {target_sheet}");
     let _ = writeln!(edl, "        title: \"{} (EDL v3.0 Intent)\"", esc_edl(stem));
     let _ = writeln!(edl, "        routing {{ default: zone_local  power_nets: symbol  ground_nets: symbol }}\n");
 
@@ -392,8 +399,8 @@ pub fn lift_kicad_project(root_sch: &Path, out_dir: &Path) -> Result<KiCadLiftRe
             .unwrap_or_else(|| gname.clone());
         let _ = writeln!(edl, "        group {gname} {{");
         let _ = writeln!(edl, "            title: \"{}\"", esc_edl(&title));
-        // Format into compact 2D hstack rows (8 per row for dense decoupling banks, 5 for general blocks)
-        let row_cap = if gname == "Power_Decoupling" { 8 } else { 5 };
+        // Format into compact 2D hstack rows (6 per row for dense decoupling banks, 5 for general blocks)
+        let row_cap = if gname == "Power_Decoupling" { 6 } else { 5 };
         if members.len() <= row_cap {
             let ms = members
                 .iter()
@@ -422,9 +429,7 @@ pub fn lift_kicad_project(root_sch: &Path, out_dir: &Path) -> Result<KiCadLiftRe
 
     if !ordered_gnames.is_empty() {
         let _ = writeln!(edl, "\n        layout {{");
-        for row_chunk in ordered_gnames.chunks(3) {
-            let _ = writeln!(edl, "            row: [{}]", row_chunk.join(", "));
-        }
+        let _ = writeln!(edl, "            pack: skyline");
         let _ = writeln!(edl, "        }}");
     }
 

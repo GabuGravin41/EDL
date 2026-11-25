@@ -399,7 +399,7 @@ mod tests {
         assert!(!ir.project.has_errors, "unexpected errors: {:?}", ir.diagnostics);
         assert_eq!(ir.project.component_count, 7);
         assert_eq!(ir.project.net_count, 4);
-        assert_eq!(ir.evidence.len(), 5);
+        assert_eq!(ir.evidence.len(), 6); // E1-E5 + E11_sheet_frame_fit
         assert!(ir.evidence.iter().all(|e| e.status == VerificationStatus::ExactlyChecked));
 
         let svg = render_svg(&ir, true);

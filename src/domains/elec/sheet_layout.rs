@@ -166,3 +166,130 @@ pub fn place_layout_node(
         }
     }
 }
+
+/// 2D Sheet-Aware Skyline Group Packer (v3.0).
+///
+/// Packs schematic zone groups `(group_idx, width_mm, height_mm)` cleanly across the full
+/// printable landscape width of the target sheet (minimizing dead negative space AND keeping
+/// every group strictly clear of the outer KiCad frame and bottom-right title block!).
+pub fn pack_groups_skyline(
+    group_dims: &[(usize, f64, f64)],
+    sheet_w: f64,
+    sheet_h: f64,
+    start_x: f64,
+    start_y: f64,
+    h_gap: f64,
+    v_gap: f64,
+) -> BTreeMap<usize, (f64, f64)> {
+    let mut result = BTreeMap::new();
+    if group_dims.is_empty() {
+        return result;
+    }
+
+    // Sort groups tallest-first (then widest-first) so tall anchor blocks anchor clean columns
+    // and shorter blocks tuck neatly into the remaining open skyline slots!
+    let mut order: Vec<(usize, f64, f64)> = group_dims.to_vec();
+    order.sort_by(|a, b| {
+        b.2.partial_cmp(&a.2)
+            .unwrap()
+            .then_with(|| b.1.partial_cmp(&a.1).unwrap())
+            .then_with(|| a.0.cmp(&b.0))
+    });
+
+    let try_pack = |cand_w: f64, cand_h: f64, hg: f64, vg: f64| -> (BTreeMap<usize, (f64, f64)>, f64, f64) {
+        let margin_r = 15.24_f64;
+        let max_x = snap((cand_w - margin_r).max(start_x + 120.0));
+        let start_gx = (start_x / GRID_MM).round() as i32;
+        let max_gx = (max_x / GRID_MM).round() as i32;
+        let n_bins = (max_gx - start_gx + 1).max(1) as usize;
+        let mut skyline: Vec<f64> = vec![snap(start_y); n_bins];
+
+        // KiCad bottom-right title-block keepout zone
+        let tb_x0 = cand_w - 122.0;
+        let tb_y0 = cand_h - 44.0;
+
+        let h_gap_g = (snap(hg) / GRID_MM).round().max(3.0) as usize;
+        let v_gap_mm = snap(vg).max(10.16);
+
+        let mut placed: BTreeMap<usize, (f64, f64)> = BTreeMap::new();
+        let mut used_max_x = start_x;
+        let mut used_max_y = start_y;
+
+        for &(gidx, gw, gh) in &order {
+            let gw_s = snap(gw).max(20.32);
+            let gh_s = snap(gh).max(20.32);
+            let w_bins = (gw_s / GRID_MM).ceil().max(1.0) as usize;
+
+            let mut best: Option<(f64, f64, usize)> = None; // (bottom_y, top_y, bin_x)
+            let max_start_bin = n_bins.saturating_sub(w_bins);
+            // Sample every 2 grid steps (5.08mm) for fast, crisp alignment
+            let mut bx = 0usize;
+            while bx <= max_start_bin {
+                let mut top_y = snap(start_y);
+                for k in bx..(bx + w_bins).min(n_bins) {
+                    top_y = top_y.max(skyline[k]);
+                }
+                let x_mm = snap(start_x + (bx as f64) * GRID_MM);
+                let bot_y = snap(top_y + gh_s);
+                let right_x = x_mm + gw_s;
+
+                // Strictly avoid bottom-right title block!
+                let hits_title_block = right_x > tb_x0 && bot_y > tb_y0 && top_y < cand_h;
+                if !hits_title_block {
+                    let key = (bot_y, top_y, bx);
+                    if best.map(|b| key < b).unwrap_or(true) {
+                        best = Some(key);
+                    }
+                }
+                bx += 2;
+            }
+
+            let (chosen_x, chosen_y, chosen_bx) = if let Some((_, ty, bx)) = best {
+                (snap(start_x + (bx as f64) * GRID_MM), ty, bx)
+            } else {
+                // Fallback if group wider than sheet: place at left edge below current skyline
+                let top_y = skyline.iter().copied().fold(snap(start_y), f64::max);
+                (snap(start_x), top_y, 0)
+            };
+
+            let new_top = snap(chosen_y + gh_s + v_gap_mm);
+            let fill_end = (chosen_bx + w_bins + h_gap_g).min(n_bins);
+            for k in chosen_bx..fill_end {
+                skyline[k] = skyline[k].max(new_top);
+            }
+
+            placed.insert(gidx, (chosen_x, chosen_y));
+            used_max_x = used_max_x.max(chosen_x + gw_s);
+            used_max_y = used_max_y.max(chosen_y + gh_s);
+        }
+        (placed, used_max_x, used_max_y)
+    };
+
+    // First try the declared target sheet size (normal gap, then compact gap) before ever escalating ISO size!
+    for &(hg, vg) in &[(h_gap, v_gap), (10.16, 10.16)] {
+        let (p, ux, uy) = try_pack(sheet_w, sheet_h, hg, vg);
+        if ux <= sheet_w - 14.0 && uy <= sheet_h - 14.0 {
+            return p;
+        }
+    }
+    let iso_candidates: &[(f64, f64)] = &[
+        (420.0, 297.0),
+        (594.0, 420.0),
+        (841.0, 594.0),
+        (1189.0, 841.0),
+    ];
+    let mut best_pack = None;
+    for &(cw, ch) in iso_candidates {
+        if cw < sheet_w - 1.0 && ch < sheet_h - 1.0 {
+            continue;
+        }
+        let (p, ux, uy) = try_pack(cw, ch, h_gap, v_gap);
+        let fits = ux <= cw - 14.0 && uy <= ch - 14.0;
+        best_pack = Some(p);
+        if fits {
+            break;
+        }
+    }
+    result = best_pack.unwrap_or_default();
+    result
+}

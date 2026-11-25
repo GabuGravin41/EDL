@@ -2399,12 +2399,18 @@ impl Parser {
                     let mut arrange = Vec::new();
                     let mut rows = Vec::new();
                     let mut direction = "left_to_right".to_string();
+                    let mut pack = None;
                     let mut group_gap = None;
                     let mut member_gap = None;
                     let mut row_gap = None;
                     while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
                         let (lk, lspan) = self.expect_ident("schematic layout property")?;
                         match lk.as_str() {
+                            "pack" => {
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (pm, _) = self.expect_ident("skyline or rows")?;
+                                pack = Some(pm);
+                            }
                             "arrange" => {
                                 self.expect(TokenKind::Colon, "':'")?;
                                 self.expect(TokenKind::LBracket, "'['")?;
@@ -2473,6 +2479,7 @@ impl Parser {
                         arrange,
                         rows,
                         direction,
+                        pack,
                         group_gap,
                         member_gap,
                         row_gap,

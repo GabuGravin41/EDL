@@ -717,6 +717,11 @@ fn main() {
             };
             if verify {
                 let ir = load_and_compile(&edl_path);
+                for ev in &ir.evidence {
+                    if ev.check_id.starts_with("E11_sheet_frame_fit") {
+                        println!("SHEET FRAME FIT: [{:?}] {}", ev.status, ev.details);
+                    }
+                }
                 let rt_dir = out_dir.join("roundtrip_kicad");
                 let _ = fs::create_dir_all(&rt_dir);
                 let files = edl::export_kicad_project(&ir);
