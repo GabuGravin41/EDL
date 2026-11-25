@@ -1,0 +1,258 @@
+// EDL v1.5.0 Complex Floor Plan Stress Test 1 — Modeled directly on User Image 1:
+// Stepped Symmetric Luxury Villa (19.07m x 13.52m) on a 4 x 5 Structural Axis Grid (1..4, A..E)
+// Features tested:
+//   - Structural Grid Axes (`grid_x_1..4`, `grid_y_A..E`) driving the RREF room solver directly!
+//   - Variable wall thicknesses: 380mm exterior + 380mm load-bearing spine walls + 120mm partitions!
+//   - Non-rectangular stepped silhouette: 2 recessed front terraces (-0.030) + projecting rear service wing!
+//   - 14 spaces, architectural floor elevation tags (±0.000 / -0.030), 0 DOF, all 6 arch checks!
+
+project "Luxury_Villa_Stepped_Grid_19x13m" {
+  units: mm
+  frame Plan: Frame2
+
+  architecture.defaults {
+    measurement_basis: clear_interior
+    exterior_wall: 380mm
+    interior_wall: 120mm
+  }
+
+  // Structural wall half-thickness (load-bearing walls sit centered on grid axes!)
+  parameter load_wall: 380mm
+  parameter load_half: 190mm
+
+  // 4 x 5 Structural Axis Grid (exact bays from Image 1: 5120 / 8830 / 5120 x 3570 / 2440 / 5320 / 2190)
+  structural_grid VillaGrid {
+    x_bays:   [5120mm, 8830mm, 5120mm]
+    x_labels: ["1", "2", "3", "4"]
+    y_bays:   [3570mm, 2440mm, 5320mm, 2190mm]
+    y_labels: ["A", "B", "C", "D", "E"]
+    columns:  ["1A", "4A"]
+    column_size: (380mm, 380mm)
+    column_kind: concrete
+
+    levels {
+      Living:     "±0.000"
+      Hall:       "±0.000"
+      MasterBedW: "±0.000"
+      MasterBedE: "±0.000"
+      TerraceW:   "-0.030"
+      TerraceE:   "-0.030"
+    }
+  }
+
+  // --- Central Core (Bay 2..3): Grand Living + Central Hall + Projecting Rear Wing ---
+  room Living {
+    role: habitable
+  }
+  room Hall {
+    role: circulation
+  }
+  room RearHall {
+    role: circulation
+  }
+  room Boiler {
+    role: service
+  }
+  room KitchenRear {
+    role: habitable
+  }
+  room BathMain {
+    role: wet
+  }
+  room WC_Guest {
+    role: wet
+  }
+  room Study {
+    role: habitable
+  }
+
+  // --- West Wing (Bay 1..2): Front Terrace + Two Bedrooms + En-suite Dressing/Bath ---
+  room TerraceW {
+    role: outdoor
+  }
+  room BedSW_Bath {
+    role: wet
+  }
+  room BedSW_Wardrobe {
+    role: service
+  }
+  room MasterBedW {
+    role: habitable
+  }
+
+  // --- East Wing (Bay 3..4): Mirrored Front Terrace + Two Spacious Bedrooms ---
+  room TerraceE {
+    role: outdoor
+  }
+  room BedSE {
+    role: habitable
+  }
+  room MasterBedE {
+    role: habitable
+  }
+
+  layout Plan {
+    // 1. Central Grand Living Room (snapped directly to structural axes 2..3, A..C!)
+    require Living.west  == grid_x_2 + load_half
+    require Living.east  == grid_x_3 - load_half
+    require Living.south == grid_y_A + load_half
+    require Living.north == grid_y_C - 200mm
+
+    // 2. Central Hall & East Entry Vestibule (between Living and Rear Wing)
+    require Hall.west  == Living.west
+    require Hall.south == Living.north + 200mm
+    require Hall.north == Hall.south + 2400mm
+    require Hall.east  == Living.east - 2600mm - interior_wall
+
+    require RearHall.west  == Hall.east + interior_wall
+    require RearHall.east  == Living.east
+    require RearHall.south == Hall.south
+    require RearHall.north == Hall.north
+
+    // 3. Projecting North Rear Wing (extends all the way up to structural axis E!)
+    require Boiler.west  == Living.west
+    require Boiler.east  == Boiler.west + 1800mm
+    require Boiler.south == Hall.north + interior_wall
+    require Boiler.north == grid_y_E - load_half
+
+    require KitchenRear.west  == Boiler.east + interior_wall
+    require KitchenRear.east  == KitchenRear.west + 2400mm
+    require KitchenRear.south == Boiler.south
+    require KitchenRear.north == Boiler.north
+
+    require WC_Guest.west  == KitchenRear.east + interior_wall
+    require WC_Guest.east  == WC_Guest.west + 1900mm
+    require WC_Guest.south == Boiler.south
+    require WC_Guest.north == WC_Guest.south + 2000mm
+
+    require BathMain.west  == WC_Guest.west
+    require BathMain.east  == WC_Guest.east
+    require BathMain.south == WC_Guest.north + interior_wall
+    require BathMain.north == Boiler.north
+
+    require Study.west  == WC_Guest.east + interior_wall
+    require Study.east  == Living.east
+    require Study.south == Boiler.south
+    require Study.north == Boiler.north
+
+    // 4. West Wing (snapped to structural axes 1..2, A..D — load-bearing 380mm wall along axis 2!)
+    require TerraceW.west  == grid_x_1 + load_half
+    require TerraceW.east  == grid_x_2 - load_half
+    require TerraceW.south == grid_y_A + load_half
+    require TerraceW.north == grid_y_B - load_half
+
+    require BedSW_Bath.west  == grid_x_1 + load_half
+    require BedSW_Bath.east  == BedSW_Bath.west + 2300mm
+    require BedSW_Bath.south == grid_y_B + load_half
+    require BedSW_Bath.north == BedSW_Bath.south + 3500mm
+
+    require BedSW_Wardrobe.west  == BedSW_Bath.east + interior_wall
+    require BedSW_Wardrobe.east  == grid_x_2 - load_half
+    require BedSW_Wardrobe.south == BedSW_Bath.south
+    require BedSW_Wardrobe.north == BedSW_Bath.north
+
+    require MasterBedW.west  == grid_x_1 + load_half
+    require MasterBedW.east  == grid_x_2 - load_half
+    require MasterBedW.south == BedSW_Bath.north + interior_wall
+    require MasterBedW.north == grid_y_D - load_half
+
+    // 5. East Wing (snapped to structural axes 3..4, A..D — mirrored layout!)
+    require TerraceE.west  == grid_x_3 + load_half
+    require TerraceE.east  == grid_x_4 - load_half
+    require TerraceE.south == grid_y_A + load_half
+    require TerraceE.north == grid_y_B - load_half
+
+    require BedSE.west  == grid_x_3 + load_half
+    require BedSE.east  == grid_x_4 - load_half
+    require BedSE.south == grid_y_B + load_half
+    require BedSE.north == BedSE.south + 3500mm
+
+    require MasterBedE.west  == grid_x_3 + load_half
+    require MasterBedE.east  == grid_x_4 - load_half
+    require MasterBedE.south == BedSE.north + interior_wall
+    require MasterBedE.north == grid_y_D - load_half
+  }
+
+  // --- Doors, Passages & Exterior Windows ---
+  opening MainEntry: door {
+    host: exterior(Living, south)  width: 1100mm  align: center  hinge: start  swing: into Living
+  }
+  opening PatioDoorW: door {
+    host: shared_wall(TerraceW, Living)  width: 1000mm  offset: 600mm from start  hinge: start  swing: into Living
+  }
+  opening PatioDoorE: door {
+    host: shared_wall(Living, TerraceE)  width: 1000mm  offset: 600mm from start  hinge: start  swing: into Living
+  }
+  opening LivingToHall: passage {
+    host: shared_wall(Living, Hall)  width: 2400mm  align: center
+  }
+  opening LivingToRearHall: passage {
+    host: shared_wall(Living, RearHall)  width: 1400mm  align: center
+  }
+  opening HallToRearHall: passage {
+    host: shared_wall(Hall, RearHall)  width: 1200mm  align: center
+  }
+  opening DoorBoiler: door {
+    host: shared_wall(Hall, Boiler)  width: 800mm  align: center  hinge: start  swing: into Boiler
+  }
+  opening DoorKitchenRear: door {
+    host: shared_wall(Hall, KitchenRear)  width: 900mm  align: center  hinge: start  swing: into KitchenRear
+  }
+  opening DoorWC: door {
+    host: shared_wall(Hall, WC_Guest)  width: 750mm  offset: 150mm from start  hinge: start  swing: into WC_Guest
+  }
+  opening DoorBathMain: door {
+    host: shared_wall(WC_Guest, BathMain)  width: 750mm  align: center  hinge: start  swing: into BathMain
+  }
+  opening DoorStudy: door {
+    host: shared_wall(RearHall, Study)  width: 850mm  align: center  hinge: start  swing: into Study
+  }
+  opening DoorMasterW: door {
+    host: shared_wall(MasterBedW, Hall)  width: 800mm  align: center  hinge: start  swing: into MasterBedW
+  }
+  opening DoorBedSW_W: door {
+    host: shared_wall(BedSW_Wardrobe, Hall)  width: 850mm  offset: 250mm from start  hinge: start  swing: into BedSW_Wardrobe
+  }
+  opening DoorBedSW_B: door {
+    host: shared_wall(BedSW_Bath, BedSW_Wardrobe)  width: 800mm  align: center  hinge: start  swing: into BedSW_Bath
+  }
+  opening DoorMasterE: door {
+    host: shared_wall(RearHall, MasterBedE)  width: 800mm  align: center  hinge: start  swing: into MasterBedE
+  }
+  opening DoorBedSE: door {
+    host: shared_wall(RearHall, BedSE)  width: 850mm  offset: 200mm from start  hinge: start  swing: into BedSE
+  }
+
+  // Exterior Windows (all habitable rooms receive daylight)
+  opening WinLivingS1: window { host: exterior(Living, south)       width: 2400mm  offset: 400mm from start }
+  opening WinLivingS2: window { host: exterior(Living, south)       width: 2400mm  offset: 400mm from end }
+  opening WinKitN:     window { host: exterior(KitchenRear, north)  width: 1400mm  align: center }
+  opening WinStudyN:   window { host: exterior(Study, north)        width: 1200mm  align: center }
+  opening WinMasterWW: window { host: exterior(MasterBedW, west)    width: 1800mm  align: center }
+  opening WinMasterEE: window { host: exterior(MasterBedE, east)    width: 1800mm  align: center }
+  opening WinBedSEE:   window { host: exterior(BedSE, east)         width: 1800mm  align: center }
+
+  // Key Furniture & Fixtures
+  fixture DiningTable: table { room: Living  size: (2400mm, 1100mm)  at: (1800mm, 2400mm)  clearance_all: 500mm }
+  fixture LoungeSofa:  sofa  { room: Living  size: (2800mm, 1000mm)  at: (5000mm, 2200mm)  clearance_all: 500mm }
+  fixture BedW_Main:   bed   { room: MasterBedW  size: (2000mm, 1800mm)  against: north  align: center  clearance_front: 600mm }
+  fixture BedE_Main:   bed   { room: MasterBedE  size: (2000mm, 1800mm)  against: north  align: center  clearance_front: 600mm }
+  fixture BedE_Guest:  bed   { room: BedSE       size: (1800mm, 2000mm)  against: south  offset: 400mm from start  clearance_front: 600mm }
+
+  verify {
+    require no_room_overlap
+    require opening_jamb_margin >= 100mm
+    require no_door_swing_collision
+    require all_rooms_reachable
+    require no_fixture_collision
+    require habitable_rooms_have_window
+  }
+
+  view PlanView: plan {
+    frame: Plan
+    sheet: A2 landscape
+    scale: 1:100
+    show_dimensions: true
+    show_labels: true
+  }
+}

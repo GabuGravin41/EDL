@@ -308,6 +308,9 @@ impl DomainEngine for ArchDomain {
     fn role(&self) -> DomainRole {
         DomainRole::Base
     }
+    fn keywords(&self) -> &'static [&'static str] {
+        &["structural_grid"]
+    }
     fn activates(&self, ast: &ProjectAst) -> bool {
         !ast.arch.rooms.is_empty() || ast.elec.circuits.is_empty()
     }

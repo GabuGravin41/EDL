@@ -2,6 +2,13 @@
 
 All notable releases of **EDL (Engineering Description Language)** are documented here.
 
+## [1.5.0] — 2026-11-25
+### Added
+- **Complex Architecture & Structural Axis Grids (`src/domains/arch/grid.rs`):** `structural_grid` blocks (`x_bays`, `y_bays`, `x_labels`, `y_labels`, `columns: all_intersections | perimeter | [...]`, `column_kind: concrete | steel_i`, `levels { Room: "±0.000" }`) injecting `grid_x_<label>` / `grid_y_<label>` directly into the RREF linear layout solver.
+- **Structural Column Clearance Proof (`V7_structural_column_clearance`):** Exact analytical verification that structural columns never collide with door swings or opening cutouts.
+- **Variable Shared-Wall Thicknesses & Building Core Drafting:** Seamless mixing of 380mm load-bearing spines, 240mm party walls, and 120mm interior partitions; crisp architectural SVG + DXF (`GRID_AXES`, `GRID_BUBBLES`, `COLUMNS`) rendering for `stair_u`, `stair_straight`, `elevator`, `shaft`, outdoor terraces/balconies, and large-building auto-scaling (up to 70m warehouses).
+- **3 Large-Scale Architectural Benchmarks:** `examples/complex_villa_grid_stepped.edl` (15 rooms, stepped 19.45m×13.90m villa), `examples/complex_apartment_multiunit.edl` (27 rooms, L-shaped 32.3m×21.6m multi-unit apartment plate with 2 stair/elevator cores), and `examples/complex_warehouse_structural.edl` (48.3m×28.8m 8-bay warehouse with 36 steel I-beam columns).
+
 ## [1.4.0] — 2026-11-25
 ### Added
 - **Built-In Building Plumbing Overlay (`mep.plumbing`):** `building_plumbing` layered on solved `arch` floor plans (and coordinated with `mep.elec`) via `DomainEngine`, supporting `riser`, `heater`, `stack`, `valve`, `floor_drain`, and semantic `connect <Fixture>` rules.

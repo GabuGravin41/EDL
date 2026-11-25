@@ -1,0 +1,163 @@
+// EDL v1.5.0 Complex Floor Plan Stress Test 3 — Modeled directly on User Image 6:
+// 48m x 24m 8-Bay Industrial Power-Plant Warehouse with Steel I-Beam Structural Grid
+// Features tested:
+//   - Large-scale 9 x 4 structural steel column grid (`A..I`, `1..4`, 6.0m x 8.0m bays)!
+//   - Steel I-beam columns auto-placed at structural grid intersections (`column_kind: steel_i`)
+//     with automated V7_structural_column_clearance verification!
+//   - Embedded Office / Control / Restroom / Mechanical Core inside the warehouse envelope!
+//   - Egress stairs (`stair_straight`), freight elevator (`elevator`), and twin truck loading docks!
+
+project "Industrial_Warehouse_8Bay_48x24m" {
+  units: mm
+  frame Plan: Frame2
+
+  architecture.defaults {
+    measurement_basis: clear_interior
+    exterior_wall: 300mm
+    interior_wall: 180mm
+  }
+
+  parameter ext_half: 150mm
+
+  // 8-Bay x 3-Bay Steel Structural Grid (48.0m x 24.0m)
+  structural_grid SteelGrid {
+    x_bays:   [6000mm, 6000mm, 6000mm, 6000mm, 6000mm, 6000mm, 6000mm, 6000mm]
+    x_labels: ["A", "B", "C", "D", "E", "F", "G", "H", "I"]
+    y_bays:   [8000mm, 8000mm, 8000mm]
+    y_labels: ["1", "2", "3", "4"]
+    columns:  all_intersections
+    column_size: (420mm, 420mm)
+    column_kind: steel_i
+
+    levels {
+      WarehouseHall: "±0.000"
+      LoadingDock1:  "-1.200"
+      LoadingDock2:  "-1.200"
+      ControlOffice: "+0.150"
+    }
+  }
+
+  // Main High-Bay Warehouse Storage Hall (Bays A..G, 1..4 — 36m x 24m!)
+  room WarehouseHall { role: service }
+
+  // Embedded East Operations & Mezzanine Core (Bays G..I, 1..4 — 12m x 24m)
+  room DispatchOffice { role: habitable }
+  room ControlOffice  { role: habitable }
+  room CoreCorridor   { role: circulation }
+  room Restrooms      { role: wet }
+  room ElecSwitchroom { role: service }
+  room StairCore      { role: circulation }
+
+  // Exterior Truck Loading Dock Aprons (South side, Bays B..C and E..F)
+  room LoadingDock1   { role: outdoor }
+  room LoadingDock2   { role: outdoor }
+
+  layout Plan {
+    // 1. Main High-Bay Warehouse Hall (snapped to steel grid A..G, 1..4!)
+    require WarehouseHall.west  == grid_x_A + ext_half
+    require WarehouseHall.east  == grid_x_G - 90mm
+    require WarehouseHall.south == grid_y_1 + ext_half
+    require WarehouseHall.north == grid_y_4 - ext_half
+
+    // 2. Embedded East Core (Bays G..I)
+    require ElecSwitchroom.west  == grid_x_G + 90mm
+    require ElecSwitchroom.east  == grid_x_I - ext_half
+    require ElecSwitchroom.south == grid_y_1 + ext_half
+    require ElecSwitchroom.north == grid_y_2 - 90mm
+
+    require CoreCorridor.west  == grid_x_G + 90mm
+    require CoreCorridor.east  == grid_x_H - 90mm
+    require CoreCorridor.south == grid_y_2 + 90mm
+    require CoreCorridor.north == grid_y_3 - 90mm
+
+    require Restrooms.west  == grid_x_H + 90mm
+    require Restrooms.east  == grid_x_I - ext_half
+    require Restrooms.south == grid_y_2 + 90mm
+    require Restrooms.north == Restrooms.south + 3800mm
+
+    require StairCore.west  == Restrooms.west
+    require StairCore.east  == Restrooms.east
+    require StairCore.south == Restrooms.north + interior_wall
+    require StairCore.north == grid_y_3 - 90mm
+
+    require DispatchOffice.west  == grid_x_G + 90mm
+    require DispatchOffice.east  == grid_x_H - 90mm
+    require DispatchOffice.south == grid_y_3 + 90mm
+    require DispatchOffice.north == grid_y_4 - ext_half
+
+    require ControlOffice.west  == grid_x_H + 90mm
+    require ControlOffice.east  == grid_x_I - ext_half
+    require ControlOffice.south == grid_y_3 + 90mm
+    require ControlOffice.north == grid_y_4 - ext_half
+
+    // 3. Exterior Truck Loading Dock Bays (South facade, aligned between steel bays!)
+    require LoadingDock1.west  == grid_x_B + 400mm
+    require LoadingDock1.east  == grid_x_C - 400mm
+    require LoadingDock1.north == grid_y_1 - ext_half
+    require LoadingDock1.south == LoadingDock1.north - 4200mm
+
+    require LoadingDock2.west  == grid_x_E + 400mm
+    require LoadingDock2.east  == grid_x_F - 400mm
+    require LoadingDock2.north == grid_y_1 - ext_half
+    require LoadingDock2.south == LoadingDock2.north - 4200mm
+  }
+
+  // Personnel Doors, Truck Roll-Up Dock Passages & Egress
+  opening MainStaffEntry: door {
+    host: exterior(StairCore, east)  width: 1200mm  align: center  hinge: start  swing: into StairCore
+  }
+  opening Dock1_Overhead: passage {
+    host: shared_wall(LoadingDock1, WarehouseHall)  width: 3600mm  align: center
+  }
+  opening Dock2_Overhead: passage {
+    host: shared_wall(LoadingDock2, WarehouseHall)  width: 3600mm  align: center
+  }
+  opening Warehouse_To_Core: door {
+    host: shared_wall(WarehouseHall, CoreCorridor)  width: 1200mm  align: center  hinge: start  swing: into CoreCorridor
+  }
+  opening Core_To_Stair: door {
+    host: shared_wall(CoreCorridor, StairCore)  width: 1100mm  align: center  hinge: start  swing: into StairCore
+  }
+  opening Core_To_Restrooms: door {
+    host: shared_wall(CoreCorridor, Restrooms)  width: 950mm  align: center  hinge: start  swing: into Restrooms
+  }
+  opening Core_To_Switchroom: door {
+    host: shared_wall(ElecSwitchroom, CoreCorridor)  width: 1100mm  align: center  hinge: start  swing: into CoreCorridor
+  }
+  opening Core_To_Dispatch: door {
+    host: shared_wall(CoreCorridor, DispatchOffice)  width: 1000mm  align: center  hinge: start  swing: into DispatchOffice
+  }
+  opening Dispatch_To_Control: door {
+    host: shared_wall(DispatchOffice, ControlOffice)  width: 1000mm  align: center  hinge: start  swing: into ControlOffice
+  }
+
+  // Office Windows
+  opening WinDispatch: window { host: exterior(DispatchOffice, north)  width: 3200mm  align: center }
+  opening WinControlN: window { host: exterior(ControlOffice, north)   width: 3200mm  align: center }
+  opening WinControlE: window { host: exterior(ControlOffice, east)    width: 3200mm  align: center }
+
+  // Core Equipment & Racking Aisles
+  fixture MezzStair:    stair_straight { room: StairCore      size: (3200mm, 1400mm)  against: north  offset: 600mm from start }
+  fixture FreightLift:  elevator       { room: CoreCorridor   size: (1800mm, 1800mm)  against: south  offset: 400mm from start }
+  fixture RackA:        counter        { room: WarehouseHall  size: (12000mm, 2200mm) at: (3000mm, 17500mm)  clearance_all: 1200mm }
+  fixture RackB:        counter        { room: WarehouseHall  size: (12000mm, 2200mm) at: (19000mm, 17500mm) clearance_all: 1200mm }
+  fixture RackC:        counter        { room: WarehouseHall  size: (12000mm, 2200mm) at: (3000mm, 10500mm)  clearance_all: 1200mm }
+  fixture RackD:        counter        { room: WarehouseHall  size: (12000mm, 2200mm) at: (19000mm, 10500mm) clearance_all: 1200mm }
+
+  verify {
+    require no_room_overlap
+    require opening_jamb_margin >= 150mm
+    require no_door_swing_collision
+    require all_rooms_reachable
+    require no_fixture_collision
+    require habitable_rooms_have_window
+  }
+
+  view PlanView: plan {
+    frame: Plan
+    sheet: A1 landscape
+    scale: 1:200
+    show_dimensions: true
+    show_labels: true
+  }
+}

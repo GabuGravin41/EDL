@@ -15,19 +15,34 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
 
 /// Render an architectural floor plan with optional electrical overlay (`show_elec`).
 pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -> String {
-    let bounds = ir
+    let grid = crate::domains::arch::grid::extract_grid_from_ir(ir);
+    let mut bounds = ir
         .project
         .exterior_bounds
         .unwrap_or(Rect2::new(0.0, 0.0, 5000.0, 4000.0));
+    if let Some(ref g) = grid {
+        if let Some(gb) = crate::domains::arch::grid::grid_bounds(g) {
+            bounds = Rect2::new(
+                bounds.min_x.min(gb.min_x),
+                bounds.min_y.min(gb.min_y),
+                bounds.max_x.max(gb.max_x),
+                bounds.max_y.max(gb.max_y),
+            );
+        }
+    }
 
-    let margin_mm = 1150.0;
-    let title_h_mm = 700.0;
+    let span_max = bounds.width().max(bounds.depth());
+    // Compute initial scale, then guarantee generous pixel margins for grid bubbles, dim chains & title bar
+    let est_scale = (1280.0 / (span_max * 1.24)).clamp(0.015, 0.13);
+    let min_margin_px = if grid.is_some() { 112.0 } else { 88.0 };
+    let margin_mm = (min_margin_px / est_scale).max(1150.0);
+    let title_h_mm = (86.0 / est_scale).max(700.0);
     let world_w = bounds.width() + 2.0 * margin_mm;
     let world_h = bounds.depth() + 2.0 * margin_mm + title_h_mm;
 
-    // Auto-scale so canvas fits cleanly around ~1150px max side
+    // Auto-scale so canvas fits cleanly around ~1280px max side (supports 4m studios up to 70m warehouses!)
     let max_world = world_w.max(world_h);
-    let scale_px_per_mm = (1150.0 / max_world).clamp(0.075, 0.13);
+    let scale_px_per_mm = (1280.0 / max_world).clamp(0.015, 0.13);
 
     let svg_w = (world_w * scale_px_per_mm).round();
     let svg_h = (world_h * scale_px_per_mm).round();
@@ -67,7 +82,19 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
       .room-fill-alt {{ fill: #eef6ff; stroke: #94a3b8; stroke-width: 0.7; }}
       .room-fill-bath {{ fill: #ecfeff; stroke: #94a3b8; stroke-width: 0.7; }}
       .room-fill-circ {{ fill: #f8fafc; stroke: #94a3b8; stroke-width: 0.7; }}
+      .room-fill-outdoor {{ fill: #fefce8; stroke: #a16207; stroke-width: 1.0; stroke-dasharray: 5 3; }}
       .room-fill-err {{ fill: #fef2f2; stroke: #dc2626; stroke-width: 1.5; }}
+      .grid-line {{ stroke: #94a3b8; stroke-width: 0.75; stroke-dasharray: 8 4 2 4; stroke-opacity: 0.75; }}
+      .grid-bubble {{ fill: #ffffff; stroke: #334155; stroke-width: 1.3; }}
+      .grid-bubble-txt {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10px; font-weight: 700; fill: #0f172a; text-anchor: middle; }}
+      .grid-bay-dim {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9px; fill: #475569; text-anchor: middle; }}
+      .col-concrete {{ fill: #0f172a; stroke: #020617; stroke-width: 0.8; }}
+      .col-steel {{ fill: none; stroke: #0f172a; stroke-width: 2.0; stroke-linecap: square; }}
+      .elev-box {{ fill: #ffffff; fill-opacity: 0.9; stroke: #475569; stroke-width: 0.8; }}
+      .elev-txt {{ font-family: monospace; font-size: 8.5px; font-weight: 700; fill: #0f172a; text-anchor: middle; }}
+      .stair-tread {{ stroke: #334155; stroke-width: 0.85; }}
+      .stair-arrow {{ stroke: #0f172a; stroke-width: 1.25; fill: none; }}
+      .elev-x {{ stroke: #475569; stroke-width: 1.2; }}
       .wall-ext {{ fill: #1e293b; stroke: #0f172a; stroke-width: 0.4; }}
       .wall-int {{ fill: #475569; stroke: #334155; stroke-width: 0.4; }}
       .door-leaf {{ stroke: #0f172a; stroke-width: 2.0; stroke-linecap: round; }}
@@ -135,6 +162,8 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
             let lower = e.id.to_lowercase();
             let cls = if is_violated {
                 "room-fill-err"
+            } else if role == "outdoor" || lower.contains("terrace") || lower.contains("balcony") || lower.contains("loggia") {
+                "room-fill-outdoor"
             } else if role == "wet" || lower.contains("bath") || lower.contains("wc") {
                 "room-fill-bath"
             } else if role == "service" || lower.contains("kitchen") {
@@ -171,6 +200,65 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
         }
     }
     let _ = writeln!(out, r#"  </g>"#);
+
+    // 1b. Structural Axis Grid lines, circled axis bubbles & bay dimensions (v1.5.0)
+    if let Some(ref g) = grid {
+        let _ = writeln!(out, r#"  <g id="structural-grid">"#);
+        let bubble_r = 11.5;
+        let y_top = (sy(bounds.max_y) - 48.0).max(26.0);
+        let y_bot = (sy(bounds.min_y) + 56.0).min(svg_h - 110.0);
+        let x_l = (sx(bounds.min_x) - 56.0).max(40.0);
+        let x_r = (sx(bounds.max_x) + 46.0).min(svg_w - 28.0);
+
+        // Vertical grid axes (X: 1, 2, 3...) + circled bubbles at bottom
+        for xa in &g.x_axes {
+            let px = sx(xa.coord_mm);
+            let _ = writeln!(out, r#"    <line class="grid-line" x1="{px:.2}" y1="{y_top:.2}" x2="{px:.2}" y2="{y_bot:.2}"/>"#);
+            let by = y_bot + bubble_r;
+            let _ = writeln!(out, r#"    <circle class="grid-bubble" cx="{px:.2}" cy="{by:.2}" r="{bubble_r:.1}"/>"#);
+            let _ = writeln!(out, r#"    <text class="grid-bubble-txt" x="{px:.2}" y="{:.2}">{}</text>"#, by + 3.5, xa.label);
+        }
+        // Horizontal bay dimensions between X axes right above the bottom bubbles
+        for pair in g.x_axes.windows(2) {
+            let x0 = sx(pair[0].coord_mm);
+            let x1 = sx(pair[1].coord_mm);
+            let bay = pair[1].coord_mm - pair[0].coord_mm;
+            let yd = y_bot - 5.0;
+            if (x1 - x0) > 28.0 {
+                let _ = writeln!(
+                    out,
+                    r#"    <text class="grid-bay-dim" x="{:.2}" y="{yd:.2}">{:.0}</text>"#,
+                    0.5 * (x0 + x1),
+                    bay
+                );
+            }
+        }
+
+        // Horizontal grid axes (Y: A, B, C...) + circled bubbles at left
+        for ya in &g.y_axes {
+            let py = sy(ya.coord_mm);
+            let _ = writeln!(out, r#"    <line class="grid-line" x1="{x_l:.2}" y1="{py:.2}" x2="{x_r:.2}" y2="{py:.2}"/>"#);
+            let bx = x_l - bubble_r;
+            let _ = writeln!(out, r#"    <circle class="grid-bubble" cx="{bx:.2}" cy="{py:.2}" r="{bubble_r:.1}"/>"#);
+            let _ = writeln!(out, r#"    <text class="grid-bubble-txt" x="{bx:.2}" y="{:.2}">{}</text>"#, py + 3.5, ya.label);
+        }
+        // Vertical bay dimensions between Y axes right beside left bubbles
+        for pair in g.y_axes.windows(2) {
+            let y0 = sy(pair[0].coord_mm);
+            let y1 = sy(pair[1].coord_mm);
+            let bay = pair[1].coord_mm - pair[0].coord_mm;
+            let xd = x_l + 6.0;
+            let my = 0.5 * (y0 + y1);
+            if (y0 - y1).abs() > 26.0 {
+                let _ = writeln!(
+                    out,
+                    r#"    <text class="grid-bay-dim" x="{xd:.2}" y="{my:.2}" transform="rotate(-90 {xd:.2} {my:.2})">{:.0}</text>"#,
+                    bay
+                );
+            }
+        }
+        let _ = writeln!(out, r#"  </g>"#);
+    }
 
     // 2. Fixtures & front clearance zones (below walls & door arcs)
     let _ = writeln!(out, r#"  <g id="fixtures">"#);
@@ -234,6 +322,57 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                     x + w,
                     y + h
                 );
+            } else if category == "stair" || category == "stair_u" || category == "stair_straight" {
+                // Real architectural staircase treads + center stringer (for U-turn) + UP arrow
+                if category == "stair_u" || (category == "stair" && w.min(h) >= 18.0 && (w / h).clamp(0.5, 2.0) == w / h) {
+                    if w >= h {
+                        let land = w * 0.30;
+                        let mid_y = y + h * 0.5;
+                        let _ = writeln!(out, r#"    <line class="stair-tread" x1="{:.2}" y1="{mid_y:.2}" x2="{:.2}" y2="{mid_y:.2}"/>"#, x, x + w - land);
+                        let n = ((w - land) / 5.5).floor().clamp(4.0, 12.0) as usize;
+                        for i in 1..n {
+                            let tx = x + (i as f64) * (w - land) / (n as f64);
+                            let _ = writeln!(out, r#"    <line class="stair-tread" x1="{tx:.2}" y1="{y:.2}" x2="{tx:.2}" y2="{:.2}"/>"#, y + h);
+                        }
+                        let _ = writeln!(out, r#"    <path class="stair-arrow" d="M {:.2} {:.2} L {:.2} {:.2} L {:.2} {:.2} L {:.2} {:.2}"/>"#,
+                            x + 4.0, y + h * 0.75, x + w - land * 0.5, y + h * 0.75, x + w - land * 0.5, y + h * 0.25, x + 6.0, y + h * 0.25);
+                    } else {
+                        let land = h * 0.30;
+                        let mid_x = x + w * 0.5;
+                        let _ = writeln!(out, r#"    <line class="stair-tread" x1="{mid_x:.2}" y1="{:.2}" x2="{mid_x:.2}" y2="{:.2}"/>"#, y + land, y + h);
+                        let n = ((h - land) / 5.5).floor().clamp(4.0, 12.0) as usize;
+                        for i in 1..n {
+                            let ty = y + land + (i as f64) * (h - land) / (n as f64);
+                            let _ = writeln!(out, r#"    <line class="stair-tread" x1="{x:.2}" y1="{ty:.2}" x2="{:.2}" y2="{ty:.2}"/>"#, x + w);
+                        }
+                        let _ = writeln!(out, r#"    <path class="stair-arrow" d="M {:.2} {:.2} L {:.2} {:.2} L {:.2} {:.2} L {:.2} {:.2}"/>"#,
+                            x + w * 0.25, y + h - 4.0, x + w * 0.25, y + land * 0.5, x + w * 0.75, y + land * 0.5, x + w * 0.75, y + h - 6.0);
+                    }
+                } else {
+                    // Straight stair flight
+                    if w >= h {
+                        let n = (w / 5.5).floor().clamp(4.0, 14.0) as usize;
+                        for i in 1..n {
+                            let tx = x + (i as f64) * w / (n as f64);
+                            let _ = writeln!(out, r#"    <line class="stair-tread" x1="{tx:.2}" y1="{y:.2}" x2="{tx:.2}" y2="{:.2}"/>"#, y + h);
+                        }
+                        let _ = writeln!(out, r#"    <line class="stair-arrow" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#, x + 4.0, y + h * 0.5, x + w - 4.0, y + h * 0.5);
+                    } else {
+                        let n = (h / 5.5).floor().clamp(4.0, 14.0) as usize;
+                        for i in 1..n {
+                            let ty = y + (i as f64) * h / (n as f64);
+                            let _ = writeln!(out, r#"    <line class="stair-tread" x1="{x:.2}" y1="{ty:.2}" x2="{:.2}" y2="{ty:.2}"/>"#, x + w);
+                        }
+                        let _ = writeln!(out, r#"    <line class="stair-arrow" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#, x + w * 0.5, y + h - 4.0, x + w * 0.5, y + 4.0);
+                    }
+                }
+            } else if category == "elevator" || category == "lift" || category == "shaft" || category == "chase" {
+                let _ = writeln!(out, r#"    <line class="elev-x" x1="{x:.2}" y1="{y:.2}" x2="{:.2}" y2="{:.2}"/>"#, x + w, y + h);
+                if category == "elevator" || category == "lift" {
+                    let _ = writeln!(out, r#"    <line class="elev-x" x1="{:.2}" y1="{y:.2}" x2="{x:.2}" y2="{:.2}"/>"#, x + w, y + h);
+                }
+            } else if category == "column" {
+                let _ = writeln!(out, r#"    <rect class="col-concrete" x="{x:.2}" y="{y:.2}" width="{w:.2}" height="{h:.2}"/>"#);
             }
 
             // Label fixture if box is big enough (strip redundant module instance prefix for clean display)
@@ -283,6 +422,30 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
         );
     }
     let _ = writeln!(out, r#"  </g>"#);
+
+    // 3b. Structural Grid Columns (concrete squares or steel I-beams, drawn on top of walls!)
+    if let Some(ref g) = grid {
+        if !g.columns.is_empty() {
+            let _ = writeln!(out, r#"  <g id="structural-columns">"#);
+            for col in &g.columns {
+                let cr = crate::domains::arch::grid::column_rect(col);
+                let x = sx(cr.min_x);
+                let y = sy(cr.max_y);
+                let w = sl(cr.width()).max(4.5);
+                let h = sl(cr.depth()).max(4.5);
+                if col.kind == "steel_i" {
+                    // Crisp structural steel H/I-beam cross-section
+                    let cx = x + w * 0.5;
+                    let _ = writeln!(out, r#"    <line class="col-steel" x1="{x:.2}" y1="{y:.2}" x2="{:.2}" y2="{y:.2}"/>"#, x + w);
+                    let _ = writeln!(out, r#"    <line class="col-steel" x1="{x:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#, y + h, x + w, y + h);
+                    let _ = writeln!(out, r#"    <line class="col-steel" x1="{cx:.2}" y1="{y:.2}" x2="{cx:.2}" y2="{:.2}"/>"#, y + h);
+                } else {
+                    let _ = writeln!(out, r#"    <rect id="col-{}" class="col-concrete" x="{x:.2}" y="{y:.2}" width="{w:.2}" height="{h:.2}"/>"#, col.id);
+                }
+            }
+            let _ = writeln!(out, r#"  </g>"#);
+        }
+    }
 
     // 4. Openings (windows, passages, and doors with exact analytical SVG arcs)
     let _ = writeln!(out, r#"  <g id="openings">"#);
@@ -498,6 +661,22 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                 cy + 21.0,
                 area_m2
             );
+            if let Some(ref g) = grid {
+                if let Some(elev) = g.room_elevations.get(&e.id) {
+                    let bw = (elev.len() as f64) * 5.2 + 8.0;
+                    let _ = writeln!(
+                        out,
+                        r#"    <rect class="elev-box" x="{:.2}" y="{:.2}" width="{bw:.1}" height="12" rx="1.5"/>"#,
+                        cx - bw * 0.5,
+                        cy + 26.0
+                    );
+                    let _ = writeln!(
+                        out,
+                        r#"    <text class="elev-txt" x="{cx:.2}" y="{:.2}">{elev}</text>"#,
+                        cy + 35.0
+                    );
+                }
+            }
         }
     }
     let _ = writeln!(out, r#"  </g>"#);
@@ -672,8 +851,8 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
     let show_dims = ir.views.first().map(|v| v.show_dimensions).unwrap_or(true);
     let _ = writeln!(out, r#"  <g id="dimensions">"#);
     if show_dims {
-        let dim_off = 560.0;
-        let chain_off = 250.0;
+        let dim_off = (36.0 / scale_px_per_mm).max(560.0);
+        let chain_off = (16.0 / scale_px_per_mm).max(250.0);
 
         // Overall Top dimension
         let y_dim = sy(bounds.max_y + dim_off);

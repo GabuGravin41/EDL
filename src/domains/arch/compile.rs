@@ -1452,6 +1452,64 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
         }
     }
 
+    // 8. Optional Structural Axis Grid & Column Clearance Verification (v1.5.0)
+    if let Some((grid_model, grid_span)) =
+        crate::domains::arch::grid::parse_structural_grid(project, &mut diagnostics)
+    {
+        if !grid_model.columns.is_empty() {
+            let door_arcs: Vec<(String, QuarterDisk2)> = resolved_openings
+                .iter()
+                .filter_map(|o| o.quarter_disk.map(|qd| (o.id.clone(), qd)))
+                .collect();
+            let op_cutouts: Vec<(String, Rect2)> = resolved_openings
+                .iter()
+                .map(|o| (o.id.clone(), o.cutout_rect))
+                .collect();
+            let ev = crate::domains::arch::grid::verify_column_clearances(
+                &grid_model,
+                &door_arcs,
+                &op_cutouts,
+                &grid_span,
+                &mut diagnostics,
+            );
+            evidence.push(ev);
+        }
+        for col in &grid_model.columns {
+            entities.push(EntityIr {
+                id: col.id.clone(),
+                kind: "arch.column".to_string(),
+                frame: default_frame.clone(),
+                props: BTreeMap::from([
+                    ("kind".into(), json!(col.kind)),
+                    ("width_mm".into(), json!(col.width_mm)),
+                    ("depth_mm".into(), json!(col.depth_mm)),
+                ]),
+                geometry: EntityGeometryIr::Custom {
+                    shape: "column".to_string(),
+                    data: serde_json::to_value(col).unwrap_or_default(),
+                },
+                span: Some(grid_span.clone()),
+                provenance: None,
+            });
+        }
+        entities.push(EntityIr {
+            id: grid_model.name.clone(),
+            kind: "arch.structural_grid".to_string(),
+            frame: default_frame.clone(),
+            props: BTreeMap::from([
+                ("x_axes".into(), json!(grid_model.x_axes.len())),
+                ("y_axes".into(), json!(grid_model.y_axes.len())),
+                ("columns".into(), json!(grid_model.columns.len())),
+            ]),
+            geometry: EntityGeometryIr::Custom {
+                shape: "structural_grid".to_string(),
+                data: serde_json::to_value(&grid_model).unwrap_or_default(),
+            },
+            span: Some(grid_span),
+            provenance: None,
+        });
+    }
+
     let views: Vec<ViewIr> = project
         .views
         .iter()
@@ -1523,6 +1581,8 @@ fn derive_semantic_walls(
     let mut walls = Vec::new();
     let names: Vec<String> = rooms.keys().cloned().collect();
 
+    let max_shared_wall = (int_wall * 2.5).max(ext_wall * 1.5);
+
     // 1. Interior shared partitions between every pair of rooms (using exact sub-rects for notched rooms)
     for i in 0..names.len() {
         for j in (i + 1)..names.len() {
@@ -1535,7 +1595,7 @@ fn derive_semantic_walls(
                 for &b in subs_b {
                     for (west_id, west_r, east_id, east_r) in [(a_id, a, b_id, b), (b_id, b, a_id, a)] {
                         let gap = east_r.min_x - west_r.max_x;
-                        if gap > EPS_MM && (gap - int_wall).abs() <= 2.0 * int_wall + EPS_MM && gap <= ext_wall * 2.0 {
+                        if gap > EPS_MM && gap <= max_shared_wall + EPS_MM {
                             let y0 = west_r.min_y.max(east_r.min_y);
                             let y1 = west_r.max_y.min(east_r.max_y);
                             if y1 - y0 > EPS_MM {
@@ -1559,7 +1619,7 @@ fn derive_semantic_walls(
 
                     for (south_id, south_r, north_id, north_r) in [(a_id, a, b_id, b), (b_id, b, a_id, a)] {
                         let gap = north_r.min_y - south_r.max_y;
-                        if gap > EPS_MM && (gap - int_wall).abs() <= 2.0 * int_wall + EPS_MM && gap <= ext_wall * 2.0 {
+                        if gap > EPS_MM && gap <= max_shared_wall + EPS_MM {
                             let x0 = south_r.min_x.max(north_r.min_x);
                             let x1 = south_r.max_x.min(north_r.max_x);
                             if x1 - x0 > EPS_MM {
@@ -1720,7 +1780,8 @@ fn covered_intervals_horizontal(
         } else {
             y_edge - or.max_y
         };
-        if gap > -EPS_MM && gap <= int_wall * 2.5 + EPS_MM {
+        let max_shared = (int_wall * 2.5).max(ext_wall * 1.5);
+        if gap > -EPS_MM && gap <= max_shared + EPS_MM {
             // If `or` ends strictly inside self's X span (re-entrant L-corner), account for its exterior wall thickness
             let pad_left = if or.min_x > self_r.min_x + EPS_MM && or.min_x < self_r.max_x - EPS_MM {
                 ext_wall
@@ -1757,7 +1818,8 @@ fn covered_intervals_vertical(
         } else {
             x_edge - or.max_x
         };
-        if gap > -EPS_MM && gap <= int_wall * 2.5 + EPS_MM {
+        let max_shared = (int_wall * 2.5).max(ext_wall * 1.5);
+        if gap > -EPS_MM && gap <= max_shared + EPS_MM {
             let pad_bot = if or.min_y > self_r.min_y + EPS_MM && or.min_y < self_r.max_y - EPS_MM {
                 ext_wall
             } else {

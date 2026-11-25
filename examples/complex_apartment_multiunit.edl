@@ -1,0 +1,305 @@
+// EDL v1.5.0 Complex Floor Plan Stress Test 2 — Modeled directly on User Image 2:
+// Multi-Unit L-Shaped Residential Apartment Floor Plate (32m x 22m, 26 rooms across 4 Apartments + 2 Cores!)
+// Features tested:
+//   - Large 9 x 6 Structural Axis Grid (`1..9`, `A..F`) driving an L-shaped multi-unit floor plate!
+//   - 2 Vertical Circulation Cores: U-turn staircases (`stair_u`), elevator shafts (`elevator`), MEP `shaft`s!
+//   - 240mm acoustic/fire party walls between apartments + 120mm interior room partitions + 300mm exterior walls!
+//   - Cantilevered exterior balconies (`role: outdoor`) + 0 remaining DOF + 100% egress reachability!
+
+project "MultiUnit_Apartment_FloorPlate_LShape" {
+  units: mm
+  frame Plan: Frame2
+
+  architecture.defaults {
+    measurement_basis: clear_interior
+    exterior_wall: 300mm
+    interior_wall: 120mm
+  }
+
+  parameter party_wall: 240mm
+  parameter wall_half:  150mm
+
+  // 8-bay x 5-bay Structural Grid (32.0m x 21.5m L-shaped building!)
+  structural_grid AptGrid {
+    x_bays:   [3800mm, 4200mm, 3600mm, 4200mm, 4200mm, 3600mm, 4200mm, 4200mm]
+    x_labels: ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    y_bays:   [4800mm, 2400mm, 4800mm, 2200mm, 5200mm]
+    y_labels: ["A", "B", "C", "D", "E", "F"]
+    columns:  ["1A", "2A", "3A", "4A", "5A", "6A", "7A", "8A", "9A",
+               "1C", "4C", "5C", "7C", "9C",
+               "1D", "3D", "6D", "9D",
+               "6F", "7F", "8F", "9F"]
+    column_size: (320mm, 320mm)
+    column_kind: concrete
+
+    levels {
+      Core1_Lobby: "±0.000"
+      Core2_Lobby: "±0.000"
+      Balcony_W:   "-0.020"
+      Balcony_E:   "-0.020"
+      Balcony_NE:  "-0.020"
+    }
+  }
+
+  // --- West Vertical Circulation Core (Stair 1 + Elevator 1 + Smoke Lobby) ---
+  room Core1_Stair { role: circulation }
+  room Core1_Lobby { role: circulation }
+
+  // --- East Vertical Circulation Core (Stair 2 + Elevator 2 + Main Corridor) ---
+  room Core2_Stair { role: circulation }
+  room Core2_Lobby { role: circulation }
+
+  // --- Apartment 1 (Southwest 2BR Unit: Bays 1..4, A..C) ---
+  room Apt1_Bed1   { role: habitable }
+  room Apt1_Living { role: habitable }
+  room Apt1_Hall   { role: circulation }
+  room Apt1_Bath   { role: wet }
+  room Apt1_Kitchen{ role: habitable }
+
+  // --- Apartment 2 (Northwest 1BR Unit: Bays 1..3, C..D + Balcony) ---
+  room Apt2_Living { role: habitable }
+  room Apt2_Bed    { role: habitable }
+  room Apt2_Bath   { role: wet }
+  room Balcony_W   { role: outdoor }
+
+  // --- Apartment 3 (South-Central 2BR Unit: Bays 4..7, A..D) ---
+  room Apt3_Bed1   { role: habitable }
+  room Apt3_Living { role: habitable }
+  room Apt3_Hall   { role: circulation }
+  room Apt3_Bath   { role: wet }
+  room Apt3_Kitchen{ role: habitable }
+  room Balcony_E   { role: outdoor }
+
+  // --- Apartment 4 (East + Projecting North L-Wing 3BR Flagship: Bays 7..9, A..F) ---
+  room Apt4_Living  { role: habitable }
+  room Apt4_Bed1    { role: habitable }
+  room Apt4_Corridor{ role: circulation }
+  room Apt4_Bath    { role: wet }
+  room Apt4_Kitchen { role: habitable }
+  room Apt4_Bed2    { role: habitable }
+  room Apt4_Bed3    { role: habitable }
+  room Balcony_NE   { role: outdoor }
+
+  layout Plan {
+    // 1. Apartment 1 (Southwest: Bays 1..4, A..B + Hall along B..C)
+    require Apt1_Bed1.west   == grid_x_1 + wall_half
+    require Apt1_Bed1.east   == grid_x_2 - 60mm
+    require Apt1_Bed1.south  == grid_y_A + wall_half
+    require Apt1_Bed1.north  == grid_y_B - 60mm
+
+    require Apt1_Living.west  == Apt1_Bed1.east + interior_wall
+    require Apt1_Living.east  == grid_x_3 - 60mm
+    require Apt1_Living.south == Apt1_Bed1.south
+    require Apt1_Living.north == Apt1_Bed1.north
+
+    require Apt1_Kitchen.west  == Apt1_Living.east + interior_wall
+    require Apt1_Kitchen.east  == grid_x_4 - 120mm
+    require Apt1_Kitchen.south == Apt1_Bed1.south
+    require Apt1_Kitchen.north == Apt1_Bed1.north
+
+    require Apt1_Bath.west  == Apt1_Bed1.west
+    require Apt1_Bath.east  == Apt1_Bed1.west + 2400mm
+    require Apt1_Bath.south == Apt1_Bed1.north + interior_wall
+    require Apt1_Bath.north == grid_y_C - 120mm
+
+    require Apt1_Hall.west  == Apt1_Bath.east + interior_wall
+    require Apt1_Hall.east  == Apt1_Kitchen.east
+    require Apt1_Hall.south == Apt1_Bath.south
+    require Apt1_Hall.north == Apt1_Bath.north
+
+    // 2. Apartment 2 (Northwest: Bays 1..3, C..D) + West Core (Bays 3..4, C..D)
+    require Apt2_Bed.west   == grid_x_1 + wall_half
+    require Apt2_Bed.east   == grid_x_2 - 60mm
+    require Apt2_Bed.south  == grid_y_C + 120mm
+    require Apt2_Bed.north  == grid_y_D - wall_half
+
+    require Apt2_Bath.west  == Apt2_Bed.east + interior_wall
+    require Apt2_Bath.east  == grid_x_3 - 120mm
+    require Apt2_Bath.south == Apt2_Bed.south
+    require Apt2_Bath.north == Apt2_Bath.south + 1700mm
+
+    require Apt2_Living.west  == Apt2_Bed.east + interior_wall
+    require Apt2_Living.east  == grid_x_3 - 120mm
+    require Apt2_Living.south == Apt2_Bath.north + interior_wall
+    require Apt2_Living.north == Apt2_Bed.north
+
+    // Recessed Balcony above Apt2_Bed
+    require Balcony_W.west  == grid_x_1 + wall_half
+    require Balcony_W.east  == grid_x_2 - 60mm
+    require Balcony_W.south == grid_y_D + wall_half
+    require Balcony_W.north == Balcony_W.south + 1600mm
+
+    // West Vertical Core 1 (Stair + Elevator + Lobby, Bay 3..4, C..D)
+    require Core1_Lobby.west  == grid_x_3 + 120mm
+    require Core1_Lobby.east  == grid_x_4 - 120mm
+    require Core1_Lobby.south == grid_y_C + 120mm
+    require Core1_Lobby.north == Core1_Lobby.south + 2000mm
+
+    require Core1_Stair.west  == Core1_Lobby.west
+    require Core1_Stair.east  == Core1_Lobby.east
+    require Core1_Stair.south == Core1_Lobby.north + interior_wall
+    require Core1_Stair.north == grid_y_D - wall_half
+
+    // 3. Apartment 3 (Central South: Bays 4..7, A..C) + East Core 2 (Bay 5..6, C..D)
+    require Apt3_Bed1.west   == grid_x_4 + 120mm
+    require Apt3_Bed1.east   == grid_x_5 - 60mm
+    require Apt3_Bed1.south  == grid_y_A + wall_half
+    require Apt3_Bed1.north  == grid_y_B - 60mm
+
+    require Apt3_Living.west  == Apt3_Bed1.east + interior_wall
+    require Apt3_Living.east  == grid_x_6 - 60mm
+    require Apt3_Living.south == Apt3_Bed1.south
+    require Apt3_Living.north == Apt3_Bed1.north
+
+    require Apt3_Kitchen.west  == Apt3_Living.east + interior_wall
+    require Apt3_Kitchen.east  == grid_x_7 - 120mm
+    require Apt3_Kitchen.south == Apt3_Bed1.south
+    require Apt3_Kitchen.north == Apt3_Bed1.north
+
+    require Apt3_Bath.west  == Apt3_Bed1.west
+    require Apt3_Bath.east  == Apt3_Bed1.west + 2400mm
+    require Apt3_Bath.south == Apt3_Bed1.north + interior_wall
+    require Apt3_Bath.north == grid_y_C - 120mm
+
+    require Apt3_Hall.west  == Apt3_Bath.east + interior_wall
+    require Apt3_Hall.east  == Apt3_Kitchen.east
+    require Apt3_Hall.south == Apt3_Bath.south
+    require Apt3_Hall.north == Apt3_Bath.north
+
+    // East Vertical Core 2 (Bay 4..7, C..D — directly serves Apt 3 south & Apt 4 north/east!)
+    require Core2_Lobby.west  == grid_x_4 + 120mm
+    require Core2_Lobby.east  == grid_x_7 - 120mm
+    require Core2_Lobby.south == grid_y_C + 120mm
+    require Core2_Lobby.north == Core2_Lobby.south + 2000mm
+
+    require Core2_Stair.west  == Core2_Lobby.west
+    require Core2_Stair.east  == Core2_Lobby.east
+    require Core2_Stair.south == Core2_Lobby.north + interior_wall
+    require Core2_Stair.north == grid_y_D - 120mm
+
+    require Balcony_E.west  == grid_x_4 + 120mm
+    require Balcony_E.east  == grid_x_5 - 60mm
+    require Balcony_E.south == grid_y_D + wall_half
+    require Balcony_E.north == Balcony_E.south + 1600mm
+
+    // 4. Apartment 4 — Projecting L-Shape East/North Flagship Wing (Bays 6..9, A..F!)
+    require Apt4_Living.west  == grid_x_7 + 120mm
+    require Apt4_Living.east  == grid_x_9 - wall_half
+    require Apt4_Living.south == grid_y_A + wall_half
+    require Apt4_Living.north == grid_y_B - 60mm
+
+    require Apt4_Bath.west  == grid_x_7 + 120mm
+    require Apt4_Bath.east  == Apt4_Bath.west + 2400mm
+    require Apt4_Bath.south == grid_y_B + 60mm
+    require Apt4_Bath.north == grid_y_C - 60mm
+
+    require Apt4_Bed1.west  == Apt4_Bath.east + interior_wall
+    require Apt4_Bed1.east  == grid_x_9 - wall_half
+    require Apt4_Bed1.south == Apt4_Bath.south
+    require Apt4_Bed1.north == grid_y_D - 60mm
+
+    require Apt4_Corridor.west  == grid_x_6 + 120mm
+    require Apt4_Corridor.east  == grid_x_9 - wall_half
+    require Apt4_Corridor.south == grid_y_D + 60mm
+    require Apt4_Corridor.north == grid_y_E - 60mm
+
+    // North Projecting L-Wing (Bays 6..9, E..F!)
+    require Apt4_Kitchen.west  == grid_x_6 + wall_half
+    require Apt4_Kitchen.east  == grid_x_7 - 60mm
+    require Apt4_Kitchen.south == grid_y_E + 60mm
+    require Apt4_Kitchen.north == grid_y_F - wall_half
+
+    require Apt4_Bed2.west  == Apt4_Kitchen.east + interior_wall
+    require Apt4_Bed2.east  == grid_x_8 - 60mm
+    require Apt4_Bed2.south == Apt4_Kitchen.south
+    require Apt4_Bed2.north == Apt4_Kitchen.north
+
+    require Apt4_Bed3.west  == Apt4_Bed2.east + interior_wall
+    require Apt4_Bed3.east  == grid_x_9 - wall_half
+    require Apt4_Bed3.south == Apt4_Kitchen.south
+    require Apt4_Bed3.north == Apt4_Kitchen.north
+
+    require Balcony_NE.west  == grid_x_6 + wall_half
+    require Balcony_NE.east  == grid_x_7 - 60mm
+    require Balcony_NE.south == grid_y_F + wall_half
+    require Balcony_NE.north == Balcony_NE.south + 1600mm
+  }
+
+  // --- Core Entries, Apartment Security Doors & Internal Circulation ---
+  opening BuildingEntry1: door { host: exterior(Core1_Stair, north)   width: 1000mm  offset: 250mm from start  hinge: start  swing: into Core1_Stair }
+  opening BuildingEntry2: door { host: exterior(Core2_Stair, north)   width: 1100mm  offset: 300mm from end    hinge: start  swing: into Core2_Stair }
+  opening Core1_Link:     door { host: shared_wall(Core1_Lobby, Core1_Stair) width: 1000mm  align: center  hinge: start  swing: into Core1_Lobby }
+  opening Core2_Link:     door { host: shared_wall(Core2_Lobby, Core2_Stair) width: 1000mm  align: center  hinge: start  swing: into Core2_Lobby }
+  opening Core_Bridge:    passage { host: shared_wall(Core1_Lobby, Core2_Lobby) width: 1200mm  align: center }
+
+  // Apt 1
+  opening D_Apt1_Entry: door { host: shared_wall(Core1_Lobby, Apt1_Hall)    width: 900mm  align: center  hinge: start  swing: into Apt1_Hall }
+  opening D_Apt1_Bed1:  door { host: shared_wall(Apt1_Bed1, Apt1_Hall)      width: 800mm  align: center  hinge: start  swing: into Apt1_Bed1 }
+  opening D_Apt1_Liv:   door { host: shared_wall(Apt1_Living, Apt1_Hall)    width: 900mm  align: center  hinge: start  swing: into Apt1_Living }
+  opening D_Apt1_Kit:   door { host: shared_wall(Apt1_Kitchen, Apt1_Hall)   width: 850mm  align: center  hinge: start  swing: into Apt1_Kitchen }
+  opening D_Apt1_Bath:  door { host: shared_wall(Apt1_Bath, Apt1_Hall)      width: 750mm  align: center  hinge: start  swing: into Apt1_Bath }
+
+  // Apt 2 (entry from Core1_Stair on east, clear of Core1_Lobby elevator)
+  opening D_Apt2_Entry: door { host: shared_wall(Apt2_Living, Core1_Stair)  width: 900mm  offset: 200mm from start  hinge: start  swing: into Apt2_Living }
+  opening D_Apt2_Bed:   door { host: shared_wall(Apt2_Bed, Apt2_Living)     width: 850mm  align: center  hinge: start  swing: into Apt2_Bed }
+  opening D_Apt2_Bath:  door { host: shared_wall(Apt2_Bath, Apt2_Living)    width: 750mm  align: center  hinge: start  swing: into Apt2_Bath }
+  opening D_BalcW:      door { host: shared_wall(Apt2_Bed, Balcony_W)       width: 900mm  align: center  hinge: start  swing: into Apt2_Bed }
+
+  // Apt 3
+  opening D_Apt3_Entry: door { host: shared_wall(Core2_Lobby, Apt3_Hall)    width: 900mm  align: center  hinge: start  swing: into Apt3_Hall }
+  opening D_Apt3_Bed1:  door { host: shared_wall(Apt3_Bed1, Apt3_Hall)      width: 800mm  align: center  hinge: start  swing: into Apt3_Bed1 }
+  opening D_Apt3_Liv:   door { host: shared_wall(Apt3_Living, Apt3_Hall)    width: 900mm  align: center  hinge: start  swing: into Apt3_Living }
+  opening D_Apt3_Kit:   door { host: shared_wall(Apt3_Kitchen, Apt3_Hall)   width: 850mm  align: center  hinge: start  swing: into Apt3_Kitchen }
+  opening D_Apt3_Bath:  door { host: shared_wall(Apt3_Bath, Apt3_Hall)      width: 750mm  align: center  hinge: start  swing: into Apt3_Bath }
+  opening D_BalcE:      door { host: shared_wall(Core2_Stair, Balcony_E)    width: 900mm  align: center  hinge: start  swing: into Core2_Stair }
+
+  // Apt 4 (Flagship L-Wing — enters from Core2_Stair directly into Apt4_Corridor!)
+  opening D_Apt4_Entry: door { host: shared_wall(Core2_Stair, Apt4_Corridor) width: 950mm  align: center  hinge: start  swing: into Apt4_Corridor }
+  opening D_Apt4_Bed1:  door { host: shared_wall(Apt4_Bed1, Apt4_Corridor)  width: 850mm  align: center  hinge: start  swing: into Apt4_Corridor }
+  opening D_Apt4_Liv:   door { host: shared_wall(Apt4_Living, Apt4_Bed1)    width: 900mm  align: center  hinge: start  swing: into Apt4_Living }
+  opening D_Apt4_Bath:  door { host: shared_wall(Apt4_Bath, Apt4_Bed1)      width: 750mm  align: center  hinge: start  swing: into Apt4_Bath }
+  opening D_Apt4_Kit:   door { host: shared_wall(Apt4_Corridor, Apt4_Kitchen) width: 900mm align: center  hinge: start  swing: into Apt4_Kitchen }
+  opening D_Apt4_Bed2:  door { host: shared_wall(Apt4_Corridor, Apt4_Bed2)   width: 850mm  align: center  hinge: start  swing: into Apt4_Bed2 }
+  opening D_Apt4_Bed3:  door { host: shared_wall(Apt4_Corridor, Apt4_Bed3)   width: 850mm  align: center  hinge: start  swing: into Apt4_Bed3 }
+  opening D_BalcNE:     door { host: shared_wall(Apt4_Kitchen, Balcony_NE)   width: 900mm  align: center  hinge: start  swing: into Apt4_Kitchen }
+
+  // Exterior Daylight Windows for every habitable room (W9 placed clear of structural column Col_8_A!)
+  opening W1:  window { host: exterior(Apt1_Bed1, south)    width: 1800mm align: center }
+  opening W2:  window { host: exterior(Apt1_Living, south)  width: 2200mm align: center }
+  opening W3:  window { host: exterior(Apt1_Kitchen, south) width: 1600mm align: center }
+  opening W4:  window { host: exterior(Apt2_Bed, west)      width: 1800mm align: center }
+  opening W5:  window { host: exterior(Apt2_Living, north)  width: 1800mm align: center }
+  opening W6:  window { host: exterior(Apt3_Bed1, south)    width: 1800mm align: center }
+  opening W7:  window { host: exterior(Apt3_Living, south)  width: 2200mm align: center }
+  opening W8:  window { host: exterior(Apt3_Kitchen, south) width: 1600mm align: center }
+  opening W9:  window { host: exterior(Apt4_Living, south)  width: 2200mm offset: 600mm from start }
+  opening W10: window { host: exterior(Apt4_Bed1, east)     width: 2000mm align: center }
+  opening W11: window { host: exterior(Apt4_Kitchen, west)  width: 1800mm align: center }
+  opening W12: window { host: exterior(Apt4_Bed2, north)    width: 1800mm align: center }
+  opening W13: window { host: exterior(Apt4_Bed3, north)    width: 1800mm align: center }
+
+  // Vertical Circulation Cores (U-Turn Stairs, Elevators & Plumbing Shafts — clear of all doors!)
+  fixture Stair1: stair_u  { room: Core1_Stair  size: (1500mm, 1400mm)  against: east   offset: 250mm from start }
+  fixture Elev1:  elevator { room: Core1_Lobby  size: (1100mm, 1100mm)  against: west   offset: 200mm from start }
+  fixture Stair2: stair_u  { room: Core2_Stair  size: (2400mm, 1400mm)  against: south  offset: 300mm from start }
+  fixture Elev2:  elevator { room: Core2_Lobby  size: (1400mm, 1200mm)  against: east   offset: 200mm from start }
+  fixture Shaft1: shaft    { room: Apt1_Bath    size: (600mm, 500mm)    against: north offset: 150mm from end }
+  fixture Shaft3: shaft    { room: Apt3_Bath    size: (600mm, 500mm)    against: north offset: 150mm from end }
+
+  verify {
+    require no_room_overlap
+    require opening_jamb_margin >= 100mm
+    require no_door_swing_collision
+    require all_rooms_reachable
+    require no_fixture_collision
+    require habitable_rooms_have_window
+  }
+
+  view PlanView: plan {
+    frame: Plan
+    sheet: A1 landscape
+    scale: 1:100
+    show_dimensions: true
+    show_labels: true
+  }
+}

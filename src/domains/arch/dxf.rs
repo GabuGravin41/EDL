@@ -22,7 +22,7 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
     let _ = writeln!(out, "0\nSECTION\n2\nTABLES");
     // Registered XDATA application so AutoCAD preserves the EDL_ID tags through edits.
     let _ = writeln!(out, "0\nTABLE\n2\nAPPID\n70\n1\n0\nAPPID\n2\nEDL\n70\n0\n0\nENDTAB");
-    let _ = writeln!(out, "0\nTABLE\n2\nLAYER\n70\n19");
+    let _ = writeln!(out, "0\nTABLE\n2\nLAYER\n70\n22");
     for (name, color) in [
         ("WALLS_EXT", 7),
         ("WALLS_INT", 8),
@@ -32,6 +32,9 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
         ("PASSAGES", 9),
         ("FIXTURES", 6),
         ("ANNOTATIONS", 2),
+        ("GRID_AXES", 8),
+        ("GRID_BUBBLES", 7),
+        ("COLUMNS", 1),
         ("ELEC_PANEL", 1),
         ("ELEC_LIGHTING", 2),
         ("ELEC_SWITCHES", 30),
@@ -205,6 +208,27 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
         };
         for seg in &w.segments {
             write_line(&mut out, layer, seg.p0.x, seg.p0.y, seg.p1.x, seg.p1.y);
+        }
+    }
+
+    if let Some(grid) = crate::domains::arch::grid::extract_grid_from_ir(ir) {
+        let bounds = ir
+            .project
+            .exterior_bounds
+            .unwrap_or(Rect2::new(0.0, 0.0, 5000.0, 4000.0));
+        let pad = 1200.0;
+        for xa in &grid.x_axes {
+            write_line(&mut out, "GRID_AXES", xa.coord_mm, bounds.min_y - pad, xa.coord_mm, bounds.max_y + pad);
+            write_arc(&mut out, "GRID_BUBBLES", xa.coord_mm, bounds.min_y - pad - 250.0, 220.0, 0.0, 359.9);
+            write_text(&mut out, "GRID_BUBBLES", xa.coord_mm - 70.0, bounds.min_y - pad - 320.0, 160.0, &xa.label);
+        }
+        for ya in &grid.y_axes {
+            write_line(&mut out, "GRID_AXES", bounds.min_x - pad, ya.coord_mm, bounds.max_x + pad, ya.coord_mm);
+            write_arc(&mut out, "GRID_BUBBLES", bounds.min_x - pad - 250.0, ya.coord_mm, 220.0, 0.0, 359.9);
+            write_text(&mut out, "GRID_BUBBLES", bounds.min_x - pad - 320.0, ya.coord_mm - 70.0, 160.0, &ya.label);
+        }
+        for col in &grid.columns {
+            write_rect_lines(&mut out, "COLUMNS", crate::domains::arch::grid::column_rect(col));
         }
     }
 

@@ -215,6 +215,9 @@ pub fn solve_rooms(project: &ProjectAst) -> SolveOutput {
         }
     }
 
+    // Inject structural_grid axis coordinates (`grid_x_<label>`, `grid_y_<label>`, `gx_*`, `gy_*`)
+    crate::domains::arch::grid::inject_grid_solver_params(project, &mut params_mm);
+
     // 2. Equations from layout blocks
     for layout in &project.arch.layouts {
         if !project.frames.iter().any(|f| f.name == layout.frame) {
