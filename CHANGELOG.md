@@ -2,6 +2,37 @@
 
 All notable releases of **EDL (Engineering Description Language)** are documented here.
 
+## [3.1.0] — Unreleased
+### Added
+- **Hierarchical Net Naming & Multi-Sheet Power Distribution (`src/domains/elec/ast.rs`, `parser.rs`, `compile.rs`, `src/core/ir.rs`):**
+  - New hierarchical net syntax enables real industrial power architectures across multiple circuit blocks.
+  - Nets can now use slash-delimited scoping: `net /PowerModule/VOUT { ... }` or `net /Stage1/GND { ... }`.
+  - Cross-hierarchy references allow SecondaryStage to consume power from PrimaryStage: `connect: [/PrimaryStage/V3V3]`.
+  - **Updated `NetDecl` AST:** Added `hierarchy: Vec<String>` field to track module scoping.
+  - **Updated `RelationIr` IR:** Added `name` field (redundant but needed for serialization) and `hierarchy: Vec<String>` for KiCad exporter to generate cross-sheet labels.
+  - Parser enhancement (`parse_net()` lines 2170–2186): Automatically splits hierarchical names on `/` separator, extracts module path, leaves non-hierarchical nets unchanged (backward compatible).
+  - **Example `examples/multisheet_power_distribution.edl`:** Industrial buck-converter design with USB input, MP9486A primary stage (3.3V), and STM32L476 secondary stage with cross-hierarchy power references (150+ lines).
+
+- **Repair Suggestions in ERC Violations (`src/core/ir.rs`, `src/domains/elec/compile.rs`):**
+  - New `RepairSuggestion` struct (fix_id, description, auto_fixable) provides **LLM-friendly self-correction hints**.
+  - Three key checks now emit actionable repair suggestions:
+    - **E1_all_required_pins_connected:** Suggests connecting unconnected pins, marking unused pins as `nc`, or reviewing datasheet requirements.
+    - **E2_no_power_ground_short:** Suggests separating power/ground nets, using hierarchical scoping for parallel supplies, or documenting intentional biasing schemes.
+    - **E3_no_multiple_power_drivers:** Suggests removing secondary drivers, using hierarchical net scoping for parallel supplies, or reviewing circuit topology for wiring errors.
+  - `EvidenceRecord` now carries `repair_suggestions: Vec<RepairSuggestion>` (default empty, skip_serializing_if set for backward compat).
+  - Violations default to empty suggestions; pass checks emit no suggestions.
+  - **Why this matters for AI design:** Modern LLMs can now **learn from EDL's correction feedback loop**, iteratively refining schematics instead of one-shot generating broken designs.
+
+### Changed
+- **Parser robustness:** `parse_net()` now handles both hierarchical (`/Module/Net`) and legacy flat net names (`GND`, `VBUS`) transparently.
+- **IR serialization:** RepairSuggestions only serialized when non-empty to avoid bloating evidence records for passing checks.
+
+### Technical Details
+- Hierarchical parsing splits on `/`, filters empty strings, uses all-but-last segments as hierarchy vector, last segment as net name.
+- Cross-hierarchy references checked during compile; nets must exist in target module or root scope.
+- Repair suggestions tracked as (fix_id: usize, description: String, auto_fixable: bool) tuples; fix_id allows CLI/UI to group and apply related fixes.
+- Example demonstrates realistic industrial use case: **input stage** → **primary buck converter** → **secondary MCU decoupling**, with automatic voltage verification across hierarchy boundaries.
+
 ## [2.1.0] — 2026-11-25
 ### Added
 - **Lossless Two-Layer Option-A EDL (`circuit {}` + Exact Geometric `schematic {}`) & `edl import-kicad`:**
