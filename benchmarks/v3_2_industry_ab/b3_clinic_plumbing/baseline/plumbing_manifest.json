@@ -1,0 +1,2256 @@
+{
+  "fixtures": [
+    {
+      "id": "LAV_EX1",
+      "room": "Exam1",
+      "kind": "basin",
+      "x": 11100.0,
+      "y": 4200.0,
+      "dfu": 1,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "LAV_EX2",
+      "room": "Exam2",
+      "kind": "basin",
+      "x": 13875.0,
+      "y": 4300.0,
+      "dfu": 1,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "LAV_EX3",
+      "room": "Exam3",
+      "kind": "basin",
+      "x": 16825.0,
+      "y": 4200.0,
+      "dfu": 1,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "SINK_PROC",
+      "room": "Procedure",
+      "kind": "sink",
+      "x": 20400.0,
+      "y": 4625.0,
+      "dfu": 2,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "LAV_PWC",
+      "room": "PublicWC",
+      "kind": "basin",
+      "x": 475.0,
+      "y": 9950.0,
+      "dfu": 1,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "WC_PWC",
+      "room": "PublicWC",
+      "kind": "wc",
+      "x": 1650.0,
+      "y": 10425.0,
+      "dfu": 4,
+      "has_cw": true,
+      "has_hw": false,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "LAV_SWC",
+      "room": "StaffWC",
+      "kind": "basin",
+      "x": 2500.0,
+      "y": 9925.0,
+      "dfu": 1,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "WC_SWC",
+      "room": "StaffWC",
+      "kind": "wc",
+      "x": 3250.0,
+      "y": 10425.0,
+      "dfu": 4,
+      "has_cw": true,
+      "has_hw": false,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "SINK_BRK",
+      "room": "Breakroom",
+      "kind": "sink",
+      "x": 4225.0,
+      "y": 10430.0,
+      "dfu": 2,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "LAV_EX4",
+      "room": "Exam4",
+      "kind": "basin",
+      "x": 15025.0,
+      "y": 10100.0,
+      "dfu": 1,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "SINK_LAB",
+      "room": "Lab",
+      "kind": "sink",
+      "x": 15850.0,
+      "y": 10225.0,
+      "dfu": 2,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "MOP_MCH",
+      "room": "MechRoom",
+      "kind": "mop_sink",
+      "x": 24650.0,
+      "y": 10325.0,
+      "dfu": 3,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "WH1",
+      "room": "MechRoom",
+      "kind": "water_heater",
+      "x": 26150.0,
+      "y": 10150.0,
+      "dfu": 0,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": false,
+      "has_vent": false
+    }
+  ],
+  "valves": [
+    {
+      "id": "V-MAIN-CW",
+      "system": "CW",
+      "x": 26150.0,
+      "y": 8500.0
+    },
+    {
+      "id": "V-WH1-CW",
+      "system": "CW",
+      "x": 26150.0,
+      "y": 9550.0
+    },
+    {
+      "id": "V-MOP-CW",
+      "system": "CW",
+      "x": 25200.0,
+      "y": 9200.0
+    },
+    {
+      "id": "V-Z1-CW",
+      "system": "CW",
+      "x": 21200.0,
+      "y": 5850.0
+    },
+    {
+      "id": "V-Z2-CW",
+      "system": "CW",
+      "x": 7800.0,
+      "y": 5850.0
+    },
+    {
+      "id": "V-LAV_EX1-CW",
+      "system": "CW",
+      "x": 11040.0,
+      "y": 4700.0
+    },
+    {
+      "id": "V-LAV_EX2-CW",
+      "system": "CW",
+      "x": 13800.0,
+      "y": 4750.0
+    },
+    {
+      "id": "V-LAV_EX3-CW",
+      "system": "CW",
+      "x": 16750.0,
+      "y": 4700.0
+    },
+    {
+      "id": "V-SINK_PROC-CW",
+      "system": "CW",
+      "x": 20320.0,
+      "y": 4850.0
+    },
+    {
+      "id": "V-LAV_PWC-CW",
+      "system": "CW",
+      "x": 260.0,
+      "y": 9200.0
+    },
+    {
+      "id": "V-WC_PWC-CW",
+      "system": "CW",
+      "x": 1550.0,
+      "y": 9400.0
+    },
+    {
+      "id": "V-LAV_SWC-CW",
+      "system": "CW",
+      "x": 2250.0,
+      "y": 9200.0
+    },
+    {
+      "id": "V-WC_SWC-CW",
+      "system": "CW",
+      "x": 3440.0,
+      "y": 9400.0
+    },
+    {
+      "id": "V-SINK_BRK-CW",
+      "system": "CW",
+      "x": 3910.0,
+      "y": 9400.0
+    },
+    {
+      "id": "V-LAV_EX4-CW",
+      "system": "CW",
+      "x": 14960.0,
+      "y": 9200.0
+    },
+    {
+      "id": "V-SINK_LAB-CW",
+      "system": "CW",
+      "x": 15560.0,
+      "y": 9200.0
+    },
+    {
+      "id": "V-WH1-HW",
+      "system": "HW",
+      "x": 25750.0,
+      "y": 9850.0
+    },
+    {
+      "id": "V-MOP-HW",
+      "system": "HW",
+      "x": 25200.0,
+      "y": 9550.0
+    },
+    {
+      "id": "V-Z1-HW",
+      "system": "HW",
+      "x": 21200.0,
+      "y": 5500.0
+    },
+    {
+      "id": "V-Z2-HW",
+      "system": "HW",
+      "x": 7800.0,
+      "y": 5500.0
+    },
+    {
+      "id": "V-LAV_EX1-HW",
+      "system": "HW",
+      "x": 11095.0,
+      "y": 4700.0
+    },
+    {
+      "id": "V-LAV_EX2-HW",
+      "system": "HW",
+      "x": 13875.0,
+      "y": 4750.0
+    },
+    {
+      "id": "V-LAV_EX3-HW",
+      "system": "HW",
+      "x": 16825.0,
+      "y": 4700.0
+    },
+    {
+      "id": "V-SINK_PROC-HW",
+      "system": "HW",
+      "x": 20400.0,
+      "y": 4850.0
+    },
+    {
+      "id": "V-LAV_PWC-HW",
+      "system": "HW",
+      "x": 320.0,
+      "y": 9200.0
+    },
+    {
+      "id": "V-LAV_SWC-HW",
+      "system": "HW",
+      "x": 2310.0,
+      "y": 9200.0
+    },
+    {
+      "id": "V-SINK_BRK-HW",
+      "system": "HW",
+      "x": 3970.0,
+      "y": 9400.0
+    },
+    {
+      "id": "V-LAV_EX4-HW",
+      "system": "HW",
+      "x": 15025.0,
+      "y": 9200.0
+    },
+    {
+      "id": "V-SINK_LAB-HW",
+      "system": "HW",
+      "x": 15620.0,
+      "y": 9200.0
+    }
+  ],
+  "cleanouts": [
+    {
+      "id": "CO-MCH",
+      "x": 24260.0,
+      "y": 7050.0
+    },
+    {
+      "id": "CO-PROC",
+      "x": 20480.0,
+      "y": 7050.0
+    },
+    {
+      "id": "CO-LAB",
+      "x": 15685.0,
+      "y": 7050.0
+    },
+    {
+      "id": "CO-EX1",
+      "x": 11150.0,
+      "y": 7050.0
+    },
+    {
+      "id": "CO-BRK",
+      "x": 4030.0,
+      "y": 7050.0
+    },
+    {
+      "id": "CO-WC",
+      "x": 1650.0,
+      "y": 7050.0
+    },
+    {
+      "id": "CO-OUT",
+      "x": 250.0,
+      "y": 7050.0
+    }
+  ],
+  "pipes": [
+    {
+      "id": "P-SAN-01",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 11100.0,
+      "from_y": 4200.0,
+      "to_x": 11150.0,
+      "to_y": 4200.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "P-SAN-02",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 11150.0,
+      "from_y": 4200.0,
+      "to_x": 11150.0,
+      "to_y": 7050.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "P-SAN-03",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 13875.0,
+      "from_y": 4300.0,
+      "to_x": 13955.0,
+      "to_y": 4300.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "P-SAN-04",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 13955.0,
+      "from_y": 4300.0,
+      "to_x": 13955.0,
+      "to_y": 7050.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "P-SAN-05",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 16825.0,
+      "from_y": 4200.0,
+      "to_x": 16905.0,
+      "to_y": 4200.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "P-SAN-06",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 16905.0,
+      "from_y": 4200.0,
+      "to_x": 16905.0,
+      "to_y": 7050.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "P-SAN-07",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 20400.0,
+      "from_y": 4625.0,
+      "to_x": 20480.0,
+      "to_y": 4625.0,
+      "dfu_load": 2
+    },
+    {
+      "id": "P-SAN-08",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 20480.0,
+      "from_y": 4625.0,
+      "to_x": 20480.0,
+      "to_y": 7050.0,
+      "dfu_load": 2
+    },
+    {
+      "id": "P-SAN-09",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 475.0,
+      "from_y": 9950.0,
+      "to_x": 380.0,
+      "to_y": 9950.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "P-SAN-10",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 380.0,
+      "from_y": 9950.0,
+      "to_x": 380.0,
+      "to_y": 7050.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "P-SAN-11",
+      "system": "SAN",
+      "dn_mm": 100,
+      "slope_pct": 2.0,
+      "from_x": 1650.0,
+      "from_y": 10425.0,
+      "to_x": 1650.0,
+      "to_y": 7050.0,
+      "dfu_load": 4
+    },
+    {
+      "id": "P-SAN-12",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 2500.0,
+      "from_y": 9925.0,
+      "to_x": 2370.0,
+      "to_y": 9925.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "P-SAN-13",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 2370.0,
+      "from_y": 9925.0,
+      "to_x": 2370.0,
+      "to_y": 7050.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "P-SAN-14",
+      "system": "SAN",
+      "dn_mm": 100,
+      "slope_pct": 2.0,
+      "from_x": 3250.0,
+      "from_y": 10425.0,
+      "to_x": 3520.0,
+      "to_y": 10425.0,
+      "dfu_load": 4
+    },
+    {
+      "id": "P-SAN-15",
+      "system": "SAN",
+      "dn_mm": 100,
+      "slope_pct": 2.0,
+      "from_x": 3520.0,
+      "from_y": 10425.0,
+      "to_x": 3520.0,
+      "to_y": 7050.0,
+      "dfu_load": 4
+    },
+    {
+      "id": "P-SAN-16",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 4225.0,
+      "from_y": 10430.0,
+      "to_x": 4030.0,
+      "to_y": 10430.0,
+      "dfu_load": 2
+    },
+    {
+      "id": "P-SAN-17",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 4030.0,
+      "from_y": 10430.0,
+      "to_x": 4030.0,
+      "to_y": 7050.0,
+      "dfu_load": 2
+    },
+    {
+      "id": "P-SAN-18",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 15025.0,
+      "from_y": 10100.0,
+      "to_x": 15105.0,
+      "to_y": 10100.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "P-SAN-19",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 15105.0,
+      "from_y": 10100.0,
+      "to_x": 15105.0,
+      "to_y": 7050.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "P-SAN-20",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 15850.0,
+      "from_y": 10225.0,
+      "to_x": 15685.0,
+      "to_y": 10225.0,
+      "dfu_load": 2
+    },
+    {
+      "id": "P-SAN-21",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 15685.0,
+      "from_y": 10225.0,
+      "to_x": 15685.0,
+      "to_y": 7050.0,
+      "dfu_load": 2
+    },
+    {
+      "id": "P-SAN-22",
+      "system": "SAN",
+      "dn_mm": 75,
+      "slope_pct": 2.0,
+      "from_x": 24650.0,
+      "from_y": 10325.0,
+      "to_x": 24260.0,
+      "to_y": 10325.0,
+      "dfu_load": 3
+    },
+    {
+      "id": "P-SAN-23",
+      "system": "SAN",
+      "dn_mm": 75,
+      "slope_pct": 2.0,
+      "from_x": 24260.0,
+      "from_y": 10325.0,
+      "to_x": 24260.0,
+      "to_y": 7050.0,
+      "dfu_load": 3
+    },
+    {
+      "id": "P-SAN-24",
+      "system": "SAN",
+      "dn_mm": 100,
+      "slope_pct": 2.0,
+      "from_x": 24260.0,
+      "from_y": 7050.0,
+      "to_x": 20480.0,
+      "to_y": 7050.0,
+      "dfu_load": 3
+    },
+    {
+      "id": "P-SAN-25",
+      "system": "SAN",
+      "dn_mm": 100,
+      "slope_pct": 2.0,
+      "from_x": 20480.0,
+      "from_y": 7050.0,
+      "to_x": 16905.0,
+      "to_y": 7050.0,
+      "dfu_load": 5
+    },
+    {
+      "id": "P-SAN-26",
+      "system": "SAN",
+      "dn_mm": 100,
+      "slope_pct": 2.0,
+      "from_x": 16905.0,
+      "from_y": 7050.0,
+      "to_x": 15685.0,
+      "to_y": 7050.0,
+      "dfu_load": 6
+    },
+    {
+      "id": "P-SAN-27",
+      "system": "SAN",
+      "dn_mm": 100,
+      "slope_pct": 2.0,
+      "from_x": 15685.0,
+      "from_y": 7050.0,
+      "to_x": 15105.0,
+      "to_y": 7050.0,
+      "dfu_load": 8
+    },
+    {
+      "id": "P-SAN-28",
+      "system": "SAN",
+      "dn_mm": 100,
+      "slope_pct": 2.0,
+      "from_x": 15105.0,
+      "from_y": 7050.0,
+      "to_x": 13955.0,
+      "to_y": 7050.0,
+      "dfu_load": 9
+    },
+    {
+      "id": "P-SAN-29",
+      "system": "SAN",
+      "dn_mm": 100,
+      "slope_pct": 2.0,
+      "from_x": 13955.0,
+      "from_y": 7050.0,
+      "to_x": 11150.0,
+      "to_y": 7050.0,
+      "dfu_load": 10
+    },
+    {
+      "id": "P-SAN-30",
+      "system": "SAN",
+      "dn_mm": 100,
+      "slope_pct": 2.0,
+      "from_x": 11150.0,
+      "from_y": 7050.0,
+      "to_x": 4030.0,
+      "to_y": 7050.0,
+      "dfu_load": 11
+    },
+    {
+      "id": "P-SAN-31",
+      "system": "SAN",
+      "dn_mm": 100,
+      "slope_pct": 2.0,
+      "from_x": 4030.0,
+      "from_y": 7050.0,
+      "to_x": 3520.0,
+      "to_y": 7050.0,
+      "dfu_load": 13
+    },
+    {
+      "id": "P-SAN-32",
+      "system": "SAN",
+      "dn_mm": 150,
+      "slope_pct": 1.5,
+      "from_x": 3520.0,
+      "from_y": 7050.0,
+      "to_x": 2370.0,
+      "to_y": 7050.0,
+      "dfu_load": 17
+    },
+    {
+      "id": "P-SAN-33",
+      "system": "SAN",
+      "dn_mm": 150,
+      "slope_pct": 1.5,
+      "from_x": 2370.0,
+      "from_y": 7050.0,
+      "to_x": 1650.0,
+      "to_y": 7050.0,
+      "dfu_load": 18
+    },
+    {
+      "id": "P-SAN-34",
+      "system": "SAN",
+      "dn_mm": 150,
+      "slope_pct": 1.5,
+      "from_x": 1650.0,
+      "from_y": 7050.0,
+      "to_x": 380.0,
+      "to_y": 7050.0,
+      "dfu_load": 22
+    },
+    {
+      "id": "P-SAN-35",
+      "system": "SAN",
+      "dn_mm": 150,
+      "slope_pct": 1.5,
+      "from_x": 380.0,
+      "from_y": 7050.0,
+      "to_x": 250.0,
+      "to_y": 7050.0,
+      "dfu_load": 23
+    },
+    {
+      "id": "P-SAN-36",
+      "system": "SAN",
+      "dn_mm": 150,
+      "slope_pct": 1.5,
+      "from_x": 250.0,
+      "from_y": 7050.0,
+      "to_x": 150.0,
+      "to_y": 7050.0,
+      "dfu_load": 23
+    },
+    {
+      "id": "P-VNT-01",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 11100.0,
+      "from_y": 4200.0,
+      "to_x": 11205.0,
+      "to_y": 4200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-02",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 11205.0,
+      "from_y": 4200.0,
+      "to_x": 11205.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-03",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 13875.0,
+      "from_y": 4300.0,
+      "to_x": 14035.0,
+      "to_y": 4300.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-04",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 14035.0,
+      "from_y": 4300.0,
+      "to_x": 14035.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-05",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 16825.0,
+      "from_y": 4200.0,
+      "to_x": 16985.0,
+      "to_y": 4200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-06",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 16985.0,
+      "from_y": 4200.0,
+      "to_x": 16985.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-07",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 20400.0,
+      "from_y": 4625.0,
+      "to_x": 20560.0,
+      "to_y": 4625.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-08",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 20560.0,
+      "from_y": 4625.0,
+      "to_x": 20560.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-09",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 475.0,
+      "from_y": 9950.0,
+      "to_x": 430.0,
+      "to_y": 9950.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-10",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 430.0,
+      "from_y": 9950.0,
+      "to_x": 430.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-11",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 1.0,
+      "from_x": 1650.0,
+      "from_y": 10425.0,
+      "to_x": 1850.0,
+      "to_y": 10425.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-12",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 1.0,
+      "from_x": 1850.0,
+      "from_y": 10425.0,
+      "to_x": 1850.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-13",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 2500.0,
+      "from_y": 9925.0,
+      "to_x": 2430.0,
+      "to_y": 9925.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-14",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 2430.0,
+      "from_y": 9925.0,
+      "to_x": 2430.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-15",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 1.0,
+      "from_x": 3250.0,
+      "from_y": 10425.0,
+      "to_x": 3620.0,
+      "to_y": 10425.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-16",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 1.0,
+      "from_x": 3620.0,
+      "from_y": 10425.0,
+      "to_x": 3620.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-17",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 4225.0,
+      "from_y": 10430.0,
+      "to_x": 4090.0,
+      "to_y": 10430.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-18",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 4090.0,
+      "from_y": 10430.0,
+      "to_x": 4090.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-19",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 15025.0,
+      "from_y": 10100.0,
+      "to_x": 15185.0,
+      "to_y": 10100.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-20",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 15185.0,
+      "from_y": 10100.0,
+      "to_x": 15185.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-21",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 15850.0,
+      "from_y": 10225.0,
+      "to_x": 15750.0,
+      "to_y": 10225.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-22",
+      "system": "VENT",
+      "dn_mm": 40,
+      "slope_pct": 1.0,
+      "from_x": 15750.0,
+      "from_y": 10225.0,
+      "to_x": 15750.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-23",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 1.0,
+      "from_x": 24650.0,
+      "from_y": 10325.0,
+      "to_x": 24360.0,
+      "to_y": 10325.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-24",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 1.0,
+      "from_x": 24360.0,
+      "from_y": 10325.0,
+      "to_x": 24360.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-25",
+      "system": "VENT",
+      "dn_mm": 100,
+      "slope_pct": 0.0,
+      "from_x": 1850.0,
+      "from_y": 10425.0,
+      "to_x": 1850.0,
+      "to_y": 10700.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-26",
+      "system": "VENT",
+      "dn_mm": 75,
+      "slope_pct": 0.0,
+      "from_x": 24360.0,
+      "from_y": 10325.0,
+      "to_x": 24360.0,
+      "to_y": 10680.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-27",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.5,
+      "from_x": 24360.0,
+      "from_y": 6650.0,
+      "to_x": 20560.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-28",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.5,
+      "from_x": 20560.0,
+      "from_y": 6650.0,
+      "to_x": 16985.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-29",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.5,
+      "from_x": 16985.0,
+      "from_y": 6650.0,
+      "to_x": 15750.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-30",
+      "system": "VENT",
+      "dn_mm": 75,
+      "slope_pct": 0.5,
+      "from_x": 15750.0,
+      "from_y": 6650.0,
+      "to_x": 15185.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-31",
+      "system": "VENT",
+      "dn_mm": 75,
+      "slope_pct": 0.5,
+      "from_x": 15185.0,
+      "from_y": 6650.0,
+      "to_x": 14035.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-32",
+      "system": "VENT",
+      "dn_mm": 75,
+      "slope_pct": 0.5,
+      "from_x": 14035.0,
+      "from_y": 6650.0,
+      "to_x": 11205.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-33",
+      "system": "VENT",
+      "dn_mm": 75,
+      "slope_pct": 0.5,
+      "from_x": 11205.0,
+      "from_y": 6650.0,
+      "to_x": 4090.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-34",
+      "system": "VENT",
+      "dn_mm": 75,
+      "slope_pct": 0.5,
+      "from_x": 4090.0,
+      "from_y": 6650.0,
+      "to_x": 3620.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-35",
+      "system": "VENT",
+      "dn_mm": 75,
+      "slope_pct": 0.5,
+      "from_x": 3620.0,
+      "from_y": 6650.0,
+      "to_x": 2430.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-36",
+      "system": "VENT",
+      "dn_mm": 75,
+      "slope_pct": 0.5,
+      "from_x": 2430.0,
+      "from_y": 6650.0,
+      "to_x": 1850.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-VNT-37",
+      "system": "VENT",
+      "dn_mm": 75,
+      "slope_pct": 0.5,
+      "from_x": 1850.0,
+      "from_y": 6650.0,
+      "to_x": 430.0,
+      "to_y": 6650.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-01",
+      "system": "CW",
+      "dn_mm": 32,
+      "slope_pct": 0.0,
+      "from_x": 26150.0,
+      "from_y": 8200.0,
+      "to_x": 26150.0,
+      "to_y": 8500.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-02",
+      "system": "CW",
+      "dn_mm": 32,
+      "slope_pct": 0.0,
+      "from_x": 26150.0,
+      "from_y": 8500.0,
+      "to_x": 26150.0,
+      "to_y": 8850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-03",
+      "system": "CW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 26150.0,
+      "from_y": 8850.0,
+      "to_x": 26150.0,
+      "to_y": 9200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-04",
+      "system": "CW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 26150.0,
+      "from_y": 9200.0,
+      "to_x": 26150.0,
+      "to_y": 9550.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-05",
+      "system": "CW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 26150.0,
+      "from_y": 9550.0,
+      "to_x": 26150.0,
+      "to_y": 10150.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-06",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 26150.0,
+      "from_y": 9200.0,
+      "to_x": 25200.0,
+      "to_y": 9200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-07",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 25200.0,
+      "from_y": 9200.0,
+      "to_x": 24650.0,
+      "to_y": 9200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-08",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 24650.0,
+      "from_y": 9200.0,
+      "to_x": 24650.0,
+      "to_y": 10325.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-09",
+      "system": "CW",
+      "dn_mm": 32,
+      "slope_pct": 0.0,
+      "from_x": 26150.0,
+      "from_y": 8850.0,
+      "to_x": 26450.0,
+      "to_y": 8850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-10",
+      "system": "CW",
+      "dn_mm": 32,
+      "slope_pct": 0.0,
+      "from_x": 26450.0,
+      "from_y": 8850.0,
+      "to_x": 26450.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-11",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 11040.0,
+      "from_y": 5850.0,
+      "to_x": 11040.0,
+      "to_y": 4700.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-12",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 11040.0,
+      "from_y": 4700.0,
+      "to_x": 11040.0,
+      "to_y": 4200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-13",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 11040.0,
+      "from_y": 4200.0,
+      "to_x": 11100.0,
+      "to_y": 4200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-14",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 13800.0,
+      "from_y": 5850.0,
+      "to_x": 13800.0,
+      "to_y": 4750.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-15",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 13800.0,
+      "from_y": 4750.0,
+      "to_x": 13800.0,
+      "to_y": 4300.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-16",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 13800.0,
+      "from_y": 4300.0,
+      "to_x": 13875.0,
+      "to_y": 4300.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-17",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 16750.0,
+      "from_y": 5850.0,
+      "to_x": 16750.0,
+      "to_y": 4700.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-18",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 16750.0,
+      "from_y": 4700.0,
+      "to_x": 16750.0,
+      "to_y": 4200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-19",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 16750.0,
+      "from_y": 4200.0,
+      "to_x": 16825.0,
+      "to_y": 4200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-20",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 20320.0,
+      "from_y": 5850.0,
+      "to_x": 20320.0,
+      "to_y": 4850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-21",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 20320.0,
+      "from_y": 4850.0,
+      "to_x": 20320.0,
+      "to_y": 4625.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-22",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 20320.0,
+      "from_y": 4625.0,
+      "to_x": 20400.0,
+      "to_y": 4625.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-23",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 260.0,
+      "from_y": 5850.0,
+      "to_x": 260.0,
+      "to_y": 9200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-24",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 260.0,
+      "from_y": 9200.0,
+      "to_x": 260.0,
+      "to_y": 9950.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-25",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 260.0,
+      "from_y": 9950.0,
+      "to_x": 475.0,
+      "to_y": 9950.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-26",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 1550.0,
+      "from_y": 5850.0,
+      "to_x": 1550.0,
+      "to_y": 9400.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-27",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 1550.0,
+      "from_y": 9400.0,
+      "to_x": 1550.0,
+      "to_y": 10425.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-28",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 1550.0,
+      "from_y": 10425.0,
+      "to_x": 1650.0,
+      "to_y": 10425.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-29",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 2250.0,
+      "from_y": 5850.0,
+      "to_x": 2250.0,
+      "to_y": 9200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-30",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 2250.0,
+      "from_y": 9200.0,
+      "to_x": 2250.0,
+      "to_y": 9925.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-31",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 2250.0,
+      "from_y": 9925.0,
+      "to_x": 2500.0,
+      "to_y": 9925.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-32",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 3440.0,
+      "from_y": 5850.0,
+      "to_x": 3440.0,
+      "to_y": 9400.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-33",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 3440.0,
+      "from_y": 9400.0,
+      "to_x": 3440.0,
+      "to_y": 10425.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-34",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 3440.0,
+      "from_y": 10425.0,
+      "to_x": 3250.0,
+      "to_y": 10425.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-35",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 3910.0,
+      "from_y": 5850.0,
+      "to_x": 3910.0,
+      "to_y": 9400.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-36",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 3910.0,
+      "from_y": 9400.0,
+      "to_x": 3910.0,
+      "to_y": 10430.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-37",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 3910.0,
+      "from_y": 10430.0,
+      "to_x": 4225.0,
+      "to_y": 10430.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-38",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 14960.0,
+      "from_y": 5850.0,
+      "to_x": 14960.0,
+      "to_y": 9200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-39",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 14960.0,
+      "from_y": 9200.0,
+      "to_x": 14960.0,
+      "to_y": 10100.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-40",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 14960.0,
+      "from_y": 10100.0,
+      "to_x": 15025.0,
+      "to_y": 10100.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-41",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 15560.0,
+      "from_y": 5850.0,
+      "to_x": 15560.0,
+      "to_y": 9200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-42",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 15560.0,
+      "from_y": 9200.0,
+      "to_x": 15560.0,
+      "to_y": 10225.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-43",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 15560.0,
+      "from_y": 10225.0,
+      "to_x": 15850.0,
+      "to_y": 10225.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-44",
+      "system": "CW",
+      "dn_mm": 32,
+      "slope_pct": 0.0,
+      "from_x": 26450.0,
+      "from_y": 5850.0,
+      "to_x": 21200.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-45",
+      "system": "CW",
+      "dn_mm": 32,
+      "slope_pct": 0.0,
+      "from_x": 21200.0,
+      "from_y": 5850.0,
+      "to_x": 20320.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-46",
+      "system": "CW",
+      "dn_mm": 32,
+      "slope_pct": 0.0,
+      "from_x": 20320.0,
+      "from_y": 5850.0,
+      "to_x": 16750.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-47",
+      "system": "CW",
+      "dn_mm": 32,
+      "slope_pct": 0.0,
+      "from_x": 16750.0,
+      "from_y": 5850.0,
+      "to_x": 15560.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-48",
+      "system": "CW",
+      "dn_mm": 32,
+      "slope_pct": 0.0,
+      "from_x": 15560.0,
+      "from_y": 5850.0,
+      "to_x": 14960.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-49",
+      "system": "CW",
+      "dn_mm": 32,
+      "slope_pct": 0.0,
+      "from_x": 14960.0,
+      "from_y": 5850.0,
+      "to_x": 13800.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-50",
+      "system": "CW",
+      "dn_mm": 32,
+      "slope_pct": 0.0,
+      "from_x": 13800.0,
+      "from_y": 5850.0,
+      "to_x": 11040.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-51",
+      "system": "CW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 11040.0,
+      "from_y": 5850.0,
+      "to_x": 7800.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-52",
+      "system": "CW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 7800.0,
+      "from_y": 5850.0,
+      "to_x": 3910.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-53",
+      "system": "CW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 3910.0,
+      "from_y": 5850.0,
+      "to_x": 3440.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-54",
+      "system": "CW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 3440.0,
+      "from_y": 5850.0,
+      "to_x": 2250.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-55",
+      "system": "CW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 2250.0,
+      "from_y": 5850.0,
+      "to_x": 1550.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-CW-56",
+      "system": "CW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 1550.0,
+      "from_y": 5850.0,
+      "to_x": 260.0,
+      "to_y": 5850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-01",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 26150.0,
+      "from_y": 10150.0,
+      "to_x": 25750.0,
+      "to_y": 10150.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-02",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 25750.0,
+      "from_y": 10150.0,
+      "to_x": 25750.0,
+      "to_y": 9850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-03",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 25750.0,
+      "from_y": 9850.0,
+      "to_x": 25750.0,
+      "to_y": 9550.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-04",
+      "system": "HW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 25750.0,
+      "from_y": 9550.0,
+      "to_x": 25200.0,
+      "to_y": 9550.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-05",
+      "system": "HW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 25200.0,
+      "from_y": 9550.0,
+      "to_x": 24780.0,
+      "to_y": 9550.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-06",
+      "system": "HW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 24780.0,
+      "from_y": 9550.0,
+      "to_x": 24780.0,
+      "to_y": 10325.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-07",
+      "system": "HW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 24780.0,
+      "from_y": 10325.0,
+      "to_x": 24650.0,
+      "to_y": 10325.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-08",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 25750.0,
+      "from_y": 9550.0,
+      "to_x": 25750.0,
+      "to_y": 5500.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-09",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 11095.0,
+      "from_y": 5500.0,
+      "to_x": 11095.0,
+      "to_y": 4700.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-10",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 11095.0,
+      "from_y": 4700.0,
+      "to_x": 11095.0,
+      "to_y": 4200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-11",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 11095.0,
+      "from_y": 4200.0,
+      "to_x": 11100.0,
+      "to_y": 4200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-12",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 13875.0,
+      "from_y": 5500.0,
+      "to_x": 13875.0,
+      "to_y": 4750.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-13",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 13875.0,
+      "from_y": 4750.0,
+      "to_x": 13875.0,
+      "to_y": 4300.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-14",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 16825.0,
+      "from_y": 5500.0,
+      "to_x": 16825.0,
+      "to_y": 4700.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-15",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 16825.0,
+      "from_y": 4700.0,
+      "to_x": 16825.0,
+      "to_y": 4200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-16",
+      "system": "HW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 20400.0,
+      "from_y": 5500.0,
+      "to_x": 20400.0,
+      "to_y": 4850.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-17",
+      "system": "HW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 20400.0,
+      "from_y": 4850.0,
+      "to_x": 20400.0,
+      "to_y": 4625.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-18",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 320.0,
+      "from_y": 5500.0,
+      "to_x": 320.0,
+      "to_y": 9200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-19",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 320.0,
+      "from_y": 9200.0,
+      "to_x": 320.0,
+      "to_y": 9950.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-20",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 320.0,
+      "from_y": 9950.0,
+      "to_x": 475.0,
+      "to_y": 9950.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-21",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 2310.0,
+      "from_y": 5500.0,
+      "to_x": 2310.0,
+      "to_y": 9200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-22",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 2310.0,
+      "from_y": 9200.0,
+      "to_x": 2310.0,
+      "to_y": 9925.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-23",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 2310.0,
+      "from_y": 9925.0,
+      "to_x": 2500.0,
+      "to_y": 9925.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-24",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 3970.0,
+      "from_y": 5500.0,
+      "to_x": 3970.0,
+      "to_y": 9400.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-25",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 3970.0,
+      "from_y": 9400.0,
+      "to_x": 3970.0,
+      "to_y": 10430.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-26",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 3970.0,
+      "from_y": 10430.0,
+      "to_x": 4225.0,
+      "to_y": 10430.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-27",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 15025.0,
+      "from_y": 5500.0,
+      "to_x": 15025.0,
+      "to_y": 9200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-28",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 15025.0,
+      "from_y": 9200.0,
+      "to_x": 15025.0,
+      "to_y": 10100.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-29",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 15620.0,
+      "from_y": 5500.0,
+      "to_x": 15620.0,
+      "to_y": 9200.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-30",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 15620.0,
+      "from_y": 9200.0,
+      "to_x": 15620.0,
+      "to_y": 10225.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-31",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 15620.0,
+      "from_y": 10225.0,
+      "to_x": 15850.0,
+      "to_y": 10225.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-32",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 25750.0,
+      "from_y": 5500.0,
+      "to_x": 21200.0,
+      "to_y": 5500.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-33",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 21200.0,
+      "from_y": 5500.0,
+      "to_x": 20400.0,
+      "to_y": 5500.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-34",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 20400.0,
+      "from_y": 5500.0,
+      "to_x": 16825.0,
+      "to_y": 5500.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-35",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 16825.0,
+      "from_y": 5500.0,
+      "to_x": 15620.0,
+      "to_y": 5500.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-36",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 15620.0,
+      "from_y": 5500.0,
+      "to_x": 15025.0,
+      "to_y": 5500.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-37",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 15025.0,
+      "from_y": 5500.0,
+      "to_x": 13875.0,
+      "to_y": 5500.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-38",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 13875.0,
+      "from_y": 5500.0,
+      "to_x": 11095.0,
+      "to_y": 5500.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-39",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 11095.0,
+      "from_y": 5500.0,
+      "to_x": 7800.0,
+      "to_y": 5500.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-40",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 7800.0,
+      "from_y": 5500.0,
+      "to_x": 3970.0,
+      "to_y": 5500.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-41",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 3970.0,
+      "from_y": 5500.0,
+      "to_x": 2310.0,
+      "to_y": 5500.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "P-HW-42",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 2310.0,
+      "from_y": 5500.0,
+      "to_x": 320.0,
+      "to_y": 5500.0,
+      "dfu_load": 0
+    }
+  ]
+}

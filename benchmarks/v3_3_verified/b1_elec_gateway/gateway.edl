@@ -1,0 +1,544 @@
+// Benchmark 1: 24V Industrial IoT Edge Gateway & Isolated Relay Controller
+// Designed in EDL v3.3.0 — Zero raw global coordinates, native KiCad 9 symbols & power rails.
+
+project "Industrial_IoT_Gateway" {
+    units: mm
+    frame Sheet: Frame2
+
+    circuit Gateway {
+        // =====================================================================
+        // STAGE 1: 24V Industrial Input, Surge/EMI Protection & 24V->5V Buck
+        // =====================================================================
+        component J_PWR: "Connector:Screw_Terminal_01x02" {
+            value: "24V_IN"
+            footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal"
+        }
+        component F1: "Device:Polyfuse" {
+            value: "1.5A"
+            footprint: "Fuse:Fuse_1812_4532Metric"
+            orient: 90
+        }
+        component D_REV: "Device:D_Schottky" {
+            value: "SS34"
+            footprint: "Diode_SMD:D_SMA"
+            orient: 180
+        }
+        component D_TVS: "Device:D_TVS" {
+            value: "SMBJ28A"
+            footprint: "Diode_SMD:D_SMB"
+            orient: 270
+        }
+        component C_IN1: "Device:C_Polarized" {
+            value: 100uF
+            voltage_rating: 50V
+            footprint: "Capacitor_SMD:CP_Elec_8x10"
+        }
+        component C_IN2: "Device:C" {
+            value: 100nF
+            voltage_rating: 50V
+            footprint: "Capacitor_SMD:C_0805_2012Metric"
+        }
+        component L_EMI: "Device:L" {
+            value: 10uH
+            footprint: "Inductor_SMD:L_1210_3225Metric"
+            orient: 90
+        }
+        component C_IN3: "Device:C_Polarized" {
+            value: 100uF
+            voltage_rating: 50V
+            footprint: "Capacitor_SMD:CP_Elec_8x10"
+        }
+        component U_BUCK: "Regulator_Switching:LM2596S-ADJ" {
+            value: "LM2596S-ADJ"
+            pin VIN: power_in(4.5V..40V)
+        }
+        component D_BUCK: "Device:D_Schottky" {
+            value: "SS34"
+            footprint: "Diode_SMD:D_SMA"
+            orient: 270
+        }
+        component L_BUCK: "Device:L" {
+            value: 33uH
+            footprint: "Inductor_SMD:L_12x12mm_H6mm"
+            orient: 90
+        }
+        component R_FB1: "Device:R" {
+            value: 3.09kohm
+            power_rating: 125mW
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+        }
+        component R_FB2: "Device:R" {
+            value: 1kohm
+            power_rating: 125mW
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+        }
+        component C_5V1: "Device:C_Polarized" {
+            value: 220uF
+            voltage_rating: 16V
+            footprint: "Capacitor_SMD:CP_Elec_6.3x7.7"
+        }
+        component C_5V2: "Device:C" {
+            value: 100nF
+            voltage_rating: 16V
+            footprint: "Capacitor_SMD:C_0603_1608Metric"
+        }
+
+        // =====================================================================
+        // STAGE 2: 5V->3.3V Low-Noise LDO & Power Indicator
+        // =====================================================================
+        component U_LDO: "Regulator_Linear:AMS1117-3.3" {
+            value: "AMS1117-3.3"
+            pin VI: power_in(4.5V..15V)
+            pin VO: power_out(3.3V)
+        }
+        component C_LDO_IN1: "Device:C" {
+            value: 10uF
+            voltage_rating: 16V
+            footprint: "Capacitor_SMD:C_0805_2012Metric"
+        }
+        component C_LDO_OUT1: "Device:C" {
+            value: 22uF
+            voltage_rating: 16V
+            footprint: "Capacitor_SMD:C_0805_2012Metric"
+        }
+        component C_LDO_OUT2: "Device:C" {
+            value: 100nF
+            voltage_rating: 16V
+            footprint: "Capacitor_SMD:C_0603_1608Metric"
+        }
+        component R_PWR: "Device:R" {
+            value: 330ohm
+            power_rating: 125mW
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+        }
+        component D_PWR: "Device:LED" {
+            value: "GREEN"
+            footprint: "LED_SMD:LED_0603_1608Metric"
+            orient: 270
+        }
+
+        // =====================================================================
+        // STAGE 3: MCU Core (STM32G030K8T6), 8MHz Clock, Reset & Debug
+        // =====================================================================
+        component U_MCU: "MCU_ST_STM32G0:STM32G030K8Tx" {
+            value: "STM32G030K8T6"
+            pin VDD: power_in(2.0V..3.6V)
+            no_connect: [PC6, PB1, PB2, PB3, PB4, PB5, PA4, PA5, PA6, PA7, PA8, "PA9/PA11", "PA10/PA12", PA15]
+        }
+        component C_MCU1: "Device:C" {
+            value: 10uF
+            voltage_rating: 16V
+            footprint: "Capacitor_SMD:C_0805_2012Metric"
+        }
+        component C_MCU2: "Device:C" {
+            value: 100nF
+            voltage_rating: 16V
+            footprint: "Capacitor_SMD:C_0603_1608Metric"
+        }
+        component C_MCU3: "Device:C" {
+            value: 100nF
+            voltage_rating: 16V
+            footprint: "Capacitor_SMD:C_0603_1608Metric"
+        }
+        component C_MCU4: "Device:C" {
+            value: 100nF
+            voltage_rating: 16V
+            footprint: "Capacitor_SMD:C_0603_1608Metric"
+        }
+        component Y1: "Device:Crystal" {
+            value: "8MHz"
+            footprint: "Crystal:Crystal_SMD_HC49-SD"
+        }
+        component C_XTAL1: "Device:C" {
+            value: 18pF
+            voltage_rating: 50V
+            footprint: "Capacitor_SMD:C_0603_1608Metric"
+        }
+        component C_XTAL2: "Device:C" {
+            value: 18pF
+            voltage_rating: 50V
+            footprint: "Capacitor_SMD:C_0603_1608Metric"
+        }
+        component R_RST: "Device:R" {
+            value: 10kohm
+            power_rating: 125mW
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+        }
+        component C_RST: "Device:C" {
+            value: 100nF
+            voltage_rating: 16V
+            footprint: "Capacitor_SMD:C_0603_1608Metric"
+        }
+        component SW_RST: "Switch:SW_Push" {
+            value: "RESET"
+            footprint: "Button_Switch_SMD:SW_SPST_TL3342"
+        }
+        component J_SWD: "Connector_Generic:Conn_01x05" {
+            value: "SWD"
+            footprint: "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical"
+        }
+        component J_UART: "Connector_Generic:Conn_01x03" {
+            value: "UART"
+            footprint: "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+        }
+
+        // =====================================================================
+        // STAGE 4: Dual I2C Peripherals, RS-485 Transceiver & 0-10V Analog AFE
+        // =====================================================================
+        component R_SDA: "Device:R" {
+            value: 4.7kohm
+            power_rating: 125mW
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+        }
+        component R_SCL: "Device:R" {
+            value: 4.7kohm
+            power_rating: 125mW
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+        }
+        component U_SENS: "Sensor_Humidity:HDC1080" {
+            value: "HDC1080"
+            pin VCC: power_in(2.7V..5.5V)
+        }
+        component C_SENS: "Device:C" {
+            value: 100nF
+            voltage_rating: 16V
+            footprint: "Capacitor_SMD:C_0603_1608Metric"
+        }
+        component U_EEPROM: "Memory_EEPROM:24LC256" {
+            value: "24LC256"
+            footprint: "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+            pin VCC: power_in(2.5V..5.5V)
+        }
+        component C_EEPROM: "Device:C" {
+            value: 100nF
+            voltage_rating: 16V
+            footprint: "Capacitor_SMD:C_0603_1608Metric"
+        }
+        component U_485: "Interface_UART:LTC2850xS8" {
+            value: "LTC2850IS8"
+            pin VCC: power_in(3.0V..3.6V)
+        }
+        component C_485: "Device:C" {
+            value: 100nF
+            voltage_rating: 16V
+            footprint: "Capacitor_SMD:C_0603_1608Metric"
+        }
+        component R_TERM: "Device:R" {
+            value: 120ohm
+            power_rating: 250mW
+            footprint: "Resistor_SMD:R_0805_2012Metric"
+        }
+        component J_RS485: "Connector:Screw_Terminal_01x03" {
+            value: "RS485"
+            footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-3-5.08_1x03_P5.08mm_Horizontal"
+        }
+        component J_AIN: "Connector:Screw_Terminal_01x02" {
+            value: "AIN_0_10V"
+            footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal"
+        }
+        component R_DIV1: "Device:R" {
+            value: 23.2kohm
+            power_rating: 125mW
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+            orient: 90
+        }
+        component R_DIV2: "Device:R" {
+            value: 10kohm
+            power_rating: 125mW
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+        }
+        component R_AAF: "Device:R" {
+            value: 10kohm
+            power_rating: 125mW
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+            orient: 90
+        }
+        component C_AAF: "Device:C" {
+            value: 6.8nF
+            voltage_rating: 25V
+            footprint: "Capacitor_SMD:C_0603_1608Metric"
+        }
+        component D_CLAMP: "Device:D_Schottky" {
+            value: "BAT54"
+            footprint: "Diode_SMD:D_SOD-323"
+            orient: 90
+        }
+
+        // =====================================================================
+        // STAGE 5: Galvanically Isolated 24V Relay Driver Output
+        // =====================================================================
+        component R_OPTO: "Device:R" {
+            value: 330ohm
+            power_rating: 125mW
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+            orient: 90
+        }
+        component U_OPTO: "Isolator:PC817" {
+            value: "PC817"
+        }
+        component R_GATE: "Device:R" {
+            value: 10kohm
+            power_rating: 250mW
+            footprint: "Resistor_SMD:R_0805_2012Metric"
+            orient: 90
+        }
+        component R_PD: "Device:R" {
+            value: 10kohm
+            power_rating: 250mW
+            footprint: "Resistor_SMD:R_0805_2012Metric"
+        }
+        component Q_RLY: "Transistor_FET:2N7002" {
+            value: "2N7002"
+        }
+        component K1: "Relay:G5LE-1" {
+            value: "G5LE-1-DC24"
+        }
+        component D_FLY: "Device:D" {
+            value: "1N4148W"
+            footprint: "Diode_SMD:D_SOD-123"
+            orient: 90
+        }
+        component C_ISO: "Device:C" {
+            value: 100nF
+            voltage_rating: 50V
+            footprint: "Capacitor_SMD:C_0805_2012Metric"
+        }
+        component J_ISO_PWR: "Connector:Screw_Terminal_01x02" {
+            value: "ISO_24V_IN"
+            footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal"
+        }
+        component J_OUT: "Connector:Screw_Terminal_01x03" {
+            value: "RELAY_OUT"
+            footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-3-5.08_1x03_P5.08mm_Horizontal"
+        }
+
+        // =====================================================================
+        // POWER & GROUND NETS (Standard KiCad 9 Power Rail Names)
+        // =====================================================================
+        net "+24V" {
+            power_flag: true
+            connect: [J_PWR.Pin_1, F1.1]
+        }
+        net V24_FUSED {
+            connect: [F1.2, D_REV.A]
+        }
+        net V24_PROT {
+            connect: [D_REV.K, D_TVS.A1, C_IN1.1, C_IN2.1, L_EMI.1]
+        }
+        net V24_FILT {
+            power_flag: true
+            connect: [L_EMI.2, C_IN3.1, U_BUCK.VIN]
+        }
+        net SW_BUCK {
+            connect: [U_BUCK.OUT, D_BUCK.K, L_BUCK.1]
+        }
+        net BUCK_FB {
+            connect: [U_BUCK.FB, R_FB1.2, R_FB2.1]
+        }
+        net "+5V" {
+            power_flag: true
+            connect: [L_BUCK.2, R_FB1.1, C_5V1.1, C_5V2.1, C_LDO_IN1.1, U_LDO.VI]
+        }
+        net "+3V3" {
+            connect: [
+                U_LDO.VO, C_LDO_OUT1.1, C_LDO_OUT2.1, R_PWR.1,
+                U_MCU.VDD, C_MCU1.1, C_MCU2.1, C_MCU3.1, C_MCU4.1,
+                R_RST.1, J_SWD.Pin_1,
+                R_SDA.1, R_SCL.1, U_SENS.VCC, C_SENS.1, U_EEPROM.VCC, C_EEPROM.1,
+                U_485.VCC, C_485.1, D_CLAMP.K
+            ]
+        }
+        net "GND" {
+            power_flag: true
+            connect: [
+                J_PWR.Pin_2, D_TVS.A2, C_IN1.2, C_IN2.2, C_IN3.2,
+                U_BUCK."ON/OFF", U_BUCK.GND, D_BUCK.A, R_FB2.2, C_5V1.2, C_5V2.2,
+                U_LDO.GND, C_LDO_IN1.2, C_LDO_OUT1.2, C_LDO_OUT2.2, D_PWR.K,
+                U_MCU.VSS, C_MCU1.2, C_MCU2.2, C_MCU3.2, C_MCU4.2,
+                C_XTAL1.2, C_XTAL2.2, C_RST.2, SW_RST.2, J_SWD.Pin_5, J_UART.Pin_3,
+                U_SENS.GND, C_SENS.2,
+                U_EEPROM.GND, U_EEPROM.A0, U_EEPROM.A1, U_EEPROM.A2, U_EEPROM.WP, C_EEPROM.2,
+                U_485.GND, C_485.2, J_RS485.Pin_3,
+                J_AIN.Pin_2, R_DIV2.2, C_AAF.2,
+                U_OPTO.2
+            ]
+        }
+
+        // =====================================================================
+        // SIGNAL NETS
+        // =====================================================================
+        net LED_PWR_A  { connect: [R_PWR.2, D_PWR.A] }
+        net XTAL_IN    { connect: [U_MCU.PC14, Y1.1, C_XTAL1.1] }
+        net XTAL_OUT   { connect: [U_MCU.PC15, Y1.2, C_XTAL2.1] }
+        net NRST       { connect: [U_MCU.NRST, R_RST.2, C_RST.1, SW_RST.1, J_SWD.Pin_4] }
+        net SWDIO      { connect: [U_MCU.PA13, J_SWD.Pin_2] }
+        net SWCLK      { connect: [U_MCU.PA14, J_SWD.Pin_3] }
+        net UART_TX    { connect: [U_MCU.PB6, J_UART.Pin_1] }
+        net UART_RX    { connect: [U_MCU.PB7, J_UART.Pin_2] }
+        net I2C_SDA    { connect: [U_MCU.PB9, R_SDA.2, U_SENS.SDA, U_EEPROM.SDA] }
+        net I2C_SCL    { connect: [U_MCU.PB8, R_SCL.2, U_SENS.SCL, U_EEPROM.SCL] }
+        net RS485_TX   { connect: [U_MCU.PA2, U_485.DI] }
+        net RS485_RX   { connect: [U_MCU.PA3, U_485.RO] }
+        net RS485_DE   { connect: [U_MCU.PA1, U_485.DE, U_485.RE] }
+        net RS485_A    { connect: [U_485.A, R_TERM.1, J_RS485.Pin_1] }
+        net RS485_B    { connect: [U_485.B, R_TERM.2, J_RS485.Pin_2] }
+        net AIN_10V    { connect: [J_AIN.Pin_1, R_DIV1.1] }
+        net AIN_SCALED { connect: [R_DIV1.2, R_DIV2.1, R_AAF.1] }
+        net ADC_IN0    { connect: [R_AAF.2, C_AAF.1, D_CLAMP.A, U_MCU.PA0] }
+        net RELAY_DRV  { connect: [U_MCU.PB0, R_OPTO.1] }
+        net OPTO_LED_A { connect: [R_OPTO.2, U_OPTO.1] }
+
+        // =====================================================================
+        // GALVANICALLY ISOLATED 24V RELAY DOMAIN (ISO_24V / ISO_GND)
+        // =====================================================================
+        net ISO_24V    { connect: [J_ISO_PWR.Pin_1, C_ISO.1, U_OPTO.4, K1.5, D_FLY.K] }
+        net ISO_GND    { connect: [J_ISO_PWR.Pin_2, C_ISO.2, R_PD.2, Q_RLY.S] }
+        net OPTO_EMIT  { connect: [U_OPTO.3, R_GATE.1] }
+        net RLY_GATE   { connect: [R_GATE.2, R_PD.1, Q_RLY.G] }
+        net RLY_COIL_N { connect: [Q_RLY.D, K1.2, D_FLY.A] }
+        net RLY_COM    { connect: [K1.1, J_OUT.Pin_1] }
+        net RLY_NO     { connect: [K1.3, J_OUT.Pin_2] }
+        net RLY_NC     { connect: [K1.4, J_OUT.Pin_3] }
+    }
+
+    schematic Main {
+        sheet: A2 landscape
+        title: "24V Industrial IoT Edge Gateway & Isolated Relay Controller"
+        rev: "1.0"
+        author: "EDL v3.3.0"
+
+        routing {
+            default: zone_local
+            power_nets: symbol
+            ground_nets: symbol
+            net V24_FUSED: label_stub
+            net V24_PROT: label_stub
+            net V24_FILT: label_stub
+            net ISO_24V: label_stub
+            net ISO_GND: label_stub
+            net I2C_SDA: label_stub
+            net I2C_SCL: label_stub
+            net RS485_TX: label_stub
+            net RS485_RX: label_stub
+            net RS485_DE: label_stub
+            net ADC_IN0: label_stub
+            net RELAY_DRV: label_stub
+        }
+
+        zone Power24V_Buck {
+            title: "STAGE 1: 24V SURGE/EMI PROTECTION & 24V->5V BUCK"
+            vstack {
+                subzone "24V INPUT & PI EMI FILTER" {
+                    hstack {
+                        J_PWR
+                        vstack { F1  D_TVS }
+                        vstack { D_REV  C_IN1  C_IN2 }
+                        vstack { L_EMI  C_IN3 }
+                    }
+                }
+                subzone "LM2596S-ADJ 24V->5V BUCK (VOUT=5.03V)" {
+                    hstack {
+                        U_BUCK
+                        vstack { L_BUCK  D_BUCK }
+                        vstack { R_FB1  R_FB2 }
+                        vstack { C_5V1  C_5V2 }
+                    }
+                }
+            }
+        }
+
+        zone LDO_3V3 {
+            title: "STAGE 2: 5V->3.3V LDO & POWER LED"
+            hstack {
+                C_LDO_IN1
+                U_LDO
+                vstack { C_LDO_OUT1  C_LDO_OUT2 }
+                vstack { R_PWR  D_PWR }
+            }
+        }
+
+        zone MCU_Core {
+            title: "STAGE 3: STM32G030K8T6 CORE, CLOCK, RESET & DEBUG"
+            hstack {
+                vstack {
+                    subzone "8MHz HSE CLOCK" {
+                        vstack { Y1  hstack { C_XTAL1  C_XTAL2 } }
+                    }
+                    subzone "NRST RC & BUTTON" {
+                        vstack {
+                            hstack { R_RST  C_RST }
+                            SW_RST
+                        }
+                    }
+                    subzone "SWD & UART" {
+                        hstack { J_SWD  J_UART }
+                    }
+                }
+                U_MCU
+                subzone "VDD DECOUPLING" {
+                    vstack { C_MCU1  C_MCU2  C_MCU3  C_MCU4 }
+                }
+            }
+        }
+
+        zone Periph_I2C_RS485 {
+            title: "STAGE 4A/B: I2C SENSORS & RS-485 TRANSCEIVER"
+            vstack {
+                subzone "SHARED I2C BUS (4.7k PULL-UPS)" {
+                    hstack {
+                        vstack { R_SDA  R_SCL }
+                        vstack { U_SENS  C_SENS }
+                        vstack { U_EEPROM  C_EEPROM }
+                    }
+                }
+                subzone "RS-485 TRANSCEIVER (120 OHM TERM)" {
+                    hstack {
+                        vstack { U_485  C_485 }
+                        R_TERM
+                        J_RS485
+                    }
+                }
+            }
+        }
+
+        zone Analog_AFE {
+            title: "STAGE 4C: 0-10V ANALOG INPUT FRONT-END (fc=1.4kHz)"
+            hstack {
+                J_AIN
+                vstack { R_DIV1  R_DIV2 }
+                vstack { R_AAF  C_AAF }
+                D_CLAMP
+            }
+        }
+
+        zone Iso_Relay {
+            title: "STAGE 5: GALVANICALLY ISOLATED 24V RELAY DRIVER"
+            hstack {
+                vstack { R_OPTO  U_OPTO }
+                vstack { R_GATE  R_PD  Q_RLY }
+                vstack { K1  D_FLY }
+                vstack { J_ISO_PWR  C_ISO  J_OUT }
+            }
+        }
+
+        layout {
+            pack: skyline
+            group_gap: 10mm
+            row_gap: 10mm
+            member_gap: 8mm
+        }
+    }
+
+    verify {
+        require all_required_pins_connected
+        require no_power_ground_short
+        require no_multiple_power_drivers
+        require voltage_compatibility
+        require no_single_pin_nets
+        require galvanic_isolation(GND, ISO_GND)
+        require ic_decoupling
+        require i2c_pullups
+        require inductive_flyback
+        require bom_manufacturability
+    }
+}

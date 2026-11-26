@@ -1,0 +1,300 @@
+{
+  "sources": [
+    {
+      "id": "TX1",
+      "kind": "transformer",
+      "kva": 1000.0,
+      "voltage_v": 400.0,
+      "uk_pct": 6.0
+    },
+    {
+      "id": "TX2",
+      "kind": "transformer",
+      "kva": 1000.0,
+      "voltage_v": 400.0,
+      "uk_pct": 6.0
+    },
+    {
+      "id": "GEN1",
+      "kind": "generator",
+      "kva": 1000.0,
+      "voltage_v": 400.0,
+      "uk_pct": 15.0
+    }
+  ],
+  "buses": [
+    {
+      "id": "MSB_A",
+      "voltage_v": 400.0,
+      "ik_ka": 24.44,
+      "essential": false
+    },
+    {
+      "id": "MSB_B",
+      "voltage_v": 400.0,
+      "ik_ka": 24.44,
+      "essential": false
+    },
+    {
+      "id": "EMSB",
+      "voltage_v": 400.0,
+      "ik_ka": 9.97,
+      "essential": true
+    }
+  ],
+  "interlocks": [
+    {
+      "id": "IL_BT",
+      "devices": [
+        "Q_TX1",
+        "Q_TX2",
+        "Q_BT"
+      ],
+      "rule": "2_of_3"
+    },
+    {
+      "id": "IL_ATS",
+      "devices": [
+        "ATS1",
+        "Q_GEN"
+      ],
+      "rule": "mutually_exclusive"
+    }
+  ],
+  "breakers": [
+    {
+      "id": "Q_TX1",
+      "bus": "MSB_A",
+      "in_a": 1600.0,
+      "icu_ka": 50.0
+    },
+    {
+      "id": "Q_TX2",
+      "bus": "MSB_B",
+      "in_a": 1600.0,
+      "icu_ka": 50.0
+    },
+    {
+      "id": "Q_GEN",
+      "bus": "EMSB",
+      "in_a": 1600.0,
+      "icu_ka": 50.0
+    },
+    {
+      "id": "Q_BT",
+      "bus": "MSB_A",
+      "in_a": 1600.0,
+      "icu_ka": 50.0
+    },
+    {
+      "id": "ATS1",
+      "bus": "EMSB",
+      "in_a": 1250.0,
+      "icu_ka": 50.0
+    },
+    {
+      "id": "QF7",
+      "bus": "MSB_A",
+      "in_a": 400.0,
+      "icu_ka": 50.0
+    },
+    {
+      "id": "QF8",
+      "bus": "MSB_A",
+      "in_a": 500.0,
+      "icu_ka": 50.0
+    },
+    {
+      "id": "QF9",
+      "bus": "MSB_B",
+      "in_a": 500.0,
+      "icu_ka": 50.0
+    },
+    {
+      "id": "QF10",
+      "bus": "MSB_B",
+      "in_a": 200.0,
+      "icu_ka": 50.0
+    },
+    {
+      "id": "QF_PFCA",
+      "bus": "MSB_A",
+      "in_a": 250.0,
+      "icu_ka": 50.0
+    },
+    {
+      "id": "QF_PFCB",
+      "bus": "MSB_B",
+      "in_a": 250.0,
+      "icu_ka": 50.0
+    },
+    {
+      "id": "QF1",
+      "bus": "EMSB",
+      "in_a": 320.0,
+      "icu_ka": 36.0
+    },
+    {
+      "id": "QF2",
+      "bus": "EMSB",
+      "in_a": 200.0,
+      "icu_ka": 36.0
+    },
+    {
+      "id": "QF3",
+      "bus": "EMSB",
+      "in_a": 250.0,
+      "icu_ka": 36.0
+    },
+    {
+      "id": "QF4",
+      "bus": "EMSB",
+      "in_a": 250.0,
+      "icu_ka": 36.0
+    },
+    {
+      "id": "QF5",
+      "bus": "EMSB",
+      "in_a": 200.0,
+      "icu_ka": 36.0
+    },
+    {
+      "id": "QF6",
+      "bus": "EMSB",
+      "in_a": 200.0,
+      "icu_ka": 36.0
+    }
+  ],
+  "feeders": [
+    {
+      "id": "F1_MED_UPS",
+      "bus": "EMSB",
+      "load_kw": 150.0,
+      "pf": 0.9,
+      "length_m": 35.0,
+      "breaker_a": 320.0,
+      "icu_ka": 36.0,
+      "cable_runs": 1,
+      "cable_mm2": 185.0,
+      "iz_a": 392.0,
+      "vdrop_pct": 0.51
+    },
+    {
+      "id": "F2_FIRE_PUMP",
+      "bus": "EMSB",
+      "load_kw": 75.0,
+      "pf": 0.85,
+      "length_m": 55.0,
+      "breaker_a": 200.0,
+      "icu_ka": 36.0,
+      "cable_runs": 1,
+      "cable_mm2": 95.0,
+      "iz_a": 258.0,
+      "vdrop_pct": 0.71
+    },
+    {
+      "id": "F3_CLINIC_DB1",
+      "bus": "EMSB",
+      "load_kw": 120.0,
+      "pf": 0.9,
+      "length_m": 45.0,
+      "breaker_a": 250.0,
+      "icu_ka": 36.0,
+      "cable_runs": 1,
+      "cable_mm2": 120.0,
+      "iz_a": 299.0,
+      "vdrop_pct": 0.74
+    },
+    {
+      "id": "F4_CLINIC_DB2",
+      "bus": "EMSB",
+      "load_kw": 110.0,
+      "pf": 0.9,
+      "length_m": 60.0,
+      "breaker_a": 250.0,
+      "icu_ka": 36.0,
+      "cable_runs": 1,
+      "cable_mm2": 120.0,
+      "iz_a": 299.0,
+      "vdrop_pct": 0.9
+    },
+    {
+      "id": "F5_LAB_STERIL",
+      "bus": "EMSB",
+      "load_kw": 85.0,
+      "pf": 0.88,
+      "length_m": 40.0,
+      "breaker_a": 200.0,
+      "icu_ka": 36.0,
+      "cable_runs": 1,
+      "cable_mm2": 95.0,
+      "iz_a": 258.0,
+      "vdrop_pct": 0.57
+    },
+    {
+      "id": "F6_ELEVATORS",
+      "bus": "EMSB",
+      "load_kw": 90.0,
+      "pf": 0.85,
+      "length_m": 50.0,
+      "breaker_a": 200.0,
+      "icu_ka": 36.0,
+      "cable_runs": 1,
+      "cable_mm2": 95.0,
+      "iz_a": 258.0,
+      "vdrop_pct": 0.78
+    },
+    {
+      "id": "F7_IMAGING",
+      "bus": "MSB_A",
+      "load_kw": 180.0,
+      "pf": 0.9,
+      "length_m": 40.0,
+      "breaker_a": 400.0,
+      "icu_ka": 50.0,
+      "cable_runs": 1,
+      "cable_mm2": 240.0,
+      "iz_a": 461.0,
+      "vdrop_pct": 0.58
+    },
+    {
+      "id": "F8_CHILLER1",
+      "bus": "MSB_A",
+      "load_kw": 220.0,
+      "pf": 0.85,
+      "length_m": 65.0,
+      "breaker_a": 500.0,
+      "icu_ka": 50.0,
+      "cable_runs": 2,
+      "cable_mm2": 150.0,
+      "iz_a": 633.0,
+      "vdrop_pct": 0.86
+    },
+    {
+      "id": "F9_CHILLER2",
+      "bus": "MSB_B",
+      "load_kw": 220.0,
+      "pf": 0.85,
+      "length_m": 70.0,
+      "breaker_a": 500.0,
+      "icu_ka": 50.0,
+      "cable_runs": 2,
+      "cable_mm2": 150.0,
+      "iz_a": 633.0,
+      "vdrop_pct": 0.93
+    },
+    {
+      "id": "F10_GEN_PWR",
+      "bus": "MSB_B",
+      "load_kw": 100.0,
+      "pf": 0.9,
+      "length_m": 50.0,
+      "breaker_a": 200.0,
+      "icu_ka": 50.0,
+      "cable_runs": 1,
+      "cable_mm2": 95.0,
+      "iz_a": 258.0,
+      "vdrop_pct": 0.83
+    }
+  ]
+}

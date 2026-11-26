@@ -1,0 +1,1078 @@
+{
+  "fixtures": [
+    {
+      "id": "Exam1Basin",
+      "room": "Exam1",
+      "kind": "basin",
+      "x": 4910.0,
+      "y": 13145.0,
+      "dfu": 1,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "Exam2Basin",
+      "room": "Exam2",
+      "kind": "basin",
+      "x": 9710.0,
+      "y": 13145.0,
+      "dfu": 1,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "Exam3Basin",
+      "room": "Exam3",
+      "kind": "basin",
+      "x": 14310.0,
+      "y": 13145.0,
+      "dfu": 1,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "Exam4Basin",
+      "room": "Exam4",
+      "kind": "basin",
+      "x": 18910.0,
+      "y": 13145.0,
+      "dfu": 1,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "KitchenSink",
+      "room": "Breakroom",
+      "kind": "sink",
+      "x": 19290.0,
+      "y": 6750.0,
+      "dfu": 2,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "MopSink",
+      "room": "MechRoom",
+      "kind": "mop_sink",
+      "x": 2210.0,
+      "y": 5015.0,
+      "dfu": 2,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "PublicBasin",
+      "room": "PublicWC",
+      "kind": "basin",
+      "x": 3790.0,
+      "y": 4490.0,
+      "dfu": 1,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "PublicToilet",
+      "room": "PublicWC",
+      "kind": "wc",
+      "x": 2430.0,
+      "y": 3830.0,
+      "dfu": 4,
+      "has_cw": true,
+      "has_hw": false,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "ScrubSink",
+      "room": "Procedure",
+      "kind": "sink",
+      "x": 190.0,
+      "y": 11370.0,
+      "dfu": 2,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "StaffBasin",
+      "room": "StaffWC",
+      "kind": "basin",
+      "x": 22475.0,
+      "y": 10490.0,
+      "dfu": 1,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "StaffToilet",
+      "room": "StaffWC",
+      "kind": "wc",
+      "x": 23210.0,
+      "y": 8755.0,
+      "dfu": 4,
+      "has_cw": true,
+      "has_hw": false,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "SteriSink",
+      "room": "Lab",
+      "kind": "sink",
+      "x": 16270.0,
+      "y": 6000.0,
+      "dfu": 2,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": true,
+      "has_vent": true
+    },
+    {
+      "id": "WH1",
+      "room": "MechRoom",
+      "kind": "water_heater",
+      "x": 650.0,
+      "y": 2400.0,
+      "dfu": 0,
+      "has_cw": true,
+      "has_hw": true,
+      "has_san": false,
+      "has_vent": false
+    }
+  ],
+  "valves": [
+    {
+      "id": "V_Corr_CW_East",
+      "system": "CW",
+      "x": 23140.0,
+      "y": 8570.0
+    },
+    {
+      "id": "V_Corr_CW_West",
+      "system": "CW",
+      "x": 260.0,
+      "y": 8570.0
+    },
+    {
+      "id": "V_Corr_HW_East",
+      "system": "HW",
+      "x": 23140.0,
+      "y": 8690.0
+    },
+    {
+      "id": "V_Corr_HW_West",
+      "system": "HW",
+      "x": 260.0,
+      "y": 8690.0
+    },
+    {
+      "id": "V_Main",
+      "system": "CW",
+      "x": 1300.0,
+      "y": 2400.0
+    },
+    {
+      "id": "V_North_CW_East",
+      "system": "CW",
+      "x": 23140.0,
+      "y": 14550.0
+    },
+    {
+      "id": "V_North_CW_Top",
+      "system": "CW",
+      "x": 1000.0,
+      "y": 14840.0
+    },
+    {
+      "id": "V_North_CW_West",
+      "system": "CW",
+      "x": 260.0,
+      "y": 14550.0
+    },
+    {
+      "id": "V_North_HW_East",
+      "system": "HW",
+      "x": 23140.0,
+      "y": 14700.0
+    },
+    {
+      "id": "V_North_HW_Top",
+      "system": "HW",
+      "x": 650.0,
+      "y": 14840.0
+    },
+    {
+      "id": "V_North_HW_West",
+      "system": "HW",
+      "x": 260.0,
+      "y": 14700.0
+    },
+    {
+      "id": "V_WH1",
+      "system": "HW",
+      "x": 400.0,
+      "y": 2400.0
+    }
+  ],
+  "cleanouts": [
+    {
+      "id": "COP_Main_East",
+      "x": 23140.0,
+      "y": 8450.0
+    },
+    {
+      "id": "COP_Mech",
+      "x": 2140.0,
+      "y": 2540.0
+    },
+    {
+      "id": "COP_North_East",
+      "x": 23140.0,
+      "y": 14330.0
+    }
+  ],
+  "pipes": [
+    {
+      "id": "CW_Trunk_West",
+      "system": "CW",
+      "dn_mm": 32,
+      "slope_pct": 0.0,
+      "from_x": 1000.0,
+      "from_y": 2400.0,
+      "to_x": 1000.0,
+      "to_y": 14840.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "CW_Header_Corr",
+      "system": "CW",
+      "dn_mm": 32,
+      "slope_pct": 0.0,
+      "from_x": 260.0,
+      "from_y": 8570.0,
+      "to_x": 23140.0,
+      "to_y": 8570.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "CW_Header_North",
+      "system": "CW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 260.0,
+      "from_y": 14550.0,
+      "to_x": 23140.0,
+      "to_y": 14550.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HW_Trunk_West",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 650.0,
+      "from_y": 2400.0,
+      "to_x": 650.0,
+      "to_y": 14840.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HW_Header_Corr",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 260.0,
+      "from_y": 8690.0,
+      "to_x": 23140.0,
+      "to_y": 8690.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HW_Header_North",
+      "system": "HW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 260.0,
+      "from_y": 14700.0,
+      "to_x": 23140.0,
+      "to_y": 14700.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "SAN_Header_Mech",
+      "system": "SAN",
+      "dn_mm": 110,
+      "slope_pct": 1.0,
+      "from_x": 2140.0,
+      "from_y": 2540.0,
+      "to_x": 2140.0,
+      "to_y": 7990.0,
+      "dfu_load": 7
+    },
+    {
+      "id": "SAN_Header_Main",
+      "system": "SAN",
+      "dn_mm": 150,
+      "slope_pct": 1.0,
+      "from_x": 23140.0,
+      "from_y": 8450.0,
+      "to_x": 260.0,
+      "to_y": 8450.0,
+      "dfu_load": 9
+    },
+    {
+      "id": "SAN_Header_North",
+      "system": "SAN",
+      "dn_mm": 110,
+      "slope_pct": 2.0,
+      "from_x": 23140.0,
+      "from_y": 14330.0,
+      "to_x": 260.0,
+      "to_y": 14330.0,
+      "dfu_load": 6
+    },
+    {
+      "id": "VENT_Header_Mech",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 2140.0,
+      "from_y": 2990.0,
+      "to_x": 2140.0,
+      "to_y": 7540.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VENT_Header_Main",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 23140.0,
+      "from_y": 8800.0,
+      "to_x": 260.0,
+      "to_y": 8800.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VENT_Header_North",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 23140.0,
+      "from_y": 14130.0,
+      "to_x": 260.0,
+      "to_y": 14130.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "CWS_MAIN_CW_to_WH1",
+      "system": "CW",
+      "dn_mm": 25,
+      "slope_pct": 0.0,
+      "from_x": 1000.0,
+      "from_y": 2400.0,
+      "to_x": 650.0,
+      "to_y": 2400.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "CWS_MopSink",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 1000.0,
+      "from_y": 5015.0,
+      "to_x": 2210.0,
+      "to_y": 5015.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HWS_MopSink",
+      "system": "HW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 650.0,
+      "from_y": 5015.0,
+      "to_x": 2210.0,
+      "to_y": 5015.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_MopSink",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 2210.0,
+      "from_y": 5015.0,
+      "to_x": 2140.0,
+      "to_y": 5015.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "DWV_MopSink",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 2210.0,
+      "from_y": 5015.0,
+      "to_x": 2140.0,
+      "to_y": 5015.0,
+      "dfu_load": 2
+    },
+    {
+      "id": "CWS_PublicToilet",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 1000.0,
+      "from_y": 3830.0,
+      "to_x": 2430.0,
+      "to_y": 3830.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_PublicToilet",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 2430.0,
+      "from_y": 3830.0,
+      "to_x": 2140.0,
+      "to_y": 3830.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "DWV_PublicToilet",
+      "system": "SAN",
+      "dn_mm": 110,
+      "slope_pct": 1.67,
+      "from_x": 2430.0,
+      "from_y": 3830.0,
+      "to_x": 2140.0,
+      "to_y": 3830.0,
+      "dfu_load": 4
+    },
+    {
+      "id": "CWS_PublicBasin",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 1000.0,
+      "from_y": 4490.0,
+      "to_x": 3790.0,
+      "to_y": 4490.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HWS_PublicBasin",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 650.0,
+      "from_y": 4490.0,
+      "to_x": 3790.0,
+      "to_y": 4490.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_PublicBasin",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 3790.0,
+      "from_y": 4490.0,
+      "to_x": 2140.0,
+      "to_y": 4490.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "DWV_PublicBasin",
+      "system": "SAN",
+      "dn_mm": 40,
+      "slope_pct": 2.5,
+      "from_x": 3790.0,
+      "from_y": 4490.0,
+      "to_x": 2140.0,
+      "to_y": 4490.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "CWS_SteriSink",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 16270.0,
+      "from_y": 8570.0,
+      "to_x": 16270.0,
+      "to_y": 6000.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HWS_SteriSink",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 16270.0,
+      "from_y": 8690.0,
+      "to_x": 16270.0,
+      "to_y": 6000.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_SteriSink",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 16270.0,
+      "from_y": 6000.0,
+      "to_x": 16270.0,
+      "to_y": 8800.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "DWV_SteriSink",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 16270.0,
+      "from_y": 6000.0,
+      "to_x": 16270.0,
+      "to_y": 8450.0,
+      "dfu_load": 2
+    },
+    {
+      "id": "CWS_KitchenSink",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 19290.0,
+      "from_y": 8570.0,
+      "to_x": 19290.0,
+      "to_y": 6750.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HWS_KitchenSink",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 19290.0,
+      "from_y": 8690.0,
+      "to_x": 19290.0,
+      "to_y": 6750.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_KitchenSink",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 19290.0,
+      "from_y": 6750.0,
+      "to_x": 19290.0,
+      "to_y": 8800.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "DWV_KitchenSink",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 19290.0,
+      "from_y": 6750.0,
+      "to_x": 19290.0,
+      "to_y": 8450.0,
+      "dfu_load": 2
+    },
+    {
+      "id": "CWS_StaffToilet_s1",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 21996.0,
+      "from_y": 8570.0,
+      "to_x": 23210.0,
+      "to_y": 8570.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "CWS_StaffToilet_s2",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 23210.0,
+      "from_y": 8570.0,
+      "to_x": 23210.0,
+      "to_y": 8755.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_StaffToilet_s1",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 23210.0,
+      "from_y": 8755.0,
+      "to_x": 21996.0,
+      "to_y": 8755.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_StaffToilet_s2",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 21996.0,
+      "from_y": 8755.0,
+      "to_x": 21996.0,
+      "to_y": 8800.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "DWV_StaffToilet_s1",
+      "system": "SAN",
+      "dn_mm": 110,
+      "slope_pct": 1.67,
+      "from_x": 23210.0,
+      "from_y": 8755.0,
+      "to_x": 23210.0,
+      "to_y": 8535.4,
+      "dfu_load": 4
+    },
+    {
+      "id": "DWV_StaffToilet_s2",
+      "system": "SAN",
+      "dn_mm": 110,
+      "slope_pct": 1.67,
+      "from_x": 23210.0,
+      "from_y": 8535.4,
+      "to_x": 23124.6,
+      "to_y": 8450.0,
+      "dfu_load": 4
+    },
+    {
+      "id": "DWV_StaffToilet_s3",
+      "system": "SAN",
+      "dn_mm": 110,
+      "slope_pct": 1.67,
+      "from_x": 23124.6,
+      "from_y": 8450.0,
+      "to_x": 21996.0,
+      "to_y": 8450.0,
+      "dfu_load": 4
+    },
+    {
+      "id": "CWS_StaffBasin_s1",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 21996.0,
+      "from_y": 8570.0,
+      "to_x": 22051.0,
+      "to_y": 8570.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "CWS_StaffBasin_s2",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 22051.0,
+      "from_y": 8570.0,
+      "to_x": 22051.0,
+      "to_y": 10545.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "CWS_StaffBasin_s3",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 22051.0,
+      "from_y": 10545.0,
+      "to_x": 22475.0,
+      "to_y": 10545.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "CWS_StaffBasin_s4",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 22475.0,
+      "from_y": 10545.0,
+      "to_x": 22475.0,
+      "to_y": 10490.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HWS_StaffBasin_s1",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 21996.0,
+      "from_y": 8690.0,
+      "to_x": 21941.0,
+      "to_y": 8690.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HWS_StaffBasin_s2",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 21941.0,
+      "from_y": 8690.0,
+      "to_x": 21941.0,
+      "to_y": 10435.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HWS_StaffBasin_s3",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 21941.0,
+      "from_y": 10435.0,
+      "to_x": 22475.0,
+      "to_y": 10435.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HWS_StaffBasin_s4",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 22475.0,
+      "from_y": 10435.0,
+      "to_x": 22475.0,
+      "to_y": 10490.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_StaffBasin_s1",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 22475.0,
+      "from_y": 10490.0,
+      "to_x": 21996.0,
+      "to_y": 10490.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_StaffBasin_s2",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 21996.0,
+      "from_y": 10490.0,
+      "to_x": 21996.0,
+      "to_y": 8800.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "DWV_StaffBasin_s1",
+      "system": "SAN",
+      "dn_mm": 40,
+      "slope_pct": 2.5,
+      "from_x": 22475.0,
+      "from_y": 10490.0,
+      "to_x": 22475.0,
+      "to_y": 8584.12,
+      "dfu_load": 1
+    },
+    {
+      "id": "DWV_StaffBasin_s2",
+      "system": "SAN",
+      "dn_mm": 40,
+      "slope_pct": 2.5,
+      "from_x": 22475.0,
+      "from_y": 8584.12,
+      "to_x": 22340.88,
+      "to_y": 8450.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "DWV_StaffBasin_s3",
+      "system": "SAN",
+      "dn_mm": 40,
+      "slope_pct": 2.5,
+      "from_x": 22340.88,
+      "from_y": 8450.0,
+      "to_x": 21996.0,
+      "to_y": 8450.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "CWS_ScrubSink",
+      "system": "CW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 1000.0,
+      "from_y": 11370.0,
+      "to_x": 190.0,
+      "to_y": 11370.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HWS_ScrubSink",
+      "system": "HW",
+      "dn_mm": 20,
+      "slope_pct": 0.0,
+      "from_x": 650.0,
+      "from_y": 11370.0,
+      "to_x": 190.0,
+      "to_y": 11370.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_ScrubSink_s1",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 190.0,
+      "from_y": 11370.0,
+      "to_x": 1404.0,
+      "to_y": 11370.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_ScrubSink_s2",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 1404.0,
+      "from_y": 11370.0,
+      "to_x": 1404.0,
+      "to_y": 14130.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "DWV_ScrubSink_s1",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 190.0,
+      "from_y": 11370.0,
+      "to_x": 190.0,
+      "to_y": 14070.0,
+      "dfu_load": 2
+    },
+    {
+      "id": "DWV_ScrubSink_s2",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 190.0,
+      "from_y": 14070.0,
+      "to_x": 450.0,
+      "to_y": 14330.0,
+      "dfu_load": 2
+    },
+    {
+      "id": "DWV_ScrubSink_s3",
+      "system": "SAN",
+      "dn_mm": 50,
+      "slope_pct": 2.0,
+      "from_x": 450.0,
+      "from_y": 14330.0,
+      "to_x": 1404.0,
+      "to_y": 14330.0,
+      "dfu_load": 2
+    },
+    {
+      "id": "CWS_Exam1Basin",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 4910.0,
+      "from_y": 14550.0,
+      "to_x": 4910.0,
+      "to_y": 13145.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HWS_Exam1Basin",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 4910.0,
+      "from_y": 14700.0,
+      "to_x": 4910.0,
+      "to_y": 13145.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_Exam1Basin",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 4910.0,
+      "from_y": 13145.0,
+      "to_x": 4910.0,
+      "to_y": 14130.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "DWV_Exam1Basin",
+      "system": "SAN",
+      "dn_mm": 40,
+      "slope_pct": 2.5,
+      "from_x": 4910.0,
+      "from_y": 13145.0,
+      "to_x": 4910.0,
+      "to_y": 14330.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "CWS_Exam2Basin",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 9710.0,
+      "from_y": 14550.0,
+      "to_x": 9710.0,
+      "to_y": 13145.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HWS_Exam2Basin",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 9710.0,
+      "from_y": 14700.0,
+      "to_x": 9710.0,
+      "to_y": 13145.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_Exam2Basin",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 9710.0,
+      "from_y": 13145.0,
+      "to_x": 9710.0,
+      "to_y": 14130.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "DWV_Exam2Basin",
+      "system": "SAN",
+      "dn_mm": 40,
+      "slope_pct": 2.5,
+      "from_x": 9710.0,
+      "from_y": 13145.0,
+      "to_x": 9710.0,
+      "to_y": 14330.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "CWS_Exam3Basin",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 14310.0,
+      "from_y": 14550.0,
+      "to_x": 14310.0,
+      "to_y": 13145.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HWS_Exam3Basin",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 14310.0,
+      "from_y": 14700.0,
+      "to_x": 14310.0,
+      "to_y": 13145.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_Exam3Basin",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 14310.0,
+      "from_y": 13145.0,
+      "to_x": 14310.0,
+      "to_y": 14130.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "DWV_Exam3Basin",
+      "system": "SAN",
+      "dn_mm": 40,
+      "slope_pct": 2.5,
+      "from_x": 14310.0,
+      "from_y": 13145.0,
+      "to_x": 14310.0,
+      "to_y": 14330.0,
+      "dfu_load": 1
+    },
+    {
+      "id": "CWS_Exam4Basin",
+      "system": "CW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 18910.0,
+      "from_y": 14550.0,
+      "to_x": 18910.0,
+      "to_y": 13145.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "HWS_Exam4Basin",
+      "system": "HW",
+      "dn_mm": 15,
+      "slope_pct": 0.0,
+      "from_x": 18910.0,
+      "from_y": 14700.0,
+      "to_x": 18910.0,
+      "to_y": 13145.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "VP_Exam4Basin",
+      "system": "VENT",
+      "dn_mm": 50,
+      "slope_pct": 0.0,
+      "from_x": 18910.0,
+      "from_y": 13145.0,
+      "to_x": 18910.0,
+      "to_y": 14130.0,
+      "dfu_load": 0
+    },
+    {
+      "id": "DWV_Exam4Basin",
+      "system": "SAN",
+      "dn_mm": 40,
+      "slope_pct": 2.5,
+      "from_x": 18910.0,
+      "from_y": 13145.0,
+      "to_x": 18910.0,
+      "to_y": 14330.0,
+      "dfu_load": 1
+    }
+  ]
+}

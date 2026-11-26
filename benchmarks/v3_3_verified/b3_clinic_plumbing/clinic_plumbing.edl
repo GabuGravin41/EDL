@@ -1,0 +1,93 @@
+// Benchmark 3 (EDL v3.3): Multi-Discipline Plumbing Overlay (Zero Architecture Copy-Paste!)
+project "Outpatient_Specialist_Medical_Clinic_Plumbing" {
+  units: mm
+  overlay "../b2_clinic_arch/clinic_arch.edl"
+
+  building_plumbing ClinicPlumbing {
+    standard: "IPC 2021 / EN 12056 / EN 806"
+    supply_pressure_bar: 3.5
+
+    // --- 1. MechRoom Domestic Water Plant (Clear of Col_1_B, DoorMech & ElecITRoom) ---
+    // MechRoom.south spans X=150..2250 at Y=2290 (nodes inset 110mm -> Y=2400)
+    valve  V_WH1:   isolation_valve { system: hot   host: MechRoom.south  at: 250mm   serves: "Electric Water Heater WH1 Isolation" }
+    heater WH1:     water_heater    { host: MechRoom.south  at: 500mm   capacity_l: 300  cold_in: MAIN_CW  cold_dia: 25mm  hot_dia: 25mm }
+    riser  MAIN_CW: cold_water      { host: MechRoom.south  at: 850mm   dia: 32mm }
+    valve  V_Main:  isolation_valve { system: cold  host: MechRoom.south  at: 1150mm  serves: "Main Cold Water Supply Shutoff" }
+
+    // --- 2. Zone Isolation Valves & Header Termination Nodes ---
+    // Vertical CW/HW trunk tops (X=1000 CW, X=650 HW — clear of Col_1, WinProcedureN, ElecITRoom)
+    valve V_North_CW_Top:  isolation_valve { system: cold  host: Procedure.north  at: 850mm   serves: "North Clinical Wing CW Trunk" }
+    valve V_North_HW_Top:  isolation_valve { system: hot   host: Procedure.north  at: 500mm   serves: "North Clinical Wing HW Trunk" }
+
+    // Corridor horizontal CW/HW header nodes (Y=8570 CW, Y=8690 HW — below WinCorridorW Y=8830, clear of all columns)
+    valve V_Corr_CW_West:  isolation_valve { system: cold  host: Corridor.west    at: 240mm   serves: "Corridor & Support CW Zone" }
+    valve V_Corr_CW_East:  isolation_valve { system: cold  host: StaffWC.east     at: 240mm   serves: "StaffWC CW End Isolation" }
+    valve V_Corr_HW_West:  isolation_valve { system: hot   host: Corridor.west    at: 360mm   serves: "Corridor & Support HW Zone" }
+    valve V_Corr_HW_East:  isolation_valve { system: hot   host: StaffWC.east     at: 360mm   serves: "StaffWC HW End Isolation" }
+
+    // North Clinical horizontal CW/HW header nodes (Y=14550 CW, Y=14700 HW — North utility chase, clear of tables, desks, labels & Col_*_D)
+    valve V_North_CW_West: isolation_valve { system: cold  host: Procedure.west   at: 3880mm  serves: "North Wing CW Header" }
+    valve V_North_CW_East: isolation_valve { system: cold  host: Exam4.east       at: 3880mm  serves: "Exam4 CW End Isolation" }
+    valve V_North_HW_West: isolation_valve { system: hot   host: Procedure.west   at: 4030mm  serves: "North Wing HW Header" }
+    valve V_North_HW_East: isolation_valve { system: hot   host: Exam4.east       at: 4030mm  serves: "Exam4 HW End Isolation" }
+
+    // --- 3. Sanitary Stacks, Vent Stacks & Cleanouts (Zero Column / ElecITRoom Clashes) ---
+    // Zone 1: MechRoom / PublicWC vertical chase along MechRoom.east (X=2140, west of ElecITRoom X>=2390)
+    stack    SoilStack_Mech:  soil_stack { host: MechRoom.east   at: 5700mm  dia: 110mm  vented: true }
+    cleanout COP_Mech:        cleanout   { host: MechRoom.east   at: 250mm   dia: 110mm }
+    stack    VentStack_Mech:  vent_stack { host: MechRoom.east   at: 5250mm  dia: 50mm   vented: true }
+    cleanout VentEnd_Mech:    cleanout   { system: vent  host: MechRoom.east  at: 700mm  dia: 50mm }
+
+    // Zone 2: Central Corridor / Support / StaffWC horizontal collector (Y=8450 SAN, Y=8800 VENT — below WinCorridorW)
+    stack    SoilStack_Main:  soil_stack { host: Corridor.west   at: 120mm   dia: 150mm  vented: true }
+    cleanout COP_Main_East:   cleanout   { host: StaffWC.east    at: 120mm   dia: 150mm }
+    stack    VentStack_Main:  vent_stack { host: Corridor.west   at: 470mm   dia: 50mm   vented: true }
+    cleanout VentEnd_Main:    cleanout   { system: vent  host: StaffWC.east   at: 470mm  dia: 50mm }
+
+    // Zone 3: North Clinical Wing horizontal collector (Y=14330 SAN, Y=14130 VENT — clear of Exam*Table/Desk/Labels & Col_*_D)
+    stack    SoilStack_North: soil_stack { host: Procedure.west  at: 3660mm  dia: 110mm  vented: true }
+    cleanout COP_North_East:  cleanout   { host: Exam4.east      at: 3660mm  dia: 110mm }
+    stack    VentStack_North: vent_stack { host: Procedure.west  at: 3460mm  dia: 50mm   vented: true }
+    cleanout VentEnd_North:   cleanout   { system: vent  host: Exam4.east     at: 3460mm dia: 50mm }
+
+    // --- 4. Collector & Distribution Headers ---
+    // Domestic Cold Water (CW) headers
+    header CW_Trunk_West:   cold_header  { from: MAIN_CW          to: V_North_CW_Top   dia: 32mm }
+    header CW_Header_Corr:  cold_header  { from: V_Corr_CW_West   to: V_Corr_CW_East   dia: 32mm }
+    header CW_Header_North: cold_header  { from: V_North_CW_West  to: V_North_CW_East  dia: 25mm }
+
+    // Domestic Hot Water (HW) headers
+    header HW_Trunk_West:   hot_header   { from: WH1              to: V_North_HW_Top   dia: 25mm }
+    header HW_Header_Corr:  hot_header   { from: V_Corr_HW_West   to: V_Corr_HW_East   dia: 25mm }
+    header HW_Header_North: hot_header   { from: V_North_HW_West  to: V_North_HW_East  dia: 25mm }
+
+    // Sanitary Drainage (SAN) headers (IPC 1% - 2% self-cleansing gravity slope)
+    header SAN_Header_Mech:  soil_header { from: COP_Mech         to: SoilStack_Mech   dia: 110mm  slope: "1:100" }
+    header SAN_Header_Main:  soil_header { from: COP_Main_East    to: SoilStack_Main   dia: 150mm  slope: "1:100" }
+    header SAN_Header_North: soil_header { from: COP_North_East   to: SoilStack_North  dia: 110mm  slope: "1:50" }
+
+    // Venting (VENT) headers
+    header VENT_Header_Mech:  vent_header { from: VentEnd_Mech    to: VentStack_Mech   dia: 50mm }
+    header VENT_Header_Main:  vent_header { from: VentEnd_Main    to: VentStack_Main   dia: 50mm }
+    header VENT_Header_North: vent_header { from: VentEnd_North   to: VentStack_North  dia: 50mm }
+
+    // --- 5. All 12 Wet Fixture Connections (100% CW + HW where req + SAN + VENT) ---
+    // Zone 1: MechRoom + PublicWC
+    connect MopSink      { cold: CW_Trunk_West    cold_dia: 20mm  hot: HW_Trunk_West    hot_dia: 20mm  waste: SAN_Header_Mech   drain_dia: 50mm   slope: "1:50"  vent: VENT_Header_Mech }
+    connect PublicToilet { cold: CW_Trunk_West    cold_dia: 20mm  soil: SAN_Header_Mech drain_dia: 110mm slope: "1:60"  vent: VENT_Header_Mech }
+    connect PublicBasin  { cold: CW_Trunk_West    cold_dia: 15mm  hot: HW_Trunk_West    hot_dia: 15mm  waste: SAN_Header_Mech   drain_dia: 40mm   slope: "1:40"  vent: VENT_Header_Mech }
+
+    // Zone 2: Lab + Breakroom + StaffWC
+    connect SteriSink    { cold: CW_Header_Corr   cold_dia: 15mm  hot: HW_Header_Corr   hot_dia: 15mm  waste: SAN_Header_Main   drain_dia: 50mm   slope: "1:50"  vent: VENT_Header_Main }
+    connect KitchenSink  { cold: CW_Header_Corr   cold_dia: 15mm  hot: HW_Header_Corr   hot_dia: 15mm  waste: SAN_Header_Main   drain_dia: 50mm   slope: "1:50"  vent: VENT_Header_Main }
+    connect StaffToilet  { cold: CW_Header_Corr   cold_dia: 20mm  soil: SAN_Header_Main drain_dia: 110mm slope: "1:60"  vent: VENT_Header_Main }
+    connect StaffBasin   { cold: CW_Header_Corr   cold_dia: 15mm  hot: HW_Header_Corr   hot_dia: 15mm  waste: SAN_Header_Main   drain_dia: 40mm   slope: "1:40"  vent: VENT_Header_Main }
+
+    // Zone 3: Procedure + Exam1..Exam4 (ScrubSink taps short horizontal CW/HW off West Trunks!)
+    connect ScrubSink    { cold: CW_Trunk_West    cold_dia: 20mm  hot: HW_Trunk_West    hot_dia: 20mm  waste: SAN_Header_North  drain_dia: 50mm   slope: "1:50"  vent: VENT_Header_North }
+    connect Exam1Basin   { cold: CW_Header_North  cold_dia: 15mm  hot: HW_Header_North  hot_dia: 15mm  waste: SAN_Header_North  drain_dia: 40mm   slope: "1:40"  vent: VENT_Header_North }
+    connect Exam2Basin   { cold: CW_Header_North  cold_dia: 15mm  hot: HW_Header_North  hot_dia: 15mm  waste: SAN_Header_North  drain_dia: 40mm   slope: "1:40"  vent: VENT_Header_North }
+    connect Exam3Basin   { cold: CW_Header_North  cold_dia: 15mm  hot: HW_Header_North  hot_dia: 15mm  waste: SAN_Header_North  drain_dia: 40mm   slope: "1:40"  vent: VENT_Header_North }
+    connect Exam4Basin   { cold: CW_Header_North  cold_dia: 15mm  hot: HW_Header_North  hot_dia: 15mm  waste: SAN_Header_North  drain_dia: 40mm   slope: "1:40"  vent: VENT_Header_North }
+  }
+}

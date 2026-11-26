@@ -1,0 +1,380 @@
+// Benchmark 3: Full Building Plumbing (CW/HW/SAN/VENT) Overlaid on the 15-Room (+ StaffWC) Medical Clinic
+// Extends B2 clinic_arch.edl without modifying architectural rooms, columns, doors, windows, or fixtures.
+// IPC 2021 / EN 12056 / EN 806 compliant:
+//   - 12 Wet Architectural Fixtures (4 Exam Basins, Surgical Scrub Sink, Lab Steri Sink, Breakroom Kitchen Sink,
+//     PublicWC Accessible Toilet + Basin, MechRoom Mop Sink, StaffWC Toilet + Basin) + 300L Electric Water Heater (WH1)
+//   - 0 Plumbing Pipes/Stacks/Equipment in ElecITRoom (Dry Zone)
+//   - 0 Clashes with 21 Structural Concrete Columns
+
+project "Outpatient_Specialist_Medical_Clinic_Plumbing" {
+  units: mm
+  frame Plan: Frame2
+
+  architecture.defaults {
+    measurement_basis: clear_interior
+    exterior_wall: 300mm
+    interior_wall: 140mm
+  }
+
+  parameter ext_half: 150mm
+  parameter int_half: 70mm
+  parameter corr_w:   2200mm
+
+  // 6 x 4 Structural Concrete Column Grid (all bays 4.5m - 6.0m, L-shaped footprint intersections)
+  structural_grid ClinicGrid {
+    x_bays:   [4800mm, 4800mm, 4600mm, 4600mm, 4600mm]
+    x_labels: ["1", "2", "3", "4", "5", "6"]
+    y_bays:   [4600mm, 6000mm, 4500mm]
+    y_labels: ["A", "B", "C", "D"]
+    columns:  [
+      "1A", "2A", "3A",
+      "1B", "2B", "3B", "4B", "5B", "6B",
+      "1C", "2C", "3C", "4C", "5C", "6C",
+      "1D", "2D", "3D", "4D", "5D", "6D"
+    ]
+    column_size: (300mm, 300mm)
+    column_kind: concrete
+
+    levels {
+      Vestibule: "±0.000"
+      Waiting:   "±0.000"
+      Corridor:  "±0.000"
+      Procedure: "±0.000"
+    }
+  }
+
+  // --- Public Wing ---
+  room Vestibule    { role: circulation }
+  room Waiting      { role: habitable }
+  room PublicWC     { role: wet }
+
+  // --- Central Clinical Spine ---
+  room Corridor     { role: circulation }
+
+  // --- Clinical Wing (North Facade, Daylit) ---
+  room Procedure    { role: habitable }
+  room Exam1        { role: habitable }
+  room Exam2        { role: habitable }
+  room Exam3        { role: habitable }
+  room Exam4        { role: habitable }
+
+  // --- Clinical Support & Staff Wing (South-East Facade) ---
+  room NurseStation { role: service }
+  room Lab          { role: service }
+  room Pharmacy     { role: service }
+  room Breakroom    { role: habitable }
+  room StaffWC      { role: wet }
+
+  // --- Building Services Wing (West Core) ---
+  room ElecITRoom   { role: service }
+  room MechRoom     { role: service }
+
+  layout Plan {
+    // 1. Central Clinical Corridor (2200mm clear width, runs E-W south of Grid C)
+    require Corridor.west  == grid_x_1 + ext_half
+    require Corridor.east  == grid_x_6 - ext_half - 2050mm - interior_wall
+    require Corridor.north == grid_y_C - int_half
+    require Corridor.south == Corridor.north - corr_w
+
+    // Bonus 16th Room: StaffWC at East end of Corridor spine
+    require StaffWC.west  == Corridor.east + interior_wall
+    require StaffWC.east  == grid_x_6 - ext_half
+    require StaffWC.south == Corridor.south
+    require StaffWC.north == Corridor.north
+
+    // 2. Public Wing (Projecting South-West Wing: Bays 1..3, Y: A..Corridor)
+    require Vestibule.west  == grid_x_1 + ext_half
+    require Vestibule.east  == grid_x_2 - int_half
+    require Vestibule.south == grid_y_A + ext_half
+    require Vestibule.north == Vestibule.south + 2000mm
+
+    // MechRoom (West strip north of Vestibule, reaches Corridor)
+    require MechRoom.west  == grid_x_1 + ext_half
+    require MechRoom.east  == MechRoom.west + 2100mm
+    require MechRoom.south == Vestibule.north + interior_wall
+    require MechRoom.north == Corridor.south - interior_wall
+
+    // PublicWC (Accessible WC between Vestibule and ElecITRoom, opens to Waiting)
+    require PublicWC.west  == MechRoom.east + interior_wall
+    require PublicWC.east  == grid_x_2 - int_half
+    require PublicWC.south == Vestibule.north + interior_wall
+    require PublicWC.north == grid_y_B - int_half
+
+    // ElecITRoom (Dry Zone north of PublicWC, dedicated lockable door from Corridor)
+    require ElecITRoom.west  == MechRoom.east + interior_wall
+    require ElecITRoom.east  == grid_x_2 - int_half
+    require ElecITRoom.south == grid_y_B + int_half
+    require ElecITRoom.north == Corridor.south - interior_wall
+
+    // Reception & Waiting Lounge (Bays 2..3, spans from South Exterior to Corridor)
+    require Waiting.west  == grid_x_2 + int_half
+    require Waiting.east  == grid_x_3 - ext_half
+    require Waiting.south == grid_y_A + ext_half
+    require Waiting.north == Corridor.south - interior_wall
+
+    // 3. North Clinical Wing (Row 3, Bays 1..6, Y: C..D — all daylit on North Facade)
+    require Procedure.west  == grid_x_1 + ext_half
+    require Procedure.east  == grid_x_2 - int_half
+    require Procedure.south == grid_y_C + int_half
+    require Procedure.north == grid_y_D - ext_half
+
+    require Exam1.west  == grid_x_2 + int_half
+    require Exam1.east  == grid_x_3 - int_half
+    require Exam1.south == grid_y_C + int_half
+    require Exam1.north == grid_y_D - ext_half
+
+    require Exam2.west  == grid_x_3 + int_half
+    require Exam2.east  == grid_x_4 - int_half
+    require Exam2.south == grid_y_C + int_half
+    require Exam2.north == grid_y_D - ext_half
+
+    require Exam3.west  == grid_x_4 + int_half
+    require Exam3.east  == grid_x_5 - int_half
+    require Exam3.south == grid_y_C + int_half
+    require Exam3.north == grid_y_D - ext_half
+
+    require Exam4.west  == grid_x_5 + int_half
+    require Exam4.east  == grid_x_6 - ext_half
+    require Exam4.south == grid_y_C + int_half
+    require Exam4.north == grid_y_D - ext_half
+
+    // 4. South-East Clinical Support & Staff Wing (Bays 3..6, South of Corridor, Y: B..Corridor)
+    require NurseStation.west  == grid_x_3 + int_half
+    require NurseStation.east  == NurseStation.west + 3300mm
+    require NurseStation.south == grid_y_B + ext_half
+    require NurseStation.north == Corridor.south - interior_wall
+
+    require Lab.west  == NurseStation.east + interior_wall
+    require Lab.east  == Lab.west + 3200mm
+    require Lab.south == grid_y_B + ext_half
+    require Lab.north == Corridor.south - interior_wall
+
+    require Pharmacy.west  == Lab.east + interior_wall
+    require Pharmacy.east  == Pharmacy.west + 2660mm
+    require Pharmacy.south == grid_y_B + ext_half
+    require Pharmacy.north == Corridor.south - interior_wall
+
+    require Breakroom.west  == Pharmacy.east + interior_wall
+    require Breakroom.east  == grid_x_6 - ext_half
+    require Breakroom.south == grid_y_B + ext_half
+    require Breakroom.north == Corridor.south - interior_wall
+  }
+
+  // --- Doors (All >= 100mm jamb margin, 0 swing collisions, 100% reachability) ---
+  opening MainEntry: door {
+    host: exterior(Vestibule, south)  width: 1400mm  align: center  hinge: start  swing: into Vestibule
+  }
+  opening DoorVestibuleWaiting: door {
+    host: shared_wall(Vestibule, Waiting)  width: 1200mm  align: center  hinge: start  swing: into Waiting
+  }
+  opening DoorPublicWC: door {
+    host: shared_wall(PublicWC, Waiting)  width: 950mm  offset: 300mm from start  hinge: start  swing: into PublicWC
+  }
+  opening DoorWaitingCorridor: door {
+    host: shared_wall(Waiting, Corridor)  width: 1200mm  align: center  hinge: start  swing: into Waiting
+  }
+  opening DoorMech: door {
+    host: shared_wall(MechRoom, Corridor)  width: 900mm  align: center  hinge: start  swing: into MechRoom
+  }
+  opening DoorElecIT: door {
+    host: shared_wall(ElecITRoom, Corridor)  width: 900mm  align: center  hinge: start  swing: into ElecITRoom
+  }
+  opening DoorProcedure: door {
+    host: shared_wall(Corridor, Procedure)  width: 1200mm  align: center  hinge: start  swing: into Procedure
+  }
+  opening DoorExam1: door {
+    host: shared_wall(Corridor, Exam1)  width: 950mm  align: center  hinge: start  swing: into Exam1
+  }
+  opening DoorExam2: door {
+    host: shared_wall(Corridor, Exam2)  width: 950mm  align: center  hinge: start  swing: into Exam2
+  }
+  opening DoorExam3: door {
+    host: shared_wall(Corridor, Exam3)  width: 950mm  align: center  hinge: start  swing: into Exam3
+  }
+  opening DoorExam4: door {
+    host: shared_wall(Corridor, Exam4)  width: 950mm  offset: 500mm from start  hinge: start  swing: into Exam4
+  }
+  opening DoorNurse: door {
+    host: shared_wall(NurseStation, Corridor)  width: 1000mm  align: center  hinge: start  swing: into NurseStation
+  }
+  opening DoorLab: door {
+    host: shared_wall(Lab, Corridor)  width: 950mm  align: center  hinge: start  swing: into Lab
+  }
+  opening DoorPharmacy: door {
+    host: shared_wall(Pharmacy, Corridor)  width: 950mm  align: center  hinge: start  swing: into Pharmacy
+  }
+  opening DoorBreakroom: door {
+    host: shared_wall(Breakroom, Corridor)  width: 950mm  offset: 450mm from start  hinge: start  swing: into Breakroom
+  }
+  opening DoorStaffWC: door {
+    host: shared_wall(Corridor, StaffWC)  width: 900mm  align: center  hinge: start  swing: into StaffWC
+  }
+
+  // --- Exterior Windows ---
+  opening WinWaitingS:   window { host: exterior(Waiting, south)      width: 2800mm  align: center }
+  opening WinWaitingE:   window { host: exterior(Waiting, east)       width: 2000mm  offset: 900mm from start }
+  opening WinProcedureN: window { host: exterior(Procedure, north)    width: 2200mm  align: center }
+  opening WinExam1N:     window { host: exterior(Exam1, north)        width: 2000mm  align: center }
+  opening WinExam2N:     window { host: exterior(Exam2, north)        width: 2000mm  align: center }
+  opening WinExam3N:     window { host: exterior(Exam3, north)        width: 2000mm  align: center }
+  opening WinExam4N:     window { host: exterior(Exam4, north)        width: 2000mm  align: center }
+  opening WinBreakroomS: window { host: exterior(Breakroom, south)    width: 2200mm  align: center }
+  opening WinBreakroomE: window { host: exterior(Breakroom, east)     width: 1600mm  align: center }
+  opening WinCorridorW:  window { host: exterior(Corridor, west)      width: 1200mm  align: center }
+
+  // --- Clinical & Building Fixtures (Identical to B2) ---
+  fixture ReceptionCounter: counter { room: Waiting  size: (2400mm, 750mm)   against: east   offset: 4700mm from start  clearance_front: 800mm }
+  fixture WaitingSofa1:     sofa    { room: Waiting  size: (2200mm, 850mm)   at: (450mm, 4700mm)  clearance_all: 400mm }
+  fixture WaitingSofa2:     sofa    { room: Waiting  size: (2200mm, 850mm)   at: (1400mm, 1300mm) clearance_all: 400mm }
+
+  fixture PublicToilet: toilet { room: PublicWC  size: (480mm, 700mm)  against: west   offset: 1300mm from start  clearance_front: 700mm }
+  fixture PublicBasin:  basin  { room: PublicWC  size: (600mm, 450mm)  against: north  offset: 1100mm from start  clearance_front: 600mm }
+
+  fixture StaffToilet:  toilet { room: StaffWC   size: (450mm, 680mm)  against: east   offset: 200mm from start  clearance_front: 600mm }
+  fixture StaffBasin:   basin  { room: StaffWC   size: (550mm, 420mm)  against: north  offset: 1000mm from start  clearance_front: 500mm }
+
+  fixture KitchenCounter: counter { room: Breakroom  size: (1400mm, 650mm)  against: west   offset: 200mm from start   clearance_front: 700mm }
+  fixture KitchenSink:    basin   { room: Breakroom  size: (600mm, 550mm)   against: west   offset: 1700mm from start  clearance_front: 600mm }
+  fixture BreakTable:     table   { room: Breakroom  size: (1400mm, 800mm)  at: (1650mm, 900mm)  clearance_all: 400mm }
+
+  fixture ProcedureTable: table   { room: Procedure  size: (1800mm, 850mm)  at: (1250mm, 1850mm)  clearance_all: 500mm }
+  fixture ScrubSink:      basin   { room: Procedure  size: (800mm, 550mm)   against: west   offset: 300mm from start  clearance_front: 500mm }
+  fixture ProcCounter:    counter { room: Procedure  size: (1600mm, 500mm)  against: east   offset: 1400mm from start  clearance_front: 500mm }
+
+  fixture Exam1Table: table { room: Exam1  size: (1900mm, 750mm)  at: (1400mm, 1900mm)  clearance_all: 500mm }
+  fixture Exam1Basin: basin { room: Exam1  size: (550mm, 450mm)   against: west   offset: 2200mm from start  clearance_front: 500mm }
+  fixture Exam1Desk:  desk  { room: Exam1  size: (1300mm, 650mm)  against: east   offset: 2000mm from start  clearance_front: 500mm }
+
+  fixture Exam2Table: table { room: Exam2  size: (1900mm, 750mm)  at: (1300mm, 1900mm)  clearance_all: 500mm }
+  fixture Exam2Basin: basin { room: Exam2  size: (550mm, 450mm)   against: west   offset: 2200mm from start  clearance_front: 500mm }
+  fixture Exam2Desk:  desk  { room: Exam2  size: (1300mm, 650mm)  against: east   offset: 2000mm from start  clearance_front: 500mm }
+
+  fixture Exam3Table: table { room: Exam3  size: (1900mm, 750mm)  at: (1300mm, 1900mm)  clearance_all: 500mm }
+  fixture Exam3Basin: basin { room: Exam3  size: (550mm, 450mm)   against: west   offset: 2200mm from start  clearance_front: 500mm }
+  fixture Exam3Desk:  desk  { room: Exam3  size: (1300mm, 650mm)  against: east   offset: 2000mm from start  clearance_front: 500mm }
+
+  fixture Exam4Table: table { room: Exam4  size: (1900mm, 750mm)  at: (1300mm, 1900mm)  clearance_all: 500mm }
+  fixture Exam4Basin: basin { room: Exam4  size: (550mm, 450mm)   against: west   offset: 2200mm from start  clearance_front: 500mm }
+  fixture Exam4Desk:  desk  { room: Exam4  size: (1300mm, 650mm)  against: east   offset: 2000mm from start  clearance_front: 500mm }
+
+  fixture NurseCounter: counter { room: NurseStation  size: (2400mm, 750mm)  against: south  align: center  clearance_front: 700mm }
+
+  fixture LabBench:  counter { room: Lab  size: (2200mm, 700mm)  against: south  offset: 300mm from start  clearance_front: 700mm }
+  fixture SteriSink: basin   { room: Lab  size: (700mm, 550mm)   against: east   offset: 900mm from start  clearance_front: 600mm }
+
+  fixture PharmShelfW: wardrobe { room: Pharmacy  size: (1800mm, 500mm)  against: west   offset: 300mm from start  clearance_front: 600mm }
+  fixture PharmShelfE: wardrobe { room: Pharmacy  size: (1800mm, 500mm)  against: east   offset: 300mm from start  clearance_front: 600mm }
+
+  fixture ITServerRack: wardrobe { room: ElecITRoom  size: (1200mm, 800mm)  against: south  align: center  clearance_front: 800mm }
+
+  fixture MopSink:     basin    { room: MechRoom  size: (650mm, 600mm)   against: east   offset: 2400mm from start  clearance_front: 600mm }
+  fixture WaterHeater: shaft    { room: MechRoom  size: (850mm, 850mm)   against: west   offset: 400mm from start   clearance_front: 600mm }
+
+  // =========================================================================
+  // BUILDING PLUMBING SYSTEM (CW / HW / SAN / VENT — IPC 2021 & EN 12056)
+  // =========================================================================
+  building_plumbing ClinicPlumbing {
+    standard: "IPC 2021 / EN 12056 / EN 806"
+    supply_pressure_bar: 3.5
+
+    // --- 1. MechRoom Domestic Water Plant (Clear of Col_1_B, DoorMech & ElecITRoom) ---
+    // MechRoom.south spans X=150..2250 at Y=2290 (nodes inset 110mm -> Y=2400)
+    valve  V_WH1:   isolation_valve { system: hot   host: MechRoom.south  at: 250mm   serves: "Electric Water Heater WH1 Isolation" }
+    heater WH1:     water_heater    { host: MechRoom.south  at: 500mm   capacity_l: 300  cold_in: MAIN_CW  cold_dia: 25mm  hot_dia: 25mm }
+    riser  MAIN_CW: cold_water      { host: MechRoom.south  at: 850mm   dia: 32mm }
+    valve  V_Main:  isolation_valve { system: cold  host: MechRoom.south  at: 1150mm  serves: "Main Cold Water Supply Shutoff" }
+
+    // --- 2. Zone Isolation Valves & Header Termination Nodes ---
+    // Vertical CW/HW trunk tops (X=1000 CW, X=650 HW — clear of Col_1, WinProcedureN, ElecITRoom)
+    valve V_North_CW_Top:  isolation_valve { system: cold  host: Procedure.north  at: 850mm   serves: "North Clinical Wing CW Trunk" }
+    valve V_North_HW_Top:  isolation_valve { system: hot   host: Procedure.north  at: 500mm   serves: "North Clinical Wing HW Trunk" }
+
+    // Corridor horizontal CW/HW header nodes (Y=8570 CW, Y=8690 HW — below WinCorridorW Y=8830, clear of all columns)
+    valve V_Corr_CW_West:  isolation_valve { system: cold  host: Corridor.west    at: 240mm   serves: "Corridor & Support CW Zone" }
+    valve V_Corr_CW_East:  isolation_valve { system: cold  host: StaffWC.east     at: 240mm   serves: "StaffWC CW End Isolation" }
+    valve V_Corr_HW_West:  isolation_valve { system: hot   host: Corridor.west    at: 360mm   serves: "Corridor & Support HW Zone" }
+    valve V_Corr_HW_East:  isolation_valve { system: hot   host: StaffWC.east     at: 360mm   serves: "StaffWC HW End Isolation" }
+
+    // North Clinical horizontal CW/HW header nodes (Y=14550 CW, Y=14700 HW — North utility chase, clear of tables, desks, labels & Col_*_D)
+    valve V_North_CW_West: isolation_valve { system: cold  host: Procedure.west   at: 3880mm  serves: "North Wing CW Header" }
+    valve V_North_CW_East: isolation_valve { system: cold  host: Exam4.east       at: 3880mm  serves: "Exam4 CW End Isolation" }
+    valve V_North_HW_West: isolation_valve { system: hot   host: Procedure.west   at: 4030mm  serves: "North Wing HW Header" }
+    valve V_North_HW_East: isolation_valve { system: hot   host: Exam4.east       at: 4030mm  serves: "Exam4 HW End Isolation" }
+
+    // --- 3. Sanitary Stacks, Vent Stacks & Cleanouts (Zero Column / ElecITRoom Clashes) ---
+    // Zone 1: MechRoom / PublicWC vertical chase along MechRoom.east (X=2140, west of ElecITRoom X>=2390)
+    stack    SoilStack_Mech:  soil_stack { host: MechRoom.east   at: 5700mm  dia: 110mm  vented: true }
+    cleanout COP_Mech:        cleanout   { host: MechRoom.east   at: 250mm   dia: 110mm }
+    stack    VentStack_Mech:  vent_stack { host: MechRoom.east   at: 5250mm  dia: 50mm   vented: true }
+    cleanout VentEnd_Mech:    cleanout   { system: vent  host: MechRoom.east  at: 700mm  dia: 50mm }
+
+    // Zone 2: Central Corridor / Support / StaffWC horizontal collector (Y=8450 SAN, Y=8800 VENT — below WinCorridorW)
+    stack    SoilStack_Main:  soil_stack { host: Corridor.west   at: 120mm   dia: 150mm  vented: true }
+    cleanout COP_Main_East:   cleanout   { host: StaffWC.east    at: 120mm   dia: 150mm }
+    stack    VentStack_Main:  vent_stack { host: Corridor.west   at: 470mm   dia: 50mm   vented: true }
+    cleanout VentEnd_Main:    cleanout   { system: vent  host: StaffWC.east   at: 470mm  dia: 50mm }
+
+    // Zone 3: North Clinical Wing horizontal collector (Y=14330 SAN, Y=14130 VENT — clear of Exam*Table/Desk/Labels & Col_*_D)
+    stack    SoilStack_North: soil_stack { host: Procedure.west  at: 3660mm  dia: 110mm  vented: true }
+    cleanout COP_North_East:  cleanout   { host: Exam4.east      at: 3660mm  dia: 110mm }
+    stack    VentStack_North: vent_stack { host: Procedure.west  at: 3460mm  dia: 50mm   vented: true }
+    cleanout VentEnd_North:   cleanout   { system: vent  host: Exam4.east     at: 3460mm dia: 50mm }
+
+    // --- 4. Collector & Distribution Headers ---
+    // Domestic Cold Water (CW) headers
+    header CW_Trunk_West:   cold_header  { from: MAIN_CW          to: V_North_CW_Top   dia: 32mm }
+    header CW_Header_Corr:  cold_header  { from: V_Corr_CW_West   to: V_Corr_CW_East   dia: 32mm }
+    header CW_Header_North: cold_header  { from: V_North_CW_West  to: V_North_CW_East  dia: 25mm }
+
+    // Domestic Hot Water (HW) headers
+    header HW_Trunk_West:   hot_header   { from: WH1              to: V_North_HW_Top   dia: 25mm }
+    header HW_Header_Corr:  hot_header   { from: V_Corr_HW_West   to: V_Corr_HW_East   dia: 25mm }
+    header HW_Header_North: hot_header   { from: V_North_HW_West  to: V_North_HW_East  dia: 25mm }
+
+    // Sanitary Drainage (SAN) headers (IPC 1% - 2% self-cleansing gravity slope)
+    header SAN_Header_Mech:  soil_header { from: COP_Mech         to: SoilStack_Mech   dia: 110mm  slope: "1:100" }
+    header SAN_Header_Main:  soil_header { from: COP_Main_East    to: SoilStack_Main   dia: 150mm  slope: "1:100" }
+    header SAN_Header_North: soil_header { from: COP_North_East   to: SoilStack_North  dia: 110mm  slope: "1:50" }
+
+    // Venting (VENT) headers
+    header VENT_Header_Mech:  vent_header { from: VentEnd_Mech    to: VentStack_Mech   dia: 50mm }
+    header VENT_Header_Main:  vent_header { from: VentEnd_Main    to: VentStack_Main   dia: 50mm }
+    header VENT_Header_North: vent_header { from: VentEnd_North   to: VentStack_North  dia: 50mm }
+
+    // --- 5. All 12 Wet Fixture Connections (100% CW + HW where req + SAN + VENT) ---
+    // Zone 1: MechRoom + PublicWC
+    connect MopSink      { cold: CW_Trunk_West    cold_dia: 20mm  hot: HW_Trunk_West    hot_dia: 20mm  waste: SAN_Header_Mech   drain_dia: 50mm   slope: "1:50"  vent: VENT_Header_Mech }
+    connect PublicToilet { cold: CW_Trunk_West    cold_dia: 20mm  soil: SAN_Header_Mech drain_dia: 110mm slope: "1:60"  vent: VENT_Header_Mech }
+    connect PublicBasin  { cold: CW_Trunk_West    cold_dia: 15mm  hot: HW_Trunk_West    hot_dia: 15mm  waste: SAN_Header_Mech   drain_dia: 40mm   slope: "1:40"  vent: VENT_Header_Mech }
+
+    // Zone 2: Lab + Breakroom + StaffWC
+    connect SteriSink    { cold: CW_Header_Corr   cold_dia: 15mm  hot: HW_Header_Corr   hot_dia: 15mm  waste: SAN_Header_Main   drain_dia: 50mm   slope: "1:50"  vent: VENT_Header_Main }
+    connect KitchenSink  { cold: CW_Header_Corr   cold_dia: 15mm  hot: HW_Header_Corr   hot_dia: 15mm  waste: SAN_Header_Main   drain_dia: 50mm   slope: "1:50"  vent: VENT_Header_Main }
+    connect StaffToilet  { cold: CW_Header_Corr   cold_dia: 20mm  soil: SAN_Header_Main drain_dia: 110mm slope: "1:60"  vent: VENT_Header_Main }
+    connect StaffBasin   { cold: CW_Header_Corr   cold_dia: 15mm  hot: HW_Header_Corr   hot_dia: 15mm  waste: SAN_Header_Main   drain_dia: 40mm   slope: "1:40"  vent: VENT_Header_Main }
+
+    // Zone 3: Procedure + Exam1..Exam4 (ScrubSink taps short horizontal CW/HW off West Trunks!)
+    connect ScrubSink    { cold: CW_Trunk_West    cold_dia: 20mm  hot: HW_Trunk_West    hot_dia: 20mm  waste: SAN_Header_North  drain_dia: 50mm   slope: "1:50"  vent: VENT_Header_North }
+    connect Exam1Basin   { cold: CW_Header_North  cold_dia: 15mm  hot: HW_Header_North  hot_dia: 15mm  waste: SAN_Header_North  drain_dia: 40mm   slope: "1:40"  vent: VENT_Header_North }
+    connect Exam2Basin   { cold: CW_Header_North  cold_dia: 15mm  hot: HW_Header_North  hot_dia: 15mm  waste: SAN_Header_North  drain_dia: 40mm   slope: "1:40"  vent: VENT_Header_North }
+    connect Exam3Basin   { cold: CW_Header_North  cold_dia: 15mm  hot: HW_Header_North  hot_dia: 15mm  waste: SAN_Header_North  drain_dia: 40mm   slope: "1:40"  vent: VENT_Header_North }
+    connect Exam4Basin   { cold: CW_Header_North  cold_dia: 15mm  hot: HW_Header_North  hot_dia: 15mm  waste: SAN_Header_North  drain_dia: 40mm   slope: "1:40"  vent: VENT_Header_North }
+  }
+
+  verify {
+    require no_room_overlap
+    require opening_jamb_margin >= 100mm
+    require no_door_swing_collision
+    require all_rooms_reachable
+    require no_fixture_collision
+    require habitable_rooms_have_window
+  }
+
+  view PlanView: plan {
+    frame: Plan
+    sheet: A1 landscape
+    scale: 1:100
+    show_dimensions: true
+    show_labels: true
+  }
+}

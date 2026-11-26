@@ -1,0 +1,199 @@
+// Benchmark 4 (EDL v3.3): Multi-Discipline Electrical Overlay (Native 3-Phase + DB Clearance Proofs!)
+project "Outpatient_Specialist_Medical_Clinic_Electrical" {
+  units: mm
+  overlay "../b2_clinic_arch/clinic_arch.edl"
+
+  building_electrical ClinicElectrical {
+    supply: 230V 50Hz
+    ceiling_height: 3000mm
+
+    // --- Distribution Boards (both >= 900mm unobstructed front working clearance) ---
+    // DB_MAIN: Main 400V/230V 3P Distribution Board in ElecITRoom (x=2390, y=6650, facing east)
+    //   Clearance box: [2640, 6350, 3540, 6950] (900mm deep x 600mm wide; clear of ITServerRack & DoorElecIT)
+    panel DB_MAIN   { host: wall(ElecITRoom, west)    offset: 1980mm from start  main_breaker: 125A  height: 1500mm }
+
+    // DB_CLINIC: Clinical Sub-DB in NurseStation adjacent to Corridor (x=9670, y=6700, facing east)
+    //   Fed via 3P Sub-Main SUB_CLINIC (63A 3P MCCB, 16mm2 Cu) from DB_MAIN; 100A 3P local isolator
+    //   Clearance box: [9920, 6400, 10820, 7000] (900mm deep x 600mm wide; clear of NurseCounter & DoorNurse)
+    panel DB_CLINIC { host: wall(NurseStation, west)  offset: 1950mm from start  main_breaker: 100A  height: 1500mm }
+
+    // --- DB_MAIN Circuits (Compact IDs <= 12 chars for clean SVG Panel Schedule tables) ---
+    // Phase L1: Public & Core Lighting (354 W)
+    breaker L1_Pub_Core:  lighting  { from: DB_MAIN    rating: 10A  cable: 2.5mm2  phase: L1  rcd: 30mA  max_voltage_drop: 3% }
+    // Phase L2: Corridor Lighting & 24/7 Emergency/Exit Luminaires (246 W)
+    breaker L2_Corr_Em:   lighting  { from: DB_MAIN    rating: 10A  cable: 2.5mm2  phase: L2  rcd: 30mA  max_voltage_drop: 3% }
+    // Phase L3: Waiting Reception, ElecIT & Procedure General Sockets (1900 W)
+    breaker P1_Wait_Pub:  socket    { from: DB_MAIN    rating: 16A  cable: 4.0mm2  phase: L3  rcd: 30mA  max_voltage_drop: 5% }
+    // Phase L1: Dedicated ElecITRoom Server Rack UPS-Backed Circuit (3600 W)
+    breaker D1_IT_UPS:    dedicated { from: DB_MAIN    rating: 20A  cable: 4.0mm2  phase: L1  rcd: 30mA  max_voltage_drop: 5% }
+    // Phase L2: Dedicated MechRoom Electric Water Heater Circuit (4000 W)
+    breaker D2_WtrHeater: dedicated { from: DB_MAIN    rating: 25A  cable: 6.0mm2  phase: L2  rcd: 30mA  max_voltage_drop: 5% }
+    // Phase L3: Dedicated Procedure Medical 30mA Type-A RCD Circuit (3000 W)
+    breaker D3_Proc_Med:  dedicated { from: DB_MAIN    rating: 20A  cable: 4.0mm2  phase: L3  rcd: 30mA  max_voltage_drop: 5% }
+
+    // --- DB_CLINIC Circuits (Fed via 3P 63A / 16mm2 Sub-Main SUB_CLINIC from DB_MAIN) ---
+    // Phase L3: North Clinical Wing Lighting — Procedure & Exam1..Exam4 (448 W)
+    breaker L3_N_Clinic:  lighting  { from: DB_CLINIC  rating: 10A  cable: 2.5mm2  phase: L3  rcd: 30mA  max_voltage_drop: 3% }
+    // Phase L1: South-East Support & Staff Wing Lighting — Nurse, Lab, Pharm, Break, StaffWC (306 W)
+    breaker L4_S_Support: lighting  { from: DB_CLINIC  rating: 10A  cable: 2.5mm2  phase: L1  rcd: 30mA  max_voltage_drop: 3% }
+    // Phase L3: Exam1 & Exam2 Clinical Power Sockets (2400 W)
+    breaker P2_Exam1_2:   socket    { from: DB_CLINIC  rating: 16A  cable: 4.0mm2  phase: L3  rcd: 30mA  max_voltage_drop: 5% }
+    // Phase L2: Exam3 & Exam4 Clinical Power Sockets (2400 W)
+    breaker P3_Exam3_4:   socket    { from: DB_CLINIC  rating: 16A  cable: 4.0mm2  phase: L2  rcd: 30mA  max_voltage_drop: 5% }
+    // Phase L3: NurseStation, Lab & Pharmacy General Sockets (2700 W)
+    breaker P4_Nurse_Lab: socket    { from: DB_CLINIC  rating: 16A  cable: 4.0mm2  phase: L3  rcd: 30mA  max_voltage_drop: 5% }
+    // Phase L1: Breakroom General Sockets (1350 W)
+    breaker P5_Breakroom: socket    { from: DB_CLINIC  rating: 16A  cable: 4.0mm2  phase: L1  rcd: 30mA  max_voltage_drop: 5% }
+    // Phase L1: Dedicated Lab Autoclave / Sterilizer Circuit (4200 W)
+    breaker D4_Autoclave: dedicated { from: DB_CLINIC  rating: 25A  cable: 6.0mm2  phase: L1  rcd: 30mA  max_voltage_drop: 5% }
+    // Phase L2: Dedicated Breakroom Kitchenette Appliances Circuit (3400 W)
+    breaker D5_Kitchen:   dedicated { from: DB_CLINIC  rating: 20A  cable: 4.0mm2  phase: L2  rcd: 30mA  max_voltage_drop: 5% }
+
+    // =====================================================================
+    // LIGHTING LUMINAIRES (100% COVERAGE OF ALL 16 ROOMS + EMERGENCY/EXIT)
+    // =====================================================================
+    // Circuit L1_Pub_Core (Vestibule, Waiting, PublicWC, ElecITRoom, MechRoom)
+    light L_Vest_1:   troffer { room: Vestibule   at: (1200mm, 1000mm)  load: 24W  circuit: L1_Pub_Core }
+    light L_Vest_2:   troffer { room: Vestibule   at: (3400mm, 1000mm)  load: 24W  circuit: L1_Pub_Core }
+    light L_Wait_1:   troffer { room: Waiting     at: (1200mm, 2200mm)  load: 36W  circuit: L1_Pub_Core }
+    light L_Wait_2:   troffer { room: Waiting     at: (3400mm, 2200mm)  load: 36W  circuit: L1_Pub_Core }
+    light L_Wait_3:   troffer { room: Waiting     at: (1200mm, 5800mm)  load: 36W  circuit: L1_Pub_Core }
+    light L_Wait_4:   troffer { room: Waiting     at: (3400mm, 5800mm)  load: 36W  circuit: L1_Pub_Core }
+    light L_PubWC:    ceiling { room: PublicWC    at: center            load: 18W  circuit: L1_Pub_Core  ip: IP44 }
+    light L_ElecIT_1: troffer { room: ElecITRoom  at: (1170mm, 1200mm)  load: 36W  circuit: L1_Pub_Core }
+    light L_ElecIT_2: troffer { room: ElecITRoom  at: (1170mm, 2600mm)  load: 36W  circuit: L1_Pub_Core }
+    light L_Mech_1:   troffer { room: MechRoom    at: (1050mm, 1800mm)  load: 36W  circuit: L1_Pub_Core  ip: IP44 }
+    light L_Mech_2:   troffer { room: MechRoom    at: (1050mm, 4400mm)  load: 36W  circuit: L1_Pub_Core  ip: IP44 }
+
+    // Circuit L2_Corr_Em (Corridor Spine + 6 Maintained Emergency / Exit Luminaires)
+    light L_Corr_1:   troffer         { room: Corridor   at: (2200mm, 1100mm)   load: 36W  circuit: L2_Corr_Em }
+    light L_Corr_2:   troffer         { room: Corridor   at: (6400mm, 1100mm)   load: 36W  circuit: L2_Corr_Em }
+    light L_Corr_3:   troffer         { room: Corridor   at: (10600mm, 1100mm)  load: 36W  circuit: L2_Corr_Em }
+    light L_Corr_4:   troffer         { room: Corridor   at: (14800mm, 1100mm)  load: 36W  circuit: L2_Corr_Em }
+    light L_Corr_5:   troffer         { room: Corridor   at: (18800mm, 1100mm)  load: 36W  circuit: L2_Corr_Em }
+    light EM_Vest:    exit_sign       { room: Vestibule  at: (2290mm, 1750mm)   load: 10W  circuit: L2_Corr_Em }
+    light EM_Wait:    emergency_light { room: Waiting    at: (2290mm, 6400mm)   load: 12W  circuit: L2_Corr_Em }
+    light EM_CorrW:   exit_sign       { room: Corridor   at: (1200mm, 1800mm)   load: 10W  circuit: L2_Corr_Em }
+    light EM_CorrMid: emergency_light { room: Corridor   at: (10600mm, 1800mm)  load: 12W  circuit: L2_Corr_Em }
+    light EM_CorrE:   exit_sign       { room: Corridor   at: (19800mm, 1800mm)  load: 10W  circuit: L2_Corr_Em }
+    light EM_Proc:    emergency_light { room: Procedure  at: (2290mm, 3750mm)   load: 12W  circuit: L2_Corr_Em }
+
+    // Circuit L3_N_Clinic (Procedure + Exam1..Exam4)
+    light L_Proc_1:  troffer { room: Procedure  at: (1300mm, 1300mm)  load: 40W  circuit: L3_N_Clinic }
+    light L_Proc_2:  troffer { room: Procedure  at: (3300mm, 1300mm)  load: 40W  circuit: L3_N_Clinic }
+    light L_Proc_3:  troffer { room: Procedure  at: (1300mm, 3100mm)  load: 40W  circuit: L3_N_Clinic }
+    light L_Proc_4:  troffer { room: Procedure  at: (3300mm, 3100mm)  load: 40W  circuit: L3_N_Clinic }
+    light L_Exam1_1: troffer { room: Exam1      at: (2300mm, 1100mm)  load: 36W  circuit: L3_N_Clinic }
+    light L_Exam1_2: troffer { room: Exam1      at: (2300mm, 3400mm)  load: 36W  circuit: L3_N_Clinic }
+    light L_Exam2_1: troffer { room: Exam2      at: (2230mm, 1100mm)  load: 36W  circuit: L3_N_Clinic }
+    light L_Exam2_2: troffer { room: Exam2      at: (2230mm, 3400mm)  load: 36W  circuit: L3_N_Clinic }
+    light L_Exam3_1: troffer { room: Exam3      at: (2230mm, 1100mm)  load: 36W  circuit: L3_N_Clinic }
+    light L_Exam3_2: troffer { room: Exam3      at: (2230mm, 3400mm)  load: 36W  circuit: L3_N_Clinic }
+    light L_Exam4_1: troffer { room: Exam4      at: (2190mm, 1100mm)  load: 36W  circuit: L3_N_Clinic }
+    light L_Exam4_2: troffer { room: Exam4      at: (2190mm, 3400mm)  load: 36W  circuit: L3_N_Clinic }
+
+    // Circuit L4_S_Support (NurseStation, Lab, Pharmacy, Breakroom, StaffWC)
+    light L_Nurse_1: troffer { room: NurseStation  at: (1000mm, 1800mm)  load: 36W  circuit: L4_S_Support }
+    light L_Nurse_2: troffer { room: NurseStation  at: (2300mm, 1800mm)  load: 36W  circuit: L4_S_Support }
+    light L_Lab_1:   troffer { room: Lab           at: (1000mm, 1800mm)  load: 36W  circuit: L4_S_Support }
+    light L_Lab_2:   troffer { room: Lab           at: (2200mm, 1800mm)  load: 36W  circuit: L4_S_Support }
+    light L_Pharm_1: troffer { room: Pharmacy      at: (1330mm, 1100mm)  load: 36W  circuit: L4_S_Support }
+    light L_Pharm_2: troffer { room: Pharmacy      at: (1330mm, 2400mm)  load: 36W  circuit: L4_S_Support }
+    light L_Break_1: troffer { room: Breakroom     at: (1200mm, 1720mm)  load: 36W  circuit: L4_S_Support }
+    light L_Break_2: troffer { room: Breakroom     at: (2800mm, 1720mm)  load: 36W  circuit: L4_S_Support }
+    light L_StaffWC: ceiling { room: StaffWC       at: center            load: 18W  circuit: L4_S_Support  ip: IP44 }
+
+    // =====================================================================
+    // WALL SWITCHES (DOOR STRIKE / LATCH SIDE — NEVER BEHIND DOOR SWINGS)
+    // =====================================================================
+    switch SW_Vest:    1gang { host: beside(MainEntry, latch_side, 180mm)            room: Vestibule     controls: [L_Vest_1, L_Vest_2]                          circuit: L1_Pub_Core }
+    switch SW_Wait:    2gang { host: beside(DoorVestibuleWaiting, latch_side, 180mm) room: Waiting       controls: [L_Wait_1, L_Wait_2, L_Wait_3, L_Wait_4]      circuit: L1_Pub_Core }
+    switch SW_PubWC:   1gang { host: beside(DoorPublicWC, latch_side, 180mm)         room: Waiting       controls: [L_PubWC]                                     circuit: L1_Pub_Core }
+    switch SW_ElecIT:  1gang { host: beside(DoorElecIT, latch_side, 180mm)           room: ElecITRoom    controls: [L_ElecIT_1, L_ElecIT_2]                      circuit: L1_Pub_Core }
+    switch SW_Mech:    1gang { host: beside(DoorMech, latch_side, 180mm)             room: MechRoom      controls: [L_Mech_1, L_Mech_2]                          circuit: L1_Pub_Core }
+
+    // 2-Way Corridor Switching at West and East ends
+    switch SW_CorrW:   2way  { host: beside(DoorWaitingCorridor, latch_side, 180mm)  room: Corridor      controls: [L_Corr_1, L_Corr_2, L_Corr_3, L_Corr_4, L_Corr_5] circuit: L2_Corr_Em }
+    switch SW_CorrE:   2way  { host: beside(DoorBreakroom, latch_side, 180mm)        room: Corridor      controls: [L_Corr_1, L_Corr_2, L_Corr_3, L_Corr_4, L_Corr_5] circuit: L2_Corr_Em }
+
+    // North Clinical Wing Switches
+    switch SW_Proc:    2gang { host: beside(DoorProcedure, latch_side, 180mm)        room: Procedure     controls: [L_Proc_1, L_Proc_2, L_Proc_3, L_Proc_4]      circuit: L3_N_Clinic }
+    switch SW_Exam1:   1gang { host: beside(DoorExam1, latch_side, 180mm)            room: Exam1         controls: [L_Exam1_1, L_Exam1_2]                        circuit: L3_N_Clinic }
+    switch SW_Exam2:   1gang { host: beside(DoorExam2, latch_side, 180mm)            room: Exam2         controls: [L_Exam2_1, L_Exam2_2]                        circuit: L3_N_Clinic }
+    switch SW_Exam3:   1gang { host: beside(DoorExam3, latch_side, 180mm)            room: Exam3         controls: [L_Exam3_1, L_Exam3_2]                        circuit: L3_N_Clinic }
+    switch SW_Exam4:   1gang { host: beside(DoorExam4, latch_side, 180mm)            room: Exam4         controls: [L_Exam4_1, L_Exam4_2]                        circuit: L3_N_Clinic }
+
+    // South-East Support & Staff Wing Switches
+    switch SW_Nurse:   1gang { host: beside(DoorNurse, latch_side, 180mm)            room: NurseStation  controls: [L_Nurse_1, L_Nurse_2]                        circuit: L4_S_Support }
+    switch SW_Lab:     1gang { host: beside(DoorLab, latch_side, 180mm)              room: Lab           controls: [L_Lab_1, L_Lab_2]                            circuit: L4_S_Support }
+    switch SW_Pharm:   1gang { host: beside(DoorPharmacy, latch_side, 180mm)         room: Pharmacy      controls: [L_Pharm_1, L_Pharm_2]                        circuit: L4_S_Support }
+    switch SW_Break:   1gang { host: beside(DoorBreakroom, latch_side, 180mm)        room: Breakroom     controls: [L_Break_1, L_Break_2]                        circuit: L4_S_Support }
+    switch SW_StaffWC: 1gang { host: beside(DoorStaffWC, latch_side, 180mm)          room: Corridor      controls: [L_StaffWC]                                   circuit: L4_S_Support }
+
+    // =====================================================================
+    // GENERAL & CLINICAL POWER SOCKETS (100% RCD PROTECTED, CLEAR OF WET ZONES)
+    // =====================================================================
+    // Circuit P1_Wait_Pub (Waiting Reception + Lounge + ElecITRoom + Procedure General)
+    outlet S_Wait_Rec1:  duplex { host: wall(Waiting, east)       offset: 5200mm from start  height: 1050mm  load: 300W  circuit: P1_Wait_Pub }
+    outlet S_Wait_Rec2:  duplex { host: wall(Waiting, east)       offset: 6500mm from start  height: 1050mm  load: 300W  circuit: P1_Wait_Pub }
+    outlet S_Wait_W1:    duplex { host: wall(Waiting, west)       offset: 4800mm from start  height: 300mm   load: 300W  circuit: P1_Wait_Pub }
+    outlet S_Wait_S1:    duplex { host: wall(Waiting, south)      offset: 500mm from start   height: 300mm   load: 300W  circuit: P1_Wait_Pub }
+    outlet S_ElecIT_Svc: duplex { host: wall(ElecITRoom, east)    offset: 1600mm from start  height: 300mm   load: 400W  circuit: P1_Wait_Pub }
+    outlet S_Proc_Gen:   duplex { host: wall(Procedure, north)    offset: 600mm from start   height: 300mm   load: 300W  circuit: P1_Wait_Pub }
+
+    // Circuit P2_Exam1_2 (Exam1 & Exam2 Clinical Sockets)
+    outlet S_Exam1_Desk: duplex { host: wall(Exam1, east)         offset: 2600mm from start  height: 300mm   load: 400W  circuit: P2_Exam1_2 }
+    outlet S_Exam1_E2:   duplex { host: wall(Exam1, east)         offset: 900mm from start   height: 300mm   load: 400W  circuit: P2_Exam1_2 }
+    outlet S_Exam1_N:    duplex { host: wall(Exam1, north)        offset: 600mm from start   height: 300mm   load: 400W  circuit: P2_Exam1_2 }
+    outlet S_Exam2_Desk: duplex { host: wall(Exam2, east)         offset: 2600mm from start  height: 300mm   load: 400W  circuit: P2_Exam1_2 }
+    outlet S_Exam2_E2:   duplex { host: wall(Exam2, east)         offset: 900mm from start   height: 300mm   load: 400W  circuit: P2_Exam1_2 }
+    outlet S_Exam2_N:    duplex { host: wall(Exam2, north)        offset: 600mm from start   height: 300mm   load: 400W  circuit: P2_Exam1_2 }
+
+    // Circuit P3_Exam3_4 (Exam3 & Exam4 Clinical Sockets)
+    outlet S_Exam3_Desk: duplex { host: wall(Exam3, east)         offset: 2600mm from start  height: 300mm   load: 400W  circuit: P3_Exam3_4 }
+    outlet S_Exam3_E2:   duplex { host: wall(Exam3, east)         offset: 900mm from start   height: 300mm   load: 400W  circuit: P3_Exam3_4 }
+    outlet S_Exam3_N:    duplex { host: wall(Exam3, north)        offset: 600mm from start   height: 300mm   load: 400W  circuit: P3_Exam3_4 }
+    outlet S_Exam4_Desk: duplex { host: wall(Exam4, east)         offset: 2600mm from start  height: 300mm   load: 400W  circuit: P3_Exam3_4 }
+    outlet S_Exam4_E2:   duplex { host: wall(Exam4, east)         offset: 900mm from start   height: 300mm   load: 400W  circuit: P3_Exam3_4 }
+    outlet S_Exam4_N:    duplex { host: wall(Exam4, north)        offset: 600mm from start   height: 300mm   load: 400W  circuit: P3_Exam3_4 }
+
+    // Circuit P4_Nurse_Lab (NurseStation, Lab, Pharmacy General Sockets)
+    outlet S_Nurse_1:    duplex { host: wall(NurseStation, south) offset: 1000mm from start  height: 1050mm  load: 450W  circuit: P4_Nurse_Lab }
+    outlet S_Nurse_2:    duplex { host: wall(NurseStation, south) offset: 2300mm from start  height: 1050mm  load: 450W  circuit: P4_Nurse_Lab }
+    outlet S_Lab_1:      duplex { host: wall(Lab, south)          offset: 800mm from start   height: 1050mm  load: 450W  circuit: P4_Nurse_Lab }
+    outlet S_Lab_2:      duplex { host: wall(Lab, west)           offset: 1600mm from start  height: 1050mm  load: 450W  circuit: P4_Nurse_Lab }
+    outlet S_Pharm_1:    duplex { host: wall(Pharmacy, south)     offset: 800mm from start   height: 300mm   load: 450W  circuit: P4_Nurse_Lab }
+    outlet S_Pharm_2:    duplex { host: wall(Pharmacy, south)     offset: 1900mm from start  height: 300mm   load: 450W  circuit: P4_Nurse_Lab }
+
+    // Circuit P5_Breakroom (Breakroom General Sockets)
+    outlet S_Break_1:    duplex { host: wall(Breakroom, south)    offset: 600mm from start   height: 300mm   load: 450W  circuit: P5_Breakroom }
+    outlet S_Break_2:    duplex { host: wall(Breakroom, east)     offset: 600mm from start   height: 300mm   load: 450W  circuit: P5_Breakroom }
+    outlet S_Break_3:    duplex { host: wall(Breakroom, north)    offset: 2800mm from start  height: 300mm   load: 450W  circuit: P5_Breakroom }
+
+    // =====================================================================
+    // DEDICATED MEDICAL & HEAVY-LOAD CIRCUITS (5 MANDATORY CIRCUITS)
+    // =====================================================================
+    // D1: ElecITRoom Server Rack UPS-Backed Dedicated 20A Circuit
+    outlet LD_IT_UPS:      appliance { host: wall(ElecITRoom, south)  align: center           height: 450mm   load: 3600W  circuit: D1_IT_UPS }
+    // D2: MechRoom Electric Water Heater Dedicated 25A Circuit (IP44)
+    outlet LD_WaterHeater: appliance { host: wall(MechRoom, west)     offset: 825mm from start height: 1200mm load: 4000W  circuit: D2_WtrHeater  ip: IP44 }
+    // D3: Procedure Medical 30mA Type-A RCD Dedicated 20A Circuit (3 medical points)
+    outlet MED_Proc_1:     appliance { host: wall(Procedure, east)    offset: 1800mm from start height: 1100mm load: 1000W circuit: D3_Proc_Med }
+    outlet MED_Proc_2:     appliance { host: wall(Procedure, east)    offset: 2600mm from start height: 1100mm load: 1000W circuit: D3_Proc_Med }
+    outlet MED_Proc_3:     appliance { host: wall(Procedure, west)    offset: 2600mm from start height: 1100mm load: 1000W circuit: D3_Proc_Med }
+    // D4: Lab Autoclave / Sterilizer Dedicated 25A Circuit
+    outlet LD_Autoclave:   appliance { host: wall(Lab, south)         offset: 1700mm from start height: 1050mm load: 4200W circuit: D4_Autoclave }
+    // D5: Breakroom Kitchenette Appliances Dedicated 20A Circuit
+    outlet LD_Kitchen_App: appliance { host: wall(Breakroom, west)    offset: 700mm from start  height: 1100mm load: 3400W circuit: D5_Kitchen }
+  }
+
+  verify {
+    // 6 Building Electrical Rules (IEC 60364) — arch verify rules & PlanView inherited from overlay!
+    require breaker_load_ok
+    require voltage_drop_ok
+    require wet_zone_clearance
+    require switch_accessible
+    require electrical_device_clear
+    require wet_circuits_rcd_protected
+  }
+}

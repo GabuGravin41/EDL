@@ -1,0 +1,299 @@
+// Benchmark 2: 15-Room (+ Bonus StaffWC = 16 Rooms) Outpatient Specialist Medical Clinic
+// Stepped L-Shaped Footprint (~264 m² clear interior) on a 6x4 Structural Concrete Column Grid
+// Bays: X = 4.8m / 4.8m / 4.6m / 4.6m / 4.6m (23.4m), Y = 4.6m / 6.0m / 4.5m (15.1m)
+
+project "Outpatient_Specialist_Medical_Clinic" {
+  units: mm
+  frame Plan: Frame2
+
+  architecture.defaults {
+    measurement_basis: clear_interior
+    exterior_wall: 300mm
+    interior_wall: 140mm
+  }
+
+  parameter ext_half: 150mm
+  parameter int_half: 70mm
+  parameter corr_w:   2200mm
+
+  // 6 x 4 Structural Concrete Column Grid (all bays 4.5m - 6.0m, L-shaped footprint intersections)
+  structural_grid ClinicGrid {
+    x_bays:   [4800mm, 4800mm, 4600mm, 4600mm, 4600mm]
+    x_labels: ["1", "2", "3", "4", "5", "6"]
+    y_bays:   [4600mm, 6000mm, 4500mm]
+    y_labels: ["A", "B", "C", "D"]
+    columns:  [
+      "1A", "2A", "3A",
+      "1B", "2B", "3B", "4B", "5B", "6B",
+      "1C", "2C", "3C", "4C", "5C", "6C",
+      "1D", "2D", "3D", "4D", "5D", "6D"
+    ]
+    column_size: (300mm, 300mm)
+    column_kind: concrete
+
+    levels {
+      Vestibule: "±0.000"
+      Waiting:   "±0.000"
+      Corridor:  "±0.000"
+      Procedure: "±0.000"
+    }
+  }
+
+  // --- Public Wing ---
+  room Vestibule    { role: circulation }
+  room Waiting      { role: habitable }
+  room PublicWC     { role: wet }
+
+  // --- Central Clinical Spine ---
+  room Corridor     { role: circulation }
+
+  // --- Clinical Wing (North Facade, Daylit) ---
+  room Procedure    { role: habitable }
+  room Exam1        { role: habitable }
+  room Exam2        { role: habitable }
+  room Exam3        { role: habitable }
+  room Exam4        { role: habitable }
+
+  // --- Clinical Support & Staff Wing (South-East Facade) ---
+  room NurseStation { role: service }
+  room Lab          { role: service }
+  room Pharmacy     { role: service }
+  room Breakroom    { role: habitable }
+  room StaffWC      { role: wet }
+
+  // --- Building Services Wing (West Core) ---
+  room ElecITRoom   { role: service }
+  room MechRoom     { role: service }
+
+  layout Plan {
+    // 1. Central Clinical Corridor (2200mm clear width, runs E-W south of Grid C)
+    require Corridor.west  == grid_x_1 + ext_half
+    require Corridor.east  == grid_x_6 - ext_half - 2050mm - interior_wall
+    require Corridor.north == grid_y_C - int_half
+    require Corridor.south == Corridor.north - corr_w
+
+    // Bonus 16th Room: StaffWC at East end of Corridor spine
+    require StaffWC.west  == Corridor.east + interior_wall
+    require StaffWC.east  == grid_x_6 - ext_half
+    require StaffWC.south == Corridor.south
+    require StaffWC.north == Corridor.north
+
+    // 2. Public Wing (Projecting South-West Wing: Bays 1..3, Y: A..Corridor)
+    require Vestibule.west  == grid_x_1 + ext_half
+    require Vestibule.east  == grid_x_2 - int_half
+    require Vestibule.south == grid_y_A + ext_half
+    require Vestibule.north == Vestibule.south + 2000mm
+
+    // MechRoom (West strip north of Vestibule, reaches Corridor)
+    require MechRoom.west  == grid_x_1 + ext_half
+    require MechRoom.east  == MechRoom.west + 2100mm
+    require MechRoom.south == Vestibule.north + interior_wall
+    require MechRoom.north == Corridor.south - interior_wall
+
+    // PublicWC (Accessible WC between Vestibule and ElecITRoom, opens to Waiting)
+    require PublicWC.west  == MechRoom.east + interior_wall
+    require PublicWC.east  == grid_x_2 - int_half
+    require PublicWC.south == Vestibule.north + interior_wall
+    require PublicWC.north == grid_y_B - int_half
+
+    // ElecITRoom (Dry Zone north of PublicWC, dedicated lockable door from Corridor)
+    require ElecITRoom.west  == MechRoom.east + interior_wall
+    require ElecITRoom.east  == grid_x_2 - int_half
+    require ElecITRoom.south == grid_y_B + int_half
+    require ElecITRoom.north == Corridor.south - interior_wall
+
+    // Reception & Waiting Lounge (Bays 2..3, spans from South Exterior to Corridor)
+    require Waiting.west  == grid_x_2 + int_half
+    require Waiting.east  == grid_x_3 - ext_half
+    require Waiting.south == grid_y_A + ext_half
+    require Waiting.north == Corridor.south - interior_wall
+
+    // 3. North Clinical Wing (Row 3, Bays 1..6, Y: C..D — all daylit on North Facade)
+    require Procedure.west  == grid_x_1 + ext_half
+    require Procedure.east  == grid_x_2 - int_half
+    require Procedure.south == grid_y_C + int_half
+    require Procedure.north == grid_y_D - ext_half
+
+    require Exam1.west  == grid_x_2 + int_half
+    require Exam1.east  == grid_x_3 - int_half
+    require Exam1.south == grid_y_C + int_half
+    require Exam1.north == grid_y_D - ext_half
+
+    require Exam2.west  == grid_x_3 + int_half
+    require Exam2.east  == grid_x_4 - int_half
+    require Exam2.south == grid_y_C + int_half
+    require Exam2.north == grid_y_D - ext_half
+
+    require Exam3.west  == grid_x_4 + int_half
+    require Exam3.east  == grid_x_5 - int_half
+    require Exam3.south == grid_y_C + int_half
+    require Exam3.north == grid_y_D - ext_half
+
+    require Exam4.west  == grid_x_5 + int_half
+    require Exam4.east  == grid_x_6 - ext_half
+    require Exam4.south == grid_y_C + int_half
+    require Exam4.north == grid_y_D - ext_half
+
+    // 4. South-East Clinical Support & Staff Wing (Bays 3..6, South of Corridor, Y: B..Corridor)
+    require NurseStation.west  == grid_x_3 + int_half
+    require NurseStation.east  == NurseStation.west + 3300mm
+    require NurseStation.south == grid_y_B + ext_half
+    require NurseStation.north == Corridor.south - interior_wall
+
+    require Lab.west  == NurseStation.east + interior_wall
+    require Lab.east  == Lab.west + 3200mm
+    require Lab.south == grid_y_B + ext_half
+    require Lab.north == Corridor.south - interior_wall
+
+    require Pharmacy.west  == Lab.east + interior_wall
+    require Pharmacy.east  == Pharmacy.west + 2660mm
+    require Pharmacy.south == grid_y_B + ext_half
+    require Pharmacy.north == Corridor.south - interior_wall
+
+    require Breakroom.west  == Pharmacy.east + interior_wall
+    require Breakroom.east  == grid_x_6 - ext_half
+    require Breakroom.south == grid_y_B + ext_half
+    require Breakroom.north == Corridor.south - interior_wall
+  }
+
+  // --- Doors (All >= 100mm jamb margin, 0 swing collisions, 100% reachability) ---
+  opening MainEntry: door {
+    host: exterior(Vestibule, south)  width: 1400mm  align: center  hinge: start  swing: into Vestibule
+  }
+  opening DoorVestibuleWaiting: door {
+    host: shared_wall(Vestibule, Waiting)  width: 1200mm  align: center  hinge: start  swing: into Waiting
+  }
+  opening DoorPublicWC: door {
+    host: shared_wall(PublicWC, Waiting)  width: 950mm  offset: 300mm from start  hinge: start  swing: into PublicWC
+  }
+  opening DoorWaitingCorridor: door {
+    host: shared_wall(Waiting, Corridor)  width: 1200mm  align: center  hinge: start  swing: into Waiting
+  }
+  opening DoorMech: door {
+    host: shared_wall(MechRoom, Corridor)  width: 900mm  align: center  hinge: start  swing: into MechRoom
+  }
+  opening DoorElecIT: door {
+    host: shared_wall(ElecITRoom, Corridor)  width: 900mm  align: center  hinge: start  swing: into ElecITRoom
+  }
+  opening DoorProcedure: door {
+    host: shared_wall(Corridor, Procedure)  width: 1200mm  align: center  hinge: start  swing: into Procedure
+  }
+  opening DoorExam1: door {
+    host: shared_wall(Corridor, Exam1)  width: 950mm  align: center  hinge: start  swing: into Exam1
+  }
+  opening DoorExam2: door {
+    host: shared_wall(Corridor, Exam2)  width: 950mm  align: center  hinge: start  swing: into Exam2
+  }
+  opening DoorExam3: door {
+    host: shared_wall(Corridor, Exam3)  width: 950mm  align: center  hinge: start  swing: into Exam3
+  }
+  opening DoorExam4: door {
+    host: shared_wall(Corridor, Exam4)  width: 950mm  offset: 500mm from start  hinge: start  swing: into Exam4
+  }
+  opening DoorNurse: door {
+    host: shared_wall(NurseStation, Corridor)  width: 1000mm  align: center  hinge: start  swing: into NurseStation
+  }
+  opening DoorLab: door {
+    host: shared_wall(Lab, Corridor)  width: 950mm  align: center  hinge: start  swing: into Lab
+  }
+  opening DoorPharmacy: door {
+    host: shared_wall(Pharmacy, Corridor)  width: 950mm  align: center  hinge: start  swing: into Pharmacy
+  }
+  opening DoorBreakroom: door {
+    host: shared_wall(Breakroom, Corridor)  width: 950mm  offset: 450mm from start  hinge: start  swing: into Breakroom
+  }
+  opening DoorStaffWC: door {
+    host: shared_wall(Corridor, StaffWC)  width: 900mm  align: center  hinge: start  swing: into StaffWC
+  }
+
+  // --- Exterior Windows (Daylighting for Waiting, Breakroom, Exam1-Exam4, Procedure + Corridor) ---
+  opening WinWaitingS:   window { host: exterior(Waiting, south)      width: 2800mm  align: center }
+  opening WinWaitingE:   window { host: exterior(Waiting, east)       width: 2000mm  offset: 900mm from start }
+  opening WinProcedureN: window { host: exterior(Procedure, north)    width: 2200mm  align: center }
+  opening WinExam1N:     window { host: exterior(Exam1, north)        width: 2000mm  align: center }
+  opening WinExam2N:     window { host: exterior(Exam2, north)        width: 2000mm  align: center }
+  opening WinExam3N:     window { host: exterior(Exam3, north)        width: 2000mm  align: center }
+  opening WinExam4N:     window { host: exterior(Exam4, north)        width: 2000mm  align: center }
+  opening WinBreakroomS: window { host: exterior(Breakroom, south)    width: 2200mm  align: center }
+  opening WinBreakroomE: window { host: exterior(Breakroom, east)     width: 1600mm  align: center }
+  opening WinCorridorW:  window { host: exterior(Corridor, west)      width: 1200mm  align: center }
+
+  // --- Clinical & Building Fixtures ---
+  // Waiting: Reception counter + patient seating
+  fixture ReceptionCounter: counter { room: Waiting  size: (2400mm, 750mm)   against: east   offset: 4700mm from start  clearance_front: 800mm }
+  fixture WaitingSofa1:     sofa    { room: Waiting  size: (2200mm, 850mm)   at: (450mm, 4700mm)  clearance_all: 400mm }
+  fixture WaitingSofa2:     sofa    { room: Waiting  size: (2200mm, 850mm)   at: (1400mm, 1300mm) clearance_all: 400mm }
+
+  // PublicWC: Accessible toilet + handwash basin
+  fixture PublicToilet: toilet { room: PublicWC  size: (480mm, 700mm)  against: west   offset: 1300mm from start  clearance_front: 700mm }
+  fixture PublicBasin:  basin  { room: PublicWC  size: (600mm, 450mm)  against: north  offset: 1100mm from start  clearance_front: 600mm }
+
+  // StaffWC: Toilet + handwash basin
+  fixture StaffToilet:  toilet { room: StaffWC   size: (450mm, 680mm)  against: east   offset: 200mm from start  clearance_front: 600mm }
+  fixture StaffBasin:   basin  { room: StaffWC   size: (550mm, 420mm)  against: north  offset: 1000mm from start  clearance_front: 500mm }
+
+  // Breakroom: Kitchenette counter + sink + dining table
+  fixture KitchenCounter: counter { room: Breakroom  size: (1400mm, 650mm)  against: west   offset: 200mm from start   clearance_front: 700mm }
+  fixture KitchenSink:    basin   { room: Breakroom  size: (600mm, 550mm)   against: west   offset: 1700mm from start  clearance_front: 600mm }
+  fixture BreakTable:     table   { room: Breakroom  size: (1400mm, 800mm)  at: (1650mm, 900mm)  clearance_all: 400mm }
+
+  // Procedure Room: Procedure table + scrub sink + instrument counter
+  fixture ProcedureTable: table   { room: Procedure  size: (1800mm, 850mm)  at: (1250mm, 1850mm)  clearance_all: 500mm }
+  fixture ScrubSink:      basin   { room: Procedure  size: (800mm, 550mm)   against: west   offset: 300mm from start  clearance_front: 500mm }
+  fixture ProcCounter:    counter { room: Procedure  size: (1600mm, 500mm)  against: east   offset: 1400mm from start  clearance_front: 500mm }
+
+  // Exam1: Exam table + handwash basin + clinician desk
+  fixture Exam1Table: table { room: Exam1  size: (1900mm, 750mm)  at: (1400mm, 1900mm)  clearance_all: 500mm }
+  fixture Exam1Basin: basin { room: Exam1  size: (550mm, 450mm)   against: west   offset: 2200mm from start  clearance_front: 500mm }
+  fixture Exam1Desk:  desk  { room: Exam1  size: (1300mm, 650mm)  against: east   offset: 2000mm from start  clearance_front: 500mm }
+
+  // Exam2: Exam table + handwash basin + clinician desk
+  fixture Exam2Table: table { room: Exam2  size: (1900mm, 750mm)  at: (1300mm, 1900mm)  clearance_all: 500mm }
+  fixture Exam2Basin: basin { room: Exam2  size: (550mm, 450mm)   against: west   offset: 2200mm from start  clearance_front: 500mm }
+  fixture Exam2Desk:  desk  { room: Exam2  size: (1300mm, 650mm)  against: east   offset: 2000mm from start  clearance_front: 500mm }
+
+  // Exam3: Exam table + handwash basin + clinician desk
+  fixture Exam3Table: table { room: Exam3  size: (1900mm, 750mm)  at: (1300mm, 1900mm)  clearance_all: 500mm }
+  fixture Exam3Basin: basin { room: Exam3  size: (550mm, 450mm)   against: west   offset: 2200mm from start  clearance_front: 500mm }
+  fixture Exam3Desk:  desk  { room: Exam3  size: (1300mm, 650mm)  against: east   offset: 2000mm from start  clearance_front: 500mm }
+
+  // Exam4: Exam table + handwash basin + clinician desk
+  fixture Exam4Table: table { room: Exam4  size: (1900mm, 750mm)  at: (1300mm, 1900mm)  clearance_all: 500mm }
+  fixture Exam4Basin: basin { room: Exam4  size: (550mm, 450mm)   against: west   offset: 2200mm from start  clearance_front: 500mm }
+  fixture Exam4Desk:  desk  { room: Exam4  size: (1300mm, 650mm)  against: east   offset: 2000mm from start  clearance_front: 500mm }
+
+  // NurseStation: Central workstation counter
+  fixture NurseCounter: counter { room: NurseStation  size: (2400mm, 750mm)  against: south  align: center  clearance_front: 700mm }
+
+  // Lab & Sterilization: Lab bench + sterilization sink
+  fixture LabBench:  counter { room: Lab  size: (2200mm, 700mm)  against: south  offset: 300mm from start  clearance_front: 700mm }
+  fixture SteriSink: basin   { room: Lab  size: (700mm, 550mm)   against: east   offset: 900mm from start  clearance_front: 600mm }
+
+  // Pharmacy & Clean Storage: Shelving fixtures
+  fixture PharmShelfW: wardrobe { room: Pharmacy  size: (1800mm, 500mm)  against: west   offset: 300mm from start  clearance_front: 600mm }
+  fixture PharmShelfE: wardrobe { room: Pharmacy  size: (1800mm, 500mm)  against: east   offset: 300mm from start  clearance_front: 600mm }
+
+  // ElecITRoom (DRY ZONE — no wet fixtures! Dry IT/server rack only)
+  fixture ITServerRack: wardrobe { room: ElecITRoom  size: (1200mm, 800mm)  against: south  align: center  clearance_front: 800mm }
+
+  // MechRoom: Mop sink + water heater space
+  fixture MopSink:     basin    { room: MechRoom  size: (650mm, 600mm)   against: east   offset: 2400mm from start  clearance_front: 600mm }
+  fixture WaterHeater: shaft    { room: MechRoom  size: (850mm, 850mm)   against: west   offset: 400mm from start   clearance_front: 600mm }
+
+  verify {
+    require no_room_overlap
+    require opening_jamb_margin >= 100mm
+    require no_door_swing_collision
+    require all_rooms_reachable
+    require no_fixture_collision
+    require habitable_rooms_have_window
+  }
+
+  view PlanView: plan {
+    frame: Plan
+    sheet: A1 landscape
+    scale: 1:100
+    show_dimensions: true
+    show_labels: true
+  }
+}

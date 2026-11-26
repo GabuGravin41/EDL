@@ -1,0 +1,409 @@
+{
+  "project": {
+    "title": "Hospital 11kV / 400V Dual-Transformer + Standby Generator Power SLD",
+    "standards": [
+      "IEC 60909-0:2016",
+      "IEC 60364-5-52",
+      "IEC 60617"
+    ],
+    "frequency_hz": 50,
+    "utility_intake": {
+      "id": "UTIL_11KV",
+      "voltage_v": 11000,
+      "sk_mva": 250.0,
+      "ik_ka": 13.12
+    }
+  },
+  "sources": [
+    {
+      "id": "TX1",
+      "kind": "transformer",
+      "kva": 1000,
+      "voltage_v": 400,
+      "primary_voltage_v": 11000,
+      "vector_group": "Dyn11",
+      "uk_pct": 6.0
+    },
+    {
+      "id": "TX2",
+      "kind": "transformer",
+      "kva": 1000,
+      "voltage_v": 400,
+      "primary_voltage_v": 11000,
+      "vector_group": "Dyn11",
+      "uk_pct": 6.0
+    },
+    {
+      "id": "GEN1",
+      "kind": "generator",
+      "kva": 1000,
+      "kw": 800,
+      "pf": 0.8,
+      "voltage_v": 400,
+      "uk_pct": 15.0,
+      "xd_subtransient_pct": 15.0
+    }
+  ],
+  "buses": [
+    {
+      "id": "RMU_11KV",
+      "voltage_v": 11000,
+      "ik_ka": 13.12,
+      "essential": false
+    },
+    {
+      "id": "MSB_A",
+      "voltage_v": 400,
+      "ik_ka": 23.94,
+      "ik_paralleled_ka": 44.79,
+      "ip_ka": 52.91,
+      "essential": false
+    },
+    {
+      "id": "MSB_B",
+      "voltage_v": 400,
+      "ik_ka": 23.94,
+      "ik_paralleled_ka": 44.79,
+      "ip_ka": 52.91,
+      "essential": false
+    },
+    {
+      "id": "EMSB",
+      "voltage_v": 400,
+      "ik_ka": 23.34,
+      "ik_gen_ka": 10.22,
+      "essential": true
+    }
+  ],
+  "interlocks": [
+    {
+      "id": "IL_BUS_TIE",
+      "devices": [
+        "Q_TX1",
+        "Q_TX2",
+        "Q_BT"
+      ],
+      "rule": "max_two_closed",
+      "description": "Mechanical Kirk-key + electrical 2-of-3 interlock preventing unintentional parallel operation of TX1 & TX2."
+    },
+    {
+      "id": "IL_ATS",
+      "devices": [
+        "Q_NORM",
+        "Q_GEN"
+      ],
+      "rule": "mutually_exclusive",
+      "description": "ATS1 mechanical + electrical interlock prohibiting Utility-Generator paralleling."
+    }
+  ],
+  "breakers": [
+    {
+      "id": "Q_MV_IN",
+      "bus": "RMU_11KV",
+      "in_a": 630,
+      "icu_ka": 25.0,
+      "type": "VCB"
+    },
+    {
+      "id": "Q_MV_TX1",
+      "bus": "RMU_11KV",
+      "in_a": 630,
+      "icu_ka": 25.0,
+      "type": "VCB"
+    },
+    {
+      "id": "Q_MV_TX2",
+      "bus": "RMU_11KV",
+      "in_a": 630,
+      "icu_ka": 25.0,
+      "type": "VCB"
+    },
+    {
+      "id": "Q_TX1",
+      "bus": "MSB_A",
+      "in_a": 1600,
+      "icu_ka": 50.0,
+      "type": "ACB"
+    },
+    {
+      "id": "Q_TX2",
+      "bus": "MSB_B",
+      "in_a": 1600,
+      "icu_ka": 50.0,
+      "type": "ACB"
+    },
+    {
+      "id": "Q_BT",
+      "bus": "MSB_A",
+      "in_a": 1600,
+      "icu_ka": 50.0,
+      "type": "ACB"
+    },
+    {
+      "id": "Q_ATS_FEED",
+      "bus": "MSB_B",
+      "in_a": 1600,
+      "icu_ka": 50.0,
+      "type": "ACB"
+    },
+    {
+      "id": "Q_NORM",
+      "bus": "EMSB",
+      "in_a": 1600,
+      "icu_ka": 50.0,
+      "type": "ACB_ATS"
+    },
+    {
+      "id": "Q_GEN",
+      "bus": "EMSB",
+      "in_a": 1600,
+      "icu_ka": 50.0,
+      "type": "ACB_ATS"
+    },
+    {
+      "id": "Q_F1",
+      "bus": "EMSB",
+      "in_a": 320,
+      "icu_ka": 36.0,
+      "type": "MCCB"
+    },
+    {
+      "id": "Q_F2",
+      "bus": "EMSB",
+      "in_a": 200,
+      "icu_ka": 36.0,
+      "type": "MCCB"
+    },
+    {
+      "id": "Q_F3",
+      "bus": "EMSB",
+      "in_a": 250,
+      "icu_ka": 36.0,
+      "type": "MCCB"
+    },
+    {
+      "id": "Q_F4",
+      "bus": "EMSB",
+      "in_a": 250,
+      "icu_ka": 36.0,
+      "type": "MCCB"
+    },
+    {
+      "id": "Q_F5",
+      "bus": "EMSB",
+      "in_a": 200,
+      "icu_ka": 36.0,
+      "type": "MCCB"
+    },
+    {
+      "id": "Q_F6",
+      "bus": "EMSB",
+      "in_a": 200,
+      "icu_ka": 36.0,
+      "type": "MCCB"
+    },
+    {
+      "id": "Q_F7",
+      "bus": "MSB_A",
+      "in_a": 400,
+      "icu_ka": 50.0,
+      "type": "MCCB"
+    },
+    {
+      "id": "Q_F8",
+      "bus": "MSB_A",
+      "in_a": 500,
+      "icu_ka": 50.0,
+      "type": "MCCB"
+    },
+    {
+      "id": "Q_F9",
+      "bus": "MSB_B",
+      "in_a": 500,
+      "icu_ka": 50.0,
+      "type": "MCCB"
+    },
+    {
+      "id": "Q_F10",
+      "bus": "MSB_B",
+      "in_a": 200,
+      "icu_ka": 50.0,
+      "type": "MCCB"
+    }
+  ],
+  "feeders": [
+    {
+      "id": "F1_MED_UPS",
+      "bus": "EMSB",
+      "load_kw": 150,
+      "pf": 0.9,
+      "length_m": 35,
+      "ib_a": 240.6,
+      "breaker_a": 320,
+      "icu_ka": 36.0,
+      "cable_runs": 1,
+      "cable_mm2": 185,
+      "iz_a": 401.3,
+      "vdrop_pct": 0.54,
+      "fire_rated": false
+    },
+    {
+      "id": "F2_FIRE_PUMP",
+      "bus": "EMSB",
+      "load_kw": 75,
+      "pf": 0.85,
+      "length_m": 55,
+      "ib_a": 127.4,
+      "breaker_a": 200,
+      "icu_ka": 36.0,
+      "cable_runs": 1,
+      "cable_mm2": 95,
+      "iz_a": 262.2,
+      "vdrop_pct": 0.76,
+      "fire_rated": true
+    },
+    {
+      "id": "F3_CLINIC_DB1",
+      "bus": "EMSB",
+      "load_kw": 120,
+      "pf": 0.9,
+      "length_m": 45,
+      "ib_a": 192.5,
+      "breaker_a": 250,
+      "icu_ka": 36.0,
+      "cable_runs": 1,
+      "cable_mm2": 120,
+      "iz_a": 304.5,
+      "vdrop_pct": 0.79,
+      "fire_rated": false
+    },
+    {
+      "id": "F4_CLINIC_DB2",
+      "bus": "EMSB",
+      "load_kw": 110,
+      "pf": 0.9,
+      "length_m": 60,
+      "ib_a": 176.4,
+      "breaker_a": 250,
+      "icu_ka": 36.0,
+      "cable_runs": 1,
+      "cable_mm2": 120,
+      "iz_a": 304.5,
+      "vdrop_pct": 0.97,
+      "fire_rated": false
+    },
+    {
+      "id": "F5_LAB_STERIL",
+      "bus": "EMSB",
+      "load_kw": 85,
+      "pf": 0.88,
+      "length_m": 40,
+      "ib_a": 139.4,
+      "breaker_a": 200,
+      "icu_ka": 36.0,
+      "cable_runs": 1,
+      "cable_mm2": 70,
+      "iz_a": 216.5,
+      "vdrop_pct": 0.82,
+      "fire_rated": false
+    },
+    {
+      "id": "F6_ELEVATORS",
+      "bus": "EMSB",
+      "load_kw": 90,
+      "pf": 0.85,
+      "length_m": 50,
+      "ib_a": 152.8,
+      "breaker_a": 200,
+      "icu_ka": 36.0,
+      "cable_runs": 1,
+      "cable_mm2": 95,
+      "iz_a": 262.2,
+      "vdrop_pct": 0.83,
+      "fire_rated": false
+    },
+    {
+      "id": "F7_IMAGING",
+      "bus": "MSB_A",
+      "load_kw": 180,
+      "pf": 0.9,
+      "length_m": 40,
+      "ib_a": 288.7,
+      "breaker_a": 400,
+      "icu_ka": 50.0,
+      "cable_runs": 1,
+      "cable_mm2": 240,
+      "iz_a": 473.4,
+      "vdrop_pct": 0.61,
+      "fire_rated": false
+    },
+    {
+      "id": "F8_CHILLER1",
+      "bus": "MSB_A",
+      "load_kw": 220,
+      "pf": 0.85,
+      "length_m": 65,
+      "ib_a": 373.6,
+      "breaker_a": 500,
+      "icu_ka": 50.0,
+      "cable_runs": 2,
+      "cable_mm2": 150,
+      "iz_a": 702.2,
+      "vdrop_pct": 0.93,
+      "fire_rated": false
+    },
+    {
+      "id": "F9_CHILLER2",
+      "bus": "MSB_B",
+      "load_kw": 220,
+      "pf": 0.85,
+      "length_m": 70,
+      "ib_a": 373.6,
+      "breaker_a": 500,
+      "icu_ka": 50.0,
+      "cable_runs": 2,
+      "cable_mm2": 150,
+      "iz_a": 702.2,
+      "vdrop_pct": 1.0,
+      "fire_rated": false
+    },
+    {
+      "id": "F10_GEN_PWR",
+      "bus": "MSB_B",
+      "load_kw": 100,
+      "pf": 0.9,
+      "length_m": 50,
+      "ib_a": 160.4,
+      "breaker_a": 200,
+      "icu_ka": 50.0,
+      "cable_runs": 1,
+      "cable_mm2": 95,
+      "iz_a": 262.2,
+      "vdrop_pct": 0.89,
+      "fire_rated": false
+    }
+  ],
+  "contingency_analysis": {
+    "total_connected_kw": 1350.0,
+    "total_connected_kva": 1539.7,
+    "emsb_essential_kw": 630.0,
+    "emsb_essential_kva": 712.2,
+    "gen1_loading_kw_pct": 78.8,
+    "gen1_loading_kva_pct": 71.2,
+    "normal_tx1_df07_kva": 320.8,
+    "normal_tx2_df07_kva": 757.1,
+    "normal_tx2_100pct_emsb_70pct_msbb_kva": 970.7,
+    "n1_single_tx_shed_1_chiller_df07_kva": 896.9,
+    "n1_single_tx_shed_stage2_100pct_peak_kva": 912.1,
+    "load_shedding_stages": {
+      "stage_1_auto_n1": [
+        "F8_CHILLER1"
+      ],
+      "stage_2_peak_override": [
+        "F8_CHILLER1",
+        "F9_CHILLER2",
+        "F10_GEN_PWR"
+      ]
+    }
+  }
+}

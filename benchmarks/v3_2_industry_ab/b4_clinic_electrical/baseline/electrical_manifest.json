@@ -1,0 +1,3032 @@
+{
+  "panels": [
+    {
+      "id": "DB_MAIN",
+      "room": "ElecITRoom",
+      "x": 23575.0,
+      "y": 9100.0,
+      "width_mm": 600.0,
+      "depth_mm": 250.0,
+      "clearance_bbox": [
+        22350.0,
+        8600.0,
+        23450.0,
+        9600.0
+      ]
+    },
+    {
+      "id": "DB_CLINIC",
+      "room": "NurseStation",
+      "x": 7975.0,
+      "y": 9250.0,
+      "width_mm": 600.0,
+      "depth_mm": 250.0,
+      "clearance_bbox": [
+        8100.0,
+        8750.0,
+        9300.0,
+        9750.0
+      ]
+    }
+  ],
+  "devices": [
+    {
+      "id": "L-EX1-1",
+      "room": "Exam1",
+      "kind": "light",
+      "circuit": "C-L1",
+      "load_w": 36,
+      "x": 9850.0,
+      "y": 1500.0
+    },
+    {
+      "id": "L-EX1-2",
+      "room": "Exam1",
+      "kind": "light",
+      "circuit": "C-L1",
+      "load_w": 36,
+      "x": 9850.0,
+      "y": 3600.0
+    },
+    {
+      "id": "SW-EX1",
+      "room": "Exam1",
+      "kind": "switch",
+      "circuit": "C-L1",
+      "load_w": 0,
+      "x": 9850.0,
+      "y": 4900.0
+    },
+    {
+      "id": "L-EX2-1",
+      "room": "Exam2",
+      "kind": "light",
+      "circuit": "C-L1",
+      "load_w": 36,
+      "x": 12800.0,
+      "y": 1500.0
+    },
+    {
+      "id": "L-EX2-2",
+      "room": "Exam2",
+      "kind": "light",
+      "circuit": "C-L1",
+      "load_w": 36,
+      "x": 12800.0,
+      "y": 3600.0
+    },
+    {
+      "id": "SW-EX2",
+      "room": "Exam2",
+      "kind": "switch",
+      "circuit": "C-L1",
+      "load_w": 0,
+      "x": 12800.0,
+      "y": 4900.0
+    },
+    {
+      "id": "L-EX3-1",
+      "room": "Exam3",
+      "kind": "light",
+      "circuit": "C-L1",
+      "load_w": 36,
+      "x": 15750.0,
+      "y": 1500.0
+    },
+    {
+      "id": "L-EX3-2",
+      "room": "Exam3",
+      "kind": "light",
+      "circuit": "C-L1",
+      "load_w": 36,
+      "x": 15750.0,
+      "y": 3600.0
+    },
+    {
+      "id": "SW-EX3",
+      "room": "Exam3",
+      "kind": "switch",
+      "circuit": "C-L1",
+      "load_w": 0,
+      "x": 15750.0,
+      "y": 4900.0
+    },
+    {
+      "id": "L-PRC-1",
+      "room": "Procedure",
+      "kind": "light",
+      "circuit": "C-L1",
+      "load_w": 40,
+      "x": 18500.0,
+      "y": 1500.0
+    },
+    {
+      "id": "L-PRC-2",
+      "room": "Procedure",
+      "kind": "light",
+      "circuit": "C-L1",
+      "load_w": 40,
+      "x": 20400.0,
+      "y": 1500.0
+    },
+    {
+      "id": "L-PRC-3",
+      "room": "Procedure",
+      "kind": "light",
+      "circuit": "C-L1",
+      "load_w": 40,
+      "x": 18500.0,
+      "y": 3600.0
+    },
+    {
+      "id": "L-PRC-4",
+      "room": "Procedure",
+      "kind": "light",
+      "circuit": "C-L1",
+      "load_w": 40,
+      "x": 20400.0,
+      "y": 3600.0
+    },
+    {
+      "id": "SW-PRC",
+      "room": "Procedure",
+      "kind": "switch",
+      "circuit": "C-L1",
+      "load_w": 0,
+      "x": 19050.0,
+      "y": 4900.0
+    },
+    {
+      "id": "L-VST-1",
+      "room": "Vestibule",
+      "kind": "light",
+      "circuit": "C-L2",
+      "load_w": 18,
+      "x": 1075.0,
+      "y": 1750.0
+    },
+    {
+      "id": "L-VST-2",
+      "room": "Vestibule",
+      "kind": "light",
+      "circuit": "C-L2",
+      "load_w": 18,
+      "x": 1075.0,
+      "y": 3600.0
+    },
+    {
+      "id": "SW-VST",
+      "room": "Vestibule",
+      "kind": "switch",
+      "circuit": "C-L2",
+      "load_w": 0,
+      "x": 1850.0,
+      "y": 300.0
+    },
+    {
+      "id": "L-WAT-1",
+      "room": "Waiting",
+      "kind": "light",
+      "circuit": "C-L2",
+      "load_w": 36,
+      "x": 3300.0,
+      "y": 1500.0
+    },
+    {
+      "id": "L-WAT-2",
+      "room": "Waiting",
+      "kind": "light",
+      "circuit": "C-L2",
+      "load_w": 36,
+      "x": 5200.0,
+      "y": 1500.0
+    },
+    {
+      "id": "L-WAT-3",
+      "room": "Waiting",
+      "kind": "light",
+      "circuit": "C-L2",
+      "load_w": 36,
+      "x": 7000.0,
+      "y": 1500.0
+    },
+    {
+      "id": "L-WAT-4",
+      "room": "Waiting",
+      "kind": "light",
+      "circuit": "C-L2",
+      "load_w": 36,
+      "x": 3300.0,
+      "y": 3400.0
+    },
+    {
+      "id": "L-WAT-5",
+      "room": "Waiting",
+      "kind": "light",
+      "circuit": "C-L2",
+      "load_w": 36,
+      "x": 5200.0,
+      "y": 3400.0
+    },
+    {
+      "id": "L-WAT-6",
+      "room": "Waiting",
+      "kind": "light",
+      "circuit": "C-L2",
+      "load_w": 36,
+      "x": 7000.0,
+      "y": 3400.0
+    },
+    {
+      "id": "SW-WAT-1",
+      "room": "Waiting",
+      "kind": "switch",
+      "circuit": "C-L2",
+      "load_w": 0,
+      "x": 2250.0,
+      "y": 3150.0
+    },
+    {
+      "id": "SW-WAT-2",
+      "room": "Waiting",
+      "kind": "switch",
+      "circuit": "C-L2",
+      "load_w": 0,
+      "x": 6250.0,
+      "y": 4900.0
+    },
+    {
+      "id": "L-PWC-1",
+      "room": "PublicWC",
+      "kind": "light",
+      "circuit": "C-L2",
+      "load_w": 18,
+      "x": 1100.0,
+      "y": 9150.0
+    },
+    {
+      "id": "SW-PWC",
+      "room": "PublicWC",
+      "kind": "switch",
+      "circuit": "C-L2",
+      "load_w": 0,
+      "x": 1550.0,
+      "y": 7600.0
+    },
+    {
+      "id": "L-SWC-1",
+      "room": "StaffWC",
+      "kind": "light",
+      "circuit": "C-L2",
+      "load_w": 18,
+      "x": 2950.0,
+      "y": 9150.0
+    },
+    {
+      "id": "SW-SWC",
+      "room": "StaffWC",
+      "kind": "switch",
+      "circuit": "C-L2",
+      "load_w": 0,
+      "x": 3500.0,
+      "y": 7600.0
+    },
+    {
+      "id": "L-BRK-1",
+      "room": "Breakroom",
+      "kind": "light",
+      "circuit": "C-L3",
+      "load_w": 36,
+      "x": 5100.0,
+      "y": 9150.0
+    },
+    {
+      "id": "L-BRK-2",
+      "room": "Breakroom",
+      "kind": "light",
+      "circuit": "C-L3",
+      "load_w": 36,
+      "x": 6800.0,
+      "y": 9150.0
+    },
+    {
+      "id": "SW-BRK",
+      "room": "Breakroom",
+      "kind": "switch",
+      "circuit": "C-L3",
+      "load_w": 0,
+      "x": 5250.0,
+      "y": 7600.0
+    },
+    {
+      "id": "L-NUR-1",
+      "room": "NurseStation",
+      "kind": "light",
+      "circuit": "C-L3",
+      "load_w": 36,
+      "x": 9750.0,
+      "y": 8450.0
+    },
+    {
+      "id": "L-NUR-2",
+      "room": "NurseStation",
+      "kind": "light",
+      "circuit": "C-L3",
+      "load_w": 36,
+      "x": 9750.0,
+      "y": 10100.0
+    },
+    {
+      "id": "SW-NUR",
+      "room": "NurseStation",
+      "kind": "switch",
+      "circuit": "C-L3",
+      "load_w": 0,
+      "x": 9420.0,
+      "y": 7600.0
+    },
+    {
+      "id": "L-EX4-1",
+      "room": "Exam4",
+      "kind": "light",
+      "circuit": "C-L3",
+      "load_w": 36,
+      "x": 12650.0,
+      "y": 9150.0
+    },
+    {
+      "id": "L-EX4-2",
+      "room": "Exam4",
+      "kind": "light",
+      "circuit": "C-L3",
+      "load_w": 36,
+      "x": 14350.0,
+      "y": 9150.0
+    },
+    {
+      "id": "SW-EX4",
+      "room": "Exam4",
+      "kind": "switch",
+      "circuit": "C-L3",
+      "load_w": 0,
+      "x": 12900.0,
+      "y": 7600.0
+    },
+    {
+      "id": "L-LAB-1",
+      "room": "Lab",
+      "kind": "light",
+      "circuit": "M-L1",
+      "load_w": 40,
+      "x": 16500.0,
+      "y": 9150.0
+    },
+    {
+      "id": "L-LAB-2",
+      "room": "Lab",
+      "kind": "light",
+      "circuit": "M-L1",
+      "load_w": 40,
+      "x": 18000.0,
+      "y": 9150.0
+    },
+    {
+      "id": "SW-LAB",
+      "room": "Lab",
+      "kind": "switch",
+      "circuit": "M-L1",
+      "load_w": 0,
+      "x": 16900.0,
+      "y": 7600.0
+    },
+    {
+      "id": "L-PHM-1",
+      "room": "Pharmacy",
+      "kind": "light",
+      "circuit": "M-L1",
+      "load_w": 36,
+      "x": 19850.0,
+      "y": 9150.0
+    },
+    {
+      "id": "L-PHM-2",
+      "room": "Pharmacy",
+      "kind": "light",
+      "circuit": "M-L1",
+      "load_w": 36,
+      "x": 20950.0,
+      "y": 9150.0
+    },
+    {
+      "id": "SW-PHM",
+      "room": "Pharmacy",
+      "kind": "switch",
+      "circuit": "M-L1",
+      "load_w": 0,
+      "x": 20300.0,
+      "y": 7600.0
+    },
+    {
+      "id": "L-ELC-1",
+      "room": "ElecITRoom",
+      "kind": "light",
+      "circuit": "M-L1",
+      "load_w": 36,
+      "x": 23250.0,
+      "y": 10150.0
+    },
+    {
+      "id": "SW-ELC",
+      "room": "ElecITRoom",
+      "kind": "switch",
+      "circuit": "M-L1",
+      "load_w": 0,
+      "x": 23150.0,
+      "y": 7600.0
+    },
+    {
+      "id": "L-MCH-1",
+      "room": "MechRoom",
+      "kind": "light",
+      "circuit": "M-L1",
+      "load_w": 36,
+      "x": 25000.0,
+      "y": 9150.0
+    },
+    {
+      "id": "L-MCH-2",
+      "room": "MechRoom",
+      "kind": "light",
+      "circuit": "M-L1",
+      "load_w": 36,
+      "x": 26200.0,
+      "y": 9150.0
+    },
+    {
+      "id": "SW-MCH",
+      "room": "MechRoom",
+      "kind": "switch",
+      "circuit": "M-L1",
+      "load_w": 0,
+      "x": 25550.0,
+      "y": 7600.0
+    },
+    {
+      "id": "L-COR-1",
+      "room": "Corridor",
+      "kind": "light",
+      "circuit": "M-L2",
+      "load_w": 24,
+      "x": 1800.0,
+      "y": 6250.0
+    },
+    {
+      "id": "L-COR-2",
+      "room": "Corridor",
+      "kind": "light",
+      "circuit": "M-L2",
+      "load_w": 24,
+      "x": 5200.0,
+      "y": 6250.0
+    },
+    {
+      "id": "L-COR-3",
+      "room": "Corridor",
+      "kind": "light",
+      "circuit": "M-L2",
+      "load_w": 24,
+      "x": 8600.0,
+      "y": 6250.0
+    },
+    {
+      "id": "L-COR-4",
+      "room": "Corridor",
+      "kind": "light",
+      "circuit": "M-L2",
+      "load_w": 24,
+      "x": 12000.0,
+      "y": 6250.0
+    },
+    {
+      "id": "L-COR-5",
+      "room": "Corridor",
+      "kind": "light",
+      "circuit": "M-L2",
+      "load_w": 24,
+      "x": 15400.0,
+      "y": 6250.0
+    },
+    {
+      "id": "L-COR-6",
+      "room": "Corridor",
+      "kind": "light",
+      "circuit": "M-L2",
+      "load_w": 24,
+      "x": 18800.0,
+      "y": 6250.0
+    },
+    {
+      "id": "L-COR-7",
+      "room": "Corridor",
+      "kind": "light",
+      "circuit": "M-L2",
+      "load_w": 24,
+      "x": 22200.0,
+      "y": 6250.0
+    },
+    {
+      "id": "L-COR-8",
+      "room": "Corridor",
+      "kind": "light",
+      "circuit": "M-L2",
+      "load_w": 24,
+      "x": 25400.0,
+      "y": 6250.0
+    },
+    {
+      "id": "SW-COR-W",
+      "room": "Corridor",
+      "kind": "switch",
+      "circuit": "M-L2",
+      "load_w": 0,
+      "x": 6250.0,
+      "y": 5250.0
+    },
+    {
+      "id": "SW-COR-E",
+      "room": "Corridor",
+      "kind": "switch",
+      "circuit": "M-L2",
+      "load_w": 0,
+      "x": 23200.0,
+      "y": 7250.0
+    },
+    {
+      "id": "EM-VST-1",
+      "room": "Vestibule",
+      "kind": "emergency_light",
+      "circuit": "M-EM1",
+      "load_w": 8,
+      "x": 1075.0,
+      "y": 450.0
+    },
+    {
+      "id": "EM-WAT-1",
+      "room": "Waiting",
+      "kind": "emergency_light",
+      "circuit": "M-EM1",
+      "load_w": 8,
+      "x": 4300.0,
+      "y": 2450.0
+    },
+    {
+      "id": "EM-WAT-2",
+      "room": "Waiting",
+      "kind": "emergency_light",
+      "circuit": "M-EM1",
+      "load_w": 8,
+      "x": 7000.0,
+      "y": 4700.0
+    },
+    {
+      "id": "EM-COR-1",
+      "room": "Corridor",
+      "kind": "emergency_light",
+      "circuit": "M-EM1",
+      "load_w": 8,
+      "x": 3500.0,
+      "y": 6250.0
+    },
+    {
+      "id": "EM-COR-2",
+      "room": "Corridor",
+      "kind": "emergency_light",
+      "circuit": "M-EM1",
+      "load_w": 8,
+      "x": 10300.0,
+      "y": 6250.0
+    },
+    {
+      "id": "EM-COR-3",
+      "room": "Corridor",
+      "kind": "emergency_light",
+      "circuit": "M-EM1",
+      "load_w": 8,
+      "x": 17100.0,
+      "y": 6250.0
+    },
+    {
+      "id": "EM-COR-4",
+      "room": "Corridor",
+      "kind": "emergency_light",
+      "circuit": "M-EM1",
+      "load_w": 8,
+      "x": 23800.0,
+      "y": 6250.0
+    },
+    {
+      "id": "EM-PRC-1",
+      "room": "Procedure",
+      "kind": "emergency_light",
+      "circuit": "M-EM1",
+      "load_w": 12,
+      "x": 19450.0,
+      "y": 2700.0
+    },
+    {
+      "id": "EM-ELC-1",
+      "room": "ElecITRoom",
+      "kind": "emergency_light",
+      "circuit": "M-EM1",
+      "load_w": 8,
+      "x": 22850.0,
+      "y": 8150.0
+    },
+    {
+      "id": "SK-WAT-1",
+      "room": "Waiting",
+      "kind": "socket",
+      "circuit": "C-P1",
+      "load_w": 350,
+      "x": 3200.0,
+      "y": 4850.0
+    },
+    {
+      "id": "SK-WAT-2",
+      "room": "Waiting",
+      "kind": "socket",
+      "circuit": "C-P1",
+      "load_w": 350,
+      "x": 4600.0,
+      "y": 4850.0
+    },
+    {
+      "id": "SK-WAT-3",
+      "room": "Waiting",
+      "kind": "socket",
+      "circuit": "C-P1",
+      "load_w": 350,
+      "x": 4900.0,
+      "y": 280.0
+    },
+    {
+      "id": "SK-WAT-4",
+      "room": "Waiting",
+      "kind": "socket",
+      "circuit": "C-P1",
+      "load_w": 350,
+      "x": 8180.0,
+      "y": 2000.0
+    },
+    {
+      "id": "SK-BRK-1",
+      "room": "Breakroom",
+      "kind": "socket",
+      "circuit": "C-P1",
+      "load_w": 300,
+      "x": 5800.0,
+      "y": 10720.0
+    },
+    {
+      "id": "SK-BRK-2",
+      "room": "Breakroom",
+      "kind": "socket",
+      "circuit": "C-P1",
+      "load_w": 300,
+      "x": 7580.0,
+      "y": 9100.0
+    },
+    {
+      "id": "SK-EX1-1",
+      "room": "Exam1",
+      "kind": "socket",
+      "circuit": "C-P2",
+      "load_w": 350,
+      "x": 9300.0,
+      "y": 280.0
+    },
+    {
+      "id": "SK-EX1-2",
+      "room": "Exam1",
+      "kind": "socket",
+      "circuit": "C-P2",
+      "load_w": 350,
+      "x": 8580.0,
+      "y": 2700.0
+    },
+    {
+      "id": "SK-EX1-3",
+      "room": "Exam1",
+      "kind": "socket",
+      "circuit": "C-P2",
+      "load_w": 350,
+      "x": 11120.0,
+      "y": 2600.0
+    },
+    {
+      "id": "SK-EX2-1",
+      "room": "Exam2",
+      "kind": "socket",
+      "circuit": "C-P2",
+      "load_w": 350,
+      "x": 12250.0,
+      "y": 280.0
+    },
+    {
+      "id": "SK-EX2-2",
+      "room": "Exam2",
+      "kind": "socket",
+      "circuit": "C-P2",
+      "load_w": 350,
+      "x": 11530.0,
+      "y": 2700.0
+    },
+    {
+      "id": "SK-EX2-3",
+      "room": "Exam2",
+      "kind": "socket",
+      "circuit": "C-P2",
+      "load_w": 350,
+      "x": 14070.0,
+      "y": 2600.0
+    },
+    {
+      "id": "SK-EX3-1",
+      "room": "Exam3",
+      "kind": "socket",
+      "circuit": "C-P3",
+      "load_w": 350,
+      "x": 15200.0,
+      "y": 280.0
+    },
+    {
+      "id": "SK-EX3-2",
+      "room": "Exam3",
+      "kind": "socket",
+      "circuit": "C-P3",
+      "load_w": 350,
+      "x": 14480.0,
+      "y": 2700.0
+    },
+    {
+      "id": "SK-EX3-3",
+      "room": "Exam3",
+      "kind": "socket",
+      "circuit": "C-P3",
+      "load_w": 350,
+      "x": 17020.0,
+      "y": 2600.0
+    },
+    {
+      "id": "SK-EX4-1",
+      "room": "Exam4",
+      "kind": "socket",
+      "circuit": "C-P3",
+      "load_w": 350,
+      "x": 12350.0,
+      "y": 10720.0
+    },
+    {
+      "id": "SK-EX4-2",
+      "room": "Exam4",
+      "kind": "socket",
+      "circuit": "C-P3",
+      "load_w": 350,
+      "x": 11630.0,
+      "y": 8950.0
+    },
+    {
+      "id": "SK-EX4-3",
+      "room": "Exam4",
+      "kind": "socket",
+      "circuit": "C-P3",
+      "load_w": 350,
+      "x": 15220.0,
+      "y": 8650.0
+    },
+    {
+      "id": "SK-NUR-1",
+      "room": "NurseStation",
+      "kind": "socket",
+      "circuit": "C-P4",
+      "load_w": 350,
+      "x": 8650.0,
+      "y": 10720.0
+    },
+    {
+      "id": "SK-NUR-2",
+      "room": "NurseStation",
+      "kind": "socket",
+      "circuit": "C-P4",
+      "load_w": 350,
+      "x": 10150.0,
+      "y": 10720.0
+    },
+    {
+      "id": "SK-NUR-3",
+      "room": "NurseStation",
+      "kind": "socket",
+      "circuit": "C-P4",
+      "load_w": 350,
+      "x": 11220.0,
+      "y": 8450.0
+    },
+    {
+      "id": "SK-NUR-4",
+      "room": "NurseStation",
+      "kind": "socket",
+      "circuit": "C-P4",
+      "load_w": 350,
+      "x": 11220.0,
+      "y": 9350.0
+    },
+    {
+      "id": "SK-PRC-1",
+      "room": "Procedure",
+      "kind": "socket",
+      "circuit": "C-P4",
+      "load_w": 350,
+      "x": 17430.0,
+      "y": 3150.0
+    },
+    {
+      "id": "SK-PRC-2",
+      "room": "Procedure",
+      "kind": "socket",
+      "circuit": "C-P4",
+      "load_w": 350,
+      "x": 18600.0,
+      "y": 280.0
+    },
+    {
+      "id": "SK-PRC-3",
+      "room": "Procedure",
+      "kind": "socket",
+      "circuit": "C-P4",
+      "load_w": 350,
+      "x": 20300.0,
+      "y": 280.0
+    },
+    {
+      "id": "SK-PRC-4",
+      "room": "Procedure",
+      "kind": "socket",
+      "circuit": "C-P4",
+      "load_w": 350,
+      "x": 21320.0,
+      "y": 1200.0
+    },
+    {
+      "id": "SK-LAB-1",
+      "room": "Lab",
+      "kind": "socket",
+      "circuit": "M-P1",
+      "load_w": 400,
+      "x": 17500.0,
+      "y": 7630.0
+    },
+    {
+      "id": "SK-LAB-2",
+      "room": "Lab",
+      "kind": "socket",
+      "circuit": "M-P1",
+      "load_w": 400,
+      "x": 18670.0,
+      "y": 8950.0
+    },
+    {
+      "id": "SK-LAB-3",
+      "room": "Lab",
+      "kind": "socket",
+      "circuit": "M-P1",
+      "load_w": 400,
+      "x": 17200.0,
+      "y": 10720.0
+    },
+    {
+      "id": "SK-PHM-1",
+      "room": "Pharmacy",
+      "kind": "socket",
+      "circuit": "M-P2",
+      "load_w": 400,
+      "x": 19080.0,
+      "y": 9200.0
+    },
+    {
+      "id": "SK-PHM-2",
+      "room": "Pharmacy",
+      "kind": "socket",
+      "circuit": "M-P2",
+      "load_w": 400,
+      "x": 20200.0,
+      "y": 10720.0
+    },
+    {
+      "id": "SK-MCH-1",
+      "room": "MechRoom",
+      "kind": "socket",
+      "circuit": "M-P2",
+      "load_w": 300,
+      "x": 26720.0,
+      "y": 8450.0
+    },
+    {
+      "id": "SK-ELC-1",
+      "room": "ElecITRoom",
+      "kind": "socket",
+      "circuit": "M-P3",
+      "load_w": 350,
+      "x": 21930.0,
+      "y": 8800.0
+    },
+    {
+      "id": "SK-ELC-2",
+      "room": "ElecITRoom",
+      "kind": "socket",
+      "circuit": "M-P3",
+      "load_w": 350,
+      "x": 23200.0,
+      "y": 10720.0
+    },
+    {
+      "id": "SK-COR-1",
+      "room": "Corridor",
+      "kind": "socket",
+      "circuit": "M-P3",
+      "load_w": 350,
+      "x": 5650.0,
+      "y": 7250.0
+    },
+    {
+      "id": "SK-COR-2",
+      "room": "Corridor",
+      "kind": "socket",
+      "circuit": "M-P3",
+      "load_w": 350,
+      "x": 18650.0,
+      "y": 7250.0
+    },
+    {
+      "id": "DED-PRC-MED",
+      "room": "Procedure",
+      "kind": "dedicated_load",
+      "circuit": "C-D1",
+      "load_w": 2800,
+      "x": 21250.0,
+      "y": 3550.0
+    },
+    {
+      "id": "DED-BRK-KIT",
+      "room": "Breakroom",
+      "kind": "dedicated_load",
+      "circuit": "C-D2",
+      "load_w": 3000,
+      "x": 4050.0,
+      "y": 9450.0
+    },
+    {
+      "id": "DED-MCH-WH",
+      "room": "MechRoom",
+      "kind": "dedicated_load",
+      "circuit": "M-D1",
+      "load_w": 3600,
+      "x": 26150.0,
+      "y": 9550.0
+    },
+    {
+      "id": "DED-LAB-AUTO",
+      "room": "Lab",
+      "kind": "dedicated_load",
+      "circuit": "M-D2",
+      "load_w": 3600,
+      "x": 18250.0,
+      "y": 10450.0
+    },
+    {
+      "id": "DED-ELC-UPS",
+      "room": "ElecITRoom",
+      "kind": "dedicated_load",
+      "circuit": "M-D3",
+      "load_w": 3000,
+      "x": 22425.0,
+      "y": 10300.0
+    }
+  ],
+  "circuits": [
+    {
+      "id": "SUB1",
+      "panel": "DB_MAIN",
+      "kind": "submain",
+      "phase": "3P",
+      "breaker_a": 40,
+      "rcd_ma": 0,
+      "cable_mm2": 16.0,
+      "load_w": 15680,
+      "route_len_m": 19.8,
+      "vdrop_pct": 0.3
+    },
+    {
+      "id": "M-L1",
+      "panel": "DB_MAIN",
+      "kind": "lighting",
+      "phase": "L3",
+      "breaker_a": 10,
+      "rcd_ma": 30,
+      "cable_mm2": 1.5,
+      "load_w": 260,
+      "route_len_m": 13.81,
+      "vdrop_pct": 0.21
+    },
+    {
+      "id": "M-L2",
+      "panel": "DB_MAIN",
+      "kind": "lighting",
+      "phase": "L2",
+      "breaker_a": 10,
+      "rcd_ma": 30,
+      "cable_mm2": 2.5,
+      "load_w": 192,
+      "route_len_m": 25.41,
+      "vdrop_pct": 0.17
+    },
+    {
+      "id": "M-EM1",
+      "panel": "DB_MAIN",
+      "kind": "lighting",
+      "phase": "L3",
+      "breaker_a": 10,
+      "rcd_ma": 30,
+      "cable_mm2": 2.5,
+      "load_w": 76,
+      "route_len_m": 31.2,
+      "vdrop_pct": 0.08
+    },
+    {
+      "id": "M-P1",
+      "panel": "DB_MAIN",
+      "kind": "power",
+      "phase": "L1",
+      "breaker_a": 16,
+      "rcd_ma": 30,
+      "cable_mm2": 2.5,
+      "load_w": 1200,
+      "route_len_m": 13.01,
+      "vdrop_pct": 0.59
+    },
+    {
+      "id": "M-P2",
+      "panel": "DB_MAIN",
+      "kind": "power",
+      "phase": "L2",
+      "breaker_a": 16,
+      "rcd_ma": 30,
+      "cable_mm2": 2.5,
+      "load_w": 1100,
+      "route_len_m": 11.11,
+      "vdrop_pct": 0.46
+    },
+    {
+      "id": "M-P3",
+      "panel": "DB_MAIN",
+      "kind": "power",
+      "phase": "L3",
+      "breaker_a": 16,
+      "rcd_ma": 30,
+      "cable_mm2": 4.0,
+      "load_w": 1400,
+      "route_len_m": 21.09,
+      "vdrop_pct": 0.7
+    },
+    {
+      "id": "M-D1",
+      "panel": "DB_MAIN",
+      "kind": "dedicated",
+      "phase": "L1",
+      "breaker_a": 25,
+      "rcd_ma": 30,
+      "cable_mm2": 6.0,
+      "load_w": 3600,
+      "route_len_m": 7.38,
+      "vdrop_pct": 0.42
+    },
+    {
+      "id": "M-D2",
+      "panel": "DB_MAIN",
+      "kind": "dedicated",
+      "phase": "L2",
+      "breaker_a": 25,
+      "rcd_ma": 30,
+      "cable_mm2": 6.0,
+      "load_w": 3600,
+      "route_len_m": 11.09,
+      "vdrop_pct": 0.63
+    },
+    {
+      "id": "M-D3",
+      "panel": "DB_MAIN",
+      "kind": "dedicated",
+      "phase": "L3",
+      "breaker_a": 20,
+      "rcd_ma": 30,
+      "cable_mm2": 4.0,
+      "load_w": 3000,
+      "route_len_m": 2.35,
+      "vdrop_pct": 0.17
+    },
+    {
+      "id": "C-L1",
+      "panel": "DB_CLINIC",
+      "kind": "lighting",
+      "phase": "L1",
+      "breaker_a": 10,
+      "rcd_ma": 30,
+      "cable_mm2": 1.5,
+      "load_w": 376,
+      "route_len_m": 20.18,
+      "vdrop_pct": 0.45
+    },
+    {
+      "id": "C-L2",
+      "panel": "DB_CLINIC",
+      "kind": "lighting",
+      "phase": "L2",
+      "breaker_a": 10,
+      "rcd_ma": 30,
+      "cable_mm2": 1.5,
+      "load_w": 288,
+      "route_len_m": 16.07,
+      "vdrop_pct": 0.28
+    },
+    {
+      "id": "C-L3",
+      "panel": "DB_CLINIC",
+      "kind": "lighting",
+      "phase": "L3",
+      "breaker_a": 10,
+      "rcd_ma": 30,
+      "cable_mm2": 1.5,
+      "load_w": 216,
+      "route_len_m": 13.02,
+      "vdrop_pct": 0.17
+    },
+    {
+      "id": "C-P1",
+      "panel": "DB_CLINIC",
+      "kind": "power",
+      "phase": "L1",
+      "breaker_a": 16,
+      "rcd_ma": 30,
+      "cable_mm2": 2.5,
+      "load_w": 2000,
+      "route_len_m": 13.01,
+      "vdrop_pct": 0.98
+    },
+    {
+      "id": "C-P2",
+      "panel": "DB_CLINIC",
+      "kind": "power",
+      "phase": "L2",
+      "breaker_a": 16,
+      "rcd_ma": 30,
+      "cable_mm2": 2.5,
+      "load_w": 2100,
+      "route_len_m": 13.95,
+      "vdrop_pct": 1.11
+    },
+    {
+      "id": "C-P3",
+      "panel": "DB_CLINIC",
+      "kind": "power",
+      "phase": "L3",
+      "breaker_a": 16,
+      "rcd_ma": 30,
+      "cable_mm2": 2.5,
+      "load_w": 2100,
+      "route_len_m": 16.89,
+      "vdrop_pct": 1.34
+    },
+    {
+      "id": "C-P4",
+      "panel": "DB_CLINIC",
+      "kind": "power",
+      "phase": "L1",
+      "breaker_a": 16,
+      "rcd_ma": 30,
+      "cable_mm2": 4.0,
+      "load_w": 2800,
+      "route_len_m": 21.39,
+      "vdrop_pct": 1.42
+    },
+    {
+      "id": "C-D1",
+      "panel": "DB_CLINIC",
+      "kind": "dedicated",
+      "phase": "L2",
+      "breaker_a": 20,
+      "rcd_ma": 30,
+      "cable_mm2": 4.0,
+      "load_w": 2800,
+      "route_len_m": 18.98,
+      "vdrop_pct": 1.26
+    },
+    {
+      "id": "C-D2",
+      "panel": "DB_CLINIC",
+      "kind": "dedicated",
+      "phase": "L3",
+      "breaker_a": 20,
+      "rcd_ma": 30,
+      "cable_mm2": 4.0,
+      "load_w": 3000,
+      "route_len_m": 8.79,
+      "vdrop_pct": 0.62
+    }
+  ],
+  "wires": [
+    {
+      "circuit": "SUB1",
+      "from_x": 23575.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 9100.0
+    },
+    {
+      "circuit": "SUB1",
+      "from_x": 23600.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 7100.0
+    },
+    {
+      "circuit": "SUB1",
+      "from_x": 23600.0,
+      "from_y": 7100.0,
+      "to_x": 7975.0,
+      "to_y": 7100.0
+    },
+    {
+      "circuit": "SUB1",
+      "from_x": 7975.0,
+      "from_y": 7100.0,
+      "to_x": 7975.0,
+      "to_y": 9250.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 23575.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 9100.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 23600.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 17150.0,
+      "from_y": 5880.0,
+      "to_x": 20350.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 20350.0,
+      "from_y": 5880.0,
+      "to_x": 23200.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 23200.0,
+      "from_y": 5880.0,
+      "to_x": 23600.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 23600.0,
+      "from_y": 5880.0,
+      "to_x": 25600.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 17150.0,
+      "from_y": 5880.0,
+      "to_x": 17150.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 17150.0,
+      "from_y": 7600.0,
+      "to_x": 17150.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 16500.0,
+      "from_y": 9150.0,
+      "to_x": 17150.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 17150.0,
+      "from_y": 9150.0,
+      "to_x": 18000.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 16900.0,
+      "from_y": 7600.0,
+      "to_x": 17150.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 20350.0,
+      "from_y": 5880.0,
+      "to_x": 20350.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 20350.0,
+      "from_y": 7600.0,
+      "to_x": 20350.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 19850.0,
+      "from_y": 9150.0,
+      "to_x": 20350.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 20350.0,
+      "from_y": 9150.0,
+      "to_x": 20950.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 20300.0,
+      "from_y": 7600.0,
+      "to_x": 20350.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 23200.0,
+      "from_y": 5880.0,
+      "to_x": 23200.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 23200.0,
+      "from_y": 7600.0,
+      "to_x": 23200.0,
+      "to_y": 10150.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 23200.0,
+      "from_y": 10150.0,
+      "to_x": 23250.0,
+      "to_y": 10150.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 23150.0,
+      "from_y": 7600.0,
+      "to_x": 23200.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 25600.0,
+      "from_y": 5880.0,
+      "to_x": 25600.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 25600.0,
+      "from_y": 7600.0,
+      "to_x": 25600.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 25000.0,
+      "from_y": 9150.0,
+      "to_x": 25600.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 25600.0,
+      "from_y": 9150.0,
+      "to_x": 26200.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "M-L1",
+      "from_x": 25550.0,
+      "from_y": 7600.0,
+      "to_x": 25600.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 23575.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 9100.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 23600.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 1800.0,
+      "from_y": 5880.0,
+      "to_x": 5200.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 5200.0,
+      "from_y": 5880.0,
+      "to_x": 6250.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 6250.0,
+      "from_y": 5880.0,
+      "to_x": 8600.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 8600.0,
+      "from_y": 5880.0,
+      "to_x": 12000.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 12000.0,
+      "from_y": 5880.0,
+      "to_x": 15400.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 15400.0,
+      "from_y": 5880.0,
+      "to_x": 18800.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 18800.0,
+      "from_y": 5880.0,
+      "to_x": 22200.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 22200.0,
+      "from_y": 5880.0,
+      "to_x": 23200.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 23200.0,
+      "from_y": 5880.0,
+      "to_x": 23600.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 23600.0,
+      "from_y": 5880.0,
+      "to_x": 25400.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 1800.0,
+      "from_y": 5880.0,
+      "to_x": 1800.0,
+      "to_y": 6250.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 5200.0,
+      "from_y": 5880.0,
+      "to_x": 5200.0,
+      "to_y": 6250.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 8600.0,
+      "from_y": 5880.0,
+      "to_x": 8600.0,
+      "to_y": 6250.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 12000.0,
+      "from_y": 5880.0,
+      "to_x": 12000.0,
+      "to_y": 6250.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 15400.0,
+      "from_y": 5880.0,
+      "to_x": 15400.0,
+      "to_y": 6250.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 18800.0,
+      "from_y": 5880.0,
+      "to_x": 18800.0,
+      "to_y": 6250.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 22200.0,
+      "from_y": 5880.0,
+      "to_x": 22200.0,
+      "to_y": 6250.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 25400.0,
+      "from_y": 5880.0,
+      "to_x": 25400.0,
+      "to_y": 6250.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 6250.0,
+      "from_y": 5880.0,
+      "to_x": 6250.0,
+      "to_y": 5250.0
+    },
+    {
+      "circuit": "M-L2",
+      "from_x": 23200.0,
+      "from_y": 5880.0,
+      "to_x": 23200.0,
+      "to_y": 7250.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 23575.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 9100.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 23600.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 5560.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 1100.0,
+      "from_y": 5560.0,
+      "to_x": 3500.0,
+      "to_y": 5560.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 3500.0,
+      "from_y": 5560.0,
+      "to_x": 5650.0,
+      "to_y": 5560.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 5650.0,
+      "from_y": 5560.0,
+      "to_x": 10300.0,
+      "to_y": 5560.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 10300.0,
+      "from_y": 5560.0,
+      "to_x": 17100.0,
+      "to_y": 5560.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 17100.0,
+      "from_y": 5560.0,
+      "to_x": 19450.0,
+      "to_y": 5560.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 19450.0,
+      "from_y": 5560.0,
+      "to_x": 22850.0,
+      "to_y": 5560.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 22850.0,
+      "from_y": 5560.0,
+      "to_x": 23600.0,
+      "to_y": 5560.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 23600.0,
+      "from_y": 5560.0,
+      "to_x": 23800.0,
+      "to_y": 5560.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 1100.0,
+      "from_y": 5560.0,
+      "to_x": 1100.0,
+      "to_y": 450.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 1075.0,
+      "from_y": 450.0,
+      "to_x": 1100.0,
+      "to_y": 450.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 5650.0,
+      "from_y": 5560.0,
+      "to_x": 5650.0,
+      "to_y": 4700.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 5650.0,
+      "from_y": 4700.0,
+      "to_x": 5650.0,
+      "to_y": 2450.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 4300.0,
+      "from_y": 2450.0,
+      "to_x": 5650.0,
+      "to_y": 2450.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 5650.0,
+      "from_y": 4700.0,
+      "to_x": 7000.0,
+      "to_y": 4700.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 3500.0,
+      "from_y": 5560.0,
+      "to_x": 3500.0,
+      "to_y": 6250.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 10300.0,
+      "from_y": 5560.0,
+      "to_x": 10300.0,
+      "to_y": 6250.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 17100.0,
+      "from_y": 5560.0,
+      "to_x": 17100.0,
+      "to_y": 6250.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 23800.0,
+      "from_y": 5560.0,
+      "to_x": 23800.0,
+      "to_y": 6250.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 19450.0,
+      "from_y": 5560.0,
+      "to_x": 19450.0,
+      "to_y": 2700.0
+    },
+    {
+      "circuit": "M-EM1",
+      "from_x": 22850.0,
+      "from_y": 5560.0,
+      "to_x": 22850.0,
+      "to_y": 8150.0
+    },
+    {
+      "circuit": "M-P1",
+      "from_x": 23575.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 9100.0
+    },
+    {
+      "circuit": "M-P1",
+      "from_x": 23600.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "M-P1",
+      "from_x": 17800.0,
+      "from_y": 6620.0,
+      "to_x": 23600.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "M-P1",
+      "from_x": 17800.0,
+      "from_y": 6620.0,
+      "to_x": 17800.0,
+      "to_y": 7630.0
+    },
+    {
+      "circuit": "M-P1",
+      "from_x": 17800.0,
+      "from_y": 7630.0,
+      "to_x": 17800.0,
+      "to_y": 8950.0
+    },
+    {
+      "circuit": "M-P1",
+      "from_x": 17800.0,
+      "from_y": 8950.0,
+      "to_x": 17800.0,
+      "to_y": 10720.0
+    },
+    {
+      "circuit": "M-P1",
+      "from_x": 17500.0,
+      "from_y": 7630.0,
+      "to_x": 17800.0,
+      "to_y": 7630.0
+    },
+    {
+      "circuit": "M-P1",
+      "from_x": 17800.0,
+      "from_y": 8950.0,
+      "to_x": 18670.0,
+      "to_y": 8950.0
+    },
+    {
+      "circuit": "M-P1",
+      "from_x": 17200.0,
+      "from_y": 10720.0,
+      "to_x": 17800.0,
+      "to_y": 10720.0
+    },
+    {
+      "circuit": "M-P2",
+      "from_x": 23575.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 9100.0
+    },
+    {
+      "circuit": "M-P2",
+      "from_x": 23600.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "M-P2",
+      "from_x": 19650.0,
+      "from_y": 6620.0,
+      "to_x": 23600.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "M-P2",
+      "from_x": 23600.0,
+      "from_y": 6620.0,
+      "to_x": 26600.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "M-P2",
+      "from_x": 19650.0,
+      "from_y": 6620.0,
+      "to_x": 19650.0,
+      "to_y": 9200.0
+    },
+    {
+      "circuit": "M-P2",
+      "from_x": 19650.0,
+      "from_y": 9200.0,
+      "to_x": 19650.0,
+      "to_y": 10720.0
+    },
+    {
+      "circuit": "M-P2",
+      "from_x": 19080.0,
+      "from_y": 9200.0,
+      "to_x": 19650.0,
+      "to_y": 9200.0
+    },
+    {
+      "circuit": "M-P2",
+      "from_x": 19650.0,
+      "from_y": 10720.0,
+      "to_x": 20200.0,
+      "to_y": 10720.0
+    },
+    {
+      "circuit": "M-P2",
+      "from_x": 26600.0,
+      "from_y": 6620.0,
+      "to_x": 26600.0,
+      "to_y": 8450.0
+    },
+    {
+      "circuit": "M-P2",
+      "from_x": 26600.0,
+      "from_y": 8450.0,
+      "to_x": 26720.0,
+      "to_y": 8450.0
+    },
+    {
+      "circuit": "M-P3",
+      "from_x": 23575.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 9100.0
+    },
+    {
+      "circuit": "M-P3",
+      "from_x": 23600.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "M-P3",
+      "from_x": 5650.0,
+      "from_y": 6620.0,
+      "to_x": 18650.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "M-P3",
+      "from_x": 18650.0,
+      "from_y": 6620.0,
+      "to_x": 22550.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "M-P3",
+      "from_x": 22550.0,
+      "from_y": 6620.0,
+      "to_x": 23600.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "M-P3",
+      "from_x": 22550.0,
+      "from_y": 6620.0,
+      "to_x": 22550.0,
+      "to_y": 8800.0
+    },
+    {
+      "circuit": "M-P3",
+      "from_x": 22550.0,
+      "from_y": 8800.0,
+      "to_x": 22550.0,
+      "to_y": 10720.0
+    },
+    {
+      "circuit": "M-P3",
+      "from_x": 21930.0,
+      "from_y": 8800.0,
+      "to_x": 22550.0,
+      "to_y": 8800.0
+    },
+    {
+      "circuit": "M-P3",
+      "from_x": 22550.0,
+      "from_y": 10720.0,
+      "to_x": 23200.0,
+      "to_y": 10720.0
+    },
+    {
+      "circuit": "M-P3",
+      "from_x": 5650.0,
+      "from_y": 6620.0,
+      "to_x": 5650.0,
+      "to_y": 7250.0
+    },
+    {
+      "circuit": "M-P3",
+      "from_x": 18650.0,
+      "from_y": 6620.0,
+      "to_x": 18650.0,
+      "to_y": 7250.0
+    },
+    {
+      "circuit": "M-D1",
+      "from_x": 23575.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 9100.0
+    },
+    {
+      "circuit": "M-D1",
+      "from_x": 23600.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 6920.0
+    },
+    {
+      "circuit": "M-D1",
+      "from_x": 23600.0,
+      "from_y": 6920.0,
+      "to_x": 26150.0,
+      "to_y": 6920.0
+    },
+    {
+      "circuit": "M-D1",
+      "from_x": 26150.0,
+      "from_y": 6920.0,
+      "to_x": 26150.0,
+      "to_y": 9550.0
+    },
+    {
+      "circuit": "M-D2",
+      "from_x": 23575.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 9100.0
+    },
+    {
+      "circuit": "M-D2",
+      "from_x": 23600.0,
+      "from_y": 9100.0,
+      "to_x": 23600.0,
+      "to_y": 6920.0
+    },
+    {
+      "circuit": "M-D2",
+      "from_x": 18250.0,
+      "from_y": 6920.0,
+      "to_x": 23600.0,
+      "to_y": 6920.0
+    },
+    {
+      "circuit": "M-D2",
+      "from_x": 18250.0,
+      "from_y": 6920.0,
+      "to_x": 18250.0,
+      "to_y": 10450.0
+    },
+    {
+      "circuit": "M-D3",
+      "from_x": 23575.0,
+      "from_y": 9100.0,
+      "to_x": 23575.0,
+      "to_y": 10300.0
+    },
+    {
+      "circuit": "M-D3",
+      "from_x": 23575.0,
+      "from_y": 10300.0,
+      "to_x": 22425.0,
+      "to_y": 10300.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 7975.0,
+      "from_y": 9250.0,
+      "to_x": 7975.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 7975.0,
+      "from_y": 5880.0,
+      "to_x": 9850.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 9850.0,
+      "from_y": 5880.0,
+      "to_x": 12800.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 12800.0,
+      "from_y": 5880.0,
+      "to_x": 15750.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 15750.0,
+      "from_y": 5880.0,
+      "to_x": 19350.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 9850.0,
+      "from_y": 5880.0,
+      "to_x": 9850.0,
+      "to_y": 4900.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 9850.0,
+      "from_y": 4900.0,
+      "to_x": 9850.0,
+      "to_y": 3600.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 9850.0,
+      "from_y": 3600.0,
+      "to_x": 9850.0,
+      "to_y": 1500.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 12800.0,
+      "from_y": 5880.0,
+      "to_x": 12800.0,
+      "to_y": 4900.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 12800.0,
+      "from_y": 4900.0,
+      "to_x": 12800.0,
+      "to_y": 3600.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 12800.0,
+      "from_y": 3600.0,
+      "to_x": 12800.0,
+      "to_y": 1500.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 15750.0,
+      "from_y": 5880.0,
+      "to_x": 15750.0,
+      "to_y": 4900.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 15750.0,
+      "from_y": 4900.0,
+      "to_x": 15750.0,
+      "to_y": 3600.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 15750.0,
+      "from_y": 3600.0,
+      "to_x": 15750.0,
+      "to_y": 1500.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 19350.0,
+      "from_y": 5880.0,
+      "to_x": 19350.0,
+      "to_y": 4900.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 19350.0,
+      "from_y": 4900.0,
+      "to_x": 19350.0,
+      "to_y": 3600.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 19350.0,
+      "from_y": 3600.0,
+      "to_x": 19350.0,
+      "to_y": 1500.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 18500.0,
+      "from_y": 1500.0,
+      "to_x": 19350.0,
+      "to_y": 1500.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 19350.0,
+      "from_y": 1500.0,
+      "to_x": 20400.0,
+      "to_y": 1500.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 18500.0,
+      "from_y": 3600.0,
+      "to_x": 19350.0,
+      "to_y": 3600.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 19350.0,
+      "from_y": 3600.0,
+      "to_x": 20400.0,
+      "to_y": 3600.0
+    },
+    {
+      "circuit": "C-L1",
+      "from_x": 19050.0,
+      "from_y": 4900.0,
+      "to_x": 19350.0,
+      "to_y": 4900.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 7975.0,
+      "from_y": 9250.0,
+      "to_x": 7975.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 1300.0,
+      "from_y": 5880.0,
+      "to_x": 1350.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 1350.0,
+      "from_y": 5880.0,
+      "to_x": 3200.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 3200.0,
+      "from_y": 5880.0,
+      "to_x": 4950.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 4950.0,
+      "from_y": 5880.0,
+      "to_x": 7975.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 1350.0,
+      "from_y": 5880.0,
+      "to_x": 1350.0,
+      "to_y": 3600.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 1350.0,
+      "from_y": 3600.0,
+      "to_x": 1350.0,
+      "to_y": 1750.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 1350.0,
+      "from_y": 1750.0,
+      "to_x": 1350.0,
+      "to_y": 300.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 1075.0,
+      "from_y": 1750.0,
+      "to_x": 1350.0,
+      "to_y": 1750.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 1075.0,
+      "from_y": 3600.0,
+      "to_x": 1350.0,
+      "to_y": 3600.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 1350.0,
+      "from_y": 300.0,
+      "to_x": 1850.0,
+      "to_y": 300.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 4950.0,
+      "from_y": 5880.0,
+      "to_x": 4950.0,
+      "to_y": 4900.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 4950.0,
+      "from_y": 4900.0,
+      "to_x": 4950.0,
+      "to_y": 3400.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 4950.0,
+      "from_y": 3400.0,
+      "to_x": 4950.0,
+      "to_y": 3150.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 4950.0,
+      "from_y": 3150.0,
+      "to_x": 4950.0,
+      "to_y": 1500.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 3300.0,
+      "from_y": 1500.0,
+      "to_x": 4950.0,
+      "to_y": 1500.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 4950.0,
+      "from_y": 1500.0,
+      "to_x": 5200.0,
+      "to_y": 1500.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 5200.0,
+      "from_y": 1500.0,
+      "to_x": 7000.0,
+      "to_y": 1500.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 3300.0,
+      "from_y": 3400.0,
+      "to_x": 4950.0,
+      "to_y": 3400.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 4950.0,
+      "from_y": 3400.0,
+      "to_x": 5200.0,
+      "to_y": 3400.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 5200.0,
+      "from_y": 3400.0,
+      "to_x": 7000.0,
+      "to_y": 3400.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 2250.0,
+      "from_y": 3150.0,
+      "to_x": 4950.0,
+      "to_y": 3150.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 4950.0,
+      "from_y": 4900.0,
+      "to_x": 6250.0,
+      "to_y": 4900.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 1300.0,
+      "from_y": 5880.0,
+      "to_x": 1300.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 1300.0,
+      "from_y": 7600.0,
+      "to_x": 1300.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 1100.0,
+      "from_y": 9150.0,
+      "to_x": 1300.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 1300.0,
+      "from_y": 7600.0,
+      "to_x": 1550.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 3200.0,
+      "from_y": 5880.0,
+      "to_x": 3200.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 3200.0,
+      "from_y": 7600.0,
+      "to_x": 3200.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 2950.0,
+      "from_y": 9150.0,
+      "to_x": 3200.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "C-L2",
+      "from_x": 3200.0,
+      "from_y": 7600.0,
+      "to_x": 3500.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 7975.0,
+      "from_y": 9250.0,
+      "to_x": 7975.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 5700.0,
+      "from_y": 5880.0,
+      "to_x": 7975.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 7975.0,
+      "from_y": 5880.0,
+      "to_x": 9650.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 9650.0,
+      "from_y": 5880.0,
+      "to_x": 13300.0,
+      "to_y": 5880.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 5700.0,
+      "from_y": 5880.0,
+      "to_x": 5700.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 5700.0,
+      "from_y": 7600.0,
+      "to_x": 5700.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 5100.0,
+      "from_y": 9150.0,
+      "to_x": 5700.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 5700.0,
+      "from_y": 9150.0,
+      "to_x": 6800.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 5250.0,
+      "from_y": 7600.0,
+      "to_x": 5700.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 9650.0,
+      "from_y": 5880.0,
+      "to_x": 9650.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 9650.0,
+      "from_y": 7600.0,
+      "to_x": 9650.0,
+      "to_y": 8450.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 9650.0,
+      "from_y": 8450.0,
+      "to_x": 9650.0,
+      "to_y": 10100.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 9650.0,
+      "from_y": 8450.0,
+      "to_x": 9750.0,
+      "to_y": 8450.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 9650.0,
+      "from_y": 10100.0,
+      "to_x": 9750.0,
+      "to_y": 10100.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 9420.0,
+      "from_y": 7600.0,
+      "to_x": 9650.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 13300.0,
+      "from_y": 5880.0,
+      "to_x": 13300.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 13300.0,
+      "from_y": 7600.0,
+      "to_x": 13300.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 12650.0,
+      "from_y": 9150.0,
+      "to_x": 13300.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 13300.0,
+      "from_y": 9150.0,
+      "to_x": 14350.0,
+      "to_y": 9150.0
+    },
+    {
+      "circuit": "C-L3",
+      "from_x": 12900.0,
+      "from_y": 7600.0,
+      "to_x": 13300.0,
+      "to_y": 7600.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 7975.0,
+      "from_y": 9250.0,
+      "to_x": 7975.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 5200.0,
+      "from_y": 6620.0,
+      "to_x": 6700.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 6700.0,
+      "from_y": 6620.0,
+      "to_x": 7975.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 5200.0,
+      "from_y": 6620.0,
+      "to_x": 5200.0,
+      "to_y": 4850.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 5200.0,
+      "from_y": 4850.0,
+      "to_x": 5200.0,
+      "to_y": 2000.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 5200.0,
+      "from_y": 2000.0,
+      "to_x": 5200.0,
+      "to_y": 280.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 3200.0,
+      "from_y": 4850.0,
+      "to_x": 4600.0,
+      "to_y": 4850.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 4600.0,
+      "from_y": 4850.0,
+      "to_x": 5200.0,
+      "to_y": 4850.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 4900.0,
+      "from_y": 280.0,
+      "to_x": 5200.0,
+      "to_y": 280.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 5200.0,
+      "from_y": 2000.0,
+      "to_x": 8180.0,
+      "to_y": 2000.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 6700.0,
+      "from_y": 6620.0,
+      "to_x": 6700.0,
+      "to_y": 9100.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 6700.0,
+      "from_y": 9100.0,
+      "to_x": 6700.0,
+      "to_y": 10720.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 5800.0,
+      "from_y": 10720.0,
+      "to_x": 6700.0,
+      "to_y": 10720.0
+    },
+    {
+      "circuit": "C-P1",
+      "from_x": 6700.0,
+      "from_y": 9100.0,
+      "to_x": 7580.0,
+      "to_y": 9100.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 7975.0,
+      "from_y": 9250.0,
+      "to_x": 7975.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 7975.0,
+      "from_y": 6620.0,
+      "to_x": 9650.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 9650.0,
+      "from_y": 6620.0,
+      "to_x": 12600.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 9650.0,
+      "from_y": 6620.0,
+      "to_x": 9650.0,
+      "to_y": 2700.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 9650.0,
+      "from_y": 2700.0,
+      "to_x": 9650.0,
+      "to_y": 2600.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 9650.0,
+      "from_y": 2600.0,
+      "to_x": 9650.0,
+      "to_y": 280.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 9300.0,
+      "from_y": 280.0,
+      "to_x": 9650.0,
+      "to_y": 280.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 8580.0,
+      "from_y": 2700.0,
+      "to_x": 9650.0,
+      "to_y": 2700.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 9650.0,
+      "from_y": 2600.0,
+      "to_x": 11120.0,
+      "to_y": 2600.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 12600.0,
+      "from_y": 6620.0,
+      "to_x": 12600.0,
+      "to_y": 2700.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 12600.0,
+      "from_y": 2700.0,
+      "to_x": 12600.0,
+      "to_y": 2600.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 12600.0,
+      "from_y": 2600.0,
+      "to_x": 12600.0,
+      "to_y": 280.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 12250.0,
+      "from_y": 280.0,
+      "to_x": 12600.0,
+      "to_y": 280.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 11530.0,
+      "from_y": 2700.0,
+      "to_x": 12600.0,
+      "to_y": 2700.0
+    },
+    {
+      "circuit": "C-P2",
+      "from_x": 12600.0,
+      "from_y": 2600.0,
+      "to_x": 14070.0,
+      "to_y": 2600.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 7975.0,
+      "from_y": 9250.0,
+      "to_x": 7975.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 7975.0,
+      "from_y": 6620.0,
+      "to_x": 13050.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 13050.0,
+      "from_y": 6620.0,
+      "to_x": 15550.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 15550.0,
+      "from_y": 6620.0,
+      "to_x": 15550.0,
+      "to_y": 2700.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 15550.0,
+      "from_y": 2700.0,
+      "to_x": 15550.0,
+      "to_y": 2600.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 15550.0,
+      "from_y": 2600.0,
+      "to_x": 15550.0,
+      "to_y": 280.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 15200.0,
+      "from_y": 280.0,
+      "to_x": 15550.0,
+      "to_y": 280.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 14480.0,
+      "from_y": 2700.0,
+      "to_x": 15550.0,
+      "to_y": 2700.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 15550.0,
+      "from_y": 2600.0,
+      "to_x": 17020.0,
+      "to_y": 2600.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 13050.0,
+      "from_y": 6620.0,
+      "to_x": 13050.0,
+      "to_y": 8650.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 13050.0,
+      "from_y": 8650.0,
+      "to_x": 13050.0,
+      "to_y": 8950.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 13050.0,
+      "from_y": 8950.0,
+      "to_x": 13050.0,
+      "to_y": 10720.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 12350.0,
+      "from_y": 10720.0,
+      "to_x": 13050.0,
+      "to_y": 10720.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 11630.0,
+      "from_y": 8950.0,
+      "to_x": 13050.0,
+      "to_y": 8950.0
+    },
+    {
+      "circuit": "C-P3",
+      "from_x": 13050.0,
+      "from_y": 8650.0,
+      "to_x": 15220.0,
+      "to_y": 8650.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 7975.0,
+      "from_y": 9250.0,
+      "to_x": 7975.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 7975.0,
+      "from_y": 6620.0,
+      "to_x": 10300.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 10300.0,
+      "from_y": 6620.0,
+      "to_x": 19400.0,
+      "to_y": 6620.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 10300.0,
+      "from_y": 6620.0,
+      "to_x": 10300.0,
+      "to_y": 8450.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 10300.0,
+      "from_y": 8450.0,
+      "to_x": 10300.0,
+      "to_y": 9350.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 10300.0,
+      "from_y": 9350.0,
+      "to_x": 10300.0,
+      "to_y": 10720.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 8650.0,
+      "from_y": 10720.0,
+      "to_x": 10150.0,
+      "to_y": 10720.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 10150.0,
+      "from_y": 10720.0,
+      "to_x": 10300.0,
+      "to_y": 10720.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 10300.0,
+      "from_y": 8450.0,
+      "to_x": 11220.0,
+      "to_y": 8450.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 10300.0,
+      "from_y": 9350.0,
+      "to_x": 11220.0,
+      "to_y": 9350.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 19400.0,
+      "from_y": 6620.0,
+      "to_x": 19400.0,
+      "to_y": 3150.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 19400.0,
+      "from_y": 3150.0,
+      "to_x": 19400.0,
+      "to_y": 1200.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 19400.0,
+      "from_y": 1200.0,
+      "to_x": 19400.0,
+      "to_y": 280.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 17430.0,
+      "from_y": 3150.0,
+      "to_x": 19400.0,
+      "to_y": 3150.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 18600.0,
+      "from_y": 280.0,
+      "to_x": 19400.0,
+      "to_y": 280.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 19400.0,
+      "from_y": 280.0,
+      "to_x": 20300.0,
+      "to_y": 280.0
+    },
+    {
+      "circuit": "C-P4",
+      "from_x": 19400.0,
+      "from_y": 1200.0,
+      "to_x": 21320.0,
+      "to_y": 1200.0
+    },
+    {
+      "circuit": "C-D1",
+      "from_x": 7975.0,
+      "from_y": 9250.0,
+      "to_x": 7975.0,
+      "to_y": 6920.0
+    },
+    {
+      "circuit": "C-D1",
+      "from_x": 7975.0,
+      "from_y": 6920.0,
+      "to_x": 21200.0,
+      "to_y": 6920.0
+    },
+    {
+      "circuit": "C-D1",
+      "from_x": 21200.0,
+      "from_y": 6920.0,
+      "to_x": 21200.0,
+      "to_y": 3550.0
+    },
+    {
+      "circuit": "C-D1",
+      "from_x": 21200.0,
+      "from_y": 3550.0,
+      "to_x": 21250.0,
+      "to_y": 3550.0
+    },
+    {
+      "circuit": "C-D2",
+      "from_x": 7975.0,
+      "from_y": 9250.0,
+      "to_x": 7975.0,
+      "to_y": 6920.0
+    },
+    {
+      "circuit": "C-D2",
+      "from_x": 4100.0,
+      "from_y": 6920.0,
+      "to_x": 7975.0,
+      "to_y": 6920.0
+    },
+    {
+      "circuit": "C-D2",
+      "from_x": 4100.0,
+      "from_y": 6920.0,
+      "to_x": 4100.0,
+      "to_y": 9450.0
+    },
+    {
+      "circuit": "C-D2",
+      "from_x": 4050.0,
+      "from_y": 9450.0,
+      "to_x": 4100.0,
+      "to_y": 9450.0
+    }
+  ]
+}

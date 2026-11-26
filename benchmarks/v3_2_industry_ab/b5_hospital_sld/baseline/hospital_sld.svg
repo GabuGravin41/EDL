@@ -1,0 +1,762 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1680 1120" width="1680" height="1120">
+<rect x="0" y="0" width="1680" height="1120" fill="#FFFFFF"/>
+<rect x="16.0" y="16.0" width="1648.0" height="1088.0" fill="none" stroke="#0F172A" stroke-width="2.2"/>
+<rect x="24.0" y="24.0" width="1632.0" height="1072.0" fill="none" stroke="#94A3B8" stroke-width="0.8"/>
+<text x="126.0" y="22.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">A</text>
+<text x="126.0" y="1102.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">A</text>
+<text x="330.0" y="22.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">B</text>
+<text x="330.0" y="1102.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">B</text>
+<text x="534.0" y="22.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">C</text>
+<text x="534.0" y="1102.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">C</text>
+<text x="738.0" y="22.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">D</text>
+<text x="738.0" y="1102.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">D</text>
+<text x="942.0" y="22.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">E</text>
+<text x="942.0" y="1102.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">E</text>
+<text x="1146.0" y="22.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">F</text>
+<text x="1146.0" y="1102.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">F</text>
+<text x="1350.0" y="22.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">G</text>
+<text x="1350.0" y="1102.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">G</text>
+<text x="1554.0" y="22.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">H</text>
+<text x="1554.0" y="1102.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">H</text>
+<text x="20.0" y="134.2" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">1</text>
+<text x="1660.0" y="134.2" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">1</text>
+<text x="20.0" y="348.6" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">2</text>
+<text x="1660.0" y="348.6" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">2</text>
+<text x="20.0" y="563.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">3</text>
+<text x="1660.0" y="563.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">3</text>
+<text x="20.0" y="777.4" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">4</text>
+<text x="1660.0" y="777.4" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">4</text>
+<text x="20.0" y="991.8" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">5</text>
+<text x="1660.0" y="991.8" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="normal" fill="#475569" text-anchor="middle">5</text>
+<rect x="24.0" y="24.0" width="1632.0" height="28.0" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<text x="42.0" y="43.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#FFFFFF" text-anchor="start">HOSPITAL / MEDICAL CENTER — 11 kV / 400 V DUAL-TRANSFORMER + STANDBY GENERATOR SINGLE-LINE DIAGRAM (IEC 60909 / IEC 60364)</text>
+<text x="1640.0" y="43.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#CBD5E1" text-anchor="end">50 Hz  |  2×1000 kVA Dyn11  |  1000 kVA GEN1  |  DWG: E-SLD-001 REV A</text>
+<rect x="290.0" y="62.0" width="230.0" height="32.0" fill="#FEF2F2" stroke="#B91C1C" stroke-width="1.4" rx="4"/>
+<text x="405.0" y="76.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="10.0" font-weight="bold" fill="#B91C1C" text-anchor="middle">UTIL_11KV — 11 kV UTILITY INTAKE</text>
+<text x="405.0" y="89.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.6" font-weight="normal" fill="#7F1D1D" text-anchor="middle">3Φ 50Hz | Sk'' = 250 MVA | Ik'' = 13.12 kA</text>
+<line x1="405.0" y1="94.0" x2="405.0" y2="110.0" stroke="#B91C1C" stroke-width="2.4" stroke-linecap="round"/>
+<polygon points="405.0,113.0 400.5,105.0 409.5,105.0" fill="#B91C1C" stroke="#B91C1C" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="92.0" y="116.0" width="626.0" height="132.0" fill="#FFFBFB" stroke="#B91C1C" stroke-width="1.3" stroke-dasharray="6,4" rx="6"/>
+<text x="104.0" y="132.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.0" font-weight="bold" fill="#B91C1C" text-anchor="start">RMU_11KV — 11 kV 3-WAY SF6 / VACUUM RMU</text>
+<text x="104.0" y="144.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#7F1D1D" text-anchor="start">Rated: 11 kV, 630 A, Icu = 25 kA</text>
+<line x1="405.0" y1="113.0" x2="405.0" y2="127.5" stroke="#B91C1C" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="405.0" y1="151.5" x2="405.0" y2="166.0" stroke="#B91C1C" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="400.5" y1="123.0" x2="409.5" y2="132.0" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="400.5" y1="132.0" x2="409.5" y2="123.0" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="405.0" y1="151.5" x2="394.0" y2="128.5" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="405.0" cy="151.5" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="385.0" y="134.5" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="393.0" y1="139.5" x2="400.0" y2="139.5" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<rect x="359.0" y="131.5" width="22.0" height="15.0" fill="#DCFCE7" stroke="#166534" stroke-width="1.0" rx="3"/>
+<text x="370.0" y="142.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#166534" text-anchor="middle">NC</text>
+<text x="419.0" y="138.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.0" font-weight="bold" fill="#0F172A" text-anchor="start">Q_MV_IN</text>
+<text x="419.0" y="150.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="start">VCB 630A / 25kA</text>
+<line x1="130.0" y1="172.0" x2="680.0" y2="172.0" stroke="#B91C1C" stroke-width="5.0" stroke-linecap="round"/>
+<circle cx="405.0" cy="172.0" r="4.2" fill="#B91C1C" stroke="#B91C1C" stroke-width="1.0"/>
+<circle cx="215.0" cy="172.0" r="4.2" fill="#B91C1C" stroke="#B91C1C" stroke-width="1.0"/>
+<circle cx="595.0" cy="172.0" r="4.2" fill="#B91C1C" stroke="#B91C1C" stroke-width="1.0"/>
+<text x="678.0" y="164.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#B91C1C" text-anchor="end">11 kV BUS (Ik'' = 13.12 kA)</text>
+<line x1="215.0" y1="172.0" x2="215.0" y2="190.0" stroke="#B91C1C" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="215.0" y1="214.0" x2="215.0" y2="232.0" stroke="#B91C1C" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="210.5" y1="185.5" x2="219.5" y2="194.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="210.5" y1="194.5" x2="219.5" y2="185.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="215.0" y1="214.0" x2="204.0" y2="191.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="215.0" cy="214.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="195.0" y="197.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="203.0" y1="202.0" x2="210.0" y2="202.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<rect x="169.0" y="194.0" width="22.0" height="15.0" fill="#DCFCE7" stroke="#166534" stroke-width="1.0" rx="3"/>
+<text x="180.0" y="205.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#166534" text-anchor="middle">NC</text>
+<text x="229.0" y="200.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.0" font-weight="bold" fill="#0F172A" text-anchor="start">Q_MV_TX1</text>
+<text x="229.0" y="212.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="start">VCB 630A / 25kA</text>
+<circle cx="215.0" cy="240.0" r="4.5" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.4"/>
+<line x1="219.5" y1="240.0" x2="233.0" y2="240.0" stroke="#0F172A" stroke-width="1.1" stroke-linecap="round"/>
+<circle cx="245.0" cy="240.0" r="12.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.2"/>
+<text x="245.0" y="243.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="bold" fill="#0F172A" text-anchor="middle">50/51</text>
+<line x1="215.0" y1="232.0" x2="215.0" y2="273.0" stroke="#B91C1C" stroke-width="2.2" stroke-linecap="round"/>
+<text x="205.0" y="263.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#B91C1C" text-anchor="end">3×1C 95mm² 11kV</text>
+<line x1="595.0" y1="172.0" x2="595.0" y2="190.0" stroke="#B91C1C" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="595.0" y1="214.0" x2="595.0" y2="232.0" stroke="#B91C1C" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="590.5" y1="185.5" x2="599.5" y2="194.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="590.5" y1="194.5" x2="599.5" y2="185.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="595.0" y1="214.0" x2="584.0" y2="191.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="595.0" cy="214.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="575.0" y="197.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="583.0" y1="202.0" x2="590.0" y2="202.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<rect x="549.0" y="194.0" width="22.0" height="15.0" fill="#DCFCE7" stroke="#166534" stroke-width="1.0" rx="3"/>
+<text x="560.0" y="205.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#166534" text-anchor="middle">NC</text>
+<text x="609.0" y="200.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.0" font-weight="bold" fill="#0F172A" text-anchor="start">Q_MV_TX2</text>
+<text x="609.0" y="212.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="start">VCB 630A / 25kA</text>
+<circle cx="595.0" cy="240.0" r="4.5" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.4"/>
+<line x1="599.5" y1="240.0" x2="613.0" y2="240.0" stroke="#0F172A" stroke-width="1.1" stroke-linecap="round"/>
+<circle cx="625.0" cy="240.0" r="12.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.2"/>
+<text x="625.0" y="243.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.5" font-weight="bold" fill="#0F172A" text-anchor="middle">50/51</text>
+<line x1="595.0" y1="232.0" x2="595.0" y2="273.0" stroke="#B91C1C" stroke-width="2.2" stroke-linecap="round"/>
+<text x="585.0" y="263.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#B91C1C" text-anchor="end">3×1C 95mm² 11kV</text>
+<circle cx="215.0" cy="294.0" r="21.0" fill="#FFFFFF" stroke="#B91C1C" stroke-width="2.2"/>
+<circle cx="215.0" cy="320.0" r="21.0" fill="none" stroke="#1D4ED8" stroke-width="2.2"/>
+<polygon points="215.0,286.0 208.0,298.0 222.0,298.0" fill="none" stroke="#B91C1C" stroke-width="1.4" stroke-linejoin="round"/>
+<line x1="215.0" y1="322.0" x2="215.0" y2="331.0" stroke="#1D4ED8" stroke-width="1.4" stroke-linecap="round"/>
+<line x1="215.0" y1="322.0" x2="208.5" y2="316.0" stroke="#1D4ED8" stroke-width="1.4" stroke-linecap="round"/>
+<line x1="215.0" y1="322.0" x2="221.5" y2="316.0" stroke="#1D4ED8" stroke-width="1.4" stroke-linecap="round"/>
+<polyline points="236.0,320.0 250.0,320.0 250.0,332.0" fill="none" stroke="#0F172A" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="242.0" y1="332.0" x2="258.0" y2="332.0" stroke="#0F172A" stroke-width="1.6" stroke-linecap="round"/>
+<line x1="245.0" y1="336.0" x2="255.0" y2="336.0" stroke="#0F172A" stroke-width="1.4" stroke-linecap="round"/>
+<line x1="248.0" y1="340.0" x2="252.0" y2="340.0" stroke="#0F172A" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="65.0" y="278.0" width="122.0" height="58.0" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.0" rx="4"/>
+<text x="126.0" y="293.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.8" font-weight="bold" fill="#0F172A" text-anchor="middle">TX1 — 1000 kVA</text>
+<text x="126.0" y="306.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="normal" fill="#475569" text-anchor="middle">11 kV / 400 V, Dyn11</text>
+<text x="126.0" y="318.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="normal" fill="#475569" text-anchor="middle">uk = 6.0% | ur = 1.1%</text>
+<text x="126.0" y="330.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#1D4ED8" text-anchor="middle">Ir = 1443 A (LV)</text>
+<line x1="215.0" y1="341.0" x2="215.0" y2="396.0" stroke="#1D4ED8" stroke-width="2.6" stroke-linecap="round"/>
+<line x1="210.0" y1="364.0" x2="220.0" y2="358.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="210.0" y1="368.0" x2="220.0" y2="362.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="210.0" y1="372.0" x2="220.0" y2="366.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<text x="205.0" y="368.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#1D4ED8" text-anchor="end">2000A Cu Busduct (8m)</text>
+<line x1="215.0" y1="396.0" x2="215.0" y2="420.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="215.0" y1="444.0" x2="215.0" y2="468.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<polyline points="209.0,398.0 215.0,404.0 221.0,398.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="209.0,403.0 215.0,409.0 221.0,403.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="209.0,466.0 215.0,460.0 221.0,466.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="209.0,461.0 215.0,455.0 221.0,461.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="210.5" y1="415.5" x2="219.5" y2="424.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="210.5" y1="424.5" x2="219.5" y2="415.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="215.0" y1="444.0" x2="204.0" y2="421.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="215.0" cy="444.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="195.0" y="427.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="203.0" y1="432.0" x2="210.0" y2="432.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<rect x="169.0" y="424.0" width="22.0" height="15.0" fill="#DCFCE7" stroke="#166534" stroke-width="1.0" rx="3"/>
+<text x="180.0" y="435.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#166534" text-anchor="middle">NC</text>
+<text x="163.0" y="422.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.6" font-weight="bold" fill="#0F172A" text-anchor="end">Q_TX1</text>
+<text x="163.0" y="435.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#1D4ED8" text-anchor="end">ACB 1600 A</text>
+<text x="163.0" y="447.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="end">Icu = 50 kA (LSIG)</text>
+<line x1="215.0" y1="468.0" x2="215.0" y2="540.0" stroke="#1D4ED8" stroke-width="2.8" stroke-linecap="round"/>
+<circle cx="595.0" cy="294.0" r="21.0" fill="#FFFFFF" stroke="#B91C1C" stroke-width="2.2"/>
+<circle cx="595.0" cy="320.0" r="21.0" fill="none" stroke="#1D4ED8" stroke-width="2.2"/>
+<polygon points="595.0,286.0 588.0,298.0 602.0,298.0" fill="none" stroke="#B91C1C" stroke-width="1.4" stroke-linejoin="round"/>
+<line x1="595.0" y1="322.0" x2="595.0" y2="331.0" stroke="#1D4ED8" stroke-width="1.4" stroke-linecap="round"/>
+<line x1="595.0" y1="322.0" x2="588.5" y2="316.0" stroke="#1D4ED8" stroke-width="1.4" stroke-linecap="round"/>
+<line x1="595.0" y1="322.0" x2="601.5" y2="316.0" stroke="#1D4ED8" stroke-width="1.4" stroke-linecap="round"/>
+<polyline points="616.0,320.0 630.0,320.0 630.0,332.0" fill="none" stroke="#0F172A" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="622.0" y1="332.0" x2="638.0" y2="332.0" stroke="#0F172A" stroke-width="1.6" stroke-linecap="round"/>
+<line x1="625.0" y1="336.0" x2="635.0" y2="336.0" stroke="#0F172A" stroke-width="1.4" stroke-linecap="round"/>
+<line x1="628.0" y1="340.0" x2="632.0" y2="340.0" stroke="#0F172A" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="445.0" y="278.0" width="122.0" height="58.0" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.0" rx="4"/>
+<text x="506.0" y="293.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.8" font-weight="bold" fill="#0F172A" text-anchor="middle">TX2 — 1000 kVA</text>
+<text x="506.0" y="306.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="normal" fill="#475569" text-anchor="middle">11 kV / 400 V, Dyn11</text>
+<text x="506.0" y="318.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="normal" fill="#475569" text-anchor="middle">uk = 6.0% | ur = 1.1%</text>
+<text x="506.0" y="330.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#1D4ED8" text-anchor="middle">Ir = 1443 A (LV)</text>
+<line x1="595.0" y1="341.0" x2="595.0" y2="396.0" stroke="#1D4ED8" stroke-width="2.6" stroke-linecap="round"/>
+<line x1="590.0" y1="364.0" x2="600.0" y2="358.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="590.0" y1="368.0" x2="600.0" y2="362.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="590.0" y1="372.0" x2="600.0" y2="366.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<text x="585.0" y="368.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#1D4ED8" text-anchor="end">2000A Cu Busduct (8m)</text>
+<line x1="595.0" y1="396.0" x2="595.0" y2="420.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="595.0" y1="444.0" x2="595.0" y2="468.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<polyline points="589.0,398.0 595.0,404.0 601.0,398.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="589.0,403.0 595.0,409.0 601.0,403.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="589.0,466.0 595.0,460.0 601.0,466.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="589.0,461.0 595.0,455.0 601.0,461.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="590.5" y1="415.5" x2="599.5" y2="424.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="590.5" y1="424.5" x2="599.5" y2="415.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="595.0" y1="444.0" x2="584.0" y2="421.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="595.0" cy="444.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="575.0" y="427.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="583.0" y1="432.0" x2="590.0" y2="432.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<rect x="549.0" y="424.0" width="22.0" height="15.0" fill="#DCFCE7" stroke="#166534" stroke-width="1.0" rx="3"/>
+<text x="560.0" y="435.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#166534" text-anchor="middle">NC</text>
+<text x="609.0" y="422.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.6" font-weight="bold" fill="#0F172A" text-anchor="start">Q_TX2</text>
+<text x="609.0" y="435.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#1D4ED8" text-anchor="start">ACB 1600 A</text>
+<text x="609.0" y="447.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="start">50 kA (LSIG)</text>
+<line x1="595.0" y1="468.0" x2="595.0" y2="540.0" stroke="#1D4ED8" stroke-width="2.8" stroke-linecap="round"/>
+<rect x="68.0" y="492.0" width="682.0" height="74.0" fill="#F8FAFF" stroke="#1D4ED8" stroke-width="1.1" stroke-dasharray="6,4" rx="6"/>
+<text x="80.0" y="507.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.8" font-weight="bold" fill="#1D4ED8" text-anchor="start">MAIN LV SWITCHBOARD (400 V, 50 Hz, 2000 A Cu)</text>
+<line x1="82.0" y1="540.0" x2="355.0" y2="540.0" stroke="#1D4ED8" stroke-width="6.0" stroke-linecap="round"/>
+<circle cx="215.0" cy="540.0" r="4.8" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0"/>
+<text x="85.0" y="529.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.2" font-weight="bold" fill="#1D4ED8" text-anchor="start">MSB_A (Normal) | Ik'' = 23.94 kA</text>
+<line x1="455.0" y1="540.0" x2="738.0" y2="540.0" stroke="#1D4ED8" stroke-width="6.0" stroke-linecap="round"/>
+<circle cx="595.0" cy="540.0" r="4.8" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0"/>
+<text x="460.0" y="529.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.2" font-weight="bold" fill="#1D4ED8" text-anchor="start">MSB_B (Normal) | Ik'' = 23.94 kA</text>
+<line x1="355.0" y1="540.0" x2="392.0" y2="540.0" stroke="#1D4ED8" stroke-width="2.6" stroke-linecap="round"/>
+<line x1="418.0" y1="540.0" x2="455.0" y2="540.0" stroke="#1D4ED8" stroke-width="2.6" stroke-linecap="round"/>
+<polyline points="359.0,534.0 365.0,540.0 359.0,546.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="364.0,534.0 370.0,540.0 364.0,546.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="451.0,534.0 445.0,540.0 451.0,546.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="446.0,534.0 440.0,540.0 446.0,546.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="387.5" y1="535.5" x2="396.5" y2="544.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="387.5" y1="544.5" x2="396.5" y2="535.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="418.0" y1="540.0" x2="393.0" y2="528.0" stroke="#0F172A" stroke-width="2.3" stroke-linecap="round"/>
+<circle cx="418.0" cy="540.0" r="2.5" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="393.0" y="550.0" width="24.0" height="15.0" fill="#FEF3C7" stroke="#92400E" stroke-width="1.0" rx="3"/>
+<text x="405.0" y="561.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#92400E" text-anchor="middle">NO</text>
+<text x="405.0" y="515.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.6" font-weight="bold" fill="#0F172A" text-anchor="middle">Q_BT (Bus-Tie)</text>
+<text x="405.0" y="525.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#475569" text-anchor="middle">ACB 1600A / 50kA</text>
+<polyline points="224.0,428.0 389.0,428.0" fill="none" stroke="#9333EA" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="4,3"/>
+<polyline points="547.0,428.0 421.0,428.0" fill="none" stroke="#9333EA" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="4,3"/>
+<line x1="405.0" y1="476.0" x2="405.0" y2="505.0" stroke="#9333EA" stroke-width="1.4" stroke-linecap="round" stroke-dasharray="4,3"/>
+<polygon points="405.0,414.0 421.0,428.0 405.0,442.0 389.0,428.0" fill="#FAF5FF" stroke="#9333EA" stroke-width="1.8" stroke-linejoin="round"/>
+<text x="405.0" y="431.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#9333EA" text-anchor="middle">M/E</text>
+<rect x="333.0" y="446.0" width="144.0" height="30.0" fill="#FAF5FF" stroke="#9333EA" stroke-width="1.1" rx="4"/>
+<text x="405.0" y="458.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#9333EA" text-anchor="middle">IL_BUS_TIE: 2-of-3</text>
+<text x="405.0" y="470.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#581C87" text-anchor="middle">Max 2 of {Q_TX1, Q_TX2, Q_BT}</text>
+<circle cx="724.0" cy="540.0" r="4.5" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0"/>
+<line x1="724.0" y1="540.0" x2="724.0" y2="480.0" stroke="#1D4ED8" stroke-width="2.6" stroke-linecap="round"/>
+<line x1="724.0" y1="408.0" x2="724.0" y2="432.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="724.0" y1="456.0" x2="724.0" y2="480.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<polyline points="718.0,410.0 724.0,416.0 730.0,410.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="718.0,415.0 724.0,421.0 730.0,415.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="718.0,478.0 724.0,472.0 730.0,478.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="718.0,473.0 724.0,467.0 730.0,473.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="719.5" y1="427.5" x2="728.5" y2="436.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="719.5" y1="436.5" x2="728.5" y2="427.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="724.0" y1="456.0" x2="713.0" y2="433.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="724.0" cy="456.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="704.0" y="439.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="712.0" y1="444.0" x2="719.0" y2="444.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<rect x="736.0" y="436.0" width="22.0" height="15.0" fill="#DCFCE7" stroke="#166534" stroke-width="1.0" rx="3"/>
+<text x="747.0" y="447.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#166534" text-anchor="middle">NC</text>
+<text x="764.0" y="434.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.8" font-weight="bold" fill="#0F172A" text-anchor="start">Q_ATS_FEED</text>
+<text x="764.0" y="446.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="start">ACB 1600A / 50kA</text>
+<polyline points="724.0,408.0 724.0,326.0 1135.0,326.0 1135.0,366.0" fill="none" stroke="#1D4ED8" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="925.0" y="319.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.4" font-weight="bold" fill="#1D4ED8" text-anchor="middle">Normal Utility Feed to ATS1 — 1600 A Cu Busduct (10 m)</text>
+<circle cx="1395.0" cy="210.0" r="28.0" fill="#ECFDF5" stroke="#047857" stroke-width="2.4"/>
+<text x="1395.0" y="209.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="18" font-weight="bold" fill="#047857" text-anchor="middle">G</text>
+<text x="1395.0" y="226.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="11" font-weight="bold" fill="#047857" text-anchor="middle">3~</text>
+<polyline points="1423.0,210.0 1437.0,210.0 1437.0,226.0" fill="none" stroke="#0F172A" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="1429.0" y1="226.0" x2="1445.0" y2="226.0" stroke="#0F172A" stroke-width="1.6" stroke-linecap="round"/>
+<line x1="1432.0" y1="230.0" x2="1442.0" y2="230.0" stroke="#0F172A" stroke-width="1.4" stroke-linecap="round"/>
+<line x1="1435.0" y1="234.0" x2="1439.0" y2="234.0" stroke="#0F172A" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="1447.0" y="176.0" width="175.0" height="68.0" fill="#ECFDF5" stroke="#047857" stroke-width="1.3" rx="5"/>
+<text x="1534.0" y="193.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.6" font-weight="bold" fill="#047857" text-anchor="middle">GEN1 — STANDBY DIESEL</text>
+<text x="1534.0" y="207.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.6" font-weight="bold" fill="#0F172A" text-anchor="middle">1000 kVA / 800 kW, 400 V</text>
+<text x="1534.0" y="220.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="normal" fill="#475569" text-anchor="middle">PF = 0.80 | Xd'' = 15.0%</text>
+<text x="1534.0" y="233.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#047857" text-anchor="middle">EMSB Load: 630 kW (78.8%)</text>
+<line x1="1395.0" y1="238.0" x2="1395.0" y2="366.0" stroke="#047857" stroke-width="2.6" stroke-linecap="round"/>
+<line x1="1390.0" y1="294.0" x2="1400.0" y2="288.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="1390.0" y1="298.0" x2="1400.0" y2="292.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="1390.0" y1="302.0" x2="1400.0" y2="296.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<text x="1407.0" y="292.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#047857" text-anchor="start">4×(3×240mm²) Cu XLPE</text>
+<text x="1407.0" y="304.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="start">L = 15 m | Ik''(GEN) = 10.22 kA</text>
+<rect x="1005.0" y="344.0" width="500.0" height="148.0" fill="#F0FDF4" stroke="#047857" stroke-width="1.5" stroke-dasharray="6,4" rx="7"/>
+<text x="1018.0" y="360.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.0" font-weight="bold" fill="#047857" text-anchor="start">ATS1 — AUTOMATIC TRANSFER SWITCH (1600 A, 4-POLE, OPEN TRANSITION)</text>
+<line x1="1135.0" y1="366.0" x2="1135.0" y2="393.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="1135.0" y1="417.0" x2="1135.0" y2="444.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<polyline points="1129.0,368.0 1135.0,374.0 1141.0,368.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="1129.0,373.0 1135.0,379.0 1141.0,373.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="1129.0,442.0 1135.0,436.0 1141.0,442.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="1129.0,437.0 1135.0,431.0 1141.0,437.0" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="1130.5" y1="388.5" x2="1139.5" y2="397.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1130.5" y1="397.5" x2="1139.5" y2="388.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1135.0" y1="417.0" x2="1124.0" y2="394.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="1135.0" cy="417.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="1115.0" y="400.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="1123.0" y1="405.0" x2="1130.0" y2="405.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<rect x="1089.0" y="397.0" width="22.0" height="15.0" fill="#DCFCE7" stroke="#166534" stroke-width="1.0" rx="3"/>
+<text x="1100.0" y="408.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#166534" text-anchor="middle">NC</text>
+<text x="1083.0" y="398.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.2" font-weight="bold" fill="#1D4ED8" text-anchor="end">Q_NORM</text>
+<text x="1083.0" y="410.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="end">1600A / 50kA</text>
+<line x1="1395.0" y1="366.0" x2="1395.0" y2="393.0" stroke="#047857" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="1395.0" y1="417.0" x2="1395.0" y2="444.0" stroke="#047857" stroke-width="2.2" stroke-linecap="round"/>
+<polyline points="1389.0,368.0 1395.0,374.0 1401.0,368.0" fill="none" stroke="#047857" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="1389.0,373.0 1395.0,379.0 1401.0,373.0" fill="none" stroke="#047857" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="1389.0,442.0 1395.0,436.0 1401.0,442.0" fill="none" stroke="#047857" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="1389.0,437.0 1395.0,431.0 1401.0,437.0" fill="none" stroke="#047857" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="1390.5" y1="388.5" x2="1399.5" y2="397.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1390.5" y1="397.5" x2="1399.5" y2="388.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1395.0" y1="417.0" x2="1384.0" y2="394.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="1395.0" cy="417.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="1375.0" y="400.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="1383.0" y1="405.0" x2="1390.0" y2="405.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<rect x="1349.0" y="397.0" width="22.0" height="15.0" fill="#FEF3C7" stroke="#92400E" stroke-width="1.0" rx="3"/>
+<text x="1360.0" y="408.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#92400E" text-anchor="middle">NO</text>
+<text x="1409.0" y="394.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.2" font-weight="bold" fill="#047857" text-anchor="start">Q_GEN</text>
+<text x="1409.0" y="406.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="start">1600A / 50kA</text>
+<text x="1409.0" y="418.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#047857" text-anchor="start">Auto-Start &lt;10s</text>
+<line x1="1145.0" y1="405.0" x2="1249.0" y2="405.0" stroke="#9333EA" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="4,3"/>
+<line x1="1281.0" y1="405.0" x2="1347.0" y2="405.0" stroke="#9333EA" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="4,3"/>
+<polygon points="1265.0,391.0 1281.0,405.0 1265.0,419.0 1249.0,405.0" fill="#FAF5FF" stroke="#9333EA" stroke-width="1.8" stroke-linejoin="round"/>
+<text x="1265.0" y="408.5" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#9333EA" text-anchor="middle">M/E</text>
+<rect x="1193.0" y="423.0" width="144.0" height="30.0" fill="#FAF5FF" stroke="#9333EA" stroke-width="1.1" rx="4"/>
+<text x="1265.0" y="435.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#9333EA" text-anchor="middle">IL_ATS: MUTUALLY EXCL.</text>
+<text x="1265.0" y="447.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#581C87" text-anchor="middle">No Utility-Gen Paralleling</text>
+<polyline points="1135.0,444.0 1135.0,476.0 1395.0,476.0 1395.0,444.0" fill="none" stroke="#047857" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="1265.0" cy="476.0" r="4.2" fill="#047857" stroke="#047857" stroke-width="1.0"/>
+<line x1="1265.0" y1="476.0" x2="1265.0" y2="540.0" stroke="#047857" stroke-width="3.2" stroke-linecap="round"/>
+<rect x="808.0" y="492.0" width="834.0" height="74.0" fill="#F0FDF4" stroke="#047857" stroke-width="1.2" stroke-dasharray="6,4" rx="6"/>
+<text x="820.0" y="507.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.0" font-weight="bold" fill="#047857" text-anchor="start">ESSENTIAL MAIN SWITCHBOARD — EMSB (400 V, 3Φ+N+PE, 1600 A Cu, GEN1-BACKED)</text>
+<line x1="820.0" y1="540.0" x2="1630.0" y2="540.0" stroke="#047857" stroke-width="6.0" stroke-linecap="round"/>
+<circle cx="1265.0" cy="540.0" r="4.8" fill="#047857" stroke="#047857" stroke-width="1.0"/>
+<text x="824.0" y="529.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.0" font-weight="bold" fill="#047857" text-anchor="start">EMSB (Essential) | Ik''(Norm) = 23.34 kA | Ik''(GEN) = 10.22 kA</text>
+<circle cx="148.0" cy="540.0" r="4.0" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0"/>
+<line x1="148.0" y1="540.0" x2="148.0" y2="574.0" stroke="#1D4ED8" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="148.0" y1="574.0" x2="148.0" y2="588.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="148.0" y1="612.0" x2="148.0" y2="626.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="143.5" y1="583.5" x2="152.5" y2="592.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="143.5" y1="592.5" x2="152.5" y2="583.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="148.0" y1="612.0" x2="137.0" y2="589.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="148.0" cy="612.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="128.0" y="595.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="136.0" y1="600.0" x2="143.0" y2="600.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<text x="158.0" y="594.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.6" font-weight="bold" fill="#0F172A" text-anchor="start">Q_F7</text>
+<text x="158.0" y="606.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#1D4ED8" text-anchor="start">400A</text>
+<text x="158.0" y="617.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#475569" text-anchor="start">50kA</text>
+<line x1="148.0" y1="626.0" x2="148.0" y2="742.0" stroke="#1D4ED8" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="143.0" y1="642.0" x2="153.0" y2="636.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="143.0" y1="646.0" x2="153.0" y2="640.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="143.0" y1="650.0" x2="153.0" y2="644.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="90.0" y="658.0" width="116.0" height="62.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.0" rx="3"/>
+<text x="148.0" y="671.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="middle">1×240mm² Cu XLPE</text>
+<text x="148.0" y="684.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">L = 40 m</text>
+<text x="148.0" y="697.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">Iz = 473 A</text>
+<text x="148.0" y="710.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="middle">ΔV = 0.61% (≤4%)</text>
+<polygon points="148.0,745.0 143.5,736.0 152.5,736.0" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="87.0" y="745.0" width="122.0" height="96.0" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="1.4" rx="5"/>
+<rect x="87.0" y="745.0" width="122.0" height="20.0" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0" rx="4"/>
+<text x="148.0" y="759.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.4" font-weight="bold" fill="#FFFFFF" text-anchor="middle">F7_IMAGING</text>
+<text x="148.0" y="779.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">MRI / X-Ray</text>
+<text x="148.0" y="791.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Imaging Suite</text>
+<line x1="95.0" y1="799.0" x2="201.0" y2="799.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="148.0" y="813.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">180 kW | PF 0.90</text>
+<text x="148.0" y="826.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="middle">Ib = 288.7 A</text>
+<circle cx="292.0" cy="540.0" r="4.0" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0"/>
+<line x1="292.0" y1="540.0" x2="292.0" y2="574.0" stroke="#1D4ED8" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="292.0" y1="574.0" x2="292.0" y2="588.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="292.0" y1="612.0" x2="292.0" y2="626.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="287.5" y1="583.5" x2="296.5" y2="592.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="287.5" y1="592.5" x2="296.5" y2="583.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="292.0" y1="612.0" x2="281.0" y2="589.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="292.0" cy="612.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="272.0" y="595.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="280.0" y1="600.0" x2="287.0" y2="600.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<text x="302.0" y="594.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.6" font-weight="bold" fill="#0F172A" text-anchor="start">Q_F8</text>
+<text x="302.0" y="606.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#1D4ED8" text-anchor="start">500A</text>
+<text x="302.0" y="617.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#475569" text-anchor="start">50kA</text>
+<line x1="292.0" y1="626.0" x2="292.0" y2="742.0" stroke="#1D4ED8" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="287.0" y1="642.0" x2="297.0" y2="636.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="287.0" y1="646.0" x2="297.0" y2="640.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="287.0" y1="650.0" x2="297.0" y2="644.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="234.0" y="658.0" width="116.0" height="62.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.0" rx="3"/>
+<text x="292.0" y="671.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="middle">2×150mm² Cu XLPE</text>
+<text x="292.0" y="684.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">L = 65 m</text>
+<text x="292.0" y="697.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">Iz = 702 A</text>
+<text x="292.0" y="710.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="middle">ΔV = 0.93% (≤4%)</text>
+<polygon points="292.0,745.0 287.5,736.0 296.5,736.0" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="231.0" y="745.0" width="122.0" height="96.0" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="1.4" rx="5"/>
+<rect x="231.0" y="745.0" width="122.0" height="20.0" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0" rx="4"/>
+<text x="292.0" y="759.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.4" font-weight="bold" fill="#FFFFFF" text-anchor="middle">F8_CHILLER1</text>
+<text x="292.0" y="779.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">HVAC</text>
+<text x="292.0" y="791.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Chiller #1</text>
+<line x1="239.0" y1="799.0" x2="345.0" y2="799.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="292.0" y="813.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">220 kW | PF 0.85</text>
+<text x="292.0" y="826.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="middle">Ib = 373.6 A</text>
+<rect x="246.0" y="831.0" width="92.0" height="14.0" fill="#FEF3C7" stroke="#B45309" stroke-width="0.9" rx="3"/>
+<text x="292.0" y="841.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.2" font-weight="bold" fill="#92400E" text-anchor="middle">BMS SHED S1 (N-1)</text>
+<circle cx="518.0" cy="540.0" r="4.0" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0"/>
+<line x1="518.0" y1="540.0" x2="518.0" y2="574.0" stroke="#1D4ED8" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="518.0" y1="574.0" x2="518.0" y2="588.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="518.0" y1="612.0" x2="518.0" y2="626.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="513.5" y1="583.5" x2="522.5" y2="592.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="513.5" y1="592.5" x2="522.5" y2="583.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="518.0" y1="612.0" x2="507.0" y2="589.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="518.0" cy="612.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="498.0" y="595.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="506.0" y1="600.0" x2="513.0" y2="600.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<text x="528.0" y="594.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.6" font-weight="bold" fill="#0F172A" text-anchor="start">Q_F9</text>
+<text x="528.0" y="606.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#1D4ED8" text-anchor="start">500A</text>
+<text x="528.0" y="617.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#475569" text-anchor="start">50kA</text>
+<line x1="518.0" y1="626.0" x2="518.0" y2="742.0" stroke="#1D4ED8" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="513.0" y1="642.0" x2="523.0" y2="636.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="513.0" y1="646.0" x2="523.0" y2="640.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="513.0" y1="650.0" x2="523.0" y2="644.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="460.0" y="658.0" width="116.0" height="62.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.0" rx="3"/>
+<text x="518.0" y="671.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="middle">2×150mm² Cu XLPE</text>
+<text x="518.0" y="684.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">L = 70 m</text>
+<text x="518.0" y="697.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">Iz = 702 A</text>
+<text x="518.0" y="710.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="middle">ΔV = 1.00% (≤4%)</text>
+<polygon points="518.0,745.0 513.5,736.0 522.5,736.0" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="457.0" y="745.0" width="122.0" height="96.0" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="1.4" rx="5"/>
+<rect x="457.0" y="745.0" width="122.0" height="20.0" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0" rx="4"/>
+<text x="518.0" y="759.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.4" font-weight="bold" fill="#FFFFFF" text-anchor="middle">F9_CHILLER2</text>
+<text x="518.0" y="779.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">HVAC</text>
+<text x="518.0" y="791.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Chiller #2</text>
+<line x1="465.0" y1="799.0" x2="571.0" y2="799.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="518.0" y="813.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">220 kW | PF 0.85</text>
+<text x="518.0" y="826.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="middle">Ib = 373.6 A</text>
+<rect x="472.0" y="831.0" width="92.0" height="14.0" fill="#FEF3C7" stroke="#B45309" stroke-width="0.9" rx="3"/>
+<text x="518.0" y="841.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.2" font-weight="bold" fill="#92400E" text-anchor="middle">BMS SHED S2 (N-1)</text>
+<circle cx="658.0" cy="540.0" r="4.0" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0"/>
+<line x1="658.0" y1="540.0" x2="658.0" y2="574.0" stroke="#1D4ED8" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="658.0" y1="574.0" x2="658.0" y2="588.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="658.0" y1="612.0" x2="658.0" y2="626.0" stroke="#1D4ED8" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="653.5" y1="583.5" x2="662.5" y2="592.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="653.5" y1="592.5" x2="662.5" y2="583.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="658.0" y1="612.0" x2="647.0" y2="589.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="658.0" cy="612.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="638.0" y="595.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="646.0" y1="600.0" x2="653.0" y2="600.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<text x="668.0" y="594.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.6" font-weight="bold" fill="#0F172A" text-anchor="start">Q_F10</text>
+<text x="668.0" y="606.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#1D4ED8" text-anchor="start">200A</text>
+<text x="668.0" y="617.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#475569" text-anchor="start">50kA</text>
+<line x1="658.0" y1="626.0" x2="658.0" y2="742.0" stroke="#1D4ED8" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="653.0" y1="642.0" x2="663.0" y2="636.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="653.0" y1="646.0" x2="663.0" y2="640.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="653.0" y1="650.0" x2="663.0" y2="644.0" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="600.0" y="658.0" width="116.0" height="62.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.0" rx="3"/>
+<text x="658.0" y="671.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="middle">1×95mm² Cu XLPE</text>
+<text x="658.0" y="684.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">L = 50 m</text>
+<text x="658.0" y="697.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">Iz = 262 A</text>
+<text x="658.0" y="710.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="middle">ΔV = 0.89% (≤4%)</text>
+<polygon points="658.0,745.0 653.5,736.0 662.5,736.0" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="597.0" y="745.0" width="122.0" height="96.0" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="1.4" rx="5"/>
+<rect x="597.0" y="745.0" width="122.0" height="20.0" fill="#1D4ED8" stroke="#1D4ED8" stroke-width="1.0" rx="4"/>
+<text x="658.0" y="759.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.4" font-weight="bold" fill="#FFFFFF" text-anchor="middle">F10_GEN_PWR</text>
+<text x="658.0" y="779.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Admin Ltg &amp;</text>
+<text x="658.0" y="791.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">General Power</text>
+<line x1="605.0" y1="799.0" x2="711.0" y2="799.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="658.0" y="813.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">100 kW | PF 0.90</text>
+<text x="658.0" y="826.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="middle">Ib = 160.4 A</text>
+<rect x="612.0" y="831.0" width="92.0" height="14.0" fill="#FEF3C7" stroke="#B45309" stroke-width="0.9" rx="3"/>
+<text x="658.0" y="841.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.2" font-weight="bold" fill="#92400E" text-anchor="middle">BMS SHED S2 (N-1)</text>
+<circle cx="882.0" cy="540.0" r="4.0" fill="#047857" stroke="#047857" stroke-width="1.0"/>
+<line x1="882.0" y1="540.0" x2="882.0" y2="574.0" stroke="#047857" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="882.0" y1="574.0" x2="882.0" y2="588.0" stroke="#047857" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="882.0" y1="612.0" x2="882.0" y2="626.0" stroke="#047857" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="877.5" y1="583.5" x2="886.5" y2="592.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="877.5" y1="592.5" x2="886.5" y2="583.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="882.0" y1="612.0" x2="871.0" y2="589.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="882.0" cy="612.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="862.0" y="595.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="870.0" y1="600.0" x2="877.0" y2="600.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<text x="892.0" y="594.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.6" font-weight="bold" fill="#0F172A" text-anchor="start">Q_F1</text>
+<text x="892.0" y="606.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#047857" text-anchor="start">320A</text>
+<text x="892.0" y="617.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#475569" text-anchor="start">36kA</text>
+<line x1="882.0" y1="626.0" x2="882.0" y2="742.0" stroke="#047857" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="877.0" y1="642.0" x2="887.0" y2="636.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="877.0" y1="646.0" x2="887.0" y2="640.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="877.0" y1="650.0" x2="887.0" y2="644.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="824.0" y="658.0" width="116.0" height="62.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.0" rx="3"/>
+<text x="882.0" y="671.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="middle">1×185mm² Cu XLPE</text>
+<text x="882.0" y="684.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">L = 35 m</text>
+<text x="882.0" y="697.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">Iz = 401 A</text>
+<text x="882.0" y="710.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="middle">ΔV = 0.54% (≤4%)</text>
+<polygon points="882.0,745.0 877.5,736.0 886.5,736.0" fill="#047857" stroke="#047857" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="821.0" y="745.0" width="122.0" height="96.0" fill="#F0FDF4" stroke="#047857" stroke-width="1.4" rx="5"/>
+<rect x="821.0" y="745.0" width="122.0" height="20.0" fill="#047857" stroke="#047857" stroke-width="1.0" rx="4"/>
+<text x="882.0" y="759.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.4" font-weight="bold" fill="#FFFFFF" text-anchor="middle">F1_MED_UPS</text>
+<text x="882.0" y="779.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Medical Proc &amp;</text>
+<text x="882.0" y="791.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">ICU UPS</text>
+<line x1="829.0" y1="799.0" x2="935.0" y2="799.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="882.0" y="813.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">150 kW | PF 0.90</text>
+<text x="882.0" y="826.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="middle">Ib = 240.6 A</text>
+<circle cx="1018.0" cy="540.0" r="4.0" fill="#DC2626" stroke="#DC2626" stroke-width="1.0"/>
+<line x1="1018.0" y1="540.0" x2="1018.0" y2="574.0" stroke="#DC2626" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="1018.0" y1="574.0" x2="1018.0" y2="588.0" stroke="#DC2626" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="1018.0" y1="612.0" x2="1018.0" y2="626.0" stroke="#DC2626" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="1013.5" y1="583.5" x2="1022.5" y2="592.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1013.5" y1="592.5" x2="1022.5" y2="583.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1018.0" y1="612.0" x2="1007.0" y2="589.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="1018.0" cy="612.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="998.0" y="595.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="1006.0" y1="600.0" x2="1013.0" y2="600.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<text x="1028.0" y="594.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.6" font-weight="bold" fill="#0F172A" text-anchor="start">Q_F2</text>
+<text x="1028.0" y="606.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#DC2626" text-anchor="start">200A</text>
+<text x="1028.0" y="617.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#475569" text-anchor="start">36kA</text>
+<line x1="1018.0" y1="626.0" x2="1018.0" y2="742.0" stroke="#DC2626" stroke-width="2.0" stroke-linecap="round" stroke-dasharray="5,2"/>
+<line x1="1013.0" y1="642.0" x2="1023.0" y2="636.0" stroke="#DC2626" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="1013.0" y1="646.0" x2="1023.0" y2="640.0" stroke="#DC2626" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="1013.0" y1="650.0" x2="1023.0" y2="644.0" stroke="#DC2626" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="960.0" y="658.0" width="116.0" height="62.0" fill="#FEF2F2" stroke="#DC2626" stroke-width="1.0" rx="3"/>
+<text x="1018.0" y="671.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#DC2626" text-anchor="middle">1×95mm² FR-XLPE</text>
+<text x="1018.0" y="684.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">L = 55 m</text>
+<text x="1018.0" y="697.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">Iz = 262 A</text>
+<text x="1018.0" y="710.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="middle">ΔV = 0.76% (≤4%)</text>
+<polygon points="1018.0,745.0 1013.5,736.0 1022.5,736.0" fill="#DC2626" stroke="#DC2626" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="957.0" y="745.0" width="122.0" height="96.0" fill="#FFF5F5" stroke="#DC2626" stroke-width="1.4" rx="5"/>
+<rect x="957.0" y="745.0" width="122.0" height="20.0" fill="#DC2626" stroke="#DC2626" stroke-width="1.0" rx="4"/>
+<text x="1018.0" y="759.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.4" font-weight="bold" fill="#FFFFFF" text-anchor="middle">F2_FIRE_PUMP</text>
+<text x="1018.0" y="779.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Fire &amp; Life-</text>
+<text x="1018.0" y="791.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Safety Pump</text>
+<line x1="965.0" y1="799.0" x2="1071.0" y2="799.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="1018.0" y="813.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">75 kW | PF 0.85</text>
+<text x="1018.0" y="826.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="middle">Ib = 127.4 A</text>
+<rect x="974.0" y="831.0" width="88.0" height="14.0" fill="#FEE2E2" stroke="#DC2626" stroke-width="0.9" rx="3"/>
+<text x="1018.0" y="841.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.2" font-weight="bold" fill="#DC2626" text-anchor="middle">FIRE-RATED 2hr</text>
+<circle cx="1154.0" cy="540.0" r="4.0" fill="#047857" stroke="#047857" stroke-width="1.0"/>
+<line x1="1154.0" y1="540.0" x2="1154.0" y2="574.0" stroke="#047857" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="1154.0" y1="574.0" x2="1154.0" y2="588.0" stroke="#047857" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="1154.0" y1="612.0" x2="1154.0" y2="626.0" stroke="#047857" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="1149.5" y1="583.5" x2="1158.5" y2="592.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1149.5" y1="592.5" x2="1158.5" y2="583.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1154.0" y1="612.0" x2="1143.0" y2="589.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="1154.0" cy="612.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="1134.0" y="595.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="1142.0" y1="600.0" x2="1149.0" y2="600.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<text x="1164.0" y="594.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.6" font-weight="bold" fill="#0F172A" text-anchor="start">Q_F3</text>
+<text x="1164.0" y="606.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#047857" text-anchor="start">250A</text>
+<text x="1164.0" y="617.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#475569" text-anchor="start">36kA</text>
+<line x1="1154.0" y1="626.0" x2="1154.0" y2="742.0" stroke="#047857" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="1149.0" y1="642.0" x2="1159.0" y2="636.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="1149.0" y1="646.0" x2="1159.0" y2="640.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="1149.0" y1="650.0" x2="1159.0" y2="644.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="1096.0" y="658.0" width="116.0" height="62.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.0" rx="3"/>
+<text x="1154.0" y="671.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="middle">1×120mm² Cu XLPE</text>
+<text x="1154.0" y="684.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">L = 45 m</text>
+<text x="1154.0" y="697.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">Iz = 304 A</text>
+<text x="1154.0" y="710.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="middle">ΔV = 0.79% (≤4%)</text>
+<polygon points="1154.0,745.0 1149.5,736.0 1158.5,736.0" fill="#047857" stroke="#047857" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="1093.0" y="745.0" width="122.0" height="96.0" fill="#F0FDF4" stroke="#047857" stroke-width="1.4" rx="5"/>
+<rect x="1093.0" y="745.0" width="122.0" height="20.0" fill="#047857" stroke="#047857" stroke-width="1.0" rx="4"/>
+<text x="1154.0" y="759.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.4" font-weight="bold" fill="#FFFFFF" text-anchor="middle">F3_CLINIC_DB1</text>
+<text x="1154.0" y="779.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Outpatient</text>
+<text x="1154.0" y="791.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Clinic Sub-DB1</text>
+<line x1="1101.0" y1="799.0" x2="1207.0" y2="799.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="1154.0" y="813.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">120 kW | PF 0.90</text>
+<text x="1154.0" y="826.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="middle">Ib = 192.5 A</text>
+<circle cx="1290.0" cy="540.0" r="4.0" fill="#047857" stroke="#047857" stroke-width="1.0"/>
+<line x1="1290.0" y1="540.0" x2="1290.0" y2="574.0" stroke="#047857" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="1290.0" y1="574.0" x2="1290.0" y2="588.0" stroke="#047857" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="1290.0" y1="612.0" x2="1290.0" y2="626.0" stroke="#047857" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="1285.5" y1="583.5" x2="1294.5" y2="592.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1285.5" y1="592.5" x2="1294.5" y2="583.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1290.0" y1="612.0" x2="1279.0" y2="589.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="1290.0" cy="612.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="1270.0" y="595.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="1278.0" y1="600.0" x2="1285.0" y2="600.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<text x="1300.0" y="594.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.6" font-weight="bold" fill="#0F172A" text-anchor="start">Q_F4</text>
+<text x="1300.0" y="606.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#047857" text-anchor="start">250A</text>
+<text x="1300.0" y="617.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#475569" text-anchor="start">36kA</text>
+<line x1="1290.0" y1="626.0" x2="1290.0" y2="742.0" stroke="#047857" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="1285.0" y1="642.0" x2="1295.0" y2="636.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="1285.0" y1="646.0" x2="1295.0" y2="640.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="1285.0" y1="650.0" x2="1295.0" y2="644.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="1232.0" y="658.0" width="116.0" height="62.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.0" rx="3"/>
+<text x="1290.0" y="671.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="middle">1×120mm² Cu XLPE</text>
+<text x="1290.0" y="684.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">L = 60 m</text>
+<text x="1290.0" y="697.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">Iz = 304 A</text>
+<text x="1290.0" y="710.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="middle">ΔV = 0.97% (≤4%)</text>
+<polygon points="1290.0,745.0 1285.5,736.0 1294.5,736.0" fill="#047857" stroke="#047857" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="1229.0" y="745.0" width="122.0" height="96.0" fill="#F0FDF4" stroke="#047857" stroke-width="1.4" rx="5"/>
+<rect x="1229.0" y="745.0" width="122.0" height="20.0" fill="#047857" stroke="#047857" stroke-width="1.0" rx="4"/>
+<text x="1290.0" y="759.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.4" font-weight="bold" fill="#FFFFFF" text-anchor="middle">F4_CLINIC_DB2</text>
+<text x="1290.0" y="779.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Outpatient</text>
+<text x="1290.0" y="791.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Clinic Sub-DB2</text>
+<line x1="1237.0" y1="799.0" x2="1343.0" y2="799.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="1290.0" y="813.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">110 kW | PF 0.90</text>
+<text x="1290.0" y="826.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="middle">Ib = 176.4 A</text>
+<circle cx="1426.0" cy="540.0" r="4.0" fill="#047857" stroke="#047857" stroke-width="1.0"/>
+<line x1="1426.0" y1="540.0" x2="1426.0" y2="574.0" stroke="#047857" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="1426.0" y1="574.0" x2="1426.0" y2="588.0" stroke="#047857" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="1426.0" y1="612.0" x2="1426.0" y2="626.0" stroke="#047857" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="1421.5" y1="583.5" x2="1430.5" y2="592.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1421.5" y1="592.5" x2="1430.5" y2="583.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1426.0" y1="612.0" x2="1415.0" y2="589.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="1426.0" cy="612.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="1406.0" y="595.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="1414.0" y1="600.0" x2="1421.0" y2="600.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<text x="1436.0" y="594.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.6" font-weight="bold" fill="#0F172A" text-anchor="start">Q_F5</text>
+<text x="1436.0" y="606.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#047857" text-anchor="start">200A</text>
+<text x="1436.0" y="617.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#475569" text-anchor="start">36kA</text>
+<line x1="1426.0" y1="626.0" x2="1426.0" y2="742.0" stroke="#047857" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="1421.0" y1="642.0" x2="1431.0" y2="636.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="1421.0" y1="646.0" x2="1431.0" y2="640.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="1421.0" y1="650.0" x2="1431.0" y2="644.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="1368.0" y="658.0" width="116.0" height="62.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.0" rx="3"/>
+<text x="1426.0" y="671.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="middle">1×70mm² Cu XLPE</text>
+<text x="1426.0" y="684.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">L = 40 m</text>
+<text x="1426.0" y="697.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">Iz = 216 A</text>
+<text x="1426.0" y="710.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="middle">ΔV = 0.82% (≤4%)</text>
+<polygon points="1426.0,745.0 1421.5,736.0 1430.5,736.0" fill="#047857" stroke="#047857" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="1365.0" y="745.0" width="122.0" height="96.0" fill="#F0FDF4" stroke="#047857" stroke-width="1.4" rx="5"/>
+<rect x="1365.0" y="745.0" width="122.0" height="20.0" fill="#047857" stroke="#047857" stroke-width="1.0" rx="4"/>
+<text x="1426.0" y="759.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.4" font-weight="bold" fill="#FFFFFF" text-anchor="middle">F5_LAB_STERIL</text>
+<text x="1426.0" y="779.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Sterilization</text>
+<text x="1426.0" y="791.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">&amp; Lab Wing</text>
+<line x1="1373.0" y1="799.0" x2="1479.0" y2="799.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="1426.0" y="813.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">85 kW | PF 0.88</text>
+<text x="1426.0" y="826.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="middle">Ib = 139.4 A</text>
+<circle cx="1562.0" cy="540.0" r="4.0" fill="#047857" stroke="#047857" stroke-width="1.0"/>
+<line x1="1562.0" y1="540.0" x2="1562.0" y2="574.0" stroke="#047857" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="1562.0" y1="574.0" x2="1562.0" y2="588.0" stroke="#047857" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="1562.0" y1="612.0" x2="1562.0" y2="626.0" stroke="#047857" stroke-width="2.2" stroke-linecap="round"/>
+<line x1="1557.5" y1="583.5" x2="1566.5" y2="592.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1557.5" y1="592.5" x2="1566.5" y2="583.5" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1562.0" y1="612.0" x2="1551.0" y2="589.0" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="1562.0" cy="612.0" r="2.4" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<rect x="1542.0" y="595.0" width="8.0" height="10.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.1"/>
+<line x1="1550.0" y1="600.0" x2="1557.0" y2="600.0" stroke="#0F172A" stroke-width="1.0" stroke-linecap="round" stroke-dasharray="2,2"/>
+<text x="1572.0" y="594.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.6" font-weight="bold" fill="#0F172A" text-anchor="start">Q_F6</text>
+<text x="1572.0" y="606.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#047857" text-anchor="start">200A</text>
+<text x="1572.0" y="617.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.6" font-weight="normal" fill="#475569" text-anchor="start">36kA</text>
+<line x1="1562.0" y1="626.0" x2="1562.0" y2="742.0" stroke="#047857" stroke-width="2.0" stroke-linecap="round"/>
+<line x1="1557.0" y1="642.0" x2="1567.0" y2="636.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="1557.0" y1="646.0" x2="1567.0" y2="640.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="1557.0" y1="650.0" x2="1567.0" y2="644.0" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+<rect x="1504.0" y="658.0" width="116.0" height="62.0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.0" rx="3"/>
+<text x="1562.0" y="671.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="middle">1×95mm² Cu XLPE</text>
+<text x="1562.0" y="684.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">L = 50 m</text>
+<text x="1562.0" y="697.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="middle">Iz = 262 A</text>
+<text x="1562.0" y="710.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="middle">ΔV = 0.83% (≤4%)</text>
+<polygon points="1562.0,745.0 1557.5,736.0 1566.5,736.0" fill="#047857" stroke="#047857" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="1501.0" y="745.0" width="122.0" height="96.0" fill="#F0FDF4" stroke="#047857" stroke-width="1.4" rx="5"/>
+<rect x="1501.0" y="745.0" width="122.0" height="20.0" fill="#047857" stroke="#047857" stroke-width="1.0" rx="4"/>
+<text x="1562.0" y="759.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.4" font-weight="bold" fill="#FFFFFF" text-anchor="middle">F6_ELEVATORS</text>
+<text x="1562.0" y="779.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Medical</text>
+<text x="1562.0" y="791.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">Elevators</text>
+<line x1="1509.0" y1="799.0" x2="1615.0" y2="799.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="1562.0" y="813.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.3" font-weight="bold" fill="#0F172A" text-anchor="middle">90 kW | PF 0.85</text>
+<text x="1562.0" y="826.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="normal" fill="#475569" text-anchor="middle">Ib = 152.8 A</text>
+<rect x="748.0" y="62.0" width="565.0" height="224.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.3" rx="4"/>
+<rect x="748.0" y="62.0" width="565.0" height="22.0" fill="#1E293B" stroke="#0F172A" stroke-width="1.0"/>
+<text x="758.0" y="77.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.2" font-weight="bold" fill="#FFFFFF" text-anchor="start">IEC 60909-0 SHORT-CIRCUIT &amp; SWITCHGEAR RATING VERIFICATION</text>
+<rect x="748.0" y="84.0" width="565.0" height="19.0" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="0.8"/>
+<text x="758.0" y="97.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#0F172A" text-anchor="start">Bus / Node</text>
+<text x="856.0" y="97.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#0F172A" text-anchor="start">Un</text>
+<text x="910.0" y="97.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#0F172A" text-anchor="start">Mode / Source</text>
+<text x="1068.0" y="97.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#0F172A" text-anchor="start">Ik'' (kA)</text>
+<text x="1140.0" y="97.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#0F172A" text-anchor="start">Min Icu</text>
+<text x="1218.0" y="97.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#0F172A" text-anchor="start">Status</text>
+<rect x="748.0" y="103.0" width="565.0" height="21.0" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.6"/>
+<text x="758.0" y="117.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="bold" fill="#0F172A" text-anchor="start">RMU_11KV</text>
+<text x="856.0" y="117.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">11 kV</text>
+<text x="910.0" y="117.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">Utility 250 MVA</text>
+<text x="1068.0" y="117.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">13.12</text>
+<text x="1140.0" y="117.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">25 kA</text>
+<text x="1218.0" y="117.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="bold" fill="#047857" text-anchor="start">PASS (1.9x)</text>
+<rect x="748.0" y="124.0" width="565.0" height="21.0" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.6"/>
+<text x="758.0" y="138.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="bold" fill="#0F172A" text-anchor="start">MSB_A</text>
+<text x="856.0" y="138.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">400 V</text>
+<text x="910.0" y="138.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">TX1 (1000 kVA, uk=6%)</text>
+<text x="1068.0" y="138.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">23.94</text>
+<text x="1140.0" y="138.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">50 kA</text>
+<text x="1218.0" y="138.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="bold" fill="#047857" text-anchor="start">PASS (2.1x)</text>
+<rect x="748.0" y="145.0" width="565.0" height="21.0" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.6"/>
+<text x="758.0" y="159.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="bold" fill="#0F172A" text-anchor="start">MSB_B</text>
+<text x="856.0" y="159.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">400 V</text>
+<text x="910.0" y="159.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">TX2 (1000 kVA, uk=6%)</text>
+<text x="1068.0" y="159.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">23.94</text>
+<text x="1140.0" y="159.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">50 kA</text>
+<text x="1218.0" y="159.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="bold" fill="#047857" text-anchor="start">PASS (2.1x)</text>
+<rect x="748.0" y="166.0" width="565.0" height="21.0" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.6"/>
+<text x="758.0" y="180.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="bold" fill="#0F172A" text-anchor="start">MSB A+B*</text>
+<text x="856.0" y="180.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">400 V</text>
+<text x="910.0" y="180.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">2×TX Parallel (Blocked)</text>
+<text x="1068.0" y="180.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">44.79</text>
+<text x="1140.0" y="180.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">50 kA</text>
+<text x="1218.0" y="180.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="bold" fill="#9333EA" text-anchor="start">INTERLOCKED</text>
+<rect x="748.0" y="187.0" width="565.0" height="21.0" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.6"/>
+<text x="758.0" y="201.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="bold" fill="#0F172A" text-anchor="start">EMSB</text>
+<text x="856.0" y="201.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">400 V</text>
+<text x="910.0" y="201.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">Normal (from MSB_B / ATS1)</text>
+<text x="1068.0" y="201.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">23.34</text>
+<text x="1140.0" y="201.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">36 kA</text>
+<text x="1218.0" y="201.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="bold" fill="#047857" text-anchor="start">PASS (1.5x)</text>
+<rect x="748.0" y="208.0" width="565.0" height="21.0" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.6"/>
+<text x="758.0" y="222.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="bold" fill="#0F172A" text-anchor="start">EMSB</text>
+<text x="856.0" y="222.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">400 V</text>
+<text x="910.0" y="222.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">Standby (GEN1, Xd''=15%)</text>
+<text x="1068.0" y="222.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">10.22</text>
+<text x="1140.0" y="222.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="normal" fill="#0F172A" text-anchor="start">36 kA</text>
+<text x="1218.0" y="222.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.1" font-weight="bold" fill="#047857" text-anchor="start">PASS (3.5x)</text>
+<text x="758.0" y="246.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="start">IEC 60909 Params: c_max(MV)=1.10, c_max(LV)=1.05, KT=0.9634, Rq/Xq=0.10, ip(MSB)=52.9 kA.</text>
+<text x="758.0" y="260.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="start">IEC 60364-5-52 Cables: Cu XLPE 90°C, Method E perforated tray, k_derate=0.88 (35°C amb × grouping).</text>
+<text x="758.0" y="274.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="start">*TX1+TX2 paralleling prevented by IL_BUS_TIE (2-of-3); all LV breakers satisfy Icu &gt;= Ik'' &amp; Ib &lt;= In &lt;= Iz.</text>
+<rect x="40.0" y="868.0" width="520.0" height="212.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.3" rx="4"/>
+<rect x="40.0" y="868.0" width="520.0" height="22.0" fill="#1E293B" stroke="#0F172A" stroke-width="1.0"/>
+<text x="50.0" y="883.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.0" font-weight="bold" fill="#FFFFFF" text-anchor="start">MANDATORY INTERLOCK LOGIC &amp; IEC 60617 LEGEND</text>
+<text x="52.0" y="906.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.4" font-weight="bold" fill="#9333EA" text-anchor="start">1. IL_BUS_TIE (2-of-3 Mechanical Kirk-Key + Electrical):</text>
+<text x="60.0" y="920.0" font-family="'DejaVu Sans Mono', monospace" font-size="8.0" font-weight="normal" fill="#0F172A" text-anchor="start">• Normal Split:   Q_TX1=CLOSED, Q_TX2=CLOSED, Q_BT=OPEN</text>
+<text x="60.0" y="933.0" font-family="'DejaVu Sans Mono', monospace" font-size="8.0" font-weight="normal" fill="#0F172A" text-anchor="start">• N-1 TX1 Out:    Q_TX1=OPEN,   Q_TX2=CLOSED, Q_BT=CLOSED</text>
+<text x="60.0" y="946.0" font-family="'DejaVu Sans Mono', monospace" font-size="8.0" font-weight="normal" fill="#0F172A" text-anchor="start">• N-1 TX2 Out:    Q_TX1=CLOSED, Q_TX2=OPEN,   Q_BT=CLOSED</text>
+<text x="60.0" y="959.0" font-family="'DejaVu Sans Mono', monospace" font-size="8.0" font-weight="bold" fill="#DC2626" text-anchor="start">• FORBIDDEN:      Q_TX1 + Q_TX2 + Q_BT all CLOSED (Blocked)</text>
+<text x="52.0" y="980.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.4" font-weight="bold" fill="#9333EA" text-anchor="start">2. IL_ATS (ATS1 Mutually Exclusive Mech + Elec Interlock):</text>
+<text x="60.0" y="994.0" font-family="'DejaVu Sans Mono', monospace" font-size="8.0" font-weight="normal" fill="#0F172A" text-anchor="start">• Normal Utility: Q_NORM=CLOSED, Q_GEN=OPEN (EMSB via MSB_B)</text>
+<text x="60.0" y="1007.0" font-family="'DejaVu Sans Mono', monospace" font-size="8.0" font-weight="normal" fill="#0F172A" text-anchor="start">• GEN1 Standby:   Q_NORM=OPEN,   Q_GEN=CLOSED (Open Transition)</text>
+<text x="60.0" y="1020.0" font-family="'DejaVu Sans Mono', monospace" font-size="8.0" font-weight="bold" fill="#DC2626" text-anchor="start">• FORBIDDEN:      Q_NORM + Q_GEN simultaneously CLOSED</text>
+<line x1="52.0" y1="1036.0" x2="548.0" y2="1036.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<line x1="54.0" y1="1054.0" x2="72.0" y2="1054.0" stroke="#B91C1C" stroke-width="3.5" stroke-linecap="round"/>
+<text x="77.0" y="1058.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="start">11 kV MV</text>
+<line x1="140.0" y1="1054.0" x2="158.0" y2="1054.0" stroke="#1D4ED8" stroke-width="3.5" stroke-linecap="round"/>
+<text x="163.0" y="1058.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="start">400V Normal</text>
+<line x1="246.0" y1="1054.0" x2="264.0" y2="1054.0" stroke="#047857" stroke-width="3.5" stroke-linecap="round"/>
+<text x="269.0" y="1058.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="start">400V Essential</text>
+<line x1="368.0" y1="1054.0" x2="386.0" y2="1054.0" stroke="#DC2626" stroke-width="3.5" stroke-linecap="round"/>
+<text x="391.0" y="1058.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="start">Fire-Rated</text>
+<line x1="458.0" y1="1054.0" x2="476.0" y2="1054.0" stroke="#9333EA" stroke-width="3.5" stroke-linecap="round"/>
+<text x="481.0" y="1058.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#0F172A" text-anchor="start">Interlock</text>
+<rect x="576.0" y="868.0" width="560.0" height="212.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.3" rx="4"/>
+<rect x="576.0" y="868.0" width="560.0" height="22.0" fill="#1E293B" stroke="#0F172A" stroke-width="1.0"/>
+<text x="586.0" y="883.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.0" font-weight="bold" fill="#FFFFFF" text-anchor="start">N-1 TRANSFORMER &amp; STANDBY GENERATOR CONTINGENCY PROOF</text>
+<rect x="576.0" y="894.0" width="560.0" height="23.0" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="0.6"/>
+<text x="584.0" y="909.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#0F172A" text-anchor="start">Operating Scenario</text>
+<text x="784.0" y="909.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#0F172A" text-anchor="start">Active Sources</text>
+<text x="888.0" y="909.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#0F172A" text-anchor="start">Load (kVA)</text>
+<text x="956.0" y="909.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#0F172A" text-anchor="start">Limit</text>
+<text x="1024.0" y="909.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#0F172A" text-anchor="start">Margin / Status</text>
+<rect x="576.0" y="917.0" width="560.0" height="23.0" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.6"/>
+<text x="584.0" y="932.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">Normal — TX1 (MSB_A, DF=0.70)</text>
+<text x="784.0" y="932.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">TX1 (Q_BT Open)</text>
+<text x="888.0" y="932.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">320.8</text>
+<text x="956.0" y="932.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">1000 kVA</text>
+<text x="1024.0" y="932.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="start">32.1% — PASS</text>
+<rect x="576.0" y="940.0" width="560.0" height="23.0" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.6"/>
+<text x="584.0" y="955.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">Normal — TX2 (MSB_B+EMSB, DF=0.70)</text>
+<text x="784.0" y="955.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">TX2 (Q_BT Open)</text>
+<text x="888.0" y="955.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">757.1</text>
+<text x="956.0" y="955.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">1000 kVA</text>
+<text x="1024.0" y="955.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="start">75.7% — PASS</text>
+<rect x="576.0" y="963.0" width="560.0" height="23.0" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.6"/>
+<text x="584.0" y="978.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">Normal — TX2 (100% EMSB + 70% B)</text>
+<text x="784.0" y="978.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">TX2 (Worst Norm)</text>
+<text x="888.0" y="978.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">970.7</text>
+<text x="956.0" y="978.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">1000 kVA</text>
+<text x="1024.0" y="978.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="start">97.1% — PASS</text>
+<rect x="576.0" y="986.0" width="560.0" height="23.0" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.6"/>
+<text x="584.0" y="1001.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">N-1 (1 TX, Shed S1: F8 Chiller1)</text>
+<text x="784.0" y="1001.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">1×TX (Q_BT Cls)</text>
+<text x="888.0" y="1001.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">896.9</text>
+<text x="956.0" y="1001.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">1000 kVA</text>
+<text x="1024.0" y="1001.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="start">89.7% — PASS</text>
+<rect x="576.0" y="1009.0" width="560.0" height="23.0" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.6"/>
+<text x="584.0" y="1024.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">N-1 Peak (100% Coinc, Shed S1+S2)</text>
+<text x="784.0" y="1024.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">1×TX (EMSB+F7)</text>
+<text x="888.0" y="1024.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">912.1</text>
+<text x="956.0" y="1024.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">1000 kVA</text>
+<text x="1024.0" y="1024.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="start">91.2% — PASS</text>
+<rect x="576.0" y="1032.0" width="560.0" height="23.0" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.6"/>
+<text x="584.0" y="1047.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">Utility Outage — GEN1 (100% EMSB)</text>
+<text x="784.0" y="1047.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">GEN1 via ATS1</text>
+<text x="888.0" y="1047.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">712.2</text>
+<text x="956.0" y="1047.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="normal" fill="#0F172A" text-anchor="start">1000 kVA</text>
+<text x="1024.0" y="1047.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.9" font-weight="bold" fill="#047857" text-anchor="start">78.8% kW — PASS</text>
+<text x="584.0" y="1069.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.8" font-weight="normal" fill="#475569" text-anchor="start">Total Connected Plant Load: 1350 kW / 1539.7 kVA  |  EMSB Essential: 630 kW / 712.2 kVA (&lt;= 800 kW / 1000 kVA GEN1).</text>
+<rect x="1152.0" y="868.0" width="488.0" height="212.0" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.6"/>
+<rect x="1152.0" y="868.0" width="488.0" height="36.0" fill="#0F172A" stroke="#0F172A" stroke-width="1.0"/>
+<text x="1396.0" y="884.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="11.0" font-weight="bold" fill="#FFFFFF" text-anchor="middle">REGIONAL HOSPITAL &amp; MEDICAL CENTER</text>
+<text x="1396.0" y="898.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.0" font-weight="bold" fill="#93C5FD" text-anchor="middle">ELECTRICAL POWER SINGLE-LINE DIAGRAM (MV / LV)</text>
+<line x1="1152.0" y1="928.0" x2="1640.0" y2="928.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="1162.0" y="920.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#475569" text-anchor="start">SYSTEM:</text>
+<text x="1260.0" y="920.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#0F172A" text-anchor="start">11 kV / 400 V, 3Φ+N+PE, 50 Hz, TN-S</text>
+<line x1="1152.0" y1="952.0" x2="1640.0" y2="952.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="1162.0" y="944.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#475569" text-anchor="start">TRANSFORMERS:</text>
+<text x="1260.0" y="944.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#0F172A" text-anchor="start">2 × 1000 kVA, 11/0.4 kV, Dyn11, uk = 6.0% (N-1)</text>
+<line x1="1152.0" y1="976.0" x2="1640.0" y2="976.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="1162.0" y="968.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#475569" text-anchor="start">STANDBY GEN:</text>
+<text x="1260.0" y="968.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#0F172A" text-anchor="start">1 × 1000 kVA (800 kW), 400 V, 0.8 PF, Xd'' = 15%</text>
+<line x1="1152.0" y1="1000.0" x2="1640.0" y2="1000.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="1162.0" y="992.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#475569" text-anchor="start">STANDARDS:</text>
+<text x="1260.0" y="992.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#0F172A" text-anchor="start">IEC 60909-0 | IEC 60364-5-52 | IEC 60617 | IEC 61439</text>
+<line x1="1152.0" y1="1024.0" x2="1640.0" y2="1024.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="1162.0" y="1016.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.0" font-weight="bold" fill="#475569" text-anchor="start">CABLE DESIGN:</text>
+<text x="1260.0" y="1016.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="8.2" font-weight="bold" fill="#0F172A" text-anchor="start">Cu XLPE 90°C, ΔV_max = 1.00% (Spec &lt;= 4.0%)</text>
+<line x1="1302.0" y1="1024.0" x2="1302.0" y2="1080.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<line x1="1442.0" y1="1024.0" x2="1442.0" y2="1080.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<line x1="1542.0" y1="1024.0" x2="1542.0" y2="1080.0" stroke="#CBD5E1" stroke-width="0.8" stroke-linecap="round"/>
+<text x="1162.0" y="1040.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.3" font-weight="normal" fill="#475569" text-anchor="start">DRAWING NO.</text>
+<text x="1162.0" y="1060.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="12.0" font-weight="bold" fill="#0F172A" text-anchor="start">E-SLD-001</text>
+<text x="1312.0" y="1040.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.3" font-weight="normal" fill="#475569" text-anchor="start">DISCIPLINE</text>
+<text x="1312.0" y="1059.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="10.0" font-weight="bold" fill="#0F172A" text-anchor="start">Power Systems</text>
+<text x="1452.0" y="1040.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.3" font-weight="normal" fill="#475569" text-anchor="start">SHEET / SCALE</text>
+<text x="1452.0" y="1059.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="9.8" font-weight="bold" fill="#0F172A" text-anchor="start">1 of 1 / NTS</text>
+<text x="1552.0" y="1040.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="7.3" font-weight="normal" fill="#475569" text-anchor="start">REVISION</text>
+<text x="1552.0" y="1060.0" font-family="'DejaVu Sans', Arial, sans-serif" font-size="12.0" font-weight="bold" fill="#047857" text-anchor="start">REV A</text>
+</svg>

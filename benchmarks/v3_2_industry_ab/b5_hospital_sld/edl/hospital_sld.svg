@@ -1,0 +1,316 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2200 965" width="2200" height="965">
+  <defs><style>
+    .bg { fill: #f8fafc; }
+    .sheet { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; }
+    .title { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 15px; font-weight: 700; fill: #0f172a; }
+    .meta { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 11px; fill: #475569; }
+    .ok { font-family: monospace; font-size: 11px; font-weight: 700; fill: #15803d; text-anchor: end; }
+    .err { font-family: monospace; font-size: 11px; font-weight: 700; fill: #dc2626; text-anchor: end; }
+  </style></defs>
+  <rect class="bg" x="0" y="0" width="2200" height="965"/>
+  <rect class="sheet" x="14" y="14" width="2172" height="937" rx="6"/>
+  <text class="title" x="32" y="42">HOSPITAL 11kV/400V POWER SLD (UTIL_11KV 250MVA -> RMU_11KV -> 2x1000kVA + 1000kVA GEN1)</text>
+  <line x1="76.0" y1="290.0" x2="520.0" y2="290.0" stroke="#1e3a8a" stroke-width="4.5" stroke-linecap="round"/>
+  <rect x="77.0" y="267.0" width="182.5" height="16.0" rx="2.0" fill="#ffffff" stroke="none" stroke-width="1.5"/>
+  <text x="81.0" y="279.0" font-family="monospace" font-size="11.0" font-weight="700" text-anchor="start" fill="#1e3a8a">MSB_A (400V TN-S | 1600A)</text>
+  <rect x="286.7" y="268.0" width="232.3" height="15.0" rx="2.0" fill="#ffffff" stroke="none" stroke-width="1.5"/>
+  <text x="515.0" y="279.0" font-family="monospace" font-size="9.0" font-weight="700" text-anchor="end" fill="#0f766e">S=412kVA  I=595A  PF=0.97  Ik3''=24.4kA</text>
+  <circle cx="298.0" cy="96.0" r="16.0" fill="#ffffff" stroke="#0f172a" stroke-width="1.6"/>
+  <circle cx="298.0" cy="116.0" r="16.0" fill="none" stroke="#0f172a" stroke-width="1.6"/>
+  <line x1="298.0" y1="66.0" x2="298.0" y2="80.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="298.0" y1="132.0" x2="298.0" y2="140.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="320.0" y="94.0" font-family="monospace" font-size="10.0" font-weight="700" text-anchor="start" fill="#0f172a">TX1</text>
+  <text x="320.0" y="107.0" font-family="monospace" font-size="8.4" font-weight="400" text-anchor="start" fill="#334155">1000 kVA  uk=6.0%</text>
+  <text x="320.0" y="119.0" font-family="monospace" font-size="8.2" font-weight="400" text-anchor="start" fill="#475569">11/0.4kV Dyn11</text>
+  <line x1="298.0" y1="140.0" x2="298.0" y2="176.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="298.0" cy="156.0" r="5.5" fill="none" stroke="#475569" stroke-width="1.6"/>
+  <text x="308.0" y="159.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">CT / Wh</text>
+  <line x1="298.0" y1="176.0" x2="298.0" y2="184.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="294.5" y1="181.0" x2="301.5" y2="188.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="301.5" y1="181.0" x2="294.5" y2="188.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="289.0" y1="186.0" x2="298.0" y2="214.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="298.0" y1="214.0" x2="298.0" y2="222.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="306.0" y="195.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">Q_TX1 (ACB)</text>
+  <text x="306.0" y="207.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">1600A / 50kA</text>
+  <line x1="298.0" y1="222.0" x2="298.0" y2="290.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="298.0" cy="290.0" r="3.5" fill="#1e3a8a" stroke="#1e3a8a" stroke-width="1.6"/>
+  <circle cx="160.6" cy="290.0" r="2.8" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.6"/>
+  <line x1="160.6" y1="290.0" x2="160.6" y2="312.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="160.6" y1="312.0" x2="160.6" y2="320.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="157.1" y1="317.0" x2="164.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="164.1" y1="317.0" x2="157.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="151.6" y1="322.0" x2="160.6" y2="346.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="160.6" y1="346.0" x2="160.6" y2="354.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="168.6" y="329.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">QF7 (MCCB)</text>
+  <text x="168.6" y="341.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">400A/50kA</text>
+  <line x1="160.6" y1="354.0" x2="160.6" y2="447.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="155.6" y1="408.0" x2="165.6" y2="400.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <text x="168.6" y="399.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#334155">Cu XLPE 3x240+120 (40m)</text>
+  <text x="168.6" y="410.0" font-family="monospace" font-size="7.6" font-weight="400" text-anchor="start" fill="#0369a1">Ib=289A  dU=0.58%</text>
+  <circle cx="160.6" cy="465.0" r="16.0" fill="#f1f5f9" stroke="#334155" stroke-width="1.6"/>
+  <text x="160.6" y="469.0" font-family="monospace" font-size="11.5" font-weight="700" text-anchor="middle" fill="#334155">P</text>
+  <text x="160.6" y="496.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="middle" fill="#0f172a">F7_IMAGING</text>
+  <text x="160.6" y="508.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="middle" fill="#475569">180kW (Kd=1.00)</text>
+  <circle cx="308.6" cy="290.0" r="2.8" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.6"/>
+  <line x1="308.6" y1="290.0" x2="308.6" y2="312.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="308.6" y1="312.0" x2="308.6" y2="320.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="305.1" y1="317.0" x2="312.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="312.1" y1="317.0" x2="305.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="299.6" y1="322.0" x2="308.6" y2="346.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="308.6" y1="346.0" x2="308.6" y2="354.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="316.6" y="329.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">QF8 (MCCB)</text>
+  <text x="316.6" y="341.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">500A/50kA</text>
+  <line x1="308.6" y1="354.0" x2="308.6" y2="447.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="303.6" y1="408.0" x2="313.6" y2="400.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <text x="316.6" y="399.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#334155">Cu XLPE 2(3x150+70) (65m)</text>
+  <text x="316.6" y="410.0" font-family="monospace" font-size="7.6" font-weight="400" text-anchor="start" fill="#0369a1">Ib=374A  dU=0.86%</text>
+  <circle cx="308.6" cy="465.0" r="17.0" fill="#fefce8" stroke="#0f172a" stroke-width="1.6"/>
+  <text x="308.6" y="469.0" font-family="monospace" font-size="11.0" font-weight="700" text-anchor="middle" fill="#0f172a">M 3~</text>
+  <text x="308.6" y="496.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="middle" fill="#0f172a">F8_CHILLER1</text>
+  <text x="308.6" y="508.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="middle" fill="#475569">220kW (Kd=1.00)</text>
+  <circle cx="456.6" cy="290.0" r="2.8" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.6"/>
+  <line x1="456.6" y1="290.0" x2="456.6" y2="312.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="456.6" y1="312.0" x2="456.6" y2="320.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="453.1" y1="317.0" x2="460.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="460.1" y1="317.0" x2="453.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="447.6" y1="322.0" x2="456.6" y2="346.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="456.6" y1="346.0" x2="456.6" y2="354.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="464.6" y="329.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">QF_PFCA (MCCB)</text>
+  <text x="464.6" y="341.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">250A/50kA</text>
+  <line x1="456.6" y1="354.0" x2="456.6" y2="447.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="442.6" y1="460.0" x2="470.6" y2="460.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="442.6" y1="468.0" x2="470.6" y2="468.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="456.6" y1="447.0" x2="456.6" y2="460.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="456.6" y1="468.0" x2="456.6" y2="480.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="448.6" y1="480.0" x2="464.6" y2="480.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="456.6" y="496.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="middle" fill="#0f172a">PFC_A</text>
+  <text x="456.6" y="508.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="middle" fill="#475569">125 kvar PFC</text>
+  <line x1="656.0" y1="290.0" x2="1100.0" y2="290.0" stroke="#1e3a8a" stroke-width="4.5" stroke-linecap="round"/>
+  <rect x="657.0" y="267.0" width="182.5" height="16.0" rx="2.0" fill="#ffffff" stroke="none" stroke-width="1.5"/>
+  <text x="661.0" y="279.0" font-family="monospace" font-size="11.0" font-weight="700" text-anchor="start" fill="#1e3a8a">MSB_B (400V TN-S | 1600A)</text>
+  <rect x="866.7" y="268.0" width="232.3" height="15.0" rx="2.0" fill="#ffffff" stroke="none" stroke-width="1.5"/>
+  <text x="1095.0" y="279.0" font-family="monospace" font-size="9.0" font-weight="700" text-anchor="end" fill="#0f766e">S=326kVA  I=470A  PF=0.98  Ik3''=24.4kA</text>
+  <circle cx="878.0" cy="96.0" r="16.0" fill="#ffffff" stroke="#0f172a" stroke-width="1.6"/>
+  <circle cx="878.0" cy="116.0" r="16.0" fill="none" stroke="#0f172a" stroke-width="1.6"/>
+  <line x1="878.0" y1="66.0" x2="878.0" y2="80.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="878.0" y1="132.0" x2="878.0" y2="140.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="900.0" y="94.0" font-family="monospace" font-size="10.0" font-weight="700" text-anchor="start" fill="#0f172a">TX2</text>
+  <text x="900.0" y="107.0" font-family="monospace" font-size="8.4" font-weight="400" text-anchor="start" fill="#334155">1000 kVA  uk=6.0%</text>
+  <text x="900.0" y="119.0" font-family="monospace" font-size="8.2" font-weight="400" text-anchor="start" fill="#475569">11/0.4kV Dyn11</text>
+  <line x1="878.0" y1="140.0" x2="878.0" y2="176.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="878.0" cy="156.0" r="5.5" fill="none" stroke="#475569" stroke-width="1.6"/>
+  <text x="888.0" y="159.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">CT / Wh</text>
+  <line x1="878.0" y1="176.0" x2="878.0" y2="184.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="874.5" y1="181.0" x2="881.5" y2="188.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="881.5" y1="181.0" x2="874.5" y2="188.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="869.0" y1="186.0" x2="878.0" y2="214.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="878.0" y1="214.0" x2="878.0" y2="222.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="886.0" y="195.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">Q_TX2 (ACB)</text>
+  <text x="886.0" y="207.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">1600A / 50kA</text>
+  <line x1="878.0" y1="222.0" x2="878.0" y2="290.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="878.0" cy="290.0" r="3.5" fill="#1e3a8a" stroke="#1e3a8a" stroke-width="1.6"/>
+  <circle cx="740.6" cy="290.0" r="2.8" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.6"/>
+  <line x1="740.6" y1="290.0" x2="740.6" y2="312.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="740.6" y1="312.0" x2="740.6" y2="320.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="737.1" y1="317.0" x2="744.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="744.1" y1="317.0" x2="737.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="731.6" y1="322.0" x2="740.6" y2="346.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="740.6" y1="346.0" x2="740.6" y2="354.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="748.6" y="329.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">QF9 (MCCB)</text>
+  <text x="748.6" y="341.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">500A/50kA</text>
+  <line x1="740.6" y1="354.0" x2="740.6" y2="447.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="735.6" y1="408.0" x2="745.6" y2="400.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <text x="748.6" y="399.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#334155">Cu XLPE 2(3x150+70) (70m)</text>
+  <text x="748.6" y="410.0" font-family="monospace" font-size="7.6" font-weight="400" text-anchor="start" fill="#0369a1">Ib=374A  dU=0.93%</text>
+  <circle cx="740.6" cy="465.0" r="17.0" fill="#fefce8" stroke="#0f172a" stroke-width="1.6"/>
+  <text x="740.6" y="469.0" font-family="monospace" font-size="11.0" font-weight="700" text-anchor="middle" fill="#0f172a">M 3~</text>
+  <text x="740.6" y="496.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="middle" fill="#0f172a">F9_CHILLER2</text>
+  <text x="740.6" y="508.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="middle" fill="#475569">220kW (Kd=1.00)</text>
+  <circle cx="888.6" cy="290.0" r="2.8" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.6"/>
+  <line x1="888.6" y1="290.0" x2="888.6" y2="312.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="888.6" y1="312.0" x2="888.6" y2="320.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="885.1" y1="317.0" x2="892.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="892.1" y1="317.0" x2="885.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="879.6" y1="322.0" x2="888.6" y2="346.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="888.6" y1="346.0" x2="888.6" y2="354.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="896.6" y="329.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">QF10 (MCCB)</text>
+  <text x="896.6" y="341.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">200A/50kA</text>
+  <line x1="888.6" y1="354.0" x2="888.6" y2="447.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="883.6" y1="408.0" x2="893.6" y2="400.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <text x="896.6" y="399.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#334155">Cu XLPE 3x95+50 (50m)</text>
+  <text x="896.6" y="410.0" font-family="monospace" font-size="7.6" font-weight="400" text-anchor="start" fill="#0369a1">Ib=160A  dU=0.83%</text>
+  <circle cx="888.6" cy="465.0" r="16.0" fill="#f1f5f9" stroke="#334155" stroke-width="1.6"/>
+  <text x="888.6" y="469.0" font-family="monospace" font-size="11.5" font-weight="700" text-anchor="middle" fill="#334155">L</text>
+  <text x="888.6" y="496.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="middle" fill="#0f172a">F10_GEN_PWR</text>
+  <text x="888.6" y="508.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="middle" fill="#475569">100kW (Kd=1.00)</text>
+  <circle cx="1036.6" cy="290.0" r="2.8" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.6"/>
+  <line x1="1036.6" y1="290.0" x2="1036.6" y2="312.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1036.6" y1="312.0" x2="1036.6" y2="320.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1033.1" y1="317.0" x2="1040.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1040.1" y1="317.0" x2="1033.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1027.6" y1="322.0" x2="1036.6" y2="346.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1036.6" y1="346.0" x2="1036.6" y2="354.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="1044.6" y="329.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">QF_PFCB (MCCB)</text>
+  <text x="1044.6" y="341.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">250A/50kA</text>
+  <line x1="1036.6" y1="354.0" x2="1036.6" y2="447.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1022.6" y1="460.0" x2="1050.6" y2="460.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1022.6" y1="468.0" x2="1050.6" y2="468.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1036.6" y1="447.0" x2="1036.6" y2="460.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1036.6" y1="468.0" x2="1036.6" y2="480.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1028.6" y1="480.0" x2="1044.6" y2="480.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="1036.6" y="496.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="middle" fill="#0f172a">PFC_B</text>
+  <text x="1036.6" y="508.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="middle" fill="#475569">125 kvar PFC</text>
+  <line x1="1236.0" y1="290.0" x2="2124.0" y2="290.0" stroke="#1e3a8a" stroke-width="4.5" stroke-linecap="round"/>
+  <rect x="1237.0" y="267.0" width="175.6" height="16.0" rx="2.0" fill="#ffffff" stroke="none" stroke-width="1.5"/>
+  <text x="1241.0" y="279.0" font-family="monospace" font-size="11.0" font-weight="700" text-anchor="start" fill="#1e3a8a">EMSB (400V TN-S | 1600A)</text>
+  <rect x="1885.0" y="268.0" width="238.0" height="15.0" rx="2.0" fill="#ffffff" stroke="none" stroke-width="1.5"/>
+  <text x="2119.0" y="279.0" font-family="monospace" font-size="9.0" font-weight="700" text-anchor="end" fill="#0f766e">S=712kVA  I=1028A  PF=0.88  Ik3''=10.0kA</text>
+  <circle cx="1680.0" cy="108.0" r="19.0" fill="#fef9c3" stroke="#854d0e" stroke-width="1.6"/>
+  <text x="1680.0" y="113.0" font-family="monospace" font-size="14.0" font-weight="700" text-anchor="middle" fill="#854d0e">G</text>
+  <line x1="1680.0" y1="127.0" x2="1680.0" y2="140.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="1704.0" y="102.0" font-family="monospace" font-size="10.0" font-weight="700" text-anchor="start" fill="#854d0e">GEN1 (GEN)</text>
+  <text x="1704.0" y="115.0" font-family="monospace" font-size="8.4" font-weight="400" text-anchor="start" fill="#334155">1000 kVA  xd=15%</text>
+  <line x1="1680.0" y1="140.0" x2="1680.0" y2="176.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="1680.0" cy="156.0" r="5.5" fill="none" stroke="#475569" stroke-width="1.6"/>
+  <text x="1690.0" y="159.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">CT / Wh</text>
+  <line x1="1680.0" y1="176.0" x2="1680.0" y2="184.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1676.5" y1="181.0" x2="1683.5" y2="188.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1683.5" y1="181.0" x2="1676.5" y2="188.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1671.0" y1="186.0" x2="1680.0" y2="214.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1680.0" y1="214.0" x2="1680.0" y2="222.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="1688.0" y="195.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">Q_GEN (ACB)</text>
+  <text x="1688.0" y="207.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">1600A / 50kA</text>
+  <line x1="1680.0" y1="222.0" x2="1680.0" y2="290.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="1680.0" cy="290.0" r="3.5" fill="#1e3a8a" stroke="#1e3a8a" stroke-width="1.6"/>
+  <circle cx="1320.6" cy="290.0" r="2.8" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.6"/>
+  <line x1="1320.6" y1="290.0" x2="1320.6" y2="312.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1320.6" y1="312.0" x2="1320.6" y2="320.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1317.1" y1="317.0" x2="1324.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1324.1" y1="317.0" x2="1317.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1311.6" y1="322.0" x2="1320.6" y2="346.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1320.6" y1="346.0" x2="1320.6" y2="354.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="1328.6" y="329.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">QF1 (MCCB)</text>
+  <text x="1328.6" y="341.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">320A/36kA</text>
+  <line x1="1320.6" y1="354.0" x2="1320.6" y2="447.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1315.6" y1="408.0" x2="1325.6" y2="400.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <text x="1328.6" y="399.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#334155">Cu XLPE 3x185+95 (35m)</text>
+  <text x="1328.6" y="410.0" font-family="monospace" font-size="7.6" font-weight="400" text-anchor="start" fill="#0369a1">Ib=241A  dU=0.51%</text>
+  <rect x="1300.6" y="450.0" width="40.0" height="30.0" rx="3.0" fill="#f3e8ff" stroke="#7e22ce" stroke-width="1.5"/>
+  <text x="1320.6" y="469.0" font-family="monospace" font-size="9.5" font-weight="700" text-anchor="middle" fill="#7e22ce">UPS</text>
+  <text x="1320.6" y="496.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="middle" fill="#0f172a">F1_MED_UPS</text>
+  <text x="1320.6" y="508.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="middle" fill="#475569">150kW (Kd=1.00)</text>
+  <circle cx="1468.6" cy="290.0" r="2.8" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.6"/>
+  <line x1="1468.6" y1="290.0" x2="1468.6" y2="312.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1468.6" y1="312.0" x2="1468.6" y2="320.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1465.1" y1="317.0" x2="1472.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1472.1" y1="317.0" x2="1465.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1459.6" y1="322.0" x2="1468.6" y2="346.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1468.6" y1="346.0" x2="1468.6" y2="354.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="1476.6" y="329.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">QF2 (MCCB)</text>
+  <text x="1476.6" y="341.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">200A/36kA</text>
+  <line x1="1468.6" y1="354.0" x2="1468.6" y2="447.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1463.6" y1="408.0" x2="1473.6" y2="400.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <text x="1476.6" y="399.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#334155">Cu FR-XLPE 3x95+50 (55m)</text>
+  <text x="1476.6" y="410.0" font-family="monospace" font-size="7.6" font-weight="400" text-anchor="start" fill="#0369a1">Ib=127A  dU=0.71%</text>
+  <circle cx="1468.6" cy="465.0" r="17.0" fill="#fefce8" stroke="#0f172a" stroke-width="1.6"/>
+  <text x="1468.6" y="469.0" font-family="monospace" font-size="11.0" font-weight="700" text-anchor="middle" fill="#0f172a">M 3~</text>
+  <text x="1468.6" y="496.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="middle" fill="#0f172a">F2_FIRE_PUMP</text>
+  <text x="1468.6" y="508.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="middle" fill="#475569">75kW (Kd=1.00)</text>
+  <circle cx="1616.6" cy="290.0" r="2.8" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.6"/>
+  <line x1="1616.6" y1="290.0" x2="1616.6" y2="312.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1616.6" y1="312.0" x2="1616.6" y2="320.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1613.1" y1="317.0" x2="1620.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1620.1" y1="317.0" x2="1613.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1607.6" y1="322.0" x2="1616.6" y2="346.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1616.6" y1="346.0" x2="1616.6" y2="354.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="1624.6" y="329.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">QF3 (MCCB)</text>
+  <text x="1624.6" y="341.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">250A/36kA</text>
+  <line x1="1616.6" y1="354.0" x2="1616.6" y2="447.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1611.6" y1="408.0" x2="1621.6" y2="400.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <text x="1624.6" y="399.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#334155">Cu XLPE 3x120+70 (45m)</text>
+  <text x="1624.6" y="410.0" font-family="monospace" font-size="7.6" font-weight="400" text-anchor="start" fill="#0369a1">Ib=192A  dU=0.74%</text>
+  <circle cx="1616.6" cy="465.0" r="16.0" fill="#f1f5f9" stroke="#334155" stroke-width="1.6"/>
+  <text x="1616.6" y="469.0" font-family="monospace" font-size="11.5" font-weight="700" text-anchor="middle" fill="#334155">P</text>
+  <text x="1616.6" y="496.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="middle" fill="#0f172a">F3_CLINIC_DB1</text>
+  <text x="1616.6" y="508.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="middle" fill="#475569">120kW (Kd=1.00)</text>
+  <circle cx="1764.6" cy="290.0" r="2.8" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.6"/>
+  <line x1="1764.6" y1="290.0" x2="1764.6" y2="312.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1764.6" y1="312.0" x2="1764.6" y2="320.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1761.1" y1="317.0" x2="1768.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1768.1" y1="317.0" x2="1761.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1755.6" y1="322.0" x2="1764.6" y2="346.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1764.6" y1="346.0" x2="1764.6" y2="354.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="1772.6" y="329.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">QF4 (MCCB)</text>
+  <text x="1772.6" y="341.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">250A/36kA</text>
+  <line x1="1764.6" y1="354.0" x2="1764.6" y2="447.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1759.6" y1="408.0" x2="1769.6" y2="400.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <text x="1772.6" y="399.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#334155">Cu XLPE 3x120+70 (60m)</text>
+  <text x="1772.6" y="410.0" font-family="monospace" font-size="7.6" font-weight="400" text-anchor="start" fill="#0369a1">Ib=176A  dU=0.90%</text>
+  <circle cx="1764.6" cy="465.0" r="16.0" fill="#f1f5f9" stroke="#334155" stroke-width="1.6"/>
+  <text x="1764.6" y="469.0" font-family="monospace" font-size="11.5" font-weight="700" text-anchor="middle" fill="#334155">P</text>
+  <text x="1764.6" y="496.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="middle" fill="#0f172a">F4_CLINIC_DB2</text>
+  <text x="1764.6" y="508.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="middle" fill="#475569">110kW (Kd=1.00)</text>
+  <circle cx="1912.6" cy="290.0" r="2.8" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.6"/>
+  <line x1="1912.6" y1="290.0" x2="1912.6" y2="312.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1912.6" y1="312.0" x2="1912.6" y2="320.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1909.1" y1="317.0" x2="1916.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1916.1" y1="317.0" x2="1909.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1903.6" y1="322.0" x2="1912.6" y2="346.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1912.6" y1="346.0" x2="1912.6" y2="354.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="1920.6" y="329.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">QF5 (MCCB)</text>
+  <text x="1920.6" y="341.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">200A/36kA</text>
+  <line x1="1912.6" y1="354.0" x2="1912.6" y2="447.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1907.6" y1="408.0" x2="1917.6" y2="400.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <text x="1920.6" y="399.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#334155">Cu XLPE 3x95+50 (40m)</text>
+  <text x="1920.6" y="410.0" font-family="monospace" font-size="7.6" font-weight="400" text-anchor="start" fill="#0369a1">Ib=139A  dU=0.57%</text>
+  <circle cx="1912.6" cy="465.0" r="16.0" fill="#f1f5f9" stroke="#334155" stroke-width="1.6"/>
+  <text x="1912.6" y="469.0" font-family="monospace" font-size="11.5" font-weight="700" text-anchor="middle" fill="#334155">P</text>
+  <text x="1912.6" y="496.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="middle" fill="#0f172a">F5_LAB_STERIL</text>
+  <text x="1912.6" y="508.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="middle" fill="#475569">85kW (Kd=1.00)</text>
+  <circle cx="2060.6" cy="290.0" r="2.8" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.6"/>
+  <line x1="2060.6" y1="290.0" x2="2060.6" y2="312.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="2060.6" y1="312.0" x2="2060.6" y2="320.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="2057.1" y1="317.0" x2="2064.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="2064.1" y1="317.0" x2="2057.1" y2="324.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="2051.6" y1="322.0" x2="2060.6" y2="346.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="2060.6" y1="346.0" x2="2060.6" y2="354.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <text x="2068.6" y="329.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="start" fill="#0f172a">QF6 (MCCB)</text>
+  <text x="2068.6" y="341.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#475569">200A/36kA</text>
+  <line x1="2060.6" y1="354.0" x2="2060.6" y2="447.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="2055.6" y1="408.0" x2="2065.6" y2="400.0" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <text x="2068.6" y="399.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="start" fill="#334155">Cu XLPE 3x95+50 (50m)</text>
+  <text x="2068.6" y="410.0" font-family="monospace" font-size="7.6" font-weight="400" text-anchor="start" fill="#0369a1">Ib=153A  dU=0.78%</text>
+  <circle cx="2060.6" cy="465.0" r="17.0" fill="#fefce8" stroke="#0f172a" stroke-width="1.6"/>
+  <text x="2060.6" y="469.0" font-family="monospace" font-size="11.0" font-weight="700" text-anchor="middle" fill="#0f172a">M 3~</text>
+  <text x="2060.6" y="496.0" font-family="monospace" font-size="8.8" font-weight="700" text-anchor="middle" fill="#0f172a">F6_ELEVATORS</text>
+  <text x="2060.6" y="508.0" font-family="monospace" font-size="7.8" font-weight="400" text-anchor="middle" fill="#475569">90kW (Kd=1.00)</text>
+  <line x1="520.0" y1="290.0" x2="568.0" y2="290.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="608.0" y1="290.0" x2="656.0" y2="290.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="568.0" y1="290.0" x2="576.0" y2="290.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="576.0" y1="290.0" x2="600.0" y2="279.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="600.0" y1="290.0" x2="608.0" y2="290.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="597.0" y1="286.5" x2="603.0" y2="293.5" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="603.0" y1="286.5" x2="597.0" y2="293.5" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <text x="588.0" y="268.0" font-family="monospace" font-size="9.5" font-weight="700" text-anchor="middle" fill="#b45309">Q_BT (1600A)</text>
+  <rect x="540.0" y="306.0" width="96.0" height="22.0" rx="4.0" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <line x1="588.0" y1="292.0" x2="588.0" y2="306.0" stroke="#d97706" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="5 3"/>
+  <text x="588.0" y="320.0" font-family="monospace" font-size="8.2" font-weight="700" text-anchor="middle" fill="#92400e">ATS 2-of-3 (N.O.)</text>
+  <line x1="1100.0" y1="290.0" x2="1148.0" y2="290.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1188.0" y1="290.0" x2="1236.0" y2="290.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1148.0" y1="290.0" x2="1156.0" y2="290.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1156.0" y1="290.0" x2="1180.0" y2="279.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1180.0" y1="290.0" x2="1188.0" y2="290.0" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  <line x1="1177.0" y1="286.5" x2="1183.0" y2="293.5" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="1183.0" y1="286.5" x2="1177.0" y2="293.5" stroke="#334155" stroke-width="1.4" stroke-linecap="round"/>
+  <text x="1168.0" y="268.0" font-family="monospace" font-size="9.5" font-weight="700" text-anchor="middle" fill="#b45309">ATS1 (1250A)</text>
+  <rect x="1120.0" y="306.0" width="96.0" height="22.0" rx="4.0" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <line x1="1168.0" y1="292.0" x2="1168.0" y2="306.0" stroke="#d97706" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="5 3"/>
+  <text x="1168.0" y="320.0" font-family="monospace" font-size="8.2" font-weight="700" text-anchor="middle" fill="#92400e">mech_interlock</text>
+  <rect x="1671.0" y="827.0" width="495.0" height="56.0" rx="4.0" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="1681.0" y="843.0" font-family="monospace" font-size="9.2" font-weight="700" text-anchor="start" fill="#0f172a">IEC 60909 / N-1 CONTINGENCY VERIFICATION SUMMARY</text>
+  <text x="1681.0" y="861.0" font-family="monospace" font-size="8.6" font-weight="700" text-anchor="start" fill="#15803d">N-1 Emergency (1 Tx lost, Q_BT closed) -&gt; TX1: S=737kVA | I=1064A | Kz=0.74 [PASS]</text>
+  <line x1="28" y1="901.0" x2="2172.0" y2="901.0" stroke="#e2e8f0" stroke-width="1.2"/>
+  <text class="title" x="32" y="919.0">EDL Power SLD: HospitalMainSwitchgear</text>
+  <text class="meta" x="32" y="937.0">Standard: IEC 60909 / IEC 60364 / IEC 61439 | Sources: 3 | Switchboards: 3 | Feeders: 0 | Loads: 12</text>
+  <text class="ok" x="2168.0" y="919.0">ALL IEC 60909 &amp; 60364 CHECKS PROVED (6 rules)</text>
+</svg>

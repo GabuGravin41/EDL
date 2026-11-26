@@ -1,0 +1,136 @@
+// Benchmark 5: Hospital 11 kV / 400 V Dual-Transformer + Standby Generator Power Single-Line Diagram
+// Standards: IEC 60909 (Short-Circuit Ik3''), IEC 60364 (Cable/Breaker Coordination & Voltage Drop), IEC 61439 (Switchgear)
+//
+// MV Intake (11 kV — modeled natively via `mv_intake RMU_11KV` in EDL v3.3.0):
+//   - UTIL_11KV: 11 kV Utility Feeder, prospective fault level Sk'' = 250 MVA
+//   - RMU_11KV : 3-Way 11 kV SF6/Vacuum Ring Main Unit feeding TX1 and TX2
+//
+// N-1 & Standby Contingency Summary:
+//   - Normal operation: TX1 feeds MSB_A (400 kW / 458 kVA connected), TX2 feeds MSB_B (320 kW / 370 kVA) + EMSB via ATS1 (630 kW / 712 kVA).
+//     With 0.70 hospital diversity factor: MSB_A = 321 kVA (Kz=0.32), MSB_B + EMSB = 757 kVA (Kz=0.76) -> both <= 1000 kVA.
+//   - N-1 Single-Transformer Contingency (1 Tx lost, Q_BT closed):
+//     At 0.70 demand across all 10 feeders (1078 kVA) -> automatic shedding of 1 HVAC Chiller (F8_CHILLER1 or F9_CHILLER2, -154 kW)
+//     reduces single-transformer load to 791 kW / 897 kVA (Kz = 0.90 <= 1.00).
+//   - Emergency Generator Mode (Utility lost, ATS1 transfers EMSB from Q_NORM to Q_GEN):
+//     GEN1 (1000 kVA / 800 kW continuous) carries 100% of EMSB essential loads (630 kW / 712 kVA, Kz = 0.71 <= 1.00).
+//
+// Note on EDL Model Topology:
+//   - EMSB is modeled as a `main` tier switchboard coupled to MSB_B via interlocked coupler `ATS1` (`mode: mech_interlock`)
+//     so that: (1) GEN1 attaches directly to EMSB and is visually rendered & capacity-verified by S1,
+//     (2) both the 2-of-3 bus-tie interlock (`Q_BT`) and the utility-vs-generator interlock (`ATS1`) are formally proved by S6, and
+//     (3) all 10 outgoing sub-main feeders are verified at 100% full connected load (`demand: 1.0`) for Ib <= In <= Iz and dU%.
+
+project "Hospital_11kV_400V_Power_SLD" {
+  units: mm
+  frame Sheet: Frame2
+
+  power_sld HospitalMainSwitchgear {
+    title: "HOSPITAL 11kV/400V POWER SLD (UTIL_11KV 250MVA -> RMU_11KV -> 2x1000kVA + 1000kVA GEN1)"
+    standard: "IEC 60909 / IEC 60364 / IEC 61439"
+
+    // =========================================================================
+    // 0. 11 kV UTILITY INTAKE & RING MAIN UNIT (IEC 60909 Sk'' = 250 MVA)
+    // =========================================================================
+    mv_intake RMU_11KV { utility_kv: 11  sk_mva: 250  vcb_a: 630  vcb_icu_ka: 25 }
+
+    // =========================================================================
+    // 1. LV MAIN & ESSENTIAL SWITCHBOARDS (400 V, 50 Hz, TN-S)
+    // =========================================================================
+    bus MSB_A { voltage_v: 400  system: "TN-S"  rating_a: 1600  icu_ka: 50  tier: main }
+    bus MSB_B { voltage_v: 400  system: "TN-S"  rating_a: 1600  icu_ka: 50  tier: main }
+    bus EMSB  { voltage_v: 400  system: "TN-S"  rating_a: 1600  icu_ka: 50  tier: main }
+
+    // =========================================================================
+    // 2. POWER SOURCES (DUAL 1000 kVA 11/0.4 kV Dyn11 TX + 1000 kVA STANDBY GEN)
+    // =========================================================================
+    source TX1: transformer {
+      rating_kva: 1000  uk_pct: 6.0  hv_kv: 11.0  lv_v: 400  vector: "Dyn11"
+      bus: MSB_A  incomer: Q_TX1  incomer_a: 1600  icu_ka: 50
+    }
+    source TX2: transformer {
+      rating_kva: 1000  uk_pct: 6.0  hv_kv: 11.0  lv_v: 400  vector: "Dyn11"
+      bus: MSB_B  incomer: Q_TX2  incomer_a: 1600  icu_ka: 50
+    }
+    source GEN1: generator {
+      rating_kva: 1000  xd_pct: 15.0  lv_v: 400
+      bus: EMSB  incomer: Q_GEN  incomer_a: 1600  icu_ka: 50  standby: false
+    }
+
+    // =========================================================================
+    // 3. INTERLOCKED BUS-TIE ACB (2-of-3) & UTILITY/GENERATOR ATS INTERLOCK
+    // =========================================================================
+    coupler Q_BT {
+      between: [MSB_A, MSB_B]
+      rating_a: 1600
+      icu_ka: 50
+      mode: ats_2_of_3
+      normally_open: true
+    }
+    coupler ATS1 {
+      between: [MSB_B, EMSB]
+      rating_a: 1250
+      icu_ka: 50
+      mode: mech_interlock
+      normally_open: false
+    }
+
+    // =========================================================================
+    // 4. NORMAL BUS OUTGOING SUB-MAIN FEEDERS (MSB_A & MSB_B)
+    // =========================================================================
+    load F7_IMAGING: general {
+      bus: MSB_A  breaker: QF7  breaker_kind: mccb  rating_a: 400  icu_ka: 50
+      cable: "Cu XLPE 3x240+120"  area_mm2: 240  parallel_runs: 1  length_m: 40
+      power_kw: 180  pf: 0.90  demand: 1.0
+    }
+    load F8_CHILLER1: motor {
+      bus: MSB_A  breaker: QF8  breaker_kind: mccb  rating_a: 500  icu_ka: 50
+      cable: "Cu XLPE 2(3x150+70)"  area_mm2: 150  parallel_runs: 2  length_m: 65
+      power_kw: 220  pf: 0.85  demand: 1.0
+    }
+    load F9_CHILLER2: motor {
+      bus: MSB_B  breaker: QF9  breaker_kind: mccb  rating_a: 500  icu_ka: 50
+      cable: "Cu XLPE 2(3x150+70)"  area_mm2: 150  parallel_runs: 2  length_m: 70
+      power_kw: 220  pf: 0.85  demand: 1.0
+    }
+    load F10_GEN_PWR: lighting {
+      bus: MSB_B  breaker: QF10  breaker_kind: mccb  rating_a: 200  icu_ka: 50
+      cable: "Cu XLPE 3x95+50"  area_mm2: 95  parallel_runs: 1  length_m: 50
+      power_kw: 100  pf: 0.90  demand: 1.0
+    }
+
+    // =========================================================================
+    // 5. ESSENTIAL BUS OUTGOING SUB-MAIN FEEDERS (EMSB — BACKED BY GEN1)
+    //    Total Connected Essential = 630 kW / 712 kVA <= 800 kW / 1000 kVA GEN1
+    // =========================================================================
+    load F1_MED_UPS: ups {
+      bus: EMSB  breaker: QF1  breaker_kind: mccb  rating_a: 320  icu_ka: 36
+      cable: "Cu XLPE 3x185+95"  area_mm2: 185  parallel_runs: 1  length_m: 35
+      power_kw: 150  pf: 0.90  demand: 1.0
+    }
+    load F2_FIRE_PUMP: motor {
+      bus: EMSB  breaker: QF2  breaker_kind: mccb  rating_a: 200  icu_ka: 36
+      cable: "Cu FR-XLPE 3x95+50"  area_mm2: 95  parallel_runs: 1  length_m: 55
+      power_kw: 75  pf: 0.85  demand: 1.0
+    }
+    load F3_CLINIC_DB1: general {
+      bus: EMSB  breaker: QF3  breaker_kind: mccb  rating_a: 250  icu_ka: 36
+      cable: "Cu XLPE 3x120+70"  area_mm2: 120  parallel_runs: 1  length_m: 45
+      power_kw: 120  pf: 0.90  demand: 1.0
+    }
+    load F4_CLINIC_DB2: general {
+      bus: EMSB  breaker: QF4  breaker_kind: mccb  rating_a: 250  icu_ka: 36
+      cable: "Cu XLPE 3x120+70"  area_mm2: 120  parallel_runs: 1  length_m: 60
+      power_kw: 110  pf: 0.90  demand: 1.0
+    }
+    load F5_LAB_STERIL: general {
+      bus: EMSB  breaker: QF5  breaker_kind: mccb  rating_a: 200  icu_ka: 36
+      cable: "Cu XLPE 3x95+50"  area_mm2: 95  parallel_runs: 1  length_m: 40
+      power_kw: 85  pf: 0.88  demand: 1.0
+    }
+    load F6_ELEVATORS: motor {
+      bus: EMSB  breaker: QF6  breaker_kind: mccb  rating_a: 200  icu_ka: 36
+      cable: "Cu XLPE 3x95+50"  area_mm2: 95  parallel_runs: 1  length_m: 50
+      power_kw: 90  pf: 0.85  demand: 1.0
+    }
+  }
+}

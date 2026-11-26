@@ -1,0 +1,2205 @@
+{
+  "panels": [
+    {
+      "id": "DB_MAIN",
+      "room": "ElecITRoom",
+      "x": 2390.0,
+      "y": 6650.0,
+      "width_mm": 600,
+      "depth_mm": 250,
+      "clearance_bbox": [
+        2640.0,
+        6350.0,
+        3540.0,
+        6950.0
+      ]
+    },
+    {
+      "id": "DB_CLINIC",
+      "room": "NurseStation",
+      "x": 9670.0,
+      "y": 6700.0,
+      "width_mm": 600,
+      "depth_mm": 250,
+      "clearance_bbox": [
+        9920.0,
+        6400.0,
+        10820.0,
+        7000.0
+      ]
+    }
+  ],
+  "devices": [
+    {
+      "id": "L_Vest_1",
+      "room": "Vestibule",
+      "kind": "light",
+      "circuit": "L1_Pub_Core",
+      "load_w": 24.0,
+      "x": 1350.0,
+      "y": 1150.0
+    },
+    {
+      "id": "L_Vest_2",
+      "room": "Vestibule",
+      "kind": "light",
+      "circuit": "L1_Pub_Core",
+      "load_w": 24.0,
+      "x": 3550.0,
+      "y": 1150.0
+    },
+    {
+      "id": "L_Wait_1",
+      "room": "Waiting",
+      "kind": "light",
+      "circuit": "L1_Pub_Core",
+      "load_w": 36.0,
+      "x": 6070.0,
+      "y": 2350.0
+    },
+    {
+      "id": "L_Wait_2",
+      "room": "Waiting",
+      "kind": "light",
+      "circuit": "L1_Pub_Core",
+      "load_w": 36.0,
+      "x": 8270.0,
+      "y": 2350.0
+    },
+    {
+      "id": "L_Wait_3",
+      "room": "Waiting",
+      "kind": "light",
+      "circuit": "L1_Pub_Core",
+      "load_w": 36.0,
+      "x": 6070.0,
+      "y": 5950.0
+    },
+    {
+      "id": "L_Wait_4",
+      "room": "Waiting",
+      "kind": "light",
+      "circuit": "L1_Pub_Core",
+      "load_w": 36.0,
+      "x": 8270.0,
+      "y": 5950.0
+    },
+    {
+      "id": "L_PubWC",
+      "room": "PublicWC",
+      "kind": "light",
+      "circuit": "L1_Pub_Core",
+      "load_w": 18.0,
+      "x": 3560.0,
+      "y": 3410.0
+    },
+    {
+      "id": "L_ElecIT_1",
+      "room": "ElecITRoom",
+      "kind": "light",
+      "circuit": "L1_Pub_Core",
+      "load_w": 36.0,
+      "x": 3560.0,
+      "y": 5870.0
+    },
+    {
+      "id": "L_ElecIT_2",
+      "room": "ElecITRoom",
+      "kind": "light",
+      "circuit": "L1_Pub_Core",
+      "load_w": 36.0,
+      "x": 3560.0,
+      "y": 7270.0
+    },
+    {
+      "id": "L_Mech_1",
+      "room": "MechRoom",
+      "kind": "light",
+      "circuit": "L1_Pub_Core",
+      "load_w": 36.0,
+      "x": 1200.0,
+      "y": 4090.0
+    },
+    {
+      "id": "L_Mech_2",
+      "room": "MechRoom",
+      "kind": "light",
+      "circuit": "L1_Pub_Core",
+      "load_w": 36.0,
+      "x": 1200.0,
+      "y": 6690.0
+    },
+    {
+      "id": "L_Corr_1",
+      "room": "Corridor",
+      "kind": "light",
+      "circuit": "L2_Corr_Em",
+      "load_w": 36.0,
+      "x": 2350.0,
+      "y": 9430.0
+    },
+    {
+      "id": "L_Corr_2",
+      "room": "Corridor",
+      "kind": "light",
+      "circuit": "L2_Corr_Em",
+      "load_w": 36.0,
+      "x": 6550.0,
+      "y": 9430.0
+    },
+    {
+      "id": "L_Corr_3",
+      "room": "Corridor",
+      "kind": "light",
+      "circuit": "L2_Corr_Em",
+      "load_w": 36.0,
+      "x": 10750.0,
+      "y": 9430.0
+    },
+    {
+      "id": "L_Corr_4",
+      "room": "Corridor",
+      "kind": "light",
+      "circuit": "L2_Corr_Em",
+      "load_w": 36.0,
+      "x": 14950.0,
+      "y": 9430.0
+    },
+    {
+      "id": "L_Corr_5",
+      "room": "Corridor",
+      "kind": "light",
+      "circuit": "L2_Corr_Em",
+      "load_w": 36.0,
+      "x": 18950.0,
+      "y": 9430.0
+    },
+    {
+      "id": "EM_Vest",
+      "room": "Vestibule",
+      "kind": "emergency_light",
+      "circuit": "L2_Corr_Em",
+      "load_w": 10.0,
+      "x": 2440.0,
+      "y": 1900.0
+    },
+    {
+      "id": "EM_Wait",
+      "room": "Waiting",
+      "kind": "emergency_light",
+      "circuit": "L2_Corr_Em",
+      "load_w": 12.0,
+      "x": 7160.0,
+      "y": 6550.0
+    },
+    {
+      "id": "EM_CorrW",
+      "room": "Corridor",
+      "kind": "emergency_light",
+      "circuit": "L2_Corr_Em",
+      "load_w": 10.0,
+      "x": 1350.0,
+      "y": 10130.0
+    },
+    {
+      "id": "EM_CorrMid",
+      "room": "Corridor",
+      "kind": "emergency_light",
+      "circuit": "L2_Corr_Em",
+      "load_w": 12.0,
+      "x": 10750.0,
+      "y": 10130.0
+    },
+    {
+      "id": "EM_CorrE",
+      "room": "Corridor",
+      "kind": "emergency_light",
+      "circuit": "L2_Corr_Em",
+      "load_w": 10.0,
+      "x": 19950.0,
+      "y": 10130.0
+    },
+    {
+      "id": "EM_Proc",
+      "room": "Procedure",
+      "kind": "emergency_light",
+      "circuit": "L2_Corr_Em",
+      "load_w": 12.0,
+      "x": 2440.0,
+      "y": 14420.0
+    },
+    {
+      "id": "L_Proc_1",
+      "room": "Procedure",
+      "kind": "light",
+      "circuit": "L3_N_Clinic",
+      "load_w": 40.0,
+      "x": 1450.0,
+      "y": 11970.0
+    },
+    {
+      "id": "L_Proc_2",
+      "room": "Procedure",
+      "kind": "light",
+      "circuit": "L3_N_Clinic",
+      "load_w": 40.0,
+      "x": 3450.0,
+      "y": 11970.0
+    },
+    {
+      "id": "L_Proc_3",
+      "room": "Procedure",
+      "kind": "light",
+      "circuit": "L3_N_Clinic",
+      "load_w": 40.0,
+      "x": 1450.0,
+      "y": 13770.0
+    },
+    {
+      "id": "L_Proc_4",
+      "room": "Procedure",
+      "kind": "light",
+      "circuit": "L3_N_Clinic",
+      "load_w": 40.0,
+      "x": 3450.0,
+      "y": 13770.0
+    },
+    {
+      "id": "L_Exam1_1",
+      "room": "Exam1",
+      "kind": "light",
+      "circuit": "L3_N_Clinic",
+      "load_w": 36.0,
+      "x": 7170.0,
+      "y": 11770.0
+    },
+    {
+      "id": "L_Exam1_2",
+      "room": "Exam1",
+      "kind": "light",
+      "circuit": "L3_N_Clinic",
+      "load_w": 36.0,
+      "x": 7170.0,
+      "y": 14070.0
+    },
+    {
+      "id": "L_Exam2_1",
+      "room": "Exam2",
+      "kind": "light",
+      "circuit": "L3_N_Clinic",
+      "load_w": 36.0,
+      "x": 11900.0,
+      "y": 11770.0
+    },
+    {
+      "id": "L_Exam2_2",
+      "room": "Exam2",
+      "kind": "light",
+      "circuit": "L3_N_Clinic",
+      "load_w": 36.0,
+      "x": 11900.0,
+      "y": 14070.0
+    },
+    {
+      "id": "L_Exam3_1",
+      "room": "Exam3",
+      "kind": "light",
+      "circuit": "L3_N_Clinic",
+      "load_w": 36.0,
+      "x": 16500.0,
+      "y": 11770.0
+    },
+    {
+      "id": "L_Exam3_2",
+      "room": "Exam3",
+      "kind": "light",
+      "circuit": "L3_N_Clinic",
+      "load_w": 36.0,
+      "x": 16500.0,
+      "y": 14070.0
+    },
+    {
+      "id": "L_Exam4_1",
+      "room": "Exam4",
+      "kind": "light",
+      "circuit": "L3_N_Clinic",
+      "load_w": 36.0,
+      "x": 21060.0,
+      "y": 11770.0
+    },
+    {
+      "id": "L_Exam4_2",
+      "room": "Exam4",
+      "kind": "light",
+      "circuit": "L3_N_Clinic",
+      "load_w": 36.0,
+      "x": 21060.0,
+      "y": 14070.0
+    },
+    {
+      "id": "L_Nurse_1",
+      "room": "NurseStation",
+      "kind": "light",
+      "circuit": "L4_S_Support",
+      "load_w": 36.0,
+      "x": 10670.0,
+      "y": 6550.0
+    },
+    {
+      "id": "L_Nurse_2",
+      "room": "NurseStation",
+      "kind": "light",
+      "circuit": "L4_S_Support",
+      "load_w": 36.0,
+      "x": 11970.0,
+      "y": 6550.0
+    },
+    {
+      "id": "L_Lab_1",
+      "room": "Lab",
+      "kind": "light",
+      "circuit": "L4_S_Support",
+      "load_w": 36.0,
+      "x": 14110.0,
+      "y": 6550.0
+    },
+    {
+      "id": "L_Lab_2",
+      "room": "Lab",
+      "kind": "light",
+      "circuit": "L4_S_Support",
+      "load_w": 36.0,
+      "x": 15310.0,
+      "y": 6550.0
+    },
+    {
+      "id": "L_Pharm_1",
+      "room": "Pharmacy",
+      "kind": "light",
+      "circuit": "L4_S_Support",
+      "load_w": 36.0,
+      "x": 17780.0,
+      "y": 5850.0
+    },
+    {
+      "id": "L_Pharm_2",
+      "room": "Pharmacy",
+      "kind": "light",
+      "circuit": "L4_S_Support",
+      "load_w": 36.0,
+      "x": 17780.0,
+      "y": 7150.0
+    },
+    {
+      "id": "L_Break_1",
+      "room": "Breakroom",
+      "kind": "light",
+      "circuit": "L4_S_Support",
+      "load_w": 36.0,
+      "x": 20450.0,
+      "y": 6470.0
+    },
+    {
+      "id": "L_Break_2",
+      "room": "Breakroom",
+      "kind": "light",
+      "circuit": "L4_S_Support",
+      "load_w": 36.0,
+      "x": 22050.0,
+      "y": 6470.0
+    },
+    {
+      "id": "L_StaffWC",
+      "room": "StaffWC",
+      "kind": "light",
+      "circuit": "L4_S_Support",
+      "load_w": 18.0,
+      "x": 22225.0,
+      "y": 9430.0
+    },
+    {
+      "id": "SW_Vest",
+      "room": "Vestibule",
+      "kind": "switch",
+      "circuit": "L1_Pub_Core",
+      "load_w": 0.0,
+      "x": 3320.0,
+      "y": 150.0
+    },
+    {
+      "id": "SW_Wait",
+      "room": "Waiting",
+      "kind": "switch",
+      "circuit": "L1_Pub_Core",
+      "load_w": 0.0,
+      "x": 4870.0,
+      "y": 1930.0
+    },
+    {
+      "id": "SW_PubWC",
+      "room": "Waiting",
+      "kind": "switch",
+      "circuit": "L1_Pub_Core",
+      "load_w": 0.0,
+      "x": 4870.0,
+      "y": 3720.0
+    },
+    {
+      "id": "SW_ElecIT",
+      "room": "ElecITRoom",
+      "kind": "switch",
+      "circuit": "L1_Pub_Core",
+      "load_w": 0.0,
+      "x": 4190.0,
+      "y": 8190.0
+    },
+    {
+      "id": "SW_Mech",
+      "room": "MechRoom",
+      "kind": "switch",
+      "circuit": "L1_Pub_Core",
+      "load_w": 0.0,
+      "x": 1830.0,
+      "y": 8190.0
+    },
+    {
+      "id": "SW_CorrW",
+      "room": "Corridor",
+      "kind": "switch",
+      "circuit": "L2_Corr_Em",
+      "load_w": 0.0,
+      "x": 7940.0,
+      "y": 8330.0
+    },
+    {
+      "id": "SW_CorrE",
+      "room": "Corridor",
+      "kind": "switch",
+      "circuit": "L2_Corr_Em",
+      "load_w": 0.0,
+      "x": 20830.0,
+      "y": 8330.0
+    },
+    {
+      "id": "SW_Proc",
+      "room": "Procedure",
+      "kind": "switch",
+      "circuit": "L3_N_Clinic",
+      "load_w": 0.0,
+      "x": 3220.0,
+      "y": 10670.0
+    },
+    {
+      "id": "SW_Exam1",
+      "room": "Exam1",
+      "kind": "switch",
+      "circuit": "L3_N_Clinic",
+      "load_w": 0.0,
+      "x": 7855.0,
+      "y": 10670.0
+    },
+    {
+      "id": "SW_Exam2",
+      "room": "Exam2",
+      "kind": "switch",
+      "circuit": "L3_N_Clinic",
+      "load_w": 0.0,
+      "x": 12555.0,
+      "y": 10670.0
+    },
+    {
+      "id": "SW_Exam3",
+      "room": "Exam3",
+      "kind": "switch",
+      "circuit": "L3_N_Clinic",
+      "load_w": 0.0,
+      "x": 17155.0,
+      "y": 10670.0
+    },
+    {
+      "id": "SW_Exam4",
+      "room": "Exam4",
+      "kind": "switch",
+      "circuit": "L3_N_Clinic",
+      "load_w": 0.0,
+      "x": 20500.0,
+      "y": 10670.0
+    },
+    {
+      "id": "SW_Nurse",
+      "room": "NurseStation",
+      "kind": "switch",
+      "circuit": "L4_S_Support",
+      "load_w": 0.0,
+      "x": 12000.0,
+      "y": 8190.0
+    },
+    {
+      "id": "SW_Lab",
+      "room": "Lab",
+      "kind": "switch",
+      "circuit": "L4_S_Support",
+      "load_w": 0.0,
+      "x": 15365.0,
+      "y": 8190.0
+    },
+    {
+      "id": "SW_Pharm",
+      "room": "Pharmacy",
+      "kind": "switch",
+      "circuit": "L4_S_Support",
+      "load_w": 0.0,
+      "x": 18435.0,
+      "y": 8190.0
+    },
+    {
+      "id": "SW_Break",
+      "room": "Breakroom",
+      "kind": "switch",
+      "circuit": "L4_S_Support",
+      "load_w": 0.0,
+      "x": 20830.0,
+      "y": 8190.0
+    },
+    {
+      "id": "SW_StaffWC",
+      "room": "Corridor",
+      "kind": "switch",
+      "circuit": "L4_S_Support",
+      "load_w": 0.0,
+      "x": 21060.0,
+      "y": 10060.0
+    },
+    {
+      "id": "S_Wait_Rec1",
+      "room": "Waiting",
+      "kind": "socket",
+      "circuit": "P1_Wait_Pub",
+      "load_w": 300.0,
+      "x": 9450.0,
+      "y": 5350.0
+    },
+    {
+      "id": "S_Wait_Rec2",
+      "room": "Waiting",
+      "kind": "socket",
+      "circuit": "P1_Wait_Pub",
+      "load_w": 300.0,
+      "x": 9450.0,
+      "y": 6650.0
+    },
+    {
+      "id": "S_Wait_W1",
+      "room": "Waiting",
+      "kind": "socket",
+      "circuit": "P1_Wait_Pub",
+      "load_w": 300.0,
+      "x": 4870.0,
+      "y": 4950.0
+    },
+    {
+      "id": "S_Wait_S1",
+      "room": "Waiting",
+      "kind": "socket",
+      "circuit": "P1_Wait_Pub",
+      "load_w": 300.0,
+      "x": 5370.0,
+      "y": 150.0
+    },
+    {
+      "id": "S_ElecIT_Svc",
+      "room": "ElecITRoom",
+      "kind": "socket",
+      "circuit": "P1_Wait_Pub",
+      "load_w": 400.0,
+      "x": 4730.0,
+      "y": 6270.0
+    },
+    {
+      "id": "S_Proc_Gen",
+      "room": "Procedure",
+      "kind": "socket",
+      "circuit": "P1_Wait_Pub",
+      "load_w": 300.0,
+      "x": 750.0,
+      "y": 14950.0
+    },
+    {
+      "id": "S_Exam1_Desk",
+      "room": "Exam1",
+      "kind": "socket",
+      "circuit": "P2_Exam1_2",
+      "load_w": 400.0,
+      "x": 9530.0,
+      "y": 13270.0
+    },
+    {
+      "id": "S_Exam1_E2",
+      "room": "Exam1",
+      "kind": "socket",
+      "circuit": "P2_Exam1_2",
+      "load_w": 400.0,
+      "x": 9530.0,
+      "y": 11570.0
+    },
+    {
+      "id": "S_Exam1_N",
+      "room": "Exam1",
+      "kind": "socket",
+      "circuit": "P2_Exam1_2",
+      "load_w": 400.0,
+      "x": 5470.0,
+      "y": 14950.0
+    },
+    {
+      "id": "S_Exam2_Desk",
+      "room": "Exam2",
+      "kind": "socket",
+      "circuit": "P2_Exam1_2",
+      "load_w": 400.0,
+      "x": 14130.0,
+      "y": 13270.0
+    },
+    {
+      "id": "S_Exam2_E2",
+      "room": "Exam2",
+      "kind": "socket",
+      "circuit": "P2_Exam1_2",
+      "load_w": 400.0,
+      "x": 14130.0,
+      "y": 11570.0
+    },
+    {
+      "id": "S_Exam2_N",
+      "room": "Exam2",
+      "kind": "socket",
+      "circuit": "P2_Exam1_2",
+      "load_w": 400.0,
+      "x": 10270.0,
+      "y": 14950.0
+    },
+    {
+      "id": "S_Exam3_Desk",
+      "room": "Exam3",
+      "kind": "socket",
+      "circuit": "P3_Exam3_4",
+      "load_w": 400.0,
+      "x": 18730.0,
+      "y": 13270.0
+    },
+    {
+      "id": "S_Exam3_E2",
+      "room": "Exam3",
+      "kind": "socket",
+      "circuit": "P3_Exam3_4",
+      "load_w": 400.0,
+      "x": 18730.0,
+      "y": 11570.0
+    },
+    {
+      "id": "S_Exam3_N",
+      "room": "Exam3",
+      "kind": "socket",
+      "circuit": "P3_Exam3_4",
+      "load_w": 400.0,
+      "x": 14870.0,
+      "y": 14950.0
+    },
+    {
+      "id": "S_Exam4_Desk",
+      "room": "Exam4",
+      "kind": "socket",
+      "circuit": "P3_Exam3_4",
+      "load_w": 400.0,
+      "x": 23250.0,
+      "y": 13270.0
+    },
+    {
+      "id": "S_Exam4_E2",
+      "room": "Exam4",
+      "kind": "socket",
+      "circuit": "P3_Exam3_4",
+      "load_w": 400.0,
+      "x": 23250.0,
+      "y": 11570.0
+    },
+    {
+      "id": "S_Exam4_N",
+      "room": "Exam4",
+      "kind": "socket",
+      "circuit": "P3_Exam3_4",
+      "load_w": 400.0,
+      "x": 19470.0,
+      "y": 14950.0
+    },
+    {
+      "id": "S_Nurse_1",
+      "room": "NurseStation",
+      "kind": "socket",
+      "circuit": "P4_Nurse_Lab",
+      "load_w": 450.0,
+      "x": 10670.0,
+      "y": 4750.0
+    },
+    {
+      "id": "S_Nurse_2",
+      "room": "NurseStation",
+      "kind": "socket",
+      "circuit": "P4_Nurse_Lab",
+      "load_w": 450.0,
+      "x": 11970.0,
+      "y": 4750.0
+    },
+    {
+      "id": "S_Lab_1",
+      "room": "Lab",
+      "kind": "socket",
+      "circuit": "P4_Nurse_Lab",
+      "load_w": 450.0,
+      "x": 13910.0,
+      "y": 4750.0
+    },
+    {
+      "id": "S_Lab_2",
+      "room": "Lab",
+      "kind": "socket",
+      "circuit": "P4_Nurse_Lab",
+      "load_w": 450.0,
+      "x": 13110.0,
+      "y": 6350.0
+    },
+    {
+      "id": "S_Pharm_1",
+      "room": "Pharmacy",
+      "kind": "socket",
+      "circuit": "P4_Nurse_Lab",
+      "load_w": 450.0,
+      "x": 17250.0,
+      "y": 4750.0
+    },
+    {
+      "id": "S_Pharm_2",
+      "room": "Pharmacy",
+      "kind": "socket",
+      "circuit": "P4_Nurse_Lab",
+      "load_w": 450.0,
+      "x": 18350.0,
+      "y": 4750.0
+    },
+    {
+      "id": "S_Break_1",
+      "room": "Breakroom",
+      "kind": "socket",
+      "circuit": "P5_Breakroom",
+      "load_w": 450.0,
+      "x": 19850.0,
+      "y": 4750.0
+    },
+    {
+      "id": "S_Break_2",
+      "room": "Breakroom",
+      "kind": "socket",
+      "circuit": "P5_Breakroom",
+      "load_w": 450.0,
+      "x": 23250.0,
+      "y": 5350.0
+    },
+    {
+      "id": "S_Break_3",
+      "room": "Breakroom",
+      "kind": "socket",
+      "circuit": "P5_Breakroom",
+      "load_w": 450.0,
+      "x": 22050.0,
+      "y": 8190.0
+    },
+    {
+      "id": "LD_IT_UPS",
+      "room": "ElecITRoom",
+      "kind": "dedicated_load",
+      "circuit": "D1_IT_UPS",
+      "load_w": 3600.0,
+      "x": 3560.0,
+      "y": 4670.0
+    },
+    {
+      "id": "LD_WaterHeater",
+      "room": "MechRoom",
+      "kind": "dedicated_load",
+      "circuit": "D2_WtrHeater",
+      "load_w": 4000.0,
+      "x": 150.0,
+      "y": 3115.0
+    },
+    {
+      "id": "MED_Proc_1",
+      "room": "Procedure",
+      "kind": "dedicated_load",
+      "circuit": "D3_Proc_Med",
+      "load_w": 1000.0,
+      "x": 4730.0,
+      "y": 12470.0
+    },
+    {
+      "id": "MED_Proc_2",
+      "room": "Procedure",
+      "kind": "dedicated_load",
+      "circuit": "D3_Proc_Med",
+      "load_w": 1000.0,
+      "x": 4730.0,
+      "y": 13270.0
+    },
+    {
+      "id": "MED_Proc_3",
+      "room": "Procedure",
+      "kind": "dedicated_load",
+      "circuit": "D3_Proc_Med",
+      "load_w": 1000.0,
+      "x": 150.0,
+      "y": 13270.0
+    },
+    {
+      "id": "LD_Autoclave",
+      "room": "Lab",
+      "kind": "dedicated_load",
+      "circuit": "D4_Autoclave",
+      "load_w": 4200.0,
+      "x": 14810.0,
+      "y": 4750.0
+    },
+    {
+      "id": "LD_Kitchen_App",
+      "room": "Breakroom",
+      "kind": "dedicated_load",
+      "circuit": "D5_Kitchen",
+      "load_w": 3400.0,
+      "x": 19250.0,
+      "y": 5450.0
+    }
+  ],
+  "circuits": [
+    {
+      "id": "SUB_CLINIC",
+      "panel": "DB_MAIN",
+      "kind": "submain",
+      "phase": "3P",
+      "breaker_a": 63,
+      "rcd_ma": 0,
+      "cable_mm2": 16.0,
+      "load_w": 17204.0,
+      "route_len_m": 15.79,
+      "vdrop_pct": 0.19
+    },
+    {
+      "id": "L1_Pub_Core",
+      "panel": "DB_MAIN",
+      "kind": "lighting",
+      "phase": "L1",
+      "breaker_a": 10,
+      "rcd_ma": 30,
+      "cable_mm2": 2.5,
+      "load_w": 354.0,
+      "route_len_m": 30.75,
+      "vdrop_pct": 0.29
+    },
+    {
+      "id": "L2_Corr_Em",
+      "panel": "DB_MAIN",
+      "kind": "lighting",
+      "phase": "L2",
+      "breaker_a": 10,
+      "rcd_ma": 30,
+      "cable_mm2": 2.5,
+      "load_w": 246.0,
+      "route_len_m": 67.5,
+      "vdrop_pct": 0.44
+    },
+    {
+      "id": "P1_Wait_Pub",
+      "panel": "DB_MAIN",
+      "kind": "power",
+      "phase": "L3",
+      "breaker_a": 16,
+      "rcd_ma": 30,
+      "cable_mm2": 4.0,
+      "load_w": 1900.0,
+      "route_len_m": 56.66,
+      "vdrop_pct": 1.78
+    },
+    {
+      "id": "D1_IT_UPS",
+      "panel": "DB_MAIN",
+      "kind": "dedicated",
+      "phase": "L1",
+      "breaker_a": 20,
+      "rcd_ma": 30,
+      "cable_mm2": 4.0,
+      "load_w": 3600.0,
+      "route_len_m": 7.2,
+      "vdrop_pct": 0.43
+    },
+    {
+      "id": "D2_WtrHeater",
+      "panel": "DB_MAIN",
+      "kind": "dedicated",
+      "phase": "L2",
+      "breaker_a": 25,
+      "rcd_ma": 30,
+      "cable_mm2": 6.0,
+      "load_w": 4000.0,
+      "route_len_m": 9.07,
+      "vdrop_pct": 0.4
+    },
+    {
+      "id": "D3_Proc_Med",
+      "panel": "DB_MAIN",
+      "kind": "dedicated",
+      "phase": "L3",
+      "breaker_a": 20,
+      "rcd_ma": 30,
+      "cable_mm2": 4.0,
+      "load_w": 3000.0,
+      "route_len_m": 20.74,
+      "vdrop_pct": 1.03
+    },
+    {
+      "id": "L3_N_Clinic",
+      "panel": "DB_CLINIC",
+      "kind": "lighting",
+      "phase": "L3",
+      "breaker_a": 10,
+      "rcd_ma": 30,
+      "cable_mm2": 2.5,
+      "load_w": 448.0,
+      "route_len_m": 50.57,
+      "vdrop_pct": 0.6
+    },
+    {
+      "id": "L4_S_Support",
+      "panel": "DB_CLINIC",
+      "kind": "lighting",
+      "phase": "L1",
+      "breaker_a": 10,
+      "rcd_ma": 30,
+      "cable_mm2": 2.5,
+      "load_w": 306.0,
+      "route_len_m": 19.68,
+      "vdrop_pct": 0.16
+    },
+    {
+      "id": "P2_Exam1_2",
+      "panel": "DB_CLINIC",
+      "kind": "power",
+      "phase": "L3",
+      "breaker_a": 16,
+      "rcd_ma": 30,
+      "cable_mm2": 4.0,
+      "load_w": 2400.0,
+      "route_len_m": 43.67,
+      "vdrop_pct": 1.73
+    },
+    {
+      "id": "P3_Exam3_4",
+      "panel": "DB_CLINIC",
+      "kind": "power",
+      "phase": "L2",
+      "breaker_a": 16,
+      "rcd_ma": 30,
+      "cable_mm2": 4.0,
+      "load_w": 2400.0,
+      "route_len_m": 46.09,
+      "vdrop_pct": 1.83
+    },
+    {
+      "id": "P4_Nurse_Lab",
+      "panel": "DB_CLINIC",
+      "kind": "power",
+      "phase": "L3",
+      "breaker_a": 16,
+      "rcd_ma": 30,
+      "cable_mm2": 4.0,
+      "load_w": 2700.0,
+      "route_len_m": 30.13,
+      "vdrop_pct": 1.35
+    },
+    {
+      "id": "P5_Breakroom",
+      "panel": "DB_CLINIC",
+      "kind": "power",
+      "phase": "L1",
+      "breaker_a": 16,
+      "rcd_ma": 30,
+      "cable_mm2": 4.0,
+      "load_w": 1350.0,
+      "route_len_m": 29.77,
+      "vdrop_pct": 0.66
+    },
+    {
+      "id": "D4_Autoclave",
+      "panel": "DB_CLINIC",
+      "kind": "dedicated",
+      "phase": "L1",
+      "breaker_a": 25,
+      "rcd_ma": 30,
+      "cable_mm2": 6.0,
+      "load_w": 4200.0,
+      "route_len_m": 10.54,
+      "vdrop_pct": 0.49
+    },
+    {
+      "id": "D5_Kitchen",
+      "panel": "DB_CLINIC",
+      "kind": "dedicated",
+      "phase": "L2",
+      "breaker_a": 20,
+      "rcd_ma": 30,
+      "cable_mm2": 4.0,
+      "load_w": 3400.0,
+      "route_len_m": 14.23,
+      "vdrop_pct": 0.8
+    }
+  ],
+  "wires": [
+    {
+      "circuit": "SUB_CLINIC",
+      "from_x": 2390.0,
+      "from_y": 6650.0,
+      "to_x": 2390.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "SUB_CLINIC",
+      "from_x": 2390.0,
+      "from_y": 9430.0,
+      "to_x": 9670.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "SUB_CLINIC",
+      "from_x": 9670.0,
+      "from_y": 9430.0,
+      "to_x": 9670.0,
+      "to_y": 6700.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 2390.0,
+      "from_y": 6650.0,
+      "to_x": 1200.0,
+      "to_y": 6650.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 1200.0,
+      "from_y": 6650.0,
+      "to_x": 1200.0,
+      "to_y": 6690.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 1200.0,
+      "from_y": 6690.0,
+      "to_x": 1200.0,
+      "to_y": 4090.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 1200.0,
+      "from_y": 4090.0,
+      "to_x": 3560.0,
+      "to_y": 4090.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 3560.0,
+      "from_y": 4090.0,
+      "to_x": 3560.0,
+      "to_y": 3410.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 3560.0,
+      "from_y": 3410.0,
+      "to_x": 3550.0,
+      "to_y": 3410.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 3550.0,
+      "from_y": 3410.0,
+      "to_x": 3550.0,
+      "to_y": 1150.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 3550.0,
+      "from_y": 1150.0,
+      "to_x": 1350.0,
+      "to_y": 1150.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 1350.0,
+      "from_y": 1150.0,
+      "to_x": 6070.0,
+      "to_y": 1150.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 6070.0,
+      "from_y": 1150.0,
+      "to_x": 6070.0,
+      "to_y": 2350.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 6070.0,
+      "from_y": 2350.0,
+      "to_x": 8270.0,
+      "to_y": 2350.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 8270.0,
+      "from_y": 2350.0,
+      "to_x": 8270.0,
+      "to_y": 5950.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 8270.0,
+      "from_y": 5950.0,
+      "to_x": 6070.0,
+      "to_y": 5950.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 6070.0,
+      "from_y": 5950.0,
+      "to_x": 3560.0,
+      "to_y": 5950.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 3560.0,
+      "from_y": 5950.0,
+      "to_x": 3560.0,
+      "to_y": 5870.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 3560.0,
+      "from_y": 5870.0,
+      "to_x": 3560.0,
+      "to_y": 7270.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 2390.0,
+      "from_y": 6650.0,
+      "to_x": 2350.0,
+      "to_y": 6650.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 2350.0,
+      "from_y": 6650.0,
+      "to_x": 2350.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 2350.0,
+      "from_y": 9430.0,
+      "to_x": 1350.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 1350.0,
+      "from_y": 9430.0,
+      "to_x": 1350.0,
+      "to_y": 10130.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 1350.0,
+      "from_y": 10130.0,
+      "to_x": 2440.0,
+      "to_y": 10130.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 2440.0,
+      "from_y": 10130.0,
+      "to_x": 2440.0,
+      "to_y": 14420.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 2440.0,
+      "from_y": 14420.0,
+      "to_x": 6550.0,
+      "to_y": 14420.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 6550.0,
+      "from_y": 14420.0,
+      "to_x": 6550.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 6550.0,
+      "from_y": 9430.0,
+      "to_x": 7160.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 7160.0,
+      "from_y": 9430.0,
+      "to_x": 7160.0,
+      "to_y": 6550.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 7160.0,
+      "from_y": 6550.0,
+      "to_x": 10750.0,
+      "to_y": 6550.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 10750.0,
+      "from_y": 6550.0,
+      "to_x": 10750.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 10750.0,
+      "from_y": 9430.0,
+      "to_x": 10750.0,
+      "to_y": 10130.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 10750.0,
+      "from_y": 10130.0,
+      "to_x": 14950.0,
+      "to_y": 10130.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 14950.0,
+      "from_y": 10130.0,
+      "to_x": 14950.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 14950.0,
+      "from_y": 9430.0,
+      "to_x": 18950.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 18950.0,
+      "from_y": 9430.0,
+      "to_x": 19950.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 19950.0,
+      "from_y": 9430.0,
+      "to_x": 19950.0,
+      "to_y": 10130.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 19950.0,
+      "from_y": 10130.0,
+      "to_x": 2440.0,
+      "to_y": 10130.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 2440.0,
+      "from_y": 10130.0,
+      "to_x": 2440.0,
+      "to_y": 1900.0
+    },
+    {
+      "circuit": "P1_Wait_Pub",
+      "from_x": 2390.0,
+      "from_y": 6650.0,
+      "to_x": 4730.0,
+      "to_y": 6650.0
+    },
+    {
+      "circuit": "P1_Wait_Pub",
+      "from_x": 4730.0,
+      "from_y": 6650.0,
+      "to_x": 4730.0,
+      "to_y": 6270.0
+    },
+    {
+      "circuit": "P1_Wait_Pub",
+      "from_x": 4730.0,
+      "from_y": 6270.0,
+      "to_x": 4870.0,
+      "to_y": 6270.0
+    },
+    {
+      "circuit": "P1_Wait_Pub",
+      "from_x": 4870.0,
+      "from_y": 6270.0,
+      "to_x": 4870.0,
+      "to_y": 4950.0
+    },
+    {
+      "circuit": "P1_Wait_Pub",
+      "from_x": 4870.0,
+      "from_y": 4950.0,
+      "to_x": 9450.0,
+      "to_y": 4950.0
+    },
+    {
+      "circuit": "P1_Wait_Pub",
+      "from_x": 9450.0,
+      "from_y": 4950.0,
+      "to_x": 9450.0,
+      "to_y": 5350.0
+    },
+    {
+      "circuit": "P1_Wait_Pub",
+      "from_x": 9450.0,
+      "from_y": 5350.0,
+      "to_x": 9450.0,
+      "to_y": 6650.0
+    },
+    {
+      "circuit": "P1_Wait_Pub",
+      "from_x": 9450.0,
+      "from_y": 6650.0,
+      "to_x": 5370.0,
+      "to_y": 6650.0
+    },
+    {
+      "circuit": "P1_Wait_Pub",
+      "from_x": 5370.0,
+      "from_y": 6650.0,
+      "to_x": 5370.0,
+      "to_y": 150.0
+    },
+    {
+      "circuit": "P1_Wait_Pub",
+      "from_x": 5370.0,
+      "from_y": 150.0,
+      "to_x": 750.0,
+      "to_y": 150.0
+    },
+    {
+      "circuit": "P1_Wait_Pub",
+      "from_x": 750.0,
+      "from_y": 150.0,
+      "to_x": 750.0,
+      "to_y": 14950.0
+    },
+    {
+      "circuit": "D1_IT_UPS",
+      "from_x": 2390.0,
+      "from_y": 6650.0,
+      "to_x": 3560.0,
+      "to_y": 6650.0
+    },
+    {
+      "circuit": "D1_IT_UPS",
+      "from_x": 3560.0,
+      "from_y": 6650.0,
+      "to_x": 3560.0,
+      "to_y": 4670.0
+    },
+    {
+      "circuit": "D2_WtrHeater",
+      "from_x": 2390.0,
+      "from_y": 6650.0,
+      "to_x": 150.0,
+      "to_y": 6650.0
+    },
+    {
+      "circuit": "D2_WtrHeater",
+      "from_x": 150.0,
+      "from_y": 6650.0,
+      "to_x": 150.0,
+      "to_y": 3115.0
+    },
+    {
+      "circuit": "D3_Proc_Med",
+      "from_x": 2390.0,
+      "from_y": 6650.0,
+      "to_x": 4730.0,
+      "to_y": 6650.0
+    },
+    {
+      "circuit": "D3_Proc_Med",
+      "from_x": 4730.0,
+      "from_y": 6650.0,
+      "to_x": 4730.0,
+      "to_y": 12470.0
+    },
+    {
+      "circuit": "D3_Proc_Med",
+      "from_x": 4730.0,
+      "from_y": 12470.0,
+      "to_x": 4730.0,
+      "to_y": 13270.0
+    },
+    {
+      "circuit": "D3_Proc_Med",
+      "from_x": 4730.0,
+      "from_y": 13270.0,
+      "to_x": 150.0,
+      "to_y": 13270.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 9670.0,
+      "from_y": 6700.0,
+      "to_x": 11900.0,
+      "to_y": 6700.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 11900.0,
+      "from_y": 6700.0,
+      "to_x": 11900.0,
+      "to_y": 11770.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 11900.0,
+      "from_y": 11770.0,
+      "to_x": 11900.0,
+      "to_y": 14070.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 11900.0,
+      "from_y": 14070.0,
+      "to_x": 16500.0,
+      "to_y": 14070.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 16500.0,
+      "from_y": 14070.0,
+      "to_x": 16500.0,
+      "to_y": 11770.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 16500.0,
+      "from_y": 11770.0,
+      "to_x": 21060.0,
+      "to_y": 11770.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 21060.0,
+      "from_y": 11770.0,
+      "to_x": 21060.0,
+      "to_y": 14070.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 21060.0,
+      "from_y": 14070.0,
+      "to_x": 7170.0,
+      "to_y": 14070.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 7170.0,
+      "from_y": 14070.0,
+      "to_x": 7170.0,
+      "to_y": 11770.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 7170.0,
+      "from_y": 11770.0,
+      "to_x": 3450.0,
+      "to_y": 11770.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 3450.0,
+      "from_y": 11770.0,
+      "to_x": 3450.0,
+      "to_y": 11970.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 3450.0,
+      "from_y": 11970.0,
+      "to_x": 3450.0,
+      "to_y": 13770.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 3450.0,
+      "from_y": 13770.0,
+      "to_x": 1450.0,
+      "to_y": 13770.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 1450.0,
+      "from_y": 13770.0,
+      "to_x": 1450.0,
+      "to_y": 11970.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 9670.0,
+      "from_y": 6700.0,
+      "to_x": 10670.0,
+      "to_y": 6700.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 10670.0,
+      "from_y": 6700.0,
+      "to_x": 10670.0,
+      "to_y": 6550.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 10670.0,
+      "from_y": 6550.0,
+      "to_x": 11970.0,
+      "to_y": 6550.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 11970.0,
+      "from_y": 6550.0,
+      "to_x": 14110.0,
+      "to_y": 6550.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 14110.0,
+      "from_y": 6550.0,
+      "to_x": 15310.0,
+      "to_y": 6550.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 15310.0,
+      "from_y": 6550.0,
+      "to_x": 17780.0,
+      "to_y": 6550.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 17780.0,
+      "from_y": 6550.0,
+      "to_x": 17780.0,
+      "to_y": 7150.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 17780.0,
+      "from_y": 7150.0,
+      "to_x": 17780.0,
+      "to_y": 5850.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 17780.0,
+      "from_y": 5850.0,
+      "to_x": 20450.0,
+      "to_y": 5850.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 20450.0,
+      "from_y": 5850.0,
+      "to_x": 20450.0,
+      "to_y": 6470.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 20450.0,
+      "from_y": 6470.0,
+      "to_x": 22050.0,
+      "to_y": 6470.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 22050.0,
+      "from_y": 6470.0,
+      "to_x": 22225.0,
+      "to_y": 6470.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 22225.0,
+      "from_y": 6470.0,
+      "to_x": 22225.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "P2_Exam1_2",
+      "from_x": 9670.0,
+      "from_y": 6700.0,
+      "to_x": 9530.0,
+      "to_y": 6700.0
+    },
+    {
+      "circuit": "P2_Exam1_2",
+      "from_x": 9530.0,
+      "from_y": 6700.0,
+      "to_x": 9530.0,
+      "to_y": 11570.0
+    },
+    {
+      "circuit": "P2_Exam1_2",
+      "from_x": 9530.0,
+      "from_y": 11570.0,
+      "to_x": 9530.0,
+      "to_y": 13270.0
+    },
+    {
+      "circuit": "P2_Exam1_2",
+      "from_x": 9530.0,
+      "from_y": 13270.0,
+      "to_x": 10270.0,
+      "to_y": 13270.0
+    },
+    {
+      "circuit": "P2_Exam1_2",
+      "from_x": 10270.0,
+      "from_y": 13270.0,
+      "to_x": 10270.0,
+      "to_y": 14950.0
+    },
+    {
+      "circuit": "P2_Exam1_2",
+      "from_x": 10270.0,
+      "from_y": 14950.0,
+      "to_x": 5470.0,
+      "to_y": 14950.0
+    },
+    {
+      "circuit": "P2_Exam1_2",
+      "from_x": 5470.0,
+      "from_y": 14950.0,
+      "to_x": 14130.0,
+      "to_y": 14950.0
+    },
+    {
+      "circuit": "P2_Exam1_2",
+      "from_x": 14130.0,
+      "from_y": 14950.0,
+      "to_x": 14130.0,
+      "to_y": 13270.0
+    },
+    {
+      "circuit": "P2_Exam1_2",
+      "from_x": 14130.0,
+      "from_y": 13270.0,
+      "to_x": 14130.0,
+      "to_y": 11570.0
+    },
+    {
+      "circuit": "P3_Exam3_4",
+      "from_x": 9670.0,
+      "from_y": 6700.0,
+      "to_x": 14870.0,
+      "to_y": 6700.0
+    },
+    {
+      "circuit": "P3_Exam3_4",
+      "from_x": 14870.0,
+      "from_y": 6700.0,
+      "to_x": 14870.0,
+      "to_y": 14950.0
+    },
+    {
+      "circuit": "P3_Exam3_4",
+      "from_x": 14870.0,
+      "from_y": 14950.0,
+      "to_x": 19470.0,
+      "to_y": 14950.0
+    },
+    {
+      "circuit": "P3_Exam3_4",
+      "from_x": 19470.0,
+      "from_y": 14950.0,
+      "to_x": 18730.0,
+      "to_y": 14950.0
+    },
+    {
+      "circuit": "P3_Exam3_4",
+      "from_x": 18730.0,
+      "from_y": 14950.0,
+      "to_x": 18730.0,
+      "to_y": 13270.0
+    },
+    {
+      "circuit": "P3_Exam3_4",
+      "from_x": 18730.0,
+      "from_y": 13270.0,
+      "to_x": 18730.0,
+      "to_y": 11570.0
+    },
+    {
+      "circuit": "P3_Exam3_4",
+      "from_x": 18730.0,
+      "from_y": 11570.0,
+      "to_x": 23250.0,
+      "to_y": 11570.0
+    },
+    {
+      "circuit": "P3_Exam3_4",
+      "from_x": 23250.0,
+      "from_y": 11570.0,
+      "to_x": 23250.0,
+      "to_y": 13270.0
+    },
+    {
+      "circuit": "P4_Nurse_Lab",
+      "from_x": 9670.0,
+      "from_y": 6700.0,
+      "to_x": 10670.0,
+      "to_y": 6700.0
+    },
+    {
+      "circuit": "P4_Nurse_Lab",
+      "from_x": 10670.0,
+      "from_y": 6700.0,
+      "to_x": 10670.0,
+      "to_y": 4750.0
+    },
+    {
+      "circuit": "P4_Nurse_Lab",
+      "from_x": 10670.0,
+      "from_y": 4750.0,
+      "to_x": 11970.0,
+      "to_y": 4750.0
+    },
+    {
+      "circuit": "P4_Nurse_Lab",
+      "from_x": 11970.0,
+      "from_y": 4750.0,
+      "to_x": 13910.0,
+      "to_y": 4750.0
+    },
+    {
+      "circuit": "P4_Nurse_Lab",
+      "from_x": 13910.0,
+      "from_y": 4750.0,
+      "to_x": 13110.0,
+      "to_y": 4750.0
+    },
+    {
+      "circuit": "P4_Nurse_Lab",
+      "from_x": 13110.0,
+      "from_y": 4750.0,
+      "to_x": 13110.0,
+      "to_y": 6350.0
+    },
+    {
+      "circuit": "P4_Nurse_Lab",
+      "from_x": 13110.0,
+      "from_y": 6350.0,
+      "to_x": 17250.0,
+      "to_y": 6350.0
+    },
+    {
+      "circuit": "P4_Nurse_Lab",
+      "from_x": 17250.0,
+      "from_y": 6350.0,
+      "to_x": 17250.0,
+      "to_y": 4750.0
+    },
+    {
+      "circuit": "P4_Nurse_Lab",
+      "from_x": 17250.0,
+      "from_y": 4750.0,
+      "to_x": 18350.0,
+      "to_y": 4750.0
+    },
+    {
+      "circuit": "P5_Breakroom",
+      "from_x": 9670.0,
+      "from_y": 6700.0,
+      "to_x": 19850.0,
+      "to_y": 6700.0
+    },
+    {
+      "circuit": "P5_Breakroom",
+      "from_x": 19850.0,
+      "from_y": 6700.0,
+      "to_x": 19850.0,
+      "to_y": 4750.0
+    },
+    {
+      "circuit": "P5_Breakroom",
+      "from_x": 19850.0,
+      "from_y": 4750.0,
+      "to_x": 23250.0,
+      "to_y": 4750.0
+    },
+    {
+      "circuit": "P5_Breakroom",
+      "from_x": 23250.0,
+      "from_y": 4750.0,
+      "to_x": 23250.0,
+      "to_y": 5350.0
+    },
+    {
+      "circuit": "P5_Breakroom",
+      "from_x": 23250.0,
+      "from_y": 5350.0,
+      "to_x": 22050.0,
+      "to_y": 5350.0
+    },
+    {
+      "circuit": "P5_Breakroom",
+      "from_x": 22050.0,
+      "from_y": 5350.0,
+      "to_x": 22050.0,
+      "to_y": 8190.0
+    },
+    {
+      "circuit": "D4_Autoclave",
+      "from_x": 9670.0,
+      "from_y": 6700.0,
+      "to_x": 14810.0,
+      "to_y": 6700.0
+    },
+    {
+      "circuit": "D4_Autoclave",
+      "from_x": 14810.0,
+      "from_y": 6700.0,
+      "to_x": 14810.0,
+      "to_y": 4750.0
+    },
+    {
+      "circuit": "D5_Kitchen",
+      "from_x": 9670.0,
+      "from_y": 6700.0,
+      "to_x": 19250.0,
+      "to_y": 6700.0
+    },
+    {
+      "circuit": "D5_Kitchen",
+      "from_x": 19250.0,
+      "from_y": 6700.0,
+      "to_x": 19250.0,
+      "to_y": 5450.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 3320.0,
+      "from_y": 150.0,
+      "to_x": 1350.0,
+      "to_y": 1150.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 3320.0,
+      "from_y": 150.0,
+      "to_x": 3550.0,
+      "to_y": 1150.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 4870.0,
+      "from_y": 1930.0,
+      "to_x": 6070.0,
+      "to_y": 2350.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 4870.0,
+      "from_y": 1930.0,
+      "to_x": 8270.0,
+      "to_y": 2350.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 4870.0,
+      "from_y": 1930.0,
+      "to_x": 6070.0,
+      "to_y": 5950.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 4870.0,
+      "from_y": 1930.0,
+      "to_x": 8270.0,
+      "to_y": 5950.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 4870.0,
+      "from_y": 3720.0,
+      "to_x": 3560.0,
+      "to_y": 3410.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 4190.0,
+      "from_y": 8190.0,
+      "to_x": 3560.0,
+      "to_y": 5870.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 4190.0,
+      "from_y": 8190.0,
+      "to_x": 3560.0,
+      "to_y": 7270.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 1830.0,
+      "from_y": 8190.0,
+      "to_x": 1200.0,
+      "to_y": 4090.0
+    },
+    {
+      "circuit": "L1_Pub_Core",
+      "from_x": 1830.0,
+      "from_y": 8190.0,
+      "to_x": 1200.0,
+      "to_y": 6690.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 7940.0,
+      "from_y": 8330.0,
+      "to_x": 2350.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 7940.0,
+      "from_y": 8330.0,
+      "to_x": 6550.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 7940.0,
+      "from_y": 8330.0,
+      "to_x": 10750.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 7940.0,
+      "from_y": 8330.0,
+      "to_x": 14950.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 7940.0,
+      "from_y": 8330.0,
+      "to_x": 18950.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 20830.0,
+      "from_y": 8330.0,
+      "to_x": 2350.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 20830.0,
+      "from_y": 8330.0,
+      "to_x": 6550.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 20830.0,
+      "from_y": 8330.0,
+      "to_x": 10750.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 20830.0,
+      "from_y": 8330.0,
+      "to_x": 14950.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L2_Corr_Em",
+      "from_x": 20830.0,
+      "from_y": 8330.0,
+      "to_x": 18950.0,
+      "to_y": 9430.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 3220.0,
+      "from_y": 10670.0,
+      "to_x": 1450.0,
+      "to_y": 11970.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 3220.0,
+      "from_y": 10670.0,
+      "to_x": 3450.0,
+      "to_y": 11970.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 3220.0,
+      "from_y": 10670.0,
+      "to_x": 1450.0,
+      "to_y": 13770.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 3220.0,
+      "from_y": 10670.0,
+      "to_x": 3450.0,
+      "to_y": 13770.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 7855.0,
+      "from_y": 10670.0,
+      "to_x": 7170.0,
+      "to_y": 11770.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 7855.0,
+      "from_y": 10670.0,
+      "to_x": 7170.0,
+      "to_y": 14070.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 12555.0,
+      "from_y": 10670.0,
+      "to_x": 11900.0,
+      "to_y": 11770.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 12555.0,
+      "from_y": 10670.0,
+      "to_x": 11900.0,
+      "to_y": 14070.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 17155.0,
+      "from_y": 10670.0,
+      "to_x": 16500.0,
+      "to_y": 11770.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 17155.0,
+      "from_y": 10670.0,
+      "to_x": 16500.0,
+      "to_y": 14070.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 20500.0,
+      "from_y": 10670.0,
+      "to_x": 21060.0,
+      "to_y": 11770.0
+    },
+    {
+      "circuit": "L3_N_Clinic",
+      "from_x": 20500.0,
+      "from_y": 10670.0,
+      "to_x": 21060.0,
+      "to_y": 14070.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 12000.0,
+      "from_y": 8190.0,
+      "to_x": 10670.0,
+      "to_y": 6550.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 12000.0,
+      "from_y": 8190.0,
+      "to_x": 11970.0,
+      "to_y": 6550.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 15365.0,
+      "from_y": 8190.0,
+      "to_x": 14110.0,
+      "to_y": 6550.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 15365.0,
+      "from_y": 8190.0,
+      "to_x": 15310.0,
+      "to_y": 6550.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 18435.0,
+      "from_y": 8190.0,
+      "to_x": 17780.0,
+      "to_y": 5850.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 18435.0,
+      "from_y": 8190.0,
+      "to_x": 17780.0,
+      "to_y": 7150.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 20830.0,
+      "from_y": 8190.0,
+      "to_x": 20450.0,
+      "to_y": 6470.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 20830.0,
+      "from_y": 8190.0,
+      "to_x": 22050.0,
+      "to_y": 6470.0
+    },
+    {
+      "circuit": "L4_S_Support",
+      "from_x": 21060.0,
+      "from_y": 10060.0,
+      "to_x": 22225.0,
+      "to_y": 9430.0
+    }
+  ]
+}
