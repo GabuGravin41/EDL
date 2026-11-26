@@ -280,12 +280,27 @@ pub struct SchematicGroupIr {
     pub title: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub border: Option<String>, // "solid" | "dashed"
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>, // "blue" | "red" | "amber" | "green" | "slate"
     pub members: Vec<String>,
     pub bbox: Rect2,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub notes: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub subzones: Vec<SchematicSubZoneIr>,
+}
+
+/// Visual dashed divider / isolation barrier line on an electronics schematic sheet.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SchematicDividerIr {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sheet: Option<String>,
+    pub from: Point2,
+    pub to: Point2,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
 }
 
 /// Local schematic terminal graphics (GND triangle, upward power bar, named net-label stub, or global flag).
@@ -618,6 +633,8 @@ pub struct CanonicalIr {
     pub wall_solids: Vec<WallSolidCell>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub schematic_groups: Vec<SchematicGroupIr>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub schematic_dividers: Vec<SchematicDividerIr>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub schematic_routes: Vec<SchematicRouteIr>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]

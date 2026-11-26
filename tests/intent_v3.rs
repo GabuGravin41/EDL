@@ -380,3 +380,78 @@ project "RelayFlybackV33" {
         bad_ir.diagnostics
     );
 }
+
+#[test]
+fn v34_free_sheet_layout_explicit_rect_center_divider_rotated_labels_and_orient180_guard() {
+    let src = r#"
+project "FreeLayoutV34" {
+    units: mm
+    circuit Main {
+        component J_PWR: "Connector:Screw_Terminal_01x02" { value: "24V_IN" }
+        component F1: "Device:Polyfuse" { value: "1.5A" }
+        component C1: "Device:C" { value: 100nF  voltage_rating: 50V }
+        component C2: "Device:C" { value: 100nF  voltage_rating: 50V }
+        component R1: "Device:R" { value: 10kohm }
+        net "+24V" { connect: [J_PWR.1, F1.1] power_flag: true }
+        net V24_FUSED { connect: [F1.2, C1.1, C2.1, R1.1] }
+        net GND { connect: [J_PWR.2, C1.2, C2.2, R1.2] }
+    }
+    schematic Main {
+        sheet: A3 landscape
+        routing { default: zone_local  power: symbol  ground: symbol }
+        group Stage1 {
+            title: "STAGE 1: ISOLATED INPUT"
+            rect: (17.78mm, 17.78mm, 228.6mm, 139.7mm)
+            color: red
+            border: dashed
+            members: [J_PWR, F1, C1, C2, R1]
+            note: "Free placement with zero auto-pack hijacking"
+        }
+        divider {
+            from: (127.0mm, 25.4mm)
+            to: (127.0mm, 127.0mm)
+            label: "ISOLATION BARRIER"
+            color: red
+        }
+        place J_PWR center (45.72mm, 63.5mm) orient: 180
+        place F1    center (76.20mm, 63.5mm) orient: 90
+        place C1    center (101.6mm, 83.82mm)
+        place C2    center (121.92mm, 83.82mm)
+        place R1    center (152.4mm, 83.82mm)
+    }
+}
+"#;
+    let ir = edl::compile_source("free_v34.edl", src).expect("compiles cleanly");
+    assert!(!ir.project.has_errors, "unexpected errors: {:?}", ir.diagnostics);
+    // Explicit rect obeyed literally
+    let g = ir.schematic_groups.iter().find(|g| g.name == "Stage1").unwrap();
+    assert!((g.bbox.min_x - 17.78).abs() < 0.05);
+    assert!((g.bbox.max_x - 228.6).abs() < 0.05);
+    assert_eq!(g.color.as_deref(), Some("red"));
+    assert_eq!(ir.schematic_dividers.len(), 1);
+
+    // KiCad export emits horizontal labels (angle 90 for orient:90 passive F1), dashed red border, divider,
+    // and passes real KiCad 9 ERC with 0 errors even on orient:180 J_PWR!
+    let kicad = edl::export_kicad_sch(&ir);
+    assert!(kicad.contains("ISOLATION BARRIER"));
+    assert!(kicad.contains("(color 153 27 27 1)"));
+    assert!(kicad.contains("(property \"Reference\" \"F1\" (at "));
+    assert!(kicad.contains(" 90) (effects"), "F1 orient:90 should have horizontal property angle 90");
+
+    if std::process::Command::new("kicad-cli").arg("--version").output().is_ok() {
+        let dir = std::env::temp_dir().join("edl_v34_free_erc");
+        let _ = std::fs::create_dir_all(&dir);
+        let sch = dir.join("free_v34.kicad_sch");
+        let rpt = dir.join("erc.rpt");
+        std::fs::write(&sch, &kicad).unwrap();
+        let st = std::process::Command::new("kicad-cli")
+            .args(["sch", "erc", "--exit-code-violations", "--severity-error", "-o"])
+            .arg(&rpt)
+            .arg(&sch)
+            .status()
+            .unwrap();
+        let txt = std::fs::read_to_string(&rpt).unwrap_or_default();
+        let _ = std::fs::remove_dir_all(&dir);
+        assert!(st.success(), "orient:180 J_PWR + free layout failed KiCad 9 ERC:\n{txt}");
+    }
+}

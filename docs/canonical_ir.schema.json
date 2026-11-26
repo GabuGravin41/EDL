@@ -1813,6 +1813,40 @@
       ],
       "type": "object"
     },
+    "SchematicDividerIr": {
+      "description": "Visual dashed divider / isolation barrier line on an electronics schematic sheet.",
+      "properties": {
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "from": {
+          "$ref": "#/definitions/Point2"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sheet": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "to": {
+          "$ref": "#/definitions/Point2"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
     "SchematicGroupIr": {
       "description": "Presentation-layer schematic group / zone container.",
       "properties": {
@@ -1820,6 +1854,12 @@
           "$ref": "#/definitions/Rect2"
         },
         "border": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "color": {
           "type": [
             "string",
             "null"
@@ -2338,6 +2378,12 @@
     "relations": {
       "items": {
         "$ref": "#/definitions/RelationIr"
+      },
+      "type": "array"
+    },
+    "schematic_dividers": {
+      "items": {
+        "$ref": "#/definitions/SchematicDividerIr"
       },
       "type": "array"
     },

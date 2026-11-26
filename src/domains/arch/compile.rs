@@ -1566,6 +1566,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
         derived_walls,
         wall_solids,
         schematic_groups: Vec::new(),
+        schematic_dividers: Vec::new(),
         schematic_routes: Vec::new(),
         explicit_sheets: Vec::new(),
         mep_circuits: Vec::new(),

@@ -180,21 +180,24 @@ pub fn pack_groups_skyline(
     start_y: f64,
     h_gap: f64,
     v_gap: f64,
+    preserve_order: bool,
 ) -> BTreeMap<usize, (f64, f64)> {
     let mut result = BTreeMap::new();
     if group_dims.is_empty() {
         return result;
     }
 
-    // Sort groups tallest-first (then widest-first) so tall anchor blocks anchor clean columns
-    // and shorter blocks tuck neatly into the remaining open skyline slots!
+    // When `preserve_order` is true (`pack: order`), keep exact declaration order (Stage 1 -> 2 -> 3...)
+    // so signal flow stays left-to-right, top-to-bottom; otherwise sort tallest-first for tightest packing.
     let mut order: Vec<(usize, f64, f64)> = group_dims.to_vec();
-    order.sort_by(|a, b| {
-        b.2.partial_cmp(&a.2)
-            .unwrap()
-            .then_with(|| b.1.partial_cmp(&a.1).unwrap())
-            .then_with(|| a.0.cmp(&b.0))
-    });
+    if !preserve_order {
+        order.sort_by(|a, b| {
+            b.2.partial_cmp(&a.2)
+                .unwrap()
+                .then_with(|| b.1.partial_cmp(&a.1).unwrap())
+                .then_with(|| a.0.cmp(&b.0))
+        });
+    }
 
     let try_pack = |cand_w: f64, cand_h: f64, hg: f64, vg: f64| -> (BTreeMap<usize, (f64, f64)>, f64, f64) {
         let margin_r = 15.24_f64;

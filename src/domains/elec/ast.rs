@@ -180,9 +180,21 @@ pub struct SchematicGroupDecl {
     pub name: String,
     pub title: Option<String>,
     pub border: String, // "dashed" | "solid"
+    pub color: Option<String>,
+    /// Optional explicit sheet frame rectangle `(x0, y0, x1, y1)` — obeyed literally, never re-packed.
+    pub rect: Option<(Quantity, Quantity, Quantity, Quantity)>,
     pub members: Vec<String>,
     pub layout_tree: Option<LayoutNode>,
     pub notes: Vec<String>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone)]
+pub struct SchematicDividerDecl {
+    pub from: (Quantity, Quantity),
+    pub to: (Quantity, Quantity),
+    pub label: Option<String>,
+    pub color: Option<String>,
     pub span: Span,
 }
 
@@ -237,6 +249,9 @@ pub struct ExplicitPlacementDecl {
     pub unit: Option<usize>,
     pub x: Quantity,
     pub y: Quantity,
+    /// When true (`place X center (x, y)`), `(x, y)` is the KiCad symbol center;
+    /// when false (`place X at: (x, y)`), `(x, y)` is the body top-left (used by `edl sync`).
+    pub is_center: bool,
     pub orient_deg: Option<i32>,
     pub mirror: Option<crate::domains::elec::kicad_sym::SymMirror>,
     /// Optional per-hierarchy-path RefDes overrides for reused sub-sheets (e.g. `"/ch1": "C201"`).
@@ -434,6 +449,7 @@ pub struct SchematicDecl {
     pub rev: Option<String>,
     pub author: Option<String>,
     pub groups: Vec<SchematicGroupDecl>,
+    pub dividers: Vec<SchematicDividerDecl>,
     pub layout: Option<SchematicLayoutDecl>,
     pub routing: Option<SchematicRoutingDecl>,
     pub placements: Vec<ExplicitPlacementDecl>,

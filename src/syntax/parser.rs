@@ -2360,6 +2360,7 @@ impl Parser {
         let mut rev = None;
         let mut author = None;
         let mut groups = Vec::new();
+        let mut dividers = Vec::new();
         let mut layout = None;
         let mut routing = None;
         let mut placements = Vec::new();
@@ -2412,7 +2413,6 @@ impl Parser {
                     sheet = format!("{size}{orient}");
                 }
                 "group" | "zone" => {
-                    let is_zone = kw == "zone";
                     let gname = match self.peek().kind.clone() {
                         TokenKind::Str(s) => {
                             self.bump();
@@ -2422,7 +2422,9 @@ impl Parser {
                     };
                     self.expect(TokenKind::LBrace, "'{'")?;
                     let mut gtitle: Option<String> = None;
-                    let mut border = if is_zone { "solid" } else { "dashed" }.to_string();
+                    let mut border = "dashed".to_string();
+                    let mut color: Option<String> = None;
+                    let mut rect: Option<(Quantity, Quantity, Quantity, Quantity)> = None;
                     let mut members: Vec<String> = Vec::new();
                     let mut notes: Vec<String> = Vec::new();
                     let mut tree_items: Vec<LayoutNode> = Vec::new();
@@ -2438,6 +2440,24 @@ impl Parser {
                                 self.expect(TokenKind::Colon, "':'")?;
                                 let (st, _) = self.expect_ident("solid or dashed")?;
                                 border = st;
+                            }
+                            "color" => {
+                                self.expect(TokenKind::Colon, "':'")?;
+                                let (c, _) = self.expect_ident_or_str("zone color")?;
+                                color = Some(c);
+                            }
+                            "rect" => {
+                                self.expect(TokenKind::Colon, "':'")?;
+                                self.expect(TokenKind::LParen, "'('")?;
+                                let (x0, _) = self.parse_quantity()?;
+                                self.expect(TokenKind::Comma, "','")?;
+                                let (y0, _) = self.parse_quantity()?;
+                                self.expect(TokenKind::Comma, "','")?;
+                                let (x1, _) = self.parse_quantity()?;
+                                self.expect(TokenKind::Comma, "','")?;
+                                let (y1, _) = self.parse_quantity()?;
+                                self.expect(TokenKind::RParen, "')'")?;
+                                rect = Some((x0, y0, x1, y1));
                             }
                             "note" => {
                                 if self.peek().kind == TokenKind::Colon {
@@ -2499,10 +2519,61 @@ impl Parser {
                         name: gname,
                         title: gtitle,
                         border,
+                        color,
+                        rect,
                         members,
                         layout_tree,
                         notes,
                         span: kspan.merge(&gend),
+                    });
+                }
+                "divider" => {
+                    self.expect(TokenKind::LBrace, "'{'")?;
+                    let mut d_from: Option<(Quantity, Quantity)> = None;
+                    let mut d_to: Option<(Quantity, Quantity)> = None;
+                    let mut d_label: Option<String> = None;
+                    let mut d_color: Option<String> = None;
+                    while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
+                        let (dk, dspan) = self.expect_ident("divider property")?;
+                        self.expect(TokenKind::Colon, "':'")?;
+                        match dk.as_str() {
+                            "from" => {
+                                d_from = Some(self.parse_xy_pair()?.0);
+                            }
+                            "to" => {
+                                d_to = Some(self.parse_xy_pair()?.0);
+                            }
+                            "label" | "title" => {
+                                d_label = Some(self.expect_string("divider label")?.0);
+                            }
+                            "color" => {
+                                d_color = Some(self.expect_ident_or_str("divider color")?.0);
+                            }
+                            other => {
+                                return Err(Diagnostic::error(
+                                    "E_PARSE_DIVIDER",
+                                    "syntax",
+                                    format!("Unknown property '{other}' inside divider"),
+                                    Some(dspan),
+                                ))
+                            }
+                        }
+                    }
+                    let dend = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+                    let (Some(from), Some(to)) = (d_from, d_to) else {
+                        return Err(Diagnostic::error(
+                            "E_PARSE_DIVIDER",
+                            "syntax",
+                            "divider requires both `from: (x1, y1)` and `to: (x2, y2)`",
+                            Some(kspan.merge(&dend)),
+                        ));
+                    };
+                    dividers.push(SchematicDividerDecl {
+                        from,
+                        to,
+                        label: d_label,
+                        color: d_color,
+                        span: kspan.merge(&dend),
                     });
                 }
                 "layout" => {
@@ -2768,8 +2839,16 @@ impl Parser {
                             }
                         }
                     }
-                    self.expect_keyword("at")?;
-                    self.expect(TokenKind::Colon, "':'")?;
+                    let is_center = if matches!(&self.peek().kind, TokenKind::Ident(s) if s == "center") {
+                        self.bump();
+                        true
+                    } else {
+                        self.expect_keyword("at")?;
+                        false
+                    };
+                    if self.peek().kind == TokenKind::Colon {
+                        self.bump();
+                    }
                     let ((x, y), mut pend) = self.parse_xy_pair()?;
                     let (orient_deg, mirror, extra_sp) = self.parse_optional_orient_mirror()?;
                     if let Some(sp) = extra_sp {
@@ -2897,6 +2976,7 @@ impl Parser {
                         unit: punit,
                         x,
                         y,
+                        is_center,
                         orient_deg,
                         mirror,
                         instances,
@@ -3052,7 +3132,9 @@ impl Parser {
                         reference = Some(self.expect_string("power reference")?.0);
                     }
                     self.expect_keyword("at")?;
-                    self.expect(TokenKind::Colon, "':'")?;
+                    if self.peek().kind == TokenKind::Colon {
+                        self.bump();
+                    }
                     let ((x, y), mut pend) = self.parse_xy_pair()?;
                     let (orient_opt, mirror, extra_sp) = self.parse_optional_orient_mirror()?;
                     if let Some(sp) = extra_sp {
@@ -3120,7 +3202,9 @@ impl Parser {
                         shape = Some(self.expect_ident_or_str("label shape")?.0);
                     }
                     self.expect_keyword("at")?;
-                    self.expect(TokenKind::Colon, "':'")?;
+                    if self.peek().kind == TokenKind::Colon {
+                        self.bump();
+                    }
                     let ((x, y), mut pend) = self.parse_xy_pair()?;
                     let (orient_opt, _mirror, extra_sp) = self.parse_optional_orient_mirror()?;
                     if let Some(sp) = extra_sp {
@@ -3442,6 +3526,7 @@ impl Parser {
             rev,
             author,
             groups,
+            dividers,
             layout,
             routing,
             placements,

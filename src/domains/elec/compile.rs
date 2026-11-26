@@ -1050,6 +1050,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
 
     let mut entities: Vec<EntityIr> = Vec::new();
     let mut schematic_groups: Vec<SchematicGroupIr> = Vec::new();
+    let mut schematic_dividers: Vec<SchematicDividerIr> = Vec::new();
     let mut schematic_routes: Vec<SchematicRouteIr> = Vec::new();
     let mut explicit_sheets: Vec<ExplicitSchematicSheetIr> = Vec::new();
     let mut views: Vec<ViewIr> = Vec::new();
@@ -1485,13 +1486,19 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             .unwrap_or(NetRoutingStyle::Direct)
     };
 
-    // Explicit placement overrides (`place <Comp> at: (x, y)`)
-    let mut explicit_pos: BTreeMap<String, (f64, f64)> = BTreeMap::new();
+    // Explicit placement overrides (`place <Comp> at: (x, y)` or `place <Comp> center (x, y) [orient: ...]`)
+    let mut explicit_pos: BTreeMap<
+        String,
+        (f64, f64, bool, Option<i32>, Option<crate::domains::elec::kicad_sym::SymMirror>),
+    > = BTreeMap::new();
     if let Some(s) = schem {
         for pl in &s.placements {
             match (pl.x.to_mm(), pl.y.to_mm()) {
                 (Ok(x), Ok(y)) => {
-                    explicit_pos.insert(pl.component.clone(), (snap_grid(x), snap_grid(y)));
+                    explicit_pos.insert(
+                        pl.component.clone(),
+                        (snap_grid(x), snap_grid(y), pl.is_center, pl.orient_deg, pl.mirror),
+                    );
                 }
                 (Err(m), _) | (_, Err(m)) => {
                     diagnostics.push(Diagnostic::error(
@@ -1501,6 +1508,41 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         Some(pl.span.clone()),
                     ));
                 }
+            }
+        }
+    }
+    let pinned_explicit: BTreeSet<String> = explicit_pos.keys().cloned().collect();
+    let mut explicit_group_rects: BTreeMap<String, Rect2> = BTreeMap::new();
+    let mut pinned_groups: BTreeSet<String> = BTreeSet::new();
+    if let Some(s) = schem {
+        for g in &s.groups {
+            if let Some((x0, y0, x1, y1)) = g.rect {
+                if let (Ok(rx0), Ok(ry0), Ok(rx1), Ok(ry1)) = (x0.to_mm(), y0.to_mm(), x1.to_mm(), y1.to_mm()) {
+                    explicit_group_rects.insert(
+                        g.name.clone(),
+                        Rect2::new(rx0.min(rx1), ry0.min(ry1), rx0.max(rx1), ry0.max(ry1)),
+                    );
+                    pinned_groups.insert(g.name.clone());
+                }
+            }
+        }
+    }
+    let mut local_dividers: Vec<SchematicDividerIr> = Vec::new();
+    if let Some(s) = schem {
+        for dv in &s.dividers {
+            if let (Ok(x0), Ok(y0), Ok(x1), Ok(y1)) = (
+                dv.from.0.to_mm(),
+                dv.from.1.to_mm(),
+                dv.to.0.to_mm(),
+                dv.to.1.to_mm(),
+            ) {
+                local_dividers.push(SchematicDividerIr {
+                    sheet: sheet_tag.clone(),
+                    from: Point2::new(x0, y0),
+                    to: Point2::new(x1, y1),
+                    label: dv.label.clone(),
+                    color: dv.color.clone(),
+                });
             }
         }
     }
@@ -1685,12 +1727,16 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         .map(|s| s.groups.iter().map(|g| (g.name.as_str(), g)).collect())
         .unwrap_or_default();
 
-    // Optional 2D Sheet-Aware Skyline Packing (`layout { pack: skyline }`) — packs groups across the
-    // full landscape width of the declared sheet to eliminate dead negative space and frame overflows!
-    let use_skyline = schem
+    // Optional 2D Sheet-Aware Packing (`layout { pack: skyline }` or `layout { pack: order }`):
+    // `pack: order` preserves exact declaration order (Stage 1 -> Stage 2 -> Stage 3 -> ...);
+    // `pack: skyline` sorts tallest-first for tightest 2D packing.
+    // Groups with explicit `rect: (x0, y0, x1, y1)` are never moved by auto-packing!
+    let pack_mode = schem
         .and_then(|s| s.layout.as_ref())
-        .and_then(|l| l.pack.as_deref())
-        == Some("skyline");
+        .and_then(|l| l.pack.as_deref());
+    let use_skyline = matches!(pack_mode, Some("skyline") | Some("order"))
+        && pinned_groups.is_empty();
+    let preserve_order = pack_mode == Some("order");
     let skyline_origins: BTreeMap<usize, (f64, f64)> = if use_skyline {
         let target_sheet_str = schem
             .map(|s| s.sheet.as_str())
@@ -1741,13 +1787,18 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             snap_grid(17.78),
             12.70,
             12.70,
+            preserve_order,
         )
     } else {
         BTreeMap::new()
     };
 
     for (col_idx, &(r_idx, _c_in_row, ref gname, ref members)) in ordered_groups.iter().enumerate() {
-        if let Some(&(sx, sy)) = skyline_origins.get(&col_idx) {
+        let explicit_rect_opt = explicit_group_rects.get(gname).copied();
+        if let Some(er) = explicit_rect_opt {
+            cur_x = snap_grid(er.min_x + 12.70);
+            row_start_y = snap_grid(er.min_y + 15.24);
+        } else if let Some(&(sx, sy)) = skyline_origins.get(&col_idx) {
             cur_x = sx;
             row_start_y = sy;
         } else if r_idx != cur_row_idx {
@@ -1818,8 +1869,11 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         for (m_idx, (cid, (bw, bh))) in members.iter().zip(sizes.into_iter()).enumerate() {
             let comp = comp_map[cid];
             let assigned_sides = &comp_pin_sides[cid];
+            let explicit_entry = explicit_pos.get(cid).copied();
+            let eff_orient = explicit_entry.and_then(|e| e.3).unwrap_or(comp.orient_deg);
+            let eff_mirror = explicit_entry.and_then(|e| e.4).or(comp.mirror);
 
-            let (bx0, by0) = if let Some(&(ex, ey)) = explicit_pos.get(cid) {
+            let (bx0, by0) = if let Some((ex, ey, _is_c, _, _)) = explicit_entry {
                 (ex, ey)
             } else if let Some(&(tx, ty)) = tree_pos.get(cid) {
                 (tx, ty)
@@ -1839,11 +1893,14 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 let lb = crate::domains::elec::kicad_sym::symbol_unit_body_bounds(
                     sym,
                     u,
-                    comp.orient_deg,
-                    comp.mirror,
+                    eff_orient,
+                    eff_mirror,
                 );
-                let mut cx = snap_grid(bx0 - lb.min_x);
-                let mut cy = snap_grid(by0 - lb.min_y);
+                let (mut cx, mut cy) = if let Some((ex, ey, true, _, _)) = explicit_entry {
+                    (snap_grid(ex), snap_grid(ey))
+                } else {
+                    (snap_grid(bx0 - lb.min_x), snap_grid(by0 - lb.min_y))
+                };
                 // If a KiCad library symbol's pins sit at half-grid offsets (e.g. Device:R/C at ±3.81mm = 1.5*2.54mm),
                 // offset the symbol center by 1.27mm so EVERY pin tip lands cleanly on the 2.54mm grid with exact pin length!
                 let first_unit_pin = sym.pins.iter().find(|p| (p.unit == 0 || p.unit == u) && !p.hide);
@@ -1851,8 +1908,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     let (rx, ry) = crate::domains::elec::kicad_sym::transform_local_yup(
                         fp.x,
                         fp.y,
-                        comp.orient_deg,
-                        comp.mirror,
+                        eff_orient,
+                        eff_mirror,
                     );
                     if (rx - snap_grid(rx)).abs() > 0.5 {
                         cx += GRID_MM * 0.5;
@@ -1872,8 +1929,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     u,
                     cx,
                     cy,
-                    comp.orient_deg,
-                    comp.mirror,
+                    eff_orient,
+                    eff_mirror,
                 );
                 let unit_pins: Vec<_> = sym
                     .pins
@@ -1888,8 +1945,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         cy,
                         lp.x,
                         lp.y,
-                        comp.orient_deg,
-                        comp.mirror,
+                        eff_orient,
+                        eff_mirror,
                     );
                     let rad = lp.angle.to_radians();
                     let body_pt = crate::domains::elec::kicad_sym::local_to_world(
@@ -1897,13 +1954,13 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         cy,
                         lp.x + lp.length * rad.cos(),
                         lp.y + lp.length * rad.sin(),
-                        comp.orient_deg,
-                        comp.mirror,
+                        eff_orient,
+                        eff_mirror,
                     );
                     let side = crate::domains::elec::kicad_sym::pin_outward_side(
                         lp.angle,
-                        comp.orient_deg,
-                        comp.mirror,
+                        eff_orient,
+                        eff_mirror,
                     );
                     let (disp_name, code_str) = pin_meta
                         .get(&(cid.clone(), cpin.name.clone()))
@@ -1993,8 +2050,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     value: comp.value.clone(),
                     footprint: comp.footprint.clone(),
                     lib_id: lib_id_opt,
-                    orient_deg: comp.orient_deg,
-                    mirror: comp.mirror.map(|m| match m {
+                    orient_deg: eff_orient,
+                    mirror: eff_mirror.map(|m| match m {
                         crate::domains::elec::kicad_sym::SymMirror::X => "x".to_string(),
                         crate::domains::elec::kicad_sym::SymMirror::Y => "y".to_string(),
                     }),
@@ -2041,14 +2098,17 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             cur_row_max_y = cur_row_max_y.max(g_max_y);
             max_comp_y = max_comp_y.max(g_max_y);
         }
-        if g_min_x.is_finite() {
+        if explicit_rect_opt.is_some() || g_min_x.is_finite() {
+            let final_bbox = explicit_rect_opt
+                .unwrap_or_else(|| Rect2::new(g_min_x, g_min_y, g_max_x, g_max_y));
             local_groups.push(SchematicGroupIr {
                 name: gname.clone(),
                 sheet: sheet_tag.clone(),
                 title: gdecl_opt.and_then(|g| g.title.clone()),
                 border: gdecl_opt.map(|g| g.border.clone()),
+                color: gdecl_opt.and_then(|g| g.color.clone()),
                 members: members.clone(),
-                bbox: Rect2::new(g_min_x, g_min_y, g_max_x, g_max_y),
+                bbox: final_bbox,
                 notes: g_notes,
                 subzones: g_subzones,
             });
@@ -2084,6 +2144,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         &mut local_entities,
         &mut local_groups,
         &sheet_rel_constraints,
+        &pinned_explicit,
+        &pinned_groups,
         &mut diagnostics,
     );
     if !moved_satellites.is_empty() {
@@ -2247,15 +2309,13 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     continue;
                 }
                 let rpi = net_endpoints[i];
+                let gcell = |p: Point2| -> (i32, i32) {
+                    ((p.x / GRID_MM).round() as i32, (p.y / GRID_MM).round() as i32)
+                };
                 let can_cluster = (is_gnd && rpi.pin.side == Side::South)
                     || (!is_gnd && rpi.pin.side == Side::North);
                 if can_cluster {
                     let ys = rpi.pin.tip_point.y;
-                    let bridge_y = if is_gnd {
-                        snap_grid(ys + GRID_MM)
-                    } else {
-                        snap_grid(ys - GRID_MM)
-                    };
                     let mut cluster = vec![i];
                     loop {
                         let mut added = false;
@@ -2266,19 +2326,11 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             let rpj = net_endpoints[j];
                             if rpj.col_idx == rpi.col_idx
                                 && rpj.pin.side == rpi.pin.side
-                                && (rpj.pin.tip_point.y - ys).abs() < 0.1
+                                && (rpj.pin.tip_point.y - ys).abs() <= 20.32
                                 && cluster.iter().any(|&k| {
                                     let xk = net_endpoints[k].pin.tip_point.x;
                                     let xj = rpj.pin.tip_point.x;
-                                    let dist_ok = (xj - xk).abs() <= 30.48;
-                                    let (bx0, bx1) = (xk.min(xj), xk.max(xj));
-                                    let clear_of_bodies = !all_bodies.iter().any(|b| {
-                                        bridge_y >= b.min_y - 0.2
-                                            && bridge_y <= b.max_y + 0.2
-                                            && bx1 >= b.min_x - 0.2
-                                            && bx0 <= b.max_x + 0.2
-                                    });
-                                    dist_ok && clear_of_bodies
+                                    (xj - xk).abs() <= 90.0
                                 })
                             {
                                 cluster.push(j);
@@ -2290,58 +2342,139 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         }
                     }
                     if cluster.len() >= 2 {
-                        for &idx in &cluster {
-                            handled[idx] = true;
-                        }
-                        let mut xs: Vec<f64> = cluster
+                        let cluster_tips: BTreeSet<(i32, i32)> = cluster
                             .iter()
-                            .map(|&idx| net_endpoints[idx].pin.tip_point.x)
+                            .map(|&idx| gcell(net_endpoints[idx].pin.tip_point))
                             .collect();
-                        xs.sort_by(|a, b| a.partial_cmp(b).unwrap());
-                        xs.dedup_by(|a, b| (*a - *b).abs() <= EPS_MM);
-                        for &x in &xs {
-                            add_ortho_seg(&mut segments, Point2::new(x, ys), Point2::new(x, bridge_y));
-                        }
-                        for pair in xs.windows(2) {
-                            add_ortho_seg(
-                                &mut segments,
-                                Point2::new(pair[0], bridge_y),
-                                Point2::new(pair[1], bridge_y),
-                            );
-                        }
-                        let min_x = *xs.first().unwrap();
-                        // Place single shared power/GND symbol cleanly on leftmost pin
-                        let sym_x = min_x;
-                        let sym_y = if is_gnd {
-                            snap_grid(bridge_y + GRID_MM)
+                        let ref_y = if is_gnd {
+                            cluster
+                                .iter()
+                                .map(|&idx| net_endpoints[idx].pin.tip_point.y)
+                                .fold(f64::NEG_INFINITY, f64::max)
                         } else {
-                            snap_grid(bridge_y - GRID_MM)
+                            cluster
+                                .iter()
+                                .map(|&idx| net_endpoints[idx].pin.tip_point.y)
+                                .fold(f64::INFINITY, f64::min)
                         };
-                        add_ortho_seg(
-                            &mut segments,
-                            Point2::new(sym_x, bridge_y),
-                            Point2::new(sym_x, sym_y),
-                        );
-                        junctions.push(Point2::new(sym_x, bridge_y));
-                        for &xm in &xs[1..xs.len().saturating_sub(1)] {
-                            junctions.push(Point2::new(xm, bridge_y));
+                        let mut pts_sorted: Vec<Point2> = cluster
+                            .iter()
+                            .map(|&idx| net_endpoints[idx].pin.tip_point)
+                            .collect();
+                        pts_sorted.sort_by(|a, b| a.x.partial_cmp(&b.x).unwrap());
+                        let min_x = pts_sorted.first().unwrap().x;
+                        let max_x = pts_sorted.last().unwrap().x;
+                        let seg_clear = |p0: Point2, p1: Point2, occ: &crate::domains::elec::router::GridOccupancy| -> bool {
+                            let a = gcell(p0);
+                            let b = gcell(p1);
+                            if a.1 == b.1 {
+                                let (x0, x1) = (a.0.min(b.0), a.0.max(b.0));
+                                for x in x0..=x1 {
+                                    let c = (x, a.1);
+                                    if !cluster_tips.contains(&c)
+                                        && (all_sheet_pin_tips.contains(&c) || occ.used_cells.contains(&c))
+                                    {
+                                        return false;
+                                    }
+                                }
+                            } else if a.0 == b.0 {
+                                let (y0, y1) = (a.1.min(b.1), a.1.max(b.1));
+                                for y in y0..=y1 {
+                                    let c = (a.0, y);
+                                    if !cluster_tips.contains(&c)
+                                        && (all_sheet_pin_tips.contains(&c) || occ.used_cells.contains(&c))
+                                    {
+                                        return false;
+                                    }
+                                }
+                            }
+                            let (bx0, bx1) = (p0.x.min(p1.x), p0.x.max(p1.x));
+                            let (by0, by1) = (p0.y.min(p1.y), p0.y.max(p1.y));
+                            !all_bodies.iter().any(|b| {
+                                by1 >= b.min_y - 0.1
+                                    && by0 <= b.max_y + 0.1
+                                    && bx1 >= b.min_x - 0.1
+                                    && bx0 <= b.max_x + 0.1
+                            })
+                        };
+                        let mut chosen_bridge: Option<f64> = None;
+                        for step in [2.0_f64, 1.0, 3.0, 4.0] {
+                            let by = if is_gnd {
+                                snap_grid(ref_y + step * GRID_MM)
+                            } else {
+                                snap_grid(ref_y - step * GRID_MM)
+                            };
+                            let horiz_ok = seg_clear(Point2::new(min_x, by), Point2::new(max_x, by), &astar_occ);
+                            let drops_ok = pts_sorted
+                                .iter()
+                                .all(|&pt| seg_clear(pt, Point2::new(pt.x, by), &astar_occ));
+                            let sym_x = pts_sorted[pts_sorted.len() / 2].x;
+                            let sym_y = if is_gnd {
+                                snap_grid(by + GRID_MM)
+                            } else {
+                                snap_grid(by - GRID_MM)
+                            };
+                            let sym_ok = seg_clear(Point2::new(sym_x, by), Point2::new(sym_x, sym_y), &astar_occ);
+                            if horiz_ok && drops_ok && sym_ok {
+                                chosen_bridge = Some(by);
+                                break;
+                            }
                         }
-                        terminals.push(NetTerminalIr {
-                            kind: if is_gnd { "gnd_symbol" } else { "power_symbol" }.to_string(),
-                            pos: Point2::new(sym_x, sym_y),
-                            dir: if is_gnd { Side::South } else { Side::North },
-                            label: net.name.clone(),
-                        });
-                        continue;
+                        if let Some(bridge_y) = chosen_bridge {
+                            for &idx in &cluster {
+                                handled[idx] = true;
+                            }
+                            let mut xs: Vec<f64> = Vec::new();
+                            for pt in &pts_sorted {
+                                let d0 = *pt;
+                                let d1 = Point2::new(pt.x, bridge_y);
+                                add_ortho_seg(&mut segments, d0, d1);
+                                astar_occ.record_world_segment(Segment2::new(d0, d1));
+                                if xs.last().map(|lx| (pt.x - *lx).abs() > EPS_MM).unwrap_or(true) {
+                                    xs.push(pt.x);
+                                }
+                            }
+                            for pair in xs.windows(2) {
+                                let h0 = Point2::new(pair[0], bridge_y);
+                                let h1 = Point2::new(pair[1], bridge_y);
+                                add_ortho_seg(&mut segments, h0, h1);
+                                astar_occ.record_world_segment(Segment2::new(h0, h1));
+                            }
+                            // Place single shared power/GND symbol cleanly on median pin of the trunk
+                            let sym_x = xs[xs.len() / 2];
+                            let sym_y = if is_gnd {
+                                snap_grid(bridge_y + GRID_MM)
+                            } else {
+                                snap_grid(bridge_y - GRID_MM)
+                            };
+                            let s0 = Point2::new(sym_x, bridge_y);
+                            let s1 = Point2::new(sym_x, sym_y);
+                            add_ortho_seg(&mut segments, s0, s1);
+                            astar_occ.record_world_segment(Segment2::new(s0, s1));
+                            astar_occ.record_terminal_point(s1);
+                            for &xj in &xs {
+                                // Every interior T-junction plus the shared symbol tee gets a junction dot
+                                let is_edge = (xj - *xs.first().unwrap()).abs() <= EPS_MM
+                                    || (xj - *xs.last().unwrap()).abs() <= EPS_MM;
+                                if !is_edge || (xj - sym_x).abs() <= EPS_MM {
+                                    junctions.push(Point2::new(xj, bridge_y));
+                                }
+                            }
+                            terminals.push(NetTerminalIr {
+                                kind: if is_gnd { "gnd_symbol" } else { "power_symbol" }.to_string(),
+                                pos: s1,
+                                dir: if is_gnd { Side::South } else { Side::North },
+                                label: net.name.clone(),
+                            });
+                            continue;
+                        }
                     }
                 }
                 handled[i] = true;
                 let tip = rpi.pin.tip_point;
-                let gcell = |p: Point2| -> (i32, i32) {
-                    ((p.x / GRID_MM).round() as i32, (p.y / GRID_MM).round() as i32)
-                };
                 let tip_g = gcell(tip);
-                // Helper: verify a candidate polyline path doesn't touch any foreign pin tip or existing stub!
+                // Helper: verify candidate polyline AND the power/GND symbol's own vertical footprint
+                // never touch any foreign pin tip or existing stub (prevents orient:180 connector shorts!).
                 let path_clear = |pts: &[Point2], occ: &crate::domains::elec::router::GridOccupancy| -> bool {
                     for win in pts.windows(2) {
                         let a = gcell(win[0]);
@@ -2364,7 +2497,46 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             }
                         }
                     }
+                    if let Some(&end_pt) = pts.last() {
+                        let eg = gcell(end_pt);
+                        let sym_body = if is_gnd { (eg.0, eg.1 + 1) } else { (eg.0, eg.1 - 1) };
+                        if sym_body != tip_g
+                            && (all_sheet_pin_tips.contains(&sym_body) || occ.used_cells.contains(&sym_body))
+                        {
+                            return false;
+                        }
+                        // Don't terminate an elbow directly into an adjacent pin's horizontal exit lane!
+                        let same_row_pin_near = (-3..=3)
+                            .any(|dx| (eg.0 + dx, eg.1) != tip_g && all_sheet_pin_tips.contains(&(eg.0 + dx, eg.1)));
+                        if eg.1 != tip_g.1 && same_row_pin_near {
+                            return false;
+                        }
+                    }
                     true
+                };
+                let pick_horiz_stub = |sign_x: f64, sign_y: f64| -> Vec<Point2> {
+                    // First try classic L-elbow (`tip -> mid -> mid + sign_y`)
+                    for step in 2..=6 {
+                        let mid = Point2::new(snap_grid(tip.x + sign_x * (step as f64) * GRID_MM), tip.y);
+                        let e = Point2::new(mid.x, snap_grid(mid.y + sign_y * GRID_MM));
+                        let cand = vec![tip, mid, e];
+                        if path_clear(&cand, &astar_occ) {
+                            return cand;
+                        }
+                    }
+                    // Fallback: staggered pure-horizontal stub (`power:GND` / `power:+24V` already draw
+                    // their own vertical stem, so this avoids crossing an adjacent pin's lane!).
+                    for step in [2, 4, 3, 5, 6, 1, 7] {
+                        let e = Point2::new(snap_grid(tip.x + sign_x * (step as f64) * GRID_MM), tip.y);
+                        let cand = vec![tip, e];
+                        if path_clear(&cand, &astar_occ) {
+                            return cand;
+                        }
+                    }
+                    vec![
+                        tip,
+                        Point2::new(snap_grid(tip.x + sign_x * 2.0 * GRID_MM), tip.y),
+                    ]
                 };
                 let chosen_pts: Vec<Point2> = if is_gnd {
                     match rpi.pin.side {
@@ -2379,40 +2551,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             }
                             res
                         }
-                        Side::West => {
-                            let mut res = vec![
-                                tip,
-                                Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), tip.y),
-                                Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), snap_grid(tip.y + GRID_MM)),
-                            ];
-                            for step in 2..=6 {
-                                let mid = Point2::new(snap_grid(tip.x - (step as f64) * GRID_MM), tip.y);
-                                let e = Point2::new(mid.x, snap_grid(mid.y + GRID_MM));
-                                let cand = vec![tip, mid, e];
-                                if path_clear(&cand, &astar_occ) {
-                                    res = cand;
-                                    break;
-                                }
-                            }
-                            res
-                        }
-                        Side::East => {
-                            let mut res = vec![
-                                tip,
-                                Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), tip.y),
-                                Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), snap_grid(tip.y + GRID_MM)),
-                            ];
-                            for step in 2..=6 {
-                                let mid = Point2::new(snap_grid(tip.x + (step as f64) * GRID_MM), tip.y);
-                                let e = Point2::new(mid.x, snap_grid(mid.y + GRID_MM));
-                                let cand = vec![tip, mid, e];
-                                if path_clear(&cand, &astar_occ) {
-                                    res = cand;
-                                    break;
-                                }
-                            }
-                            res
-                        }
+                        Side::West => pick_horiz_stub(-1.0, 1.0),
+                        Side::East => pick_horiz_stub(1.0, 1.0),
                         Side::North => {
                             let mut res = vec![
                                 tip,
@@ -2446,40 +2586,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             }
                             res
                         }
-                        Side::West => {
-                            let mut res = vec![
-                                tip,
-                                Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), tip.y),
-                                Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), snap_grid(tip.y - GRID_MM)),
-                            ];
-                            for step in 2..=6 {
-                                let mid = Point2::new(snap_grid(tip.x - (step as f64) * GRID_MM), tip.y);
-                                let e = Point2::new(mid.x, snap_grid(mid.y - GRID_MM));
-                                let cand = vec![tip, mid, e];
-                                if path_clear(&cand, &astar_occ) {
-                                    res = cand;
-                                    break;
-                                }
-                            }
-                            res
-                        }
-                        Side::East => {
-                            let mut res = vec![
-                                tip,
-                                Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), tip.y),
-                                Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), snap_grid(tip.y - GRID_MM)),
-                            ];
-                            for step in 2..=6 {
-                                let mid = Point2::new(snap_grid(tip.x + (step as f64) * GRID_MM), tip.y);
-                                let e = Point2::new(mid.x, snap_grid(mid.y - GRID_MM));
-                                let cand = vec![tip, mid, e];
-                                if path_clear(&cand, &astar_occ) {
-                                    res = cand;
-                                    break;
-                                }
-                            }
-                            res
-                        }
+                        Side::West => pick_horiz_stub(-1.0, -1.0),
+                        Side::East => pick_horiz_stub(1.0, -1.0),
                         Side::South => {
                             let mut res = vec![
                                 tip,
@@ -2507,6 +2615,13 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 }
                 let end = *chosen_pts.last().unwrap();
                 astar_occ.record_terminal_point(end);
+                // Also reserve the symbol's own vertical stem cell so a neighboring opposite-polarity
+                // stub cannot cross it!
+                let sym_stem_pt = Point2::new(
+                    end.x,
+                    if is_gnd { snap_grid(end.y + GRID_MM) } else { snap_grid(end.y - GRID_MM) },
+                );
+                astar_occ.record_terminal_point(sym_stem_pt);
                 terminals.push(NetTerminalIr {
                     kind: if is_gnd { "gnd_symbol" } else { "power_symbol" }.to_string(),
                     pos: end,
@@ -2535,6 +2650,11 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 .connects
                 .iter()
                 .any(|p| moved_satellites.contains(&p.component));
+        let touches_explicit = !pinned_explicit.is_empty()
+            && net
+                .connects
+                .iter()
+                .any(|p| pinned_explicit.contains(&p.component));
         let cols_in_net_pre: BTreeSet<usize> = net_endpoints.iter().map(|rp| rp.col_idx).collect();
         let use_local_astar = !is_cross_sheet
             && !is_gnd
@@ -2542,7 +2662,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             && cols_in_net_pre.len() == 1
             && net_endpoints.len() >= 2
             && (style == NetRoutingStyle::ZoneLocal
-                || (touches_rel_sat && style == NetRoutingStyle::Direct));
+                || ((touches_rel_sat || touches_explicit) && style == NetRoutingStyle::Direct));
 
         if use_local_astar {
             // Defer intra-zone A* routing to Pass 2 so all power/GND symbols and label stubs
@@ -2556,8 +2676,12 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             continue;
         }
         if (style == NetRoutingStyle::ZoneLocal || is_cross_sheet) && !is_gnd && !is_pwr {
-            // Cross-zone or Cross-sheet net -> crisp shaped flag terminals at each endpoint!
-            let term_kind = if is_cross_sheet { "global_flag" } else { "label_flag" };
+            // Cross-zone or Cross-sheet net -> crisp KiCad red-outlined `global_flag` box!
+            let term_kind = if is_cross_sheet || cols_in_net_pre.len() > 1 {
+                "global_flag"
+            } else {
+                "label_flag"
+            };
             let mut segments = Vec::new();
             let mut terminals = Vec::new();
             for rp in &net_endpoints {
@@ -3623,6 +3747,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
 
     entities.extend(local_entities);
     schematic_groups.extend(local_groups);
+    schematic_dividers.extend(local_dividers);
     schematic_routes.extend(local_routes);
     let _ = col_bounds;
     } // end per-sheet loop
@@ -3650,6 +3775,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         derived_walls: Vec::new(),
         wall_solids: Vec::new(),
         schematic_groups,
+        schematic_dividers,
         schematic_routes,
         explicit_sheets,
         mep_circuits: Vec::new(),

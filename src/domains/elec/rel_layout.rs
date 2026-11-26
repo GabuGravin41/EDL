@@ -194,6 +194,8 @@ pub fn apply_relative_placements(
     entities: &mut [EntityIr],
     groups: &mut [SchematicGroupIr],
     constraints: &[RelativePlacementDecl],
+    pinned_explicit: &BTreeSet<String>,
+    pinned_groups: &BTreeSet<String>,
     diagnostics: &mut Vec<Diagnostic>,
 ) -> BTreeSet<String> {
     let mut moved_sats: BTreeSet<String> = BTreeSet::new();
@@ -583,8 +585,8 @@ pub fn apply_relative_placements(
     }
 
     // 4. Inter-Group Horizontal Repack Pass:
-    //    If satellites expanded Group i rightward into Group i+1 (same row band), shift Group i+1 and all
-    //    its members rightward cleanly so zone frames NEVER collide!
+    //    If auto-satellites expanded Group i rightward into Group i+1 (same row band), shift Group i+1
+    //    ONLY when neither Group j nor its members are explicitly pinned by the user/AI!
     if groups.len() > 1 {
         let mut g_bounds: Vec<(f64, f64, f64, f64)> = Vec::new();
         for g in groups.iter() {
@@ -607,6 +609,11 @@ pub fn apply_relative_placements(
                 continue;
             }
             for j in (i + 1)..groups.len() {
+                if pinned_groups.contains(&groups[j].name)
+                    || groups[j].members.iter().any(|m| pinned_explicit.contains(m))
+                {
+                    continue;
+                }
                 let (bx0, _bx1, by0, by1) = g_bounds[j];
                 if !bx0.is_finite() {
                     continue;
@@ -631,31 +638,36 @@ pub fn apply_relative_placements(
         }
     }
 
-    // 5. Keep entire sheet cleanly inside positive printable coordinates (min_x >= 30.48mm, min_y >= 30.48mm)
-    let mut min_x = f64::INFINITY;
-    let mut min_y = f64::INFINITY;
-    for e in entities.iter() {
-        let env = full_envelope(e);
-        min_x = min_x.min(env.min_x);
-        min_y = min_y.min(env.min_y);
-    }
-    let shift_x = if min_x < 30.48 { snap(30.48 - min_x) } else { 0.0 };
-    let shift_y = if min_y < 30.48 { snap(30.48 - min_y) } else { 0.0 };
-    if shift_x > 0.0 || shift_y > 0.0 {
-        for e in entities.iter_mut() {
-            translate_entity(e, shift_x, shift_y);
+    // 5. Keep entire sheet cleanly inside positive printable coordinates (ONLY when not explicitly pinned)
+    if pinned_explicit.is_empty() && pinned_groups.is_empty() {
+        let mut min_x = f64::INFINITY;
+        let mut min_y = f64::INFINITY;
+        for e in entities.iter() {
+            let env = full_envelope(e);
+            min_x = min_x.min(env.min_x);
+            min_y = min_y.min(env.min_y);
         }
-        for g in groups.iter_mut() {
-            g.bbox.min_x += shift_x;
-            g.bbox.max_x += shift_x;
-            g.bbox.min_y += shift_y;
-            g.bbox.max_y += shift_y;
+        let shift_x = if min_x < 30.48 { snap(30.48 - min_x) } else { 0.0 };
+        let shift_y = if min_y < 30.48 { snap(30.48 - min_y) } else { 0.0 };
+        if shift_x > 0.0 || shift_y > 0.0 {
+            for e in entities.iter_mut() {
+                translate_entity(e, shift_x, shift_y);
+            }
+            for g in groups.iter_mut() {
+                g.bbox.min_x += shift_x;
+                g.bbox.max_x += shift_x;
+                g.bbox.min_y += shift_y;
+                g.bbox.max_y += shift_y;
+            }
         }
     }
 
-    // 6. Recompute each group's bbox tightly from the actual post-solver member envelopes
-    //    (eliminates stale pre-solver empty vertical space left behind when satellites snap to pins!).
+    // 6. Recompute auto-sized group bboxes tightly from actual post-solver member envelopes
+    //    (explicit `rect:` groups are obeyed literally and NEVER shrunk or moved!).
     for g in groups.iter_mut() {
+        if pinned_groups.contains(&g.name) {
+            continue;
+        }
         let (mut gx0, mut gx1, mut gy0, mut gy1) =
             (f64::INFINITY, f64::NEG_INFINITY, f64::INFINITY, f64::NEG_INFINITY);
         for m in &g.members {
