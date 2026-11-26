@@ -13,7 +13,7 @@ use std::process;
 #[command(
     name = "edl",
     version,
-    about = "Engineering Description Language (EDL) v1.0 — multi-domain compiler, simulator, sync, plugin registry & MCP server"
+    about = "Engineering Description Language (EDL) v3.2 — AI-native multi-domain intent compiler, simulator, sync, plugin registry & MCP server"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -29,6 +29,9 @@ enum Commands {
         /// Emit machine-readable JSON Canonical IR
         #[arg(long)]
         json: bool,
+        /// Emit a formatted Markdown verification & repair-suggestion report
+        #[arg(long)]
+        markdown: bool,
         /// Also invoke kicad-cli sch erc and ingest target-side ERC into the evidence ledger
         #[arg(long)]
         kicad_erc: bool,
@@ -230,6 +233,7 @@ fn main() {
         Commands::Build {
             file,
             json,
+            markdown,
             kicad_erc,
         } => {
             let mut ir = load_and_compile(&file);
@@ -238,6 +242,38 @@ fn main() {
             }
             if json {
                 println!("{}", serde_json::to_string_pretty(&ir).unwrap());
+            } else if markdown {
+                println!("# EDL Verification Report: {} (`{}`)\n", ir.project.name, ir.project.domain);
+                println!(
+                    "- **Status:** {}\n- **Components / Entities:** {}\n- **Nets / Relations:** {}\n",
+                    if ir.project.has_errors { "FAILED" } else { "PASSED" },
+                    ir.entities.len(),
+                    ir.relations.len()
+                );
+                println!("## Evidence Ledger\n");
+                println!("| Check | Status | Details |");
+                println!("| :--- | :--- | :--- |");
+                for ev in &ir.evidence {
+                    println!("| `{}` | `{:?}` | {} |", ev.check_id, ev.status, ev.details);
+                }
+                let repairs: Vec<(&str, &edl::core::ir::RepairSuggestion)> = ir
+                    .evidence
+                    .iter()
+                    .flat_map(|ev| ev.repair_suggestions.iter().map(move |r| (ev.check_id.as_str(), r)))
+                    .collect();
+                if !repairs.is_empty() {
+                    println!("\n## Repair Suggestions\n");
+                    for (cid, r) in repairs {
+                        let tag = if r.auto_fixable { "auto-fixable" } else { "manual" };
+                        println!("- **`{cid}` Fix #{}** ({tag}): {}", r.fix_id, r.description);
+                    }
+                }
+                if !ir.diagnostics.is_empty() {
+                    println!("\n## Diagnostics\n");
+                    for d in &ir.diagnostics {
+                        println!("- **[{:?}] `{}`** ({}): {}", d.severity, d.code, d.category, d.message);
+                    }
+                }
             } else {
                 println!("EDL Project: {} [{}]", ir.project.name, ir.project.domain);
                 if ir.project.domain == "electronics" {
@@ -301,6 +337,10 @@ fn main() {
                 println!("  Evidence:");
                 for ev in &ir.evidence {
                     println!("    [{:?}] {} — {}", ev.status, ev.check_id, ev.details);
+                    for r in &ev.repair_suggestions {
+                        let tag = if r.auto_fixable { "auto-fixable" } else { "manual" };
+                        println!("      -> Fix #{} ({tag}): {}", r.fix_id, r.description);
+                    }
                 }
                 if !ir.diagnostics.is_empty() {
                     println!("  Diagnostics:");

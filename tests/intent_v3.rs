@@ -221,3 +221,110 @@ project "OverlapCheck" {
     assert_eq!(r_pwr.hierarchy, vec!["Power".to_string()]);
     assert_eq!(r_sns.hierarchy, vec!["Sensor".to_string()]);
 }
+
+#[test]
+fn v3_2_unquoted_hierarchical_nets_cross_circuit_links_and_mna_derating_e13_e14() {
+    // 1. Multi-stage industrial power distribution showcase compiles cleanly with E1-E5 + E11-E14!
+    let mut ir = edl::compile_file(Path::new("examples/multisheet_power_distribution.edl"))
+        .expect("multisheet_power_distribution.edl should compile");
+    assert!(!ir.project.has_errors, "diagnostics: {:?}", ir.diagnostics);
+    assert!(
+        ir.relations.iter().any(|r| r.id == "/PrimaryStage/V3V3" && r.hierarchy == vec!["PrimaryStage"]),
+        "expected canonical /PrimaryStage/V3V3 net with hierarchy, got: {:?}",
+        ir.relations.iter().map(|r| (&r.id, &r.hierarchy)).collect::<Vec<_>>()
+    );
+    // Cross-hierarchy link merged SecondaryStage pins (C3.POS, U2.VDD) into /PrimaryStage/V3V3!
+    let v3v3 = ir.relations.iter().find(|r| r.id == "/PrimaryStage/V3V3").unwrap();
+    assert!(v3v3.connects.iter().any(|c| c == "U1.VOUT"));
+    assert!(v3v3.connects.iter().any(|c| c == "U2.VDD"));
+    assert!(v3v3.connects.iter().any(|c| c == "C3.POS"));
+
+    // Verify E13 voltage derating & E14 power derating both passed ExactlyChecked
+    for check in ["E13_voltage_derating", "E14_power_derating"] {
+        let ev = ir.evidence.iter().find(|e| e.check_id == check).expect(check);
+        assert_eq!(ev.status, VerificationStatus::ExactlyChecked, "{check}: {}", ev.details);
+    }
+
+    // Verify exported KiCad 9 schematic passes real `kicad-cli sch erc` (or Unverified if absent in CI)
+    edl::domains::elec::kicad_erc::run_and_ingest_kicad_erc(&mut ir);
+    if let Some(ev) = ir.evidence.iter().find(|e| e.check_id == "K1_kicad_erc_external") {
+        assert!(
+            ev.status == VerificationStatus::ExactlyChecked
+                || ev.status == VerificationStatus::Unverified,
+            "KiCad 9 ERC failed on hierarchical power distribution: {:?}",
+            ir.diagnostics
+        );
+    }
+
+    // 2. Dangling cross-hierarchy net reference `/Missing/Rail` triggers hard E_REF_UNKNOWN_NET
+    let bad_link = r#"
+project "BadHierLink" {
+    units: mm
+    circuit A {
+        component R1: resistor { value: 1kohm pin A: passive side: west pin B: passive side: east }
+        net /A/SIG { connect: [R1.A, /Missing/Rail] }
+        net GND { connect: [R1.B] }
+    }
+}
+"#;
+    let bad_ir = edl::compile_source("bad_link.edl", bad_link).expect("parses");
+    assert!(bad_ir.project.has_errors);
+    assert!(
+        bad_ir.diagnostics.iter().any(|d| d.code == "E_REF_UNKNOWN_NET"),
+        "expected E_REF_UNKNOWN_NET, got: {:?}",
+        bad_ir.diagnostics
+    );
+
+    // 3. MNA-backed E13 voltage derating & E14 power derating catch real hardware failures!
+    let underrated = r#"
+project "UnderratedParts" {
+    units: mm
+    frame Sheet: Frame2
+    circuit Power {
+        component J1: connector {
+            value: "12V_IN"
+            pin V12: power_out (12V) side: east
+            pin GND: ground (0V) side: south
+        }
+        // 6.3V capacitor on a 12V rail -> E_VOLTAGE_DERATING (suggest >= 16V)
+        component C_BAD: capacitor {
+            value: 10uF
+            voltage_rating: 6.3V
+            pin POS: passive side: north
+            pin NEG: passive side: south
+        }
+        // 400 ohm resistor across 12V -> P = 144 / 400 = 0.360W on a 125mW part -> E_POWER_DERATING (suggest >= 0.5W)
+        component R_HOT: resistor {
+            value: 400ohm
+            power_rating: 125mW
+            pin A: passive side: north
+            pin B: passive side: south
+        }
+        net /Power/V12 { connect: [J1.V12, C_BAD.POS, R_HOT.A] power_flag: true }
+        net /Power/GND { connect: [J1.GND, C_BAD.NEG, R_HOT.B] }
+    }
+    schematic Main {
+        sheet: A4 landscape
+        group G { members: [J1, C_BAD, R_HOT] }
+    }
+}
+"#;
+    let uir = edl::compile_source("underrated.edl", underrated).expect("parses");
+    assert!(uir.project.has_errors);
+    assert!(
+        uir.diagnostics.iter().any(|d| d.code == "E_VOLTAGE_DERATING"),
+        "expected E_VOLTAGE_DERATING, got: {:?}",
+        uir.diagnostics
+    );
+    assert!(
+        uir.diagnostics.iter().any(|d| d.code == "E_POWER_DERATING"),
+        "expected E_POWER_DERATING, got: {:?}",
+        uir.diagnostics
+    );
+    let e13 = uir.evidence.iter().find(|e| e.check_id == "E13_voltage_derating").unwrap();
+    let e14 = uir.evidence.iter().find(|e| e.check_id == "E14_power_derating").unwrap();
+    assert_eq!(e13.status, VerificationStatus::Violated);
+    assert_eq!(e14.status, VerificationStatus::Violated);
+    assert!(e13.repair_suggestions[0].description.contains("16.0V"));
+    assert!(e14.repair_suggestions[0].description.contains("0.500W"));
+}

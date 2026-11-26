@@ -141,6 +141,7 @@ pub fn elaborate_project(
                     name: net_v,
                     hierarchy: Vec::new(),
                     connects: vec![pref],
+                    linked_nets: Vec::new(),
                     power_flag: false,
                     span: sp,
                 });

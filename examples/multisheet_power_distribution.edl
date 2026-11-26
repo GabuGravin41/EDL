@@ -1,0 +1,176 @@
+// EDL v3.2 Showcase: Multi-Stage Power Distribution with Hierarchical Nets & Derating Proofs
+// Demonstrates:
+//  - Multiple `circuit` blocks in one project
+//  - Unquoted hierarchical net paths (`/Stage/Net`) preventing accidental net collisions
+//  - Cross-hierarchy net links (`connect: [..., /PrimaryStage/V3V3]`)
+//  - MNA-backed E13 voltage derating (<=80% stress) & E14 power derating (<=80% thermal stress)
+
+project "Industrial Power Distribution v3.2" {
+    units: mm
+    frame Sheet: Frame2
+
+    circuit PowerInput {
+        component J1: connector {
+            value: "VIN_5V"
+            pin VBUS: power_out (5V) side: east
+            pin GND: ground (0V) side: south
+        }
+
+        component L1: inductor {
+            value: 10uH
+            pin A: passive side: west
+            pin B: passive side: east
+        }
+
+        component C1: capacitor {
+            value: 100uF
+            voltage_rating: 16V
+            pin POS: passive side: north
+            pin NEG: passive side: south
+        }
+
+        net /PowerInput/VBUS_RAW {
+            connect: [J1.VBUS, L1.A]
+            power_flag: true
+        }
+
+        net /PowerInput/VBUS_FILT {
+            connect: [L1.B, C1.POS]
+        }
+
+        net /PowerInput/GND {
+            connect: [J1.GND, C1.NEG]
+        }
+    }
+
+    circuit PrimaryStage {
+        component U1: regulator {
+            value: "MP9486A_3V3"
+            pin VIN: power_in (4.5V..12V) side: west
+            pin GND: ground (0V) side: south
+            pin VOUT: power_out (3.3V) side: east
+            pin FB: input side: east
+        }
+
+        component R1: resistor {
+            value: 10kohm
+            power_rating: 125mW
+            pin A: passive side: north
+            pin B: passive side: south
+        }
+
+        component R2: resistor {
+            value: 4.7kohm
+            power_rating: 125mW
+            pin A: passive side: north
+            pin B: passive side: south
+        }
+
+        component C2: capacitor {
+            value: 22uF
+            voltage_rating: 10V
+            pin POS: passive side: north
+            pin NEG: passive side: south
+        }
+
+        // Cross-hierarchy links to PowerInput stage
+        net /PrimaryStage/VIN {
+            connect: [U1.VIN, /PowerInput/VBUS_FILT]
+        }
+
+        net /PrimaryStage/V3V3 {
+            connect: [U1.VOUT, R1.A, C2.POS]
+            power_flag: true
+        }
+
+        net /PrimaryStage/FB_NODE {
+            connect: [R1.B, R2.A, U1.FB]
+        }
+
+        net /PrimaryStage/GND {
+            connect: [U1.GND, R2.B, C2.NEG, /PowerInput/GND]
+        }
+    }
+
+    circuit SecondaryStage {
+        component C3: capacitor {
+            value: 100nF
+            voltage_rating: 16V
+            pin POS: passive side: north
+            pin NEG: passive side: south
+        }
+
+        component U2: ic {
+            value: "STM32L476"
+            pin VDD: power_in (3.0V..3.6V) side: west
+            pin GND: ground (0V) side: south
+            pin STAT_LED: output (3.3V) side: east
+        }
+
+        component R3: resistor {
+            value: 1kohm
+            power_rating: 125mW
+            pin A: passive side: west
+            pin B: passive side: east
+        }
+
+        component D1: led {
+            value: "Green_PWR"
+            pin A: passive side: west
+            pin K: passive side: east
+        }
+
+        // Secondary stage links directly to PrimaryStage hierarchical nets
+        net V3V3 {
+            connect: [C3.POS, U2.VDD, /PrimaryStage/V3V3]
+        }
+
+        net /SecondaryStage/LED_DRIVE {
+            connect: [U2.STAT_LED, R3.A]
+        }
+
+        net /SecondaryStage/LED_A {
+            connect: [R3.B, D1.A]
+        }
+
+        net GND {
+            connect: [C3.NEG, U2.GND, D1.K, /PrimaryStage/GND]
+        }
+    }
+
+    schematic MainSheet {
+        sheet: A3 landscape
+
+        group InputStage {
+            members: [J1, L1, C1]
+        }
+
+        group BuckConverter {
+            members: [U1, R1, R2, C2]
+        }
+
+        group MCU_Load {
+            members: [C3, U2, R3, D1]
+        }
+
+        layout {
+            arrange: [InputStage, BuckConverter, MCU_Load] left_to_right
+            group_gap: 25.4mm
+            member_gap: 10.16mm
+        }
+
+        routing {
+            default: direct
+            power_nets: symbol
+            ground_nets: symbol
+        }
+    }
+
+    verify {
+        require all_required_pins_connected
+        require no_power_ground_short
+        require no_multiple_power_drivers
+        require voltage_compatibility
+        require no_single_pin_nets
+    }
+}

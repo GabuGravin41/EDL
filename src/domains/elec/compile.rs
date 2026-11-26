@@ -116,6 +116,11 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         merged_nets_owned[ni].connects.push(pr.clone());
                     }
                 }
+                for ln in &net.linked_nets {
+                    if !merged_nets_owned[ni].linked_nets.iter().any(|(n, _)| n == &ln.0) {
+                        merged_nets_owned[ni].linked_nets.push(ln.clone());
+                    }
+                }
             } else {
                 net_idx_by_name.insert(net.name.clone(), merged_nets_owned.len());
                 merged_nets_owned.push(net.clone());
@@ -140,6 +145,77 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             net_idx_by_name.insert(net.name.clone(), merged_nets_owned.len());
             merged_nets_owned.push(net.clone());
         }
+    }
+
+    // Resolve cross-hierarchy net links (`connect: [..., /PrimaryStage/V3V3]`) via union-find.
+    // Preserves the target hierarchical net name & hierarchy while unifying all pins and power_flag.
+    if merged_nets_owned.iter().any(|n| !n.linked_nets.is_empty()) {
+        let n_nets = merged_nets_owned.len();
+        let mut parent: Vec<usize> = (0..n_nets).collect();
+        fn uf_find(p: &mut [usize], mut x: usize) -> usize {
+            while p[x] != x {
+                p[x] = p[p[x]];
+                x = p[x];
+            }
+            x
+        }
+        for i in 0..n_nets {
+            let links = merged_nets_owned[i].linked_nets.clone();
+            let src_name = merged_nets_owned[i].name.clone();
+            for (target_name, lspan) in links {
+                if let Some(&ti) = net_idx_by_name.get(&target_name) {
+                    let ri = uf_find(&mut parent, i);
+                    let rt = uf_find(&mut parent, ti);
+                    if ri != rt {
+                        // Prefer the referenced target (typically the canonical `/Module/Net`) as root
+                        parent[ri] = rt;
+                    }
+                } else {
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "E_REF_UNKNOWN_NET",
+                            "semantics",
+                            format!(
+                                "Net '{}' references undeclared hierarchical net '{}'",
+                                src_name, target_name
+                            ),
+                            Some(lspan),
+                        )
+                        .with_entities(vec![src_name.clone(), target_name.clone()])
+                        .with_suggestion(format!(
+                            "Declare `net {target_name} {{ ... }}` in a circuit block or fix the hierarchical net path"
+                        )),
+                    );
+                }
+            }
+        }
+        let mut absorbed = vec![false; n_nets];
+        for i in 0..n_nets {
+            let root = uf_find(&mut parent, i);
+            if root != i {
+                absorbed[i] = true;
+                let extra_pf = merged_nets_owned[i].power_flag;
+                let extra_connects = merged_nets_owned[i].connects.clone();
+                if extra_pf {
+                    merged_nets_owned[root].power_flag = true;
+                }
+                for pr in extra_connects {
+                    if !merged_nets_owned[root]
+                        .connects
+                        .iter()
+                        .any(|e| e.component == pr.component && e.pin == pr.pin)
+                    {
+                        merged_nets_owned[root].connects.push(pr);
+                    }
+                }
+            }
+        }
+        let mut idx = 0usize;
+        merged_nets_owned.retain(|_| {
+            let keep = !absorbed[idx];
+            idx += 1;
+            keep
+        });
     }
 
     for raw_comp in raw_comp_stream {
@@ -599,6 +675,17 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         );
                     }
                 }
+                let repair_suggestions: Vec<RepairSuggestion> = shorts
+                    .iter()
+                    .enumerate()
+                    .map(|(i, n)| RepairSuggestion {
+                        fix_id: i + 1,
+                        description: format!(
+                            "Separate power pins and ground pins currently shorted together on net '{n}'"
+                        ),
+                        auto_fixable: false,
+                    })
+                    .collect();
                 evidence.push(EvidenceRecord {
                     check_id: "E2_no_power_ground_short".to_string(),
                     status: if shorts.is_empty() {
@@ -614,7 +701,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("Power-ground short on net(s): {}", shorts.join(", "))
                     },
-                    repair_suggestions: Vec::new(),
+                    repair_suggestions,
                 });
             }
 
@@ -646,6 +733,17 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         );
                     }
                 }
+                let repair_suggestions: Vec<RepairSuggestion> = conflicts
+                    .iter()
+                    .enumerate()
+                    .map(|(i, n)| RepairSuggestion {
+                        fix_id: i + 1,
+                        description: format!(
+                            "Isolate conflicting power_out drivers on net '{n}' using OR-ing diodes, load switches, or separate supply rails"
+                        ),
+                        auto_fixable: false,
+                    })
+                    .collect();
                 evidence.push(EvidenceRecord {
                     check_id: "E3_no_multiple_power_drivers".to_string(),
                     status: if conflicts.is_empty() {
@@ -661,13 +759,14 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("Multiple power drivers on net(s): {}", conflicts.join(", "))
                     },
-                    repair_suggestions: Vec::new(),
+                    repair_suggestions,
                 });
             }
 
             VerifyRule::VoltageCompatibility { .. } => {
                 let mut mismatches = 0usize;
                 let mut checked_rails = 0usize;
+                let mut repair_suggestions: Vec<RepairSuggestion> = Vec::new();
                 for net in &all_nets {
                     let pins = net_pins.get(&net.name).cloned().unwrap_or_default();
                     let drivers = net_driven_voltage.get(&net.name).cloned().unwrap_or_default();
@@ -694,6 +793,14 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         if !ok {
                             mismatches += 1;
                             let target_pin = format!("{cid}.{pid}");
+                            repair_suggestions.push(RepairSuggestion {
+                                fix_id: mismatches,
+                                description: format!(
+                                    "Connect '{target_pin}' to a regulated rail within {min_v:.2}V..{max_v:.2}V instead of '{}' ({v_supply:.2}V)",
+                                    net.name
+                                ),
+                                auto_fixable: false,
+                            });
                             diagnostics.push(
                                 Diagnostic::error(
                                     "E_ERC_VOLTAGE_MISMATCH",
@@ -729,7 +836,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("{mismatches} supply voltage compatibility violation(s) detected")
                     },
-                    repair_suggestions: Vec::new(),
+                    repair_suggestions,
                 });
             }
 
@@ -849,6 +956,17 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         );
                     }
                 }
+                let repair_suggestions: Vec<RepairSuggestion> = dangling
+                    .iter()
+                    .enumerate()
+                    .map(|(i, n)| RepairSuggestion {
+                        fix_id: i + 1,
+                        description: format!(
+                            "Connect a second pin to net '{n}', link it to a hierarchical net, or remove the dangling net"
+                        ),
+                        auto_fixable: false,
+                    })
+                    .collect();
                 evidence.push(EvidenceRecord {
                     check_id: "E5_no_single_pin_nets".to_string(),
                     status: if dangling.is_empty() {
@@ -864,7 +982,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("Dangling single-pin net(s): {}", dangling.join(", "))
                     },
-                    repair_suggestions: Vec::new(),
+                    repair_suggestions,
                 });
             }
             _ => {}
@@ -1047,6 +1165,12 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         props.insert("value".to_string(), json!(comp.value));
                         if let Some(ref fp) = comp.footprint {
                             props.insert("footprint".to_string(), json!(fp));
+                        }
+                        if let Some(vr) = comp.voltage_rating_v {
+                            props.insert("voltage_rating_v".to_string(), json!(vr));
+                        }
+                        if let Some(pr) = comp.power_rating_w {
+                            props.insert("power_rating_w".to_string(), json!(pr));
                         }
                         if let Some(ref st) = sheet_tag {
                             props.insert("sheet".to_string(), json!(st));
@@ -1841,6 +1965,12 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             props.insert("value".to_string(), json!(comp.value));
             if let Some(ref fp) = comp.footprint {
                 props.insert("footprint".to_string(), json!(fp));
+            }
+            if let Some(vr) = comp.voltage_rating_v {
+                props.insert("voltage_rating_v".to_string(), json!(vr));
+            }
+            if let Some(pr) = comp.power_rating_w {
+                props.insert("power_rating_w".to_string(), json!(pr));
             }
             if let Some(ref lid) = lib_id_opt {
                 props.insert("lib_id".to_string(), json!(lid));
@@ -3530,8 +3660,312 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         &mut ir,
     );
 
+    // 8. MNA-Backed Component Voltage & Power Derating Proofs (E13 / E14):
+    //    Enforces 20% safety derating (operating <= 80% of rated) whenever components declare
+    //    `voltage_rating:` / `power_rating:` (or `props { "voltage_rating": "...", "power_rating": "..." }`).
+    run_derating_checks(
+        &comp_order,
+        &comp_map,
+        &pin_to_nets,
+        &ground_nets,
+        &net_driven_voltage,
+        &mut ir,
+    );
+
     ir.project.has_errors = ir.diagnostics.iter().any(|d| d.severity == Severity::Error);
     ir
+}
+
+fn parse_rating_volts(comp: &ComponentDecl) -> Option<f64> {
+    if let Some(v) = comp.voltage_rating_v {
+        return Some(v);
+    }
+    for (k, v) in &comp.props {
+        let kl = k.to_lowercase();
+        if matches!(kl.as_str(), "voltage_rating" | "rated_voltage" | "max_voltage" | "voltage") {
+            let trimmed = v.trim();
+            let stripped = trimmed
+                .trim_end_matches("VDC")
+                .trim_end_matches("Vdc")
+                .trim_end_matches('V')
+                .trim_end_matches('v')
+                .trim();
+            if let Ok(num) = stripped.parse::<f64>() {
+                if num > 0.0 {
+                    return Some(num);
+                }
+            }
+        }
+    }
+    None
+}
+
+fn parse_rating_watts(comp: &ComponentDecl) -> Option<f64> {
+    if let Some(w) = comp.power_rating_w {
+        return Some(w);
+    }
+    for (k, v) in &comp.props {
+        let kl = k.to_lowercase();
+        if matches!(kl.as_str(), "power_rating" | "rated_power" | "max_power" | "power") {
+            let trimmed = v.trim();
+            if let Some(mw) = trimmed.strip_suffix("mW").or_else(|| trimmed.strip_suffix("mw")) {
+                if let Ok(num) = mw.trim().parse::<f64>() {
+                    if num > 0.0 {
+                        return Some(num * 1e-3);
+                    }
+                }
+            } else if let Some(w) = trimmed.strip_suffix('W').or_else(|| trimmed.strip_suffix('w')) {
+                if let Ok(num) = w.trim().parse::<f64>() {
+                    if num > 0.0 {
+                        return Some(num);
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+fn next_standard_voltage_tier(min_v: f64) -> f64 {
+    const TIERS: &[f64] = &[6.3, 10.0, 16.0, 25.0, 35.0, 50.0, 63.0, 100.0, 250.0, 400.0, 630.0, 1000.0];
+    TIERS.iter().copied().find(|&t| t >= min_v - 1e-6).unwrap_or(min_v.ceil())
+}
+
+fn next_standard_power_tier(min_w: f64) -> f64 {
+    const TIERS: &[f64] = &[0.0625, 0.1, 0.125, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 25.0];
+    TIERS.iter().copied().find(|&t| t >= min_w - 1e-9).unwrap_or(min_w.ceil())
+}
+
+fn run_derating_checks(
+    comp_order: &[String],
+    comp_map: &BTreeMap<String, &ComponentDecl>,
+    pin_to_nets: &BTreeMap<(String, String), Vec<String>>,
+    ground_nets: &BTreeSet<String>,
+    net_driven_voltage: &BTreeMap<String, Vec<(String, f64)>>,
+    ir: &mut CanonicalIr,
+) {
+    let rated_v_comps: Vec<(String, &ComponentDecl, f64)> = comp_order
+        .iter()
+        .filter_map(|cid| {
+            let c = *comp_map.get(cid)?;
+            Some((cid.clone(), c, parse_rating_volts(c)?))
+        })
+        .collect();
+    let rated_w_comps: Vec<(String, &ComponentDecl, f64)> = comp_order
+        .iter()
+        .filter_map(|cid| {
+            let c = *comp_map.get(cid)?;
+            Some((cid.clone(), c, parse_rating_watts(c)?))
+        })
+        .collect();
+
+    if rated_v_comps.is_empty() && rated_w_comps.is_empty() {
+        return;
+    }
+
+    // Solve real MNA DC operating point for exact node voltages & branch power dissipation
+    let sim = crate::domains::elec::spice::simulate_dc_and_rc(ir);
+    let net_voltage = |net: &str| -> Option<f64> {
+        if ground_nets.contains(net) {
+            return Some(0.0);
+        }
+        if let Some(&v) = sim.node_voltages_v.get(net) {
+            return Some(v);
+        }
+        net_driven_voltage
+            .get(net)
+            .and_then(|v| v.first())
+            .map(|(_, volts)| *volts)
+    };
+
+    // E13: Component Voltage Derating (require rated_v >= operating_v * 1.25 => <=80% stress)
+    if !rated_v_comps.is_empty() {
+        const DERATING_FACTOR: f64 = 1.25;
+        let mut violations: Vec<String> = Vec::new();
+        let mut repair_suggestions: Vec<RepairSuggestion> = Vec::new();
+        let mut subjects: Vec<String> = Vec::new();
+
+        for (cid, comp, rated_v) in &rated_v_comps {
+            subjects.push(cid.clone());
+            // Measure max voltage difference across any pair of pins (or max pin voltage vs GND)
+            let mut pin_vs: Vec<f64> = Vec::new();
+            for pin in &comp.pins {
+                if let Some(nets) = pin_to_nets.get(&(cid.clone(), pin.name.clone())) {
+                    for n in nets {
+                        if let Some(v) = net_voltage(n) {
+                            pin_vs.push(v);
+                        }
+                    }
+                }
+            }
+            if pin_vs.is_empty() {
+                continue;
+            }
+            let min_v = pin_vs.iter().copied().fold(f64::INFINITY, f64::min);
+            let max_v = pin_vs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+            let operating_v = if pin_vs.len() >= 2 {
+                (max_v - min_v).abs().max(max_v.abs())
+            } else {
+                max_v.abs()
+            };
+            let min_required_rating = operating_v * DERATING_FACTOR;
+            if *rated_v + 1e-6 < min_required_rating {
+                let rec_tier = next_standard_voltage_tier(min_required_rating);
+                let stress_pct = if *rated_v > 1e-9 {
+                    (operating_v / *rated_v) * 100.0
+                } else {
+                    999.0
+                };
+                let severity_note = if operating_v > *rated_v {
+                    "EXCEEDS absolute maximum rating"
+                } else {
+                    "violates 20% voltage derating margin (max 80% stress)"
+                };
+                violations.push(format!("{cid}({operating_v:.2}V/{rated_v:.1}V)"));
+                let fix_desc = format!(
+                    "Upgrade '{cid}' voltage_rating from {rated_v:.1}V to at least {rec_tier:.1}V (operating {operating_v:.2}V requires >= {min_required_rating:.2}V with 20% derating)"
+                );
+                repair_suggestions.push(RepairSuggestion {
+                    fix_id: violations.len(),
+                    description: fix_desc.clone(),
+                    auto_fixable: false,
+                });
+                ir.diagnostics.push(
+                    Diagnostic::error(
+                        "E_VOLTAGE_DERATING",
+                        "verification",
+                        format!(
+                            "Component '{cid}' ({}) rated {rated_v:.1}V sees {operating_v:.2}V ({stress_pct:.0}% stress) — {severity_note}",
+                            comp.value
+                        ),
+                        Some(comp.span.clone()),
+                    )
+                    .with_entities(vec![cid.clone()])
+                    .with_measurement(operating_v, *rated_v / DERATING_FACTOR, "V")
+                    .with_suggestion(fix_desc),
+                );
+            }
+        }
+
+        ir.evidence.push(EvidenceRecord {
+            check_id: "E13_voltage_derating".to_string(),
+            status: if violations.is_empty() {
+                VerificationStatus::ExactlyChecked
+            } else {
+                VerificationStatus::Violated
+            },
+            method: "mna_dc_voltage_derating_80pct_v3.2".to_string(),
+            tolerance_mm: None,
+            subjects,
+            details: if violations.is_empty() {
+                format!(
+                    "All {} voltage-rated component(s) within 80% DC voltage derating limit",
+                    rated_v_comps.len()
+                )
+            } else {
+                format!(
+                    "{} voltage derating violation(s): {}",
+                    violations.len(),
+                    violations.join(", ")
+                )
+            },
+            repair_suggestions,
+        });
+    }
+
+    // E14: Component Power Dissipation Derating (require rated_w >= dissipated_w * 1.25 => <=80% thermal stress)
+    if !rated_w_comps.is_empty() {
+        const DERATING_FACTOR: f64 = 1.25;
+        let mut violations: Vec<String> = Vec::new();
+        let mut repair_suggestions: Vec<RepairSuggestion> = Vec::new();
+        let mut subjects: Vec<String> = Vec::new();
+
+        for (cid, comp, rated_w) in &rated_w_comps {
+            subjects.push(cid.clone());
+            // Prefer exact MNA branch power; fallback to V^2/R for resistors if branch wasn't listed
+            let dissipated_w = sim
+                .branches
+                .iter()
+                .find(|b| b.component == *cid)
+                .map(|b| (b.power_mw / 1000.0).abs())
+                .or_else(|| {
+                    let r_ohm = crate::domains::elec::spice::parse_si_component_value(&comp.value, "R")?;
+                    if r_ohm <= 1e-9 || comp.pins.len() < 2 {
+                        return None;
+                    }
+                    let v0 = pin_to_nets
+                        .get(&(cid.clone(), comp.pins[0].name.clone()))
+                        .and_then(|ns| ns.iter().find_map(|n| net_voltage(n)))?;
+                    let v1 = pin_to_nets
+                        .get(&(cid.clone(), comp.pins[1].name.clone()))
+                        .and_then(|ns| ns.iter().find_map(|n| net_voltage(n)))?;
+                    let dv = v0 - v1;
+                    Some((dv * dv) / r_ohm)
+                });
+            let Some(p_w) = dissipated_w else {
+                continue;
+            };
+            let min_required_w = p_w * DERATING_FACTOR;
+            if *rated_w + 1e-9 < min_required_w {
+                let rec_tier = next_standard_power_tier(min_required_w);
+                let stress_pct = if *rated_w > 1e-9 {
+                    (p_w / *rated_w) * 100.0
+                } else {
+                    999.0
+                };
+                violations.push(format!("{cid}({:.1}mW/{:.1}mW)", p_w * 1000.0, rated_w * 1000.0));
+                let fix_desc = format!(
+                    "Upgrade '{cid}' power_rating from {rated_w:.3}W to at least {rec_tier:.3}W (dissipating {:.1}mW requires >= {:.1}mW with 20% thermal derating)",
+                    p_w * 1000.0,
+                    min_required_w * 1000.0
+                );
+                repair_suggestions.push(RepairSuggestion {
+                    fix_id: violations.len(),
+                    description: fix_desc.clone(),
+                    auto_fixable: false,
+                });
+                ir.diagnostics.push(
+                    Diagnostic::error(
+                        "E_POWER_DERATING",
+                        "verification",
+                        format!(
+                            "Component '{cid}' ({}) rated {rated_w:.3}W dissipates {p_w:.3}W ({stress_pct:.0}% thermal stress) — exceeds 80% power derating limit",
+                            comp.value
+                        ),
+                        Some(comp.span.clone()),
+                    )
+                    .with_entities(vec![cid.clone()])
+                    .with_measurement(p_w, *rated_w / DERATING_FACTOR, "W")
+                    .with_suggestion(fix_desc),
+                );
+            }
+        }
+
+        ir.evidence.push(EvidenceRecord {
+            check_id: "E14_power_derating".to_string(),
+            status: if violations.is_empty() {
+                VerificationStatus::ExactlyChecked
+            } else {
+                VerificationStatus::Violated
+            },
+            method: "mna_dc_power_derating_80pct_v3.2".to_string(),
+            tolerance_mm: None,
+            subjects,
+            details: if violations.is_empty() {
+                format!(
+                    "All {} power-rated component(s) within 80% thermal power derating limit",
+                    rated_w_comps.len()
+                )
+            } else {
+                format!(
+                    "{} power derating violation(s): {}",
+                    violations.len(),
+                    violations.join(", ")
+                )
+            },
+            repair_suggestions,
+        });
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -4428,7 +4862,8 @@ fn dist_point_to_rect(p: Point2, r: Rect2) -> f64 {
 }
 
 fn is_power_rail_name(name: &str) -> bool {
-    let u = name.to_uppercase();
+    let leaf = name.rsplit('/').next().unwrap_or(name);
+    let u = leaf.to_uppercase();
     if u.contains("_ADC") || u.contains("_SENSE") || u.contains("_SNS") || u.contains("_SIG") || u.contains("_DIV") {
         return false;
     }

@@ -18,6 +18,7 @@ pub enum TokenKind {
     Plus,
     Minus,
     Star,
+    Slash,
     Eq,
     EqEq,
     Ge,
@@ -273,6 +274,7 @@ pub fn lex(file: &str, src: &str) -> Result<Vec<Token>, Diagnostic> {
             '+' => TokenKind::Plus,
             '-' => TokenKind::Minus,
             '*' => TokenKind::Star,
+            '/' => TokenKind::Slash,
             '=' => TokenKind::Eq,
             _ => {
                 return Err(Diagnostic::error(

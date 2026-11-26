@@ -68,6 +68,8 @@ fn make_passive_comp(
         in_bom: true,
         on_board: true,
         props: Vec::new(),
+        voltage_rating_v: None,
+        power_rating_w: None,
         pins: Vec::new(),
         provenance: None,
         span,
@@ -728,6 +730,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                 name: nname,
                 hierarchy: Vec::new(),
                 connects,
+                linked_nets: Vec::new(),
                 power_flag: false,
                 span: sp,
             });

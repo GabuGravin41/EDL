@@ -48,6 +48,10 @@ pub struct ComponentDecl {
     pub on_board: bool,
     /// Arbitrary extra BOM/SPICE/KiCad properties (`props { "Voltage": "16V", ... }`).
     pub props: Vec<(String, String)>,
+    /// Optional component voltage rating in Volts (`voltage_rating: 16V`) for E13 derating proof.
+    pub voltage_rating_v: Option<f64>,
+    /// Optional component power dissipation rating in Watts (`power_rating: 0.25W`) for E14 derating proof.
+    pub power_rating_w: Option<f64>,
     pub pins: Vec<PinDecl>,
     pub provenance: Option<ModuleProvenanceIr>,
     pub span: Span,
@@ -66,6 +70,8 @@ pub struct NetDecl {
     /// Optional hierarchical module path segments (e.g. `"/Power/VOUT"` -> `["Power"]`).
     pub hierarchy: Vec<String>,
     pub connects: Vec<PinRef>,
+    /// Optional cross-hierarchy net links inside `connect: [..., /PrimaryStage/V3V3]`.
+    pub linked_nets: Vec<(String, Span)>,
     pub power_flag: bool,
     pub span: Span,
 }

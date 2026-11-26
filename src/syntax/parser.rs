@@ -1901,6 +1901,8 @@ impl Parser {
         let mut in_bom = true;
         let mut on_board = true;
         let mut props: Vec<(String, String)> = Vec::new();
+        let mut voltage_rating_v: Option<f64> = None;
+        let mut power_rating_w: Option<f64> = None;
         let mut pins = Vec::new();
 
         while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
@@ -2069,6 +2071,22 @@ impl Parser {
                     let (b, _) = self.expect_ident("true or false")?;
                     isolated = b == "true";
                 }
+                "voltage_rating" | "rated_voltage" | "max_voltage" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let (q, qsp) = self.parse_quantity()?;
+                    let v = q.to_volts().map_err(|msg| {
+                        Diagnostic::error("E_UNIT_MISMATCH", "units", msg, Some(qsp))
+                    })?;
+                    voltage_rating_v = Some(v);
+                }
+                "power_rating" | "rated_power" | "max_power" => {
+                    self.expect(TokenKind::Colon, "':'")?;
+                    let (q, qsp) = self.parse_quantity()?;
+                    let w = q.to_watts().map_err(|msg| {
+                        Diagnostic::error("E_UNIT_MISMATCH", "units", msg, Some(qsp))
+                    })?;
+                    power_rating_w = Some(w);
+                }
                 "pin" => {
                     let (pin_name, _) = self.expect_ident("pin name")?;
                     self.expect(TokenKind::Colon, "':'")?;
@@ -2161,17 +2179,63 @@ impl Parser {
             in_bom,
             on_board,
             props,
+            voltage_rating_v,
+            power_rating_w,
             pins,
             provenance: None,
             span: start.merge(&end),
         })
     }
 
+    /// Parse a flat net name (`V3V3`), quoted net name (`"/Power/VOUT"`), or unquoted
+    /// hierarchical net path (`/PrimaryStage/V3V3`, `/Power/Rail/V3V3`).
+    fn parse_net_path(&mut self, label: &str) -> Result<(String, Span), Diagnostic> {
+        if self.peek().kind == TokenKind::Slash {
+            let first = self.bump().span(&self.file);
+            let mut path = String::from("/");
+            let mut last_span;
+            loop {
+                let tok = self.peek().clone();
+                match tok.kind {
+                    TokenKind::Ident(seg) => {
+                        last_span = self.bump().span(&self.file);
+                        path.push_str(&seg);
+                    }
+                    TokenKind::Number(n, u) => {
+                        last_span = self.bump().span(&self.file);
+                        if (n - n.round()).abs() < 1e-9 {
+                            path.push_str(&format!("{}{}", n.round() as i64, u));
+                        } else {
+                            path.push_str(&format!("{n}{u}"));
+                        }
+                    }
+                    _ => {
+                        return Err(self.err(
+                            "E_PARSE_NET_PATH",
+                            format!("Expected path segment after '/' in {label}, found {:?}", tok.kind),
+                            &tok,
+                        ));
+                    }
+                }
+                if self.peek().kind == TokenKind::Slash {
+                    self.bump();
+                    path.push('/');
+                } else {
+                    break;
+                }
+            }
+            Ok((path, first.merge(&last_span)))
+        } else {
+            self.expect_ident_or_str(label)
+        }
+    }
+
     fn parse_net(&mut self) -> Result<NetDecl, Diagnostic> {
         let start = self.expect_keyword("net")?;
-        let (name, _) = self.expect_ident_or_str("net name")?;
+        let (name, _) = self.parse_net_path("net name")?;
         self.expect(TokenKind::LBrace, "'{'")?;
         let mut connects = Vec::new();
+        let mut linked_nets: Vec<(String, Span)> = Vec::new();
         let mut power_flag = false;
         while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
             let (key, kspan) = self.expect_ident("connect or power_flag")?;
@@ -2180,32 +2244,37 @@ impl Parser {
                     self.expect(TokenKind::Colon, "':'")?;
                     self.expect(TokenKind::LBracket, "'['")?;
                     while self.peek().kind != TokenKind::RBracket && self.peek().kind != TokenKind::Eof {
-                        let (comp, cspan) = self.expect_ident_or_str("component id")?;
-                        self.expect(TokenKind::Dot, "'.'")?;
-                        let (pin, pspan) = match self.peek().kind.clone() {
-                            TokenKind::Ident(p) | TokenKind::Str(p) => {
-                                let sp = self.bump().span(&self.file);
-                                (p, sp)
-                            }
-                            TokenKind::Number(n, u) if u.is_empty() => {
-                                let sp = self.bump().span(&self.file);
-                                (format!("{}", n.round() as i64), sp)
-                            }
-                            TokenKind::Plus => {
-                                let sp = self.bump().span(&self.file);
-                                ("+".to_string(), sp)
-                            }
-                            TokenKind::Minus => {
-                                let sp = self.bump().span(&self.file);
-                                ("-".to_string(), sp)
-                            }
-                            _ => self.expect_ident_or_str("pin name or number")?,
-                        };
-                        connects.push(PinRef {
-                            component: comp,
-                            pin,
-                            span: cspan.merge(&pspan),
-                        });
+                        if self.peek().kind == TokenKind::Slash {
+                            let (ref_path, rspan) = self.parse_net_path("hierarchical net reference")?;
+                            linked_nets.push((ref_path, rspan));
+                        } else {
+                            let (comp, cspan) = self.expect_ident_or_str("component id")?;
+                            self.expect(TokenKind::Dot, "'.'")?;
+                            let (pin, pspan) = match self.peek().kind.clone() {
+                                TokenKind::Ident(p) | TokenKind::Str(p) => {
+                                    let sp = self.bump().span(&self.file);
+                                    (p, sp)
+                                }
+                                TokenKind::Number(n, u) if u.is_empty() => {
+                                    let sp = self.bump().span(&self.file);
+                                    (format!("{}", n.round() as i64), sp)
+                                }
+                                TokenKind::Plus => {
+                                    let sp = self.bump().span(&self.file);
+                                    ("+".to_string(), sp)
+                                }
+                                TokenKind::Minus => {
+                                    let sp = self.bump().span(&self.file);
+                                    ("-".to_string(), sp)
+                                }
+                                _ => self.expect_ident_or_str("pin name or number")?,
+                            };
+                            connects.push(PinRef {
+                                component: comp,
+                                pin,
+                                span: cspan.merge(&pspan),
+                            });
+                        }
                         if self.peek().kind == TokenKind::Comma {
                             self.bump();
                         } else {
@@ -2246,6 +2315,7 @@ impl Parser {
             name,
             hierarchy,
             connects,
+            linked_nets,
             power_flag,
             span: start.merge(&end),
         })

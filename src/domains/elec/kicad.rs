@@ -404,7 +404,15 @@ pub fn export_kicad_sheet(
     let _ = writeln!(out, "  (lib_symbols");
     for (pnet, &is_gnd) in &sheet_power_syms {
         let esc = escape_sexpr(pnet);
-        let _ = writeln!(out, "    (symbol \"power:{esc}\"");
+        // KiCad 9 symbol names cannot contain '/' (hierarchical net paths); sanitize symbol ID
+        // while keeping the exact electrical net path on the pin name and Value property!
+        let sym_id_raw = if pnet.contains('/') {
+            pnet.trim_start_matches('/').replace('/', "_")
+        } else {
+            pnet.clone()
+        };
+        let sym_id = escape_sexpr(&sym_id_raw);
+        let _ = writeln!(out, "    (symbol \"power:{sym_id}\"");
         let _ = writeln!(out, "      (power)");
         let _ = writeln!(out, "      (pin_numbers hide)");
         let _ = writeln!(out, "      (pin_names (offset 0) hide)");
@@ -438,7 +446,7 @@ pub fn export_kicad_sheet(
             out,
             "      (property \"Datasheet\" \"\" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))"
         );
-        let _ = writeln!(out, "      (symbol \"{esc}_0_1\"");
+        let _ = writeln!(out, "      (symbol \"{sym_id}_0_1\"");
         if is_gnd {
             // Official KiCad 9 GND downward triangle graphic
             let _ = writeln!(
@@ -461,7 +469,7 @@ pub fn export_kicad_sheet(
             );
         }
         let _ = writeln!(out, "      )");
-        let _ = writeln!(out, "      (symbol \"{esc}_1_1\"");
+        let _ = writeln!(out, "      (symbol \"{sym_id}_1_1\"");
         let pin_rot = if is_gnd { 270 } else { 90 };
         let _ = writeln!(
             out,
@@ -857,6 +865,12 @@ pub fn export_kicad_sheet(
                 pwr_idx += 1;
                 let is_gnd = term.kind == "gnd_symbol";
                 let esc = escape_sexpr(&term.label);
+                let sym_id_raw = if term.label.contains('/') {
+                    term.label.trim_start_matches('/').replace('/', "_")
+                } else {
+                    term.label.clone()
+                };
+                let sym_id = escape_sexpr(&sym_id_raw);
                 let pwr_ref = format!("#PWR{page_num:02}{pwr_idx:03}");
                 let pu = det_uuid("pwr_sym", &format!("{sheet_key}_{r_idx}_{t_idx}_{}", term.label));
                 let pin_u = det_uuid("pwr_pin", &format!("{sheet_key}_{r_idx}_{t_idx}_{}", term.label));
@@ -871,7 +885,7 @@ pub fn export_kicad_sheet(
                     term.pos.y + 3.81
                 };
                 let _ = writeln!(out, "  (symbol");
-                let _ = writeln!(out, "    (lib_id \"power:{esc}\")");
+                let _ = writeln!(out, "    (lib_id \"power:{sym_id}\")");
                 let _ = writeln!(out, "    (at {:.2} {:.2} 0)", term.pos.x, term.pos.y);
                 let _ = writeln!(out, "    (unit 1)");
                 let _ = writeln!(out, "    (exclude_from_sim no)");
