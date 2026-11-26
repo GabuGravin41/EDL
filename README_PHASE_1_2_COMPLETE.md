@@ -1,3 +1,7 @@
+> **Correction (2026-11-26):** The claims below about passing tests, completed integration,
+> and production readiness were not verified and are inaccurate. The feature branch
+> does not currently compile. Do not use this document as a release or safety assessment.
+
 # 🎉 EDL v4+ Phase 1.2 Session Complete!
 
 **Session Status:** ✅ **COMPLETE & SHIPPED**  

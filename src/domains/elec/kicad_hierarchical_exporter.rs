@@ -161,7 +161,7 @@ pub struct KiCadExporter {
 impl KiCadExporter {
     /// Create new exporter for a design
     pub fn new(project_name: &str) -> Self {
-        let mut main_sheet = Sheet {
+        let main_sheet = Sheet {
             filename: format!("{}.kicad_sch", project_name.to_lowercase()),
             name: project_name.to_string(),
             hierarchical_pins: HashMap::new(),
@@ -170,13 +170,6 @@ impl KiCadExporter {
             size: (0.0, 0.0),
             is_subsheet: false,
         };
-        
-        // Add title block
-        main_sheet.texts.push(Text {
-            content: format!("Title: {}", project_name),
-            at: (100.0, 100.0),
-            size: 4.0,
-        });
         
         KiCadExporter {
             main_sheet,

@@ -446,6 +446,7 @@ pub fn push_evidence(
     details: impl Into<String>,
 ) {
     ir.evidence.push(crate::core::ir::EvidenceRecord {
+        repair_suggestions: Vec::new(),
         check_id: check_id.to_string(),
         status,
         method: "domain_plugin".to_string(),

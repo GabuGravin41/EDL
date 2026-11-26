@@ -770,6 +770,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     }
                 }
                 evidence.push(EvidenceRecord {
+                    repair_suggestions: Vec::new(),
                     check_id: "E4_voltage_compatibility".to_string(),
                     status: if mismatches == 0 {
                         VerificationStatus::ExactlyChecked
@@ -859,6 +860,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         .with_suggestion("Route cross-barrier signals/power only through components marked `isolated: true` (e.g. transformers or optocouplers)"),
                     );
                     evidence.push(EvidenceRecord {
+                        repair_suggestions: Vec::new(),
                         check_id,
                         status: VerificationStatus::Violated,
                         method: "exact_conductive_graph_bfs_v1.1".to_string(),
@@ -868,6 +870,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     });
                 } else {
                     evidence.push(EvidenceRecord {
+                        repair_suggestions: Vec::new(),
                         check_id,
                         status: VerificationStatus::ExactlyChecked,
                         method: "exact_conductive_graph_bfs_v1.1".to_string(),
@@ -902,6 +905,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     }
                 }
                 evidence.push(EvidenceRecord {
+                    repair_suggestions: Vec::new(),
                     check_id: "E5_no_single_pin_nets".to_string(),
                     status: if dangling.is_empty() {
                         VerificationStatus::ExactlyChecked
@@ -3245,6 +3249,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 .with_suggestion(space_hint),
             );
             evidence.push(EvidenceRecord {
+                repair_suggestions: Vec::new(),
                 check_id: format!("E11_sheet_frame_fit_{sheet_name_str}"),
                 status: VerificationStatus::Violated,
                 method: "exact_kicad_frame_and_titleblock_bounds_v3.0".to_string(),
@@ -3257,6 +3262,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             });
         } else {
             evidence.push(EvidenceRecord {
+                repair_suggestions: Vec::new(),
                 check_id: format!("E11_sheet_frame_fit_{sheet_name_str}"),
                 status: VerificationStatus::ExactlyChecked,
                 method: "exact_kicad_frame_and_titleblock_bounds_v3.0".to_string(),
@@ -3340,6 +3346,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     if has_sim_rules {
         let sim = crate::domains::elec::spice::simulate_dc_and_rc(&ir);
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "S1_dc_operating_point".to_string(),
             status: if sim.converged {
                 VerificationStatus::ExactlyChecked
@@ -3388,6 +3395,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             );
                         }
                         ir.evidence.push(EvidenceRecord {
+                            repair_suggestions: Vec::new(),
                             check_id: format!("S2_dc_voltage_{net}"),
                             status: if ok {
                                 VerificationStatus::ExactlyChecked
@@ -3438,6 +3446,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             );
                         }
                         ir.evidence.push(EvidenceRecord {
+                            repair_suggestions: Vec::new(),
                             check_id: format!("S3_branch_current_{component}"),
                             status: if ok {
                                 VerificationStatus::ExactlyChecked
@@ -3605,6 +3614,7 @@ fn run_senior_erc_checks(
         }
         if req_decoupling {
             ir.evidence.push(EvidenceRecord {
+                repair_suggestions: Vec::new(),
                 check_id: "E7_ic_decoupling".to_string(),
                 status: if missing.is_empty() {
                     VerificationStatus::ExactlyChecked
@@ -3686,6 +3696,7 @@ fn run_senior_erc_checks(
         }
         if req_i2c {
             ir.evidence.push(EvidenceRecord {
+                repair_suggestions: Vec::new(),
                 check_id: "E8_i2c_pullups".to_string(),
                 status: if missing.is_empty() {
                     VerificationStatus::ExactlyChecked
@@ -3790,6 +3801,7 @@ fn run_senior_erc_checks(
         }
         if req_flyback {
             ir.evidence.push(EvidenceRecord {
+                repair_suggestions: Vec::new(),
                 check_id: "E9_inductive_flyback".to_string(),
                 status: if unprotected.is_empty() {
                     VerificationStatus::ExactlyChecked
@@ -3940,6 +3952,7 @@ fn run_senior_erc_checks(
 
         if req_bom {
             ir.evidence.push(EvidenceRecord {
+                repair_suggestions: Vec::new(),
                 check_id: "E10_bom_manufacturability".to_string(),
                 status: if violations.is_empty() {
                     VerificationStatus::ExactlyChecked

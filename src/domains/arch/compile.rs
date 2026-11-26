@@ -97,6 +97,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
         VerificationStatus::ExactlyChecked
     };
     evidence.push(EvidenceRecord {
+        repair_suggestions: Vec::new(),
         check_id: "T2_linear_layout_solve".to_string(),
         status: solver_status,
         method: "rref_linear_solver_with_provenance_v0.1".to_string(),
@@ -834,6 +835,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                     }
                 }
                 evidence.push(EvidenceRecord {
+                    repair_suggestions: Vec::new(),
                     check_id: "V1_no_room_overlap".to_string(),
                     status: if overlap_pairs.is_empty() {
                         VerificationStatus::ExactlyChecked
@@ -910,6 +912,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                     }
                 }
                 evidence.push(EvidenceRecord {
+                    repair_suggestions: Vec::new(),
                     check_id: "V2_opening_jamb_margin".to_string(),
                     status: if violations == 0 {
                         VerificationStatus::ExactlyChecked
@@ -1059,6 +1062,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                 }
 
                 evidence.push(EvidenceRecord {
+                    repair_suggestions: Vec::new(),
                     check_id: "V3_no_door_swing_collision".to_string(),
                     status: if collisions == 0 {
                         VerificationStatus::ExactlyChecked
@@ -1152,6 +1156,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                 }
 
                 evidence.push(EvidenceRecord {
+                    repair_suggestions: Vec::new(),
                     check_id: "V4_all_rooms_reachable".to_string(),
                     status: if unreachable.is_empty() {
                         VerificationStatus::ExactlyChecked
@@ -1365,6 +1370,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                 }
 
                 evidence.push(EvidenceRecord {
+                    repair_suggestions: Vec::new(),
                     check_id: "V5_no_fixture_collision".to_string(),
                     status: if violations == 0 {
                         VerificationStatus::ExactlyChecked
@@ -1429,6 +1435,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                 }
 
                 evidence.push(EvidenceRecord {
+                    repair_suggestions: Vec::new(),
                     check_id: "V6_habitable_rooms_have_window".to_string(),
                     status: if missing.is_empty() {
                         VerificationStatus::ExactlyChecked

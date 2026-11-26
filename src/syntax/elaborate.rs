@@ -139,6 +139,7 @@ pub fn elaborate_project(
             } else {
                 circuit.nets.push(crate::domains::elec::ast::NetDecl {
                     name: net_v,
+                    hierarchy: Vec::new(),
                     connects: vec![pref],
                     power_flag: false,
                     span: sp,

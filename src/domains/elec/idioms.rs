@@ -714,6 +714,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                 .unwrap_or_else(|| crate::core::span::Span::new("", 0, 0, 0, 0));
             out.extra_nets.push(NetDecl {
                 name: nname,
+                hierarchy: Vec::new(),
                 connects,
                 power_flag: false,
                 span: sp,

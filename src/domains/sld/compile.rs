@@ -717,6 +717,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
     }
 
     evidence.push(EvidenceRecord {
+        repair_suggestions: Vec::new(),
         check_id: "S1_source_bus_and_n1_capacity".to_string(),
         status: if s1_errs.is_empty() {
             VerificationStatus::ExactlyChecked
@@ -804,6 +805,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
         }
     }
     evidence.push(EvidenceRecord {
+        repair_suggestions: Vec::new(),
         check_id: "S2_breaker_cable_coordination".to_string(),
         status: if s2_errs.is_empty() {
             VerificationStatus::ExactlyChecked
@@ -846,6 +848,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
         }
     }
     evidence.push(EvidenceRecord {
+        repair_suggestions: Vec::new(),
         check_id: "S3_protection_selectivity".to_string(),
         status: if s3_errs.is_empty() {
             VerificationStatus::ExactlyChecked
@@ -933,6 +936,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
         }
     }
     evidence.push(EvidenceRecord {
+        repair_suggestions: Vec::new(),
         check_id: "S4_short_circuit_breaking_capacity".to_string(),
         status: if s4_errs.is_empty() {
             VerificationStatus::ExactlyChecked
@@ -978,6 +982,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
         }
     }
     evidence.push(EvidenceRecord {
+        repair_suggestions: Vec::new(),
         check_id: "S5_cumulative_voltage_drop".to_string(),
         status: if s5_errs.is_empty() {
             VerificationStatus::ExactlyChecked
@@ -1018,6 +1023,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
         }
     }
     evidence.push(EvidenceRecord {
+        repair_suggestions: Vec::new(),
         check_id: "S6_ats_coupler_interlock".to_string(),
         status: if s6_errs.is_empty() {
             VerificationStatus::FormallyChecked

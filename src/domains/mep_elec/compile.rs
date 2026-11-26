@@ -560,6 +560,7 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
             }
         }
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "M1_breaker_load_capacity".to_string(),
             status: if viols == 0 {
                 VerificationStatus::ExactlyChecked
@@ -603,6 +604,7 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
             }
         }
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "M2_voltage_drop_limit".to_string(),
             status: if viols == 0 {
                 VerificationStatus::ExactlyChecked
@@ -668,6 +670,7 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
             }
         }
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "M3_wet_zone_clearance".to_string(),
             status: if viols == 0 {
                 VerificationStatus::ExactlyChecked
@@ -737,6 +740,7 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
             }
         }
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "M4_switch_door_accessibility".to_string(),
             status: if viols == 0 {
                 VerificationStatus::ExactlyChecked
@@ -798,6 +802,7 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
             }
         }
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "M5_device_wall_clearance".to_string(),
             status: if viols == 0 {
                 VerificationStatus::ExactlyChecked
@@ -853,6 +858,7 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
             }
         }
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "M6_wet_circuit_rcd".to_string(),
             status: if viols == 0 {
                 VerificationStatus::ExactlyChecked

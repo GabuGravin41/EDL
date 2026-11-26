@@ -513,6 +513,7 @@ pub fn compile_industrial(project: &ProjectAst) -> CanonicalIr {
         }
     }
     evidence.push(EvidenceRecord {
+        repair_suggestions: Vec::new(),
         check_id: "I1_mutual_interlock".to_string(),
         status: if interlock_violations.is_empty() {
             VerificationStatus::FormallyChecked
@@ -554,6 +555,7 @@ pub fn compile_industrial(project: &ProjectAst) -> CanonicalIr {
         }
     }
     evidence.push(EvidenceRecord {
+        repair_suggestions: Vec::new(),
         check_id: "I2_estop_overload_authority".to_string(),
         status: if trip_missing.is_empty() {
             VerificationStatus::FormallyChecked
@@ -584,6 +586,7 @@ pub fn compile_industrial(project: &ProjectAst) -> CanonicalIr {
         ));
     }
     evidence.push(EvidenceRecord {
+        repair_suggestions: Vec::new(),
         check_id: "I3_coil_contact_cross_ref".to_string(),
         status: if missing_refs.is_empty() {
             VerificationStatus::ExactlyChecked
@@ -622,6 +625,7 @@ pub fn compile_industrial(project: &ProjectAst) -> CanonicalIr {
         }
     }
     evidence.push(EvidenceRecord {
+        repair_suggestions: Vec::new(),
         check_id: "I4_phase_reversal_integrity".to_string(),
         status: if rev_errors.is_empty() {
             VerificationStatus::ExactlyChecked
@@ -708,6 +712,8 @@ pub fn compile_industrial(project: &ProjectAst) -> CanonicalIr {
         }
         relations.push(RelationIr {
             id: rung.id.clone(),
+            name: rung.id.clone(),
+            hierarchy: Vec::new(),
             kind: "industrial.rung".to_string(),
             connects,
             driven_voltage_v: None,

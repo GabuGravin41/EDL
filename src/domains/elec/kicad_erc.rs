@@ -63,6 +63,7 @@ pub fn run_and_ingest_kicad_erc(ir: &mut CanonicalIr) {
     }
     if let Some(e) = write_err {
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "K1_kicad_erc_external".to_string(),
             status: VerificationStatus::Unverified,
             method: "external_kicad_cli_9_erc_json".to_string(),
@@ -93,6 +94,7 @@ pub fn run_and_ingest_kicad_erc(ir: &mut CanonicalIr) {
         Err(e) => {
             let _ = std::fs::remove_file(&rpt_path);
             ir.evidence.push(EvidenceRecord {
+                repair_suggestions: Vec::new(),
                 check_id: "K1_kicad_erc_external".to_string(),
                 status: VerificationStatus::Unverified,
                 method: "external_kicad_cli_9_erc_json".to_string(),
@@ -110,6 +112,7 @@ pub fn run_and_ingest_kicad_erc(ir: &mut CanonicalIr) {
     if json_text.trim().is_empty() {
         let stderr = String::from_utf8_lossy(&out.stderr);
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "K1_kicad_erc_external".to_string(),
             status: VerificationStatus::Unverified,
             method: "external_kicad_cli_9_erc_json".to_string(),
@@ -132,6 +135,7 @@ pub fn run_and_ingest_kicad_erc(ir: &mut CanonicalIr) {
             }
             if violations.is_empty() {
                 ir.evidence.push(EvidenceRecord {
+                    repair_suggestions: Vec::new(),
                     check_id: "K1_kicad_erc_external".to_string(),
                     status: VerificationStatus::ExactlyChecked,
                     method: "external_kicad_cli_9_erc_json".to_string(),
@@ -162,6 +166,7 @@ pub fn run_and_ingest_kicad_erc(ir: &mut CanonicalIr) {
                 }
                 ir.project.has_errors = true;
                 ir.evidence.push(EvidenceRecord {
+                    repair_suggestions: Vec::new(),
                     check_id: "K1_kicad_erc_external".to_string(),
                     status: VerificationStatus::Violated,
                     method: "external_kicad_cli_9_erc_json".to_string(),
@@ -173,6 +178,7 @@ pub fn run_and_ingest_kicad_erc(ir: &mut CanonicalIr) {
         }
         Err(e) => {
             ir.evidence.push(EvidenceRecord {
+                repair_suggestions: Vec::new(),
                 check_id: "K1_kicad_erc_external".to_string(),
                 status: VerificationStatus::Unverified,
                 method: "external_kicad_cli_9_erc_json".to_string(),

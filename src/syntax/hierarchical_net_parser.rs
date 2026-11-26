@@ -13,6 +13,9 @@ use std::iter::Peekable;
 pub enum TokenType {
     // Existing tokens...
     Identifier(String),
+    Net,
+    OpenBrace,
+    CloseBrace,
     
     // NEW: Slash for hierarchical names
     Slash,  // /
@@ -260,10 +263,17 @@ impl NetParser {
             pos += 1;
         }
         
+        if brace_depth != 0 {
+            return Err(ParseError::InvalidNetName(
+                "Expected '}' to close net declaration".to_string(),
+            ));
+        }
+
+        let is_hierarchical = net_name.is_hierarchical();
         Ok(NetDeclaration {
             name: net_name,
             body: body_tokens,
-            is_hierarchical: net_name.is_hierarchical(),
+            is_hierarchical,
         })
     }
 }
@@ -290,6 +300,35 @@ pub struct Token {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn token(token_type: TokenType) -> Token {
+        Token { token_type, line: 1, column: 1 }
+    }
+
+    #[test]
+    fn parses_net_declaration_with_nested_body() {
+        let tokens = vec![
+            token(TokenType::Net),
+            token(TokenType::Identifier("/Power/VOUT".to_string())),
+            token(TokenType::OpenBrace),
+            token(TokenType::OpenBrace),
+            token(TokenType::CloseBrace),
+            token(TokenType::CloseBrace),
+        ];
+        let declaration = NetParser::parse_net_declaration(&tokens).unwrap();
+        assert!(declaration.is_hierarchical);
+        assert_eq!(declaration.body.len(), 2);
+    }
+
+    #[test]
+    fn rejects_unclosed_net_declaration() {
+        let tokens = vec![
+            token(TokenType::Net),
+            token(TokenType::Identifier("VOUT".to_string())),
+            token(TokenType::OpenBrace),
+        ];
+        assert!(NetParser::parse_net_declaration(&tokens).is_err());
+    }
     
     #[test]
     fn test_hierarchical_net_parsing() {

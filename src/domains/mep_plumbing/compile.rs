@@ -647,6 +647,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             }
         }
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "P1_wet_fixture_supply".to_string(),
             status: if p1_missing.is_empty() {
                 VerificationStatus::ExactlyChecked
@@ -756,6 +757,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             }
         }
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "P2_drainage_sizing_and_slope".to_string(),
             status: if p2_errs.is_empty() {
                 VerificationStatus::ExactlyChecked
@@ -823,6 +825,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             }
         }
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "P3_trap_arm_distance".to_string(),
             status: if p3_errs.is_empty() {
                 VerificationStatus::ExactlyChecked
@@ -870,6 +873,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             }
         }
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "P4_supply_velocity_and_sizing".to_string(),
             status: if p4_errs.is_empty() {
                 VerificationStatus::ExactlyChecked
@@ -922,6 +926,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             .map(|n| n.id.clone())
             .collect();
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "P5_isolation_valves".to_string(),
             status: if p5_errs.is_empty() {
                 VerificationStatus::ExactlyChecked
@@ -978,6 +983,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             }
         }
         ir.evidence.push(EvidenceRecord {
+            repair_suggestions: Vec::new(),
             check_id: "P6_cross_discipline_clearance".to_string(),
             status: if p6_clashes.is_empty() {
                 VerificationStatus::ExactlyChecked
@@ -1038,6 +1044,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                 }
             }
             ir.evidence.push(EvidenceRecord {
+                repair_suggestions: Vec::new(),
                 check_id: "P7_dfu_header_capacity".to_string(),
                 status: if p7_errs.is_empty() {
                     VerificationStatus::ExactlyChecked

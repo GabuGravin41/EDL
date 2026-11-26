@@ -1,5 +1,25 @@
 # EDL — Engineering Description Language
 
+> **Feature-branch status (2026-11-26):** The experimental hierarchical-net and
+> constraint changes on this branch do not currently compile. Their verification,
+> repair, and performance claims have not been established; do not rely on them
+> for engineering decisions.
+
+Remaining work on this branch:
+- Reconcile the constraint parser and elaborator with the actual parser API,
+  constraint AST, and project entity types.
+- Reconcile constraint propagation and cross-domain reporting with the existing
+  constraint values, propagation API, report types, and Rust borrowing rules.
+- Replace unsupported assumptions in cross-domain calculations and depth-based
+  derating with explicit, validated engineering inputs and models.
+- Integrate and verify the experimental hierarchical parser and exporter with
+  the real compiler and KiCad workflows.
+- Run `cargo check`, `cargo test`, compatibility tests, and realistic benchmarks
+  before claiming the branch is complete or safe to use.
+
+The last `cargo check --lib` on 2026-11-26 reported 85 errors. Eight tests for
+the standalone hierarchical parser passed; the full test suite could not run.
+
 An AI-native, typed, declarative language, Rust compiler, and native MCP server for expressing engineering intent, resolving exact geometry/constraints deterministically, running evidence-bearing verification, and compiling to native engineering tools (**SVG**, **AutoCAD DXF**, and **KiCad 9 `.kicad_sch`**).
 
 ## Core Principles

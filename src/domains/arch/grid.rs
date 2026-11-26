@@ -276,6 +276,7 @@ pub fn verify_column_clearances(
         }
     }
     EvidenceRecord {
+        repair_suggestions: Vec::new(),
         check_id: "V7_structural_column_clearance".to_string(),
         status: if clashes.is_empty() {
             VerificationStatus::ExactlyChecked

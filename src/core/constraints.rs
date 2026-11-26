@@ -228,9 +228,16 @@ pub trait ConstraintVerifier: Send + Sync {
 }
 
 /// Registry of domain-specific constraint verifiers
-#[derive(Debug)]
 pub struct ConstraintRegistry {
     verifiers: BTreeMap<String, Box<dyn ConstraintVerifier>>,
+}
+
+impl std::fmt::Debug for ConstraintRegistry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConstraintRegistry")
+            .field("domains", &self.domains())
+            .finish()
+    }
 }
 
 impl ConstraintRegistry {

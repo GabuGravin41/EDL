@@ -3,7 +3,7 @@
 
 use crate::core::constraints::ConstraintValue;
 use crate::core::propagator::{PropagatedConstraint, PropagationResult};
-use crate::syntax::constraints_ast::ConstraintSeverity;
+use crate::core::constraints::ConstraintSeverity;
 use crate::syntax::constraint_elaborator::ResolvedEntityRef;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
