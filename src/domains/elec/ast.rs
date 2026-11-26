@@ -63,10 +63,6 @@ pub struct PinRef {
 #[derive(Debug, Clone)]
 pub struct NetDecl {
     pub name: String,
-    /// Hierarchical path segments for multi-sheet schematics (e.g., vec!["PowerModule", "VOUT"]).
-    /// Empty vec indicates root-level/global net.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub hierarchy: Vec<String>,
     pub connects: Vec<PinRef>,
     pub power_flag: bool,
     pub span: Span,

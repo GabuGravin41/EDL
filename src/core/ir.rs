@@ -64,14 +64,6 @@ pub enum VerificationStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct RepairSuggestion {
-    pub fix_id: usize,
-    pub description: String,
-    /// Whether this fix can be applied automatically (true) or requires manual intervention (false).
-    pub auto_fixable: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct EvidenceRecord {
     pub check_id: String,
     pub status: VerificationStatus,
@@ -79,9 +71,6 @@ pub struct EvidenceRecord {
     pub tolerance_mm: Option<f64>,
     pub subjects: Vec<String>,
     pub details: String,
-    /// Actionable repair suggestions for violated/unverified checks.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub repair_suggestions: Vec<RepairSuggestion>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -248,11 +237,6 @@ pub struct EntityIr {
 pub struct RelationIr {
     pub id: String,
     pub kind: String, // e.g., "elec.net"
-    pub name: String,
-    /// Hierarchical path segments for multi-sheet schematics (e.g., vec!["PowerModule", "VOUT"]).
-    /// Empty vec indicates root-level/global net. Used for generating cross-sheet reference labels.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub hierarchy: Vec<String>,
     pub connects: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub driven_voltage_v: Option<f64>,

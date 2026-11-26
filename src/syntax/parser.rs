@@ -533,12 +533,10 @@ impl Parser {
         let mut extensions = Vec::new();
         let mut verifications = Vec::new();
         let mut views = Vec::new();
-        let mut constraints = Vec::new();
 
         while self.peek().kind != TokenKind::RBrace && self.peek().kind != TokenKind::Eof {
             let tok = self.peek().clone();
             let kw = match &tok.kind {
-                TokenKind::Constraint => "constraint",
                 TokenKind::Ident(s) => s.as_str(),
                 _ => {
                     return Err(self.err(
@@ -598,7 +596,6 @@ impl Parser {
                 "building_electrical" => mep_elec.installations.push(self.parse_building_electrical()?),
                 "verify" => verifications.extend(self.parse_verify()?),
                 "view" => views.push(self.parse_view()?),
-                "constraint" => constraints.push(self.parse_constraint()?),
                 _ => {
                     // Not a built-in keyword: capture as an extension block for a registered domain.
                     // Unclaimed keywords are reported at compile time as `E_UNKNOWN_DOMAIN_BLOCK`.
@@ -623,7 +620,6 @@ impl Parser {
             extensions,
             verifications,
             views,
-            constraints,
         })
     }
 
@@ -2174,21 +2170,6 @@ impl Parser {
     fn parse_net(&mut self) -> Result<NetDecl, Diagnostic> {
         let start = self.expect_keyword("net")?;
         let (name, _) = self.expect_ident_or_str("net name")?;
-        
-        // Parse hierarchical net name: /Module/SubModule/NetName -> ["Module", "SubModule"] with name="NetName"
-        let mut hierarchy = Vec::new();
-        let mut net_name = name.clone();
-        if name.starts_with('/') {
-            let parts: Vec<&str> = name.split('/').filter(|s| !s.is_empty()).collect();
-            if parts.len() > 1 {
-                // All but last are hierarchy
-                hierarchy = parts[..parts.len() - 1].iter().map(|s| s.to_string()).collect();
-                net_name = parts[parts.len() - 1].to_string();
-            } else if parts.len() == 1 {
-                net_name = parts[0].to_string();
-            }
-        }
-        
         self.expect(TokenKind::LBrace, "'{'")?;
         let mut connects = Vec::new();
         let mut power_flag = false;
@@ -2250,8 +2231,7 @@ impl Parser {
         }
         let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
         Ok(NetDecl {
-            name: net_name,
-            hierarchy,
+            name,
             connects,
             power_flag,
             span: start.merge(&end),

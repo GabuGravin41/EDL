@@ -1,15 +1,7 @@
-pub mod cli_reporting;
-pub mod constraints;
-pub mod cross_domain_constraints;
 pub mod diff;
 pub mod geom;
 pub mod ir;
-pub mod mcp_tools;
-pub mod performance_optimization;
-pub mod propagator;
 pub mod query;
-pub mod repair_impact;
-pub mod reporter;
 pub mod span;
 pub mod sync;
 pub mod units;

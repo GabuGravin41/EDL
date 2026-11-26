@@ -20,26 +20,8 @@ pub enum TokenKind {
     Star,
     Eq,
     EqEq,
-    Ne,         // !=
-    Lt,         // <
-    Le,         // <=
-    Gt,         // >
-    Ge,         // >=
+    Ge,
     Arrow,
-    
-    // Constraint-specific keywords (Phase 1.2)
-    Constraint,
-    Target,
-    Rules,
-    Standard,
-    Description,
-    Mandatory,
-    Strong,
-    Weak,
-    
-    // Tolerance/range operators
-    PlusMinus,  // ±
-    
     Eof,
 }
 
@@ -218,22 +200,8 @@ pub fn lex(file: &str, src: &str) -> Result<Vec<Token>, Diagnostic> {
                 i += 1;
                 col += 1;
             }
-            
-            // Map identifiers to keywords (Phase 1.2)
-            let token_kind = match ident.as_str() {
-                "constraint" => TokenKind::Constraint,
-                "target" => TokenKind::Target,
-                "rules" => TokenKind::Rules,
-                "standard" => TokenKind::Standard,
-                "description" => TokenKind::Description,
-                "mandatory" => TokenKind::Mandatory,
-                "strong" => TokenKind::Strong,
-                "weak" => TokenKind::Weak,
-                _ => TokenKind::Ident(ident),
-            };
-            
             tokens.push(Token {
-                kind: token_kind,
+                kind: TokenKind::Ident(ident),
                 line: start_line,
                 col: start_col,
                 end_line: line,
@@ -279,48 +247,11 @@ pub fn lex(file: &str, src: &str) -> Result<Vec<Token>, Diagnostic> {
             });
             continue;
         }
-        if ch == '!' && i + 1 < n && chars[i + 1] == '=' {
-            i += 2;
-            col += 2;
-            tokens.push(Token {
-                kind: TokenKind::Ne,
-                line: start_line,
-                col: start_col,
-                end_line: line,
-                end_col: col,
-            });
-            continue;
-        }
-        if ch == '<' && i + 1 < n && chars[i + 1] == '=' {
-            i += 2;
-            col += 2;
-            tokens.push(Token {
-                kind: TokenKind::Le,
-                line: start_line,
-                col: start_col,
-                end_line: line,
-                end_col: col,
-            });
-            continue;
-        }
         if ch == '>' && i + 1 < n && chars[i + 1] == '=' {
             i += 2;
             col += 2;
             tokens.push(Token {
                 kind: TokenKind::Ge,
-                line: start_line,
-                col: start_col,
-                end_line: line,
-                end_col: col,
-            });
-            continue;
-        }
-        if ch == '+' && i + 1 < n && chars[i + 1] == '-' {
-            // Handle ± (plus-minus, used for tolerance)
-            i += 2;
-            col += 2;
-            tokens.push(Token {
-                kind: TokenKind::PlusMinus,
                 line: start_line,
                 col: start_col,
                 end_line: line,
@@ -343,8 +274,6 @@ pub fn lex(file: &str, src: &str) -> Result<Vec<Token>, Diagnostic> {
             '-' => TokenKind::Minus,
             '*' => TokenKind::Star,
             '=' => TokenKind::Eq,
-            '<' => TokenKind::Lt,
-            '>' => TokenKind::Gt,
             _ => {
                 return Err(Diagnostic::error(
                     "E_LEX_CHAR",

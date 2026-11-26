@@ -385,9 +385,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         net_driven_voltage.insert(net.name.clone(), drivers);
         relations.push(RelationIr {
             id: net.name.clone(),
-            name: net.name.clone(),
             kind: "elec.net".to_string(),
-            hierarchy: net.hierarchy.clone(),
             connects: net
                 .connects
                 .iter()
@@ -525,32 +523,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         }
                     }
                 }
-                let repair_suggestions = if unconnected.is_empty() {
-                    Vec::new()
-                } else {
-                    vec![
-                        crate::core::ir::RepairSuggestion {
-                            fix_id: 1,
-                            description: format!(
-                                "Connect the {} unconnected pin(s) [{}] to appropriate nets based on their function (power, signal, ground).",
-                                unconnected.len(),
-                                unconnected.join(", ")
-                            ),
-                            auto_fixable: false,
-                        },
-                        crate::core::ir::RepairSuggestion {
-                            fix_id: 2,
-                            description: "If a pin is intentionally unused, mark it as 'nc' (no connect) in the component pin definition to suppress this error.".to_string(),
-                            auto_fixable: false,
-                        },
-                        crate::core::ir::RepairSuggestion {
-                            fix_id: 3,
-                            description: "Review the schematic against the component datasheet to ensure all required pins are properly routed. Some ICs may require specific pins to be tied high/low even if not actively used.".to_string(),
-                            auto_fixable: false,
-                        },
-                    ]
-                };
-
                 evidence.push(EvidenceRecord {
                     check_id: "E1_all_required_pins_connected".to_string(),
                     status: if unconnected.is_empty() {
@@ -570,7 +542,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             unconnected.join(", ")
                         )
                     },
-                    repair_suggestions,
                 });
             }
 
@@ -606,32 +577,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         );
                     }
                 }
-                let repair_suggestions = if shorts.is_empty() {
-                    Vec::new()
-                } else {
-                    vec![
-                        crate::core::ir::RepairSuggestion {
-                            fix_id: 1,
-                            description: format!(
-                                "Separate power and ground pins on the {} affected net(s): {}. Create distinct nets for positive supplies and return paths.",
-                                shorts.len(),
-                                shorts.join(", ")
-                            ),
-                            auto_fixable: false,
-                        },
-                        crate::core::ir::RepairSuggestion {
-                            fix_id: 2,
-                            description: "Review the net topology: power and ground should never be on the same electrical node. Use hierarchical net names (e.g., /Stage1/VOUT and /Stage1/GND) to keep power distribution paths separate.".to_string(),
-                            auto_fixable: false,
-                        },
-                        crate::core::ir::RepairSuggestion {
-                            fix_id: 3,
-                            description: "Check if this is a measurement or analog reference net. If intentional (e.g., for biasing), consider using separate signal nets with explicit documentation to suppress this check.".to_string(),
-                            auto_fixable: false,
-                        },
-                    ]
-                };
-
                 evidence.push(EvidenceRecord {
                     check_id: "E2_no_power_ground_short".to_string(),
                     status: if shorts.is_empty() {
@@ -647,7 +592,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("Power-ground short on net(s): {}", shorts.join(", "))
                     },
-                    repair_suggestions,
                 });
             }
 
@@ -679,28 +623,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         );
                     }
                 }
-                let repair_suggestions = if conflicts.is_empty() {
-                    Vec::new()
-                } else {
-                    vec![
-                        crate::core::ir::RepairSuggestion {
-                            fix_id: 1,
-                            description: "Remove all but one power_out driver from each conflicting net. Keep the primary voltage source (e.g., the main regulator) and remove secondary or backup drivers.".to_string(),
-                            auto_fixable: false,
-                        },
-                        crate::core::ir::RepairSuggestion {
-                            fix_id: 2,
-                            description: "If multiple regulators are intentionally providing power, use separate nets with hierarchical scoping (e.g., /Stage1/VOUT and /Stage2/VOUT) to allow isolated power distribution.".to_string(),
-                            auto_fixable: false,
-                        },
-                        crate::core::ir::RepairSuggestion {
-                            fix_id: 3,
-                            description: "Review the schematic topology: parallel power supplies on the same net may indicate a wiring error or missing current-sharing circuit.".to_string(),
-                            auto_fixable: false,
-                        },
-                    ]
-                };
-
                 evidence.push(EvidenceRecord {
                     check_id: "E3_no_multiple_power_drivers".to_string(),
                     status: if conflicts.is_empty() {
@@ -716,7 +638,6 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("Multiple power drivers on net(s): {}", conflicts.join(", "))
                     },
-                    repair_suggestions,
                 });
             }
 
