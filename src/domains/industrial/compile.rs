@@ -531,6 +531,7 @@ pub fn compile_industrial(project: &ProjectAst) -> CanonicalIr {
         } else {
             format!("Unprotected short-circuit hazard on pair(s): {}", interlock_violations.join(", "))
         },
+        repair_suggestions: Vec::new(),
     });
 
     // I2: Emergency Stop & Thermal Overload Trip Authority
@@ -572,6 +573,7 @@ pub fn compile_industrial(project: &ProjectAst) -> CanonicalIr {
         } else {
             format!("Bypassed safety trip device(s): {}", trip_missing.join(", "))
         },
+        repair_suggestions: Vec::new(),
     });
 
     // I3: Coil <-> Contact Cross-Reference Integrity
@@ -601,6 +603,7 @@ pub fn compile_industrial(project: &ProjectAst) -> CanonicalIr {
         } else {
             format!("Missing references: {}", missing_refs.join(", "))
         },
+        repair_suggestions: Vec::new(),
     });
 
     // I4: 3-Phase Reversal Sequence Verification
@@ -636,6 +639,7 @@ pub fn compile_industrial(project: &ProjectAst) -> CanonicalIr {
         } else {
             format!("Invalid phase reversal on: {}", rev_errors.join(", "))
         },
+        repair_suggestions: Vec::new(),
     });
 
     let model = IndustrialModel {
@@ -709,6 +713,7 @@ pub fn compile_industrial(project: &ProjectAst) -> CanonicalIr {
         relations.push(RelationIr {
             id: rung.id.clone(),
             kind: "industrial.rung".to_string(),
+            hierarchy: Vec::new(),
             connects,
             driven_voltage_v: None,
             is_ground: false,

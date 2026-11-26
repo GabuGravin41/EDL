@@ -271,7 +271,7 @@ fn watch_bridge_hot_reloads_keeps_last_good_and_syncs_kicad_back() {
     let (_, _, body) = handle_request(&state, "/api/state");
     let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(v["ok"], true);
-    assert_eq!(v["summary"]["evidence_total"], 6); // E1-E5 + E11_sheet_frame_fit
+    assert_eq!(v["summary"]["evidence_total"], 7); // E1-E5 + E11_sheet_frame_fit + E12_no_component_overlap
     let ver = v["version"].as_u64().unwrap();
     let (_, _, body) = handle_request(&state, &format!("/api/state?since={ver}"));
     let v: serde_json::Value = serde_json::from_slice(&body).unwrap();

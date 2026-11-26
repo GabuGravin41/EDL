@@ -58,7 +58,7 @@ project "SensorNode_v3" {
     }
 
     schematic Main {
-        sheet: A3 landscape
+        sheet: A2 landscape
         title: "SensorNode v3.0 — Pure AI-Native Intent"
         rev: "3.0"
         routing {

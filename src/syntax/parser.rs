@@ -2230,8 +2230,21 @@ impl Parser {
             }
         }
         let end = self.expect(TokenKind::RBrace, "'}'")?.span(&self.file);
+        // Extract optional hierarchical module path from `/Module/Sub/Net` notation while preserving
+        // the full unique net name so `/ModA/VOUT` and `/ModB/VOUT` never accidentally merge!
+        let hierarchy: Vec<String> = if name.starts_with('/') {
+            let parts: Vec<&str> = name.split('/').filter(|s| !s.is_empty()).collect();
+            if parts.len() > 1 {
+                parts[..parts.len() - 1].iter().map(|s| s.to_string()).collect()
+            } else {
+                Vec::new()
+            }
+        } else {
+            Vec::new()
+        };
         Ok(NetDecl {
             name,
+            hierarchy,
             connects,
             power_flag,
             span: start.merge(&end),
@@ -2640,6 +2653,7 @@ impl Parser {
                                 kind,
                                 orient_deg,
                                 mirror,
+                                is_auto: false,
                                 span: kspan.merge(&rend),
                             });
                             continue;
@@ -2808,6 +2822,7 @@ impl Parser {
                         },
                         orient_deg: None,
                         mirror: None,
+                        is_auto: false,
                         span: kspan.merge(&rsp),
                     });
                 }
@@ -2851,6 +2866,7 @@ impl Parser {
                         },
                         orient_deg: None,
                         mirror: None,
+                        is_auto: false,
                         span: kspan.merge(&aend),
                     });
                 }

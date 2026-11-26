@@ -309,7 +309,7 @@ project "Mixed-Signal Smart Sensor Node" {
   }
 
   schematic SensorNodeSheet {
-    sheet: A3 landscape
+    sheet: A2 landscape
 
     group UsbInput   { members: [J_USB, D_ESD, R_CC1, R_CC2] }
     group PowerReg   { members: [FB_USB, C_USB, Reg3V3] }

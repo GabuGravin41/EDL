@@ -63,6 +63,8 @@ pub struct PinRef {
 #[derive(Debug, Clone)]
 pub struct NetDecl {
     pub name: String,
+    /// Optional hierarchical module path segments (e.g. `"/Power/VOUT"` -> `["Power"]`).
+    pub hierarchy: Vec<String>,
     pub connects: Vec<PinRef>,
     pub power_flag: bool,
     pub span: Span,
@@ -404,6 +406,9 @@ pub struct RelativePlacementDecl {
     pub kind: RelativePlacementKind,
     pub orient_deg: Option<i32>,
     pub mirror: Option<crate::domains::elec::kicad_sym::SymMirror>,
+    /// True for auto-generated idiom layout hints (compiler may auto-orient/push-apart);
+    /// false for explicit user/AI `place` statements (obeyed literally and checked by E11/E12).
+    pub is_auto: bool,
     pub span: Span,
 }
 

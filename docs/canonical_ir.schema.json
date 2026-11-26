@@ -588,6 +588,13 @@
         "method": {
           "type": "string"
         },
+        "repair_suggestions": {
+          "description": "Actionable repair suggestions when a check is violated.",
+          "items": {
+            "$ref": "#/definitions/RepairSuggestion"
+          },
+          "type": "array"
+        },
         "status": {
           "$ref": "#/definitions/VerificationStatus"
         },
@@ -1699,6 +1706,13 @@
             "null"
           ]
         },
+        "hierarchy": {
+          "description": "Optional hierarchical module path segments parsed from `/Module/Sub/Net` notation.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "id": {
           "type": "string"
         },
@@ -1756,6 +1770,29 @@
         "action",
         "rationale",
         "target"
+      ],
+      "type": "object"
+    },
+    "RepairSuggestion": {
+      "description": "Structured, actionable repair suggestion attached to a violated verification proof.",
+      "properties": {
+        "auto_fixable": {
+          "description": "True if a tool/agent can safely apply this fix mechanically without domain guesswork.",
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "fix_id": {
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "auto_fixable",
+        "description",
+        "fix_id"
       ],
       "type": "object"
     },

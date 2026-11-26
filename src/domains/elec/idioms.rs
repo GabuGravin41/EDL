@@ -203,6 +203,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                                 },
                                 orient_deg: Some(0),
                                 mirror: None,
+                                is_auto: true,
                                 span: span.clone(),
                             });
                         } else {
@@ -219,6 +220,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                                 },
                                 orient_deg: Some(0),
                                 mirror: None,
+                                is_auto: true,
                                 span: span.clone(),
                             });
                         }
@@ -293,6 +295,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                         },
                         orient_deg: Some(0),
                         mirror: None,
+                        is_auto: true,
                         span: span.clone(),
                     });
                 }
@@ -383,6 +386,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                             },
                             orient_deg: Some(0),
                             mirror: None,
+                            is_auto: true,
                             span: span.clone(),
                         });
                     }
@@ -399,6 +403,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                         },
                         orient_deg: Some(0),
                         mirror: None,
+                        is_auto: true,
                         span: span.clone(),
                     });
                 }
@@ -508,6 +513,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                             },
                             orient_deg: Some(90),
                             mirror: None,
+                            is_auto: true,
                             span: span.clone(),
                         });
                         for i in (0..stages.len().saturating_sub(1)).rev() {
@@ -524,6 +530,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                                 },
                                 orient_deg: Some(90),
                                 mirror: None,
+                                is_auto: true,
                                 span: span.clone(),
                             });
                         }
@@ -544,6 +551,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                             },
                             orient_deg: Some(90),
                             mirror: None,
+                            is_auto: true,
                             span: span.clone(),
                         });
                         for i in 1..stages.len() {
@@ -560,6 +568,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                                 },
                                 orient_deg: Some(90),
                                 mirror: None,
+                                is_auto: true,
                                 span: span.clone(),
                             });
                         }
@@ -666,6 +675,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                             },
                             orient_deg: Some(90),
                             mirror: None,
+                            is_auto: true,
                             span: span.clone(),
                         });
                     } else if let ChainEndpoint::Pin(fp) = from {
@@ -684,6 +694,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                             },
                             orient_deg: Some(90),
                             mirror: None,
+                            is_auto: true,
                             span: span.clone(),
                         });
                     }
@@ -700,6 +711,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                         },
                         orient_deg: Some(0),
                         mirror: None,
+                        is_auto: true,
                         span: span.clone(),
                     });
                 }
@@ -714,6 +726,7 @@ pub fn expand_circuit_idioms(circuits: &[CircuitDecl]) -> ExpandedIdioms {
                 .unwrap_or_else(|| crate::core::span::Span::new("", 0, 0, 0, 0));
             out.extra_nets.push(NetDecl {
                 name: nname,
+                hierarchy: Vec::new(),
                 connects,
                 power_flag: false,
                 span: sp,

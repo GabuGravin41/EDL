@@ -293,6 +293,7 @@ pub fn verify_column_clearances(
         } else {
             format!("Column clashes: {}", clashes.join(", "))
         },
+        repair_suggestions: Vec::new(),
     }
 }
 

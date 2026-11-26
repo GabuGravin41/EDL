@@ -740,6 +740,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
         } else {
             format!("Capacity violations: {}", s1_errs.join("; "))
         },
+        repair_suggestions: Vec::new(),
     });
 
     // S2: Breaker & Cable Coordination (`Ib <= In <= Iz`) on every feeder & load
@@ -822,6 +823,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
         } else {
             format!("Coordination errors: {}", s2_errs.join("; "))
         },
+        repair_suggestions: Vec::new(),
     });
 
     // S3: Protection Selectivity Cascade (upstream breaker >= 1.25x downstream breaker)
@@ -860,6 +862,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
         } else {
             format!("Selectivity violations: {}", s3_errs.join("; "))
         },
+        repair_suggestions: Vec::new(),
     });
 
     // S4: IEC 60909 Short-Circuit Breaking Capacity (`Icu >= Ik3''` at every bus, feeder & load!)
@@ -950,6 +953,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
         } else {
             format!("Breaking capacity failures: {}", s4_errs.join("; "))
         },
+        repair_suggestions: Vec::new(),
     });
 
     // S5: Cumulative Voltage Drop (`<= 5.0%` power, `<= 3.0%` lighting)
@@ -992,6 +996,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
         } else {
             format!("Voltage drop violations: {}", s5_errs.join("; "))
         },
+        repair_suggestions: Vec::new(),
     });
 
     // S6: ATS / Bus-Coupler Interlock Safety Proof
@@ -1036,6 +1041,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
         } else {
             format!("Uninterlocked bus coupler(s): {}", s6_errs.join(", "))
         },
+        repair_suggestions: Vec::new(),
     });
 
     // 5. Emit CanonicalIr

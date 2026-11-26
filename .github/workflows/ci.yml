@@ -2,16 +2,17 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
 
 jobs:
-  rust-and-adapters:
-    name: Rust Tests, Release Build & Adapter Suite
+  rust-check-and-test:
+    name: Build, Lint & Test (0 Warnings)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,21 +20,20 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Cargo artifacts
+      - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Run Rust unit & integration tests (incl. IR schema parity)
+      - name: Compile library, binary, and all tests with -D warnings
+        run: cargo check --all-targets
+
+      - name: Run full Rust test suite
         run: cargo test
 
-      - name: Build release binary (warnings check)
-        run: cargo build --release
-
-      - name: Smoke-test CLI commands
+      - name: Verify Canonical IR JSON Schema is up to date
         run: |
-          ./target/release/edl domains
-          ./target/release/edl build examples/apartment_2br_electrical.edl
-          ./target/release/edl build examples/sensor_node_2row.edl
-          ./target/release/edl simulate examples/sensor_node_2row.edl
+          cargo build
+          ./target/debug/edl schema > /tmp/generated_schema.json
+          diff -u docs/canonical_ir.schema.json /tmp/generated_schema.json
 
-      - name: Run KiCad & FreeCAD host-tool adapter tests
-        run: python3 -m unittest adapters/test_adapters.py -v
+      - name: Run Python adapter tests
+        run: python3 adapters/test_adapters.py

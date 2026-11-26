@@ -574,6 +574,7 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
             } else {
                 format!("{viols} breaker/panel overload violation(s)")
             },
+            repair_suggestions: Vec::new(),
         });
     }
 
@@ -621,6 +622,7 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
             } else {
                 format!("{viols} voltage drop violation(s)")
             },
+            repair_suggestions: Vec::new(),
         });
     }
 
@@ -685,6 +687,7 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
             } else {
                 format!("{viols} IEC 60364 wet-zone clearance violation(s)")
             },
+            repair_suggestions: Vec::new(),
         });
     }
 
@@ -755,6 +758,7 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
             } else {
                 format!("{viols} switch accessibility / unswitched light violation(s)")
             },
+            repair_suggestions: Vec::new(),
         });
     }
 
@@ -812,6 +816,7 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
             } else {
                 format!("{viols} device-in-opening collision(s)")
             },
+            repair_suggestions: Vec::new(),
         });
     }
 
@@ -867,6 +872,7 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
             } else {
                 format!("{viols} circuit(s) missing <= 30mA RCD protection")
             },
+            repair_suggestions: Vec::new(),
         });
     }
 

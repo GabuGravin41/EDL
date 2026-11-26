@@ -117,6 +117,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
         } else {
             "Constraint contradiction detected".to_string()
         },
+        repair_suggestions: Vec::new(),
     });
 
     // 3. Build room entities (supporting optional corner notch for L-shaped rooms!)
@@ -848,6 +849,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("{} room overlap pair(s) detected", overlap_pairs.len())
                     },
+                    repair_suggestions: Vec::new(),
                 });
             }
 
@@ -928,6 +930,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("{violations} jamb margin violation(s) (< {:.1}mm)", min_mm)
                     },
+                    repair_suggestions: Vec::new(),
                 });
             }
 
@@ -1073,6 +1076,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("{collisions} door swing collision(s) detected")
                     },
+                    repair_suggestions: Vec::new(),
                 });
             }
 
@@ -1174,6 +1178,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("{} unreachable room(s): {}", unreachable.len(), unreachable.join(", "))
                     },
+                    repair_suggestions: Vec::new(),
                 });
             }
 
@@ -1382,6 +1387,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("{violations} fixture/clearance violation(s) detected")
                     },
+                    repair_suggestions: Vec::new(),
                 });
             }
 
@@ -1446,6 +1452,7 @@ pub fn compile_project(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("{} habitable room(s) lack a window: {}", missing.len(), missing.join(", "))
                     },
+                    repair_suggestions: Vec::new(),
                 });
             }
             _ => {}

@@ -273,7 +273,16 @@ pub fn apply_relative_placements(
         }
     }
 
+    // Track primary push direction ONLY for auto-generated idiom satellites (`is_auto == true`).
+    // Explicit user/AI `place` statements (`is_auto == false`) are obeyed literally and verified
+    // strictly by E11 (sheet frame) & E12 (component overlap) — never silently hijacked!
     let mut sat_push_dir: BTreeMap<String, RelDir> = BTreeMap::new();
+    let mut auto_sats: BTreeSet<String> = BTreeSet::new();
+    let explicit_sats: BTreeSet<String> = active
+        .iter()
+        .filter(|c| !c.is_auto)
+        .map(|c| c.component.clone())
+        .collect();
 
     // 2. Multi-pass topological resolution
     for _pass in 0..8 {
@@ -297,14 +306,18 @@ pub fn apply_relative_placements(
                     else {
                         continue;
                     };
-                    let eff_dir = outward_safe_dir(*dir, anchor_pin_side, anchor_is_ic);
-                    let gap_mm = snap(gap.and_then(|q| q.to_mm().ok()).unwrap_or(7.62)).max(5.08);
+                    let eff_dir = if c.is_auto {
+                        outward_safe_dir(*dir, anchor_pin_side, anchor_is_ic)
+                    } else {
+                        *dir
+                    };
+                    let gap_mm = snap(gap.and_then(|q| q.to_mm().ok()).unwrap_or(7.62)).max(2.54);
                     let Some((my_body, my_pins)) = entity_body_and_pins(&entities[my_idx]) else {
                         continue;
                     };
 
                     let (dx, dy) = if anchor.pin.is_some() {
-                        // If we redirected `Above/Below` to `LeftOf/RightOf` for a vertical passive on an East/West IC pin,
+                        // If we redirected `Above/Below` to `LeftOf/RightOf` for an auto idiom on an East/West IC pin,
                         // match the target pin (`align_pin` if specified, else facing pin) cleanly!
                         let use_pin = if eff_dir != *dir {
                             align_pin
@@ -321,17 +334,18 @@ pub fn apply_relative_placements(
                                 RelDir::Below => (anchor_pt.x, anchor_pt.y + gap_mm),
                                 RelDir::Above => (anchor_pt.x, anchor_pt.y - gap_mm),
                             };
-                            // Also ensure `my_body` stays strictly outside `anchor_body` along `eff_dir`!
                             let mut sdx = snap(tx - mp.tip_point.x);
                             let mut sdy = snap(ty - mp.tip_point.y);
-                            if eff_dir == RelDir::LeftOf && my_body.max_x + sdx > anchor_body.min_x - 7.62 {
-                                sdx = snap((anchor_body.min_x - 7.62) - my_body.max_x);
-                            } else if eff_dir == RelDir::RightOf && my_body.min_x + sdx < anchor_body.max_x + 7.62 {
-                                sdx = snap((anchor_body.max_x + 7.62) - my_body.min_x);
-                            } else if eff_dir == RelDir::Above && my_body.max_y + sdy > anchor_body.min_y - 7.62 {
-                                sdy = snap((anchor_body.min_y - 7.62) - my_body.max_y);
-                            } else if eff_dir == RelDir::Below && my_body.min_y + sdy < anchor_body.max_y + 7.62 {
-                                sdy = snap((anchor_body.max_y + 7.62) - my_body.min_y);
+                            if c.is_auto {
+                                if eff_dir == RelDir::LeftOf && my_body.max_x + sdx > anchor_body.min_x - 7.62 {
+                                    sdx = snap((anchor_body.min_x - 7.62) - my_body.max_x);
+                                } else if eff_dir == RelDir::RightOf && my_body.min_x + sdx < anchor_body.max_x + 7.62 {
+                                    sdx = snap((anchor_body.max_x + 7.62) - my_body.min_x);
+                                } else if eff_dir == RelDir::Above && my_body.max_y + sdy > anchor_body.min_y - 7.62 {
+                                    sdy = snap((anchor_body.min_y - 7.62) - my_body.max_y);
+                                } else if eff_dir == RelDir::Below && my_body.min_y + sdy < anchor_body.max_y + 7.62 {
+                                    sdy = snap((anchor_body.max_y + 7.62) - my_body.min_y);
+                                }
                             }
                             (sdx, sdy)
                         } else {
@@ -365,7 +379,10 @@ pub fn apply_relative_placements(
                         any_moved = true;
                     }
                     moved_sats.insert(c.component.clone());
-                    sat_push_dir.insert(c.component.clone(), eff_dir);
+                    if c.is_auto && !explicit_sats.contains(&c.component) {
+                        auto_sats.insert(c.component.clone());
+                        sat_push_dir.insert(c.component.clone(), eff_dir);
+                    }
                 }
 
                 RelativePlacementKind::Offset { dx, dy, anchor } => {
@@ -497,8 +514,10 @@ pub fn apply_relative_placements(
         }
     }
 
-    // 3. Deterministic Collision Push-Apart Pass (strictly separates overlapping satellites & anchors!)
-    let sat_indices: Vec<usize> = moved_sats
+    // 3. Deterministic Collision Push-Apart Pass ONLY for auto-generated idiom satellites!
+    //    Explicit user/AI `place` statements are NOT silently moved — any real overlap is caught as
+    //    a hard `E_COMPONENT_OVERLAP` compile error by E12!
+    let sat_indices: Vec<usize> = auto_sats
         .iter()
         .filter_map(|id| idx_map.get(id).copied())
         .collect();

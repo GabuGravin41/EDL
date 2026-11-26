@@ -386,6 +386,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         relations.push(RelationIr {
             id: net.name.clone(),
             kind: "elec.net".to_string(),
+            hierarchy: net.hierarchy.clone(),
             connects: net
                 .connects
                 .iter()
@@ -523,6 +524,26 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         }
                     }
                 }
+                let repair_suggestions = if unconnected.is_empty() {
+                    Vec::new()
+                } else {
+                    vec![
+                        RepairSuggestion {
+                            fix_id: 1,
+                            description: format!(
+                                "Connect unconnected pin(s) [{}] to their intended signal, power, or ground nets.",
+                                unconnected.join(", ")
+                            ),
+                            auto_fixable: false,
+                        },
+                        RepairSuggestion {
+                            fix_id: 2,
+                            description: "For intentionally unused pins, add them to the component's `no_connect: [...]` list."
+                                .to_string(),
+                            auto_fixable: true,
+                        },
+                    ]
+                };
                 evidence.push(EvidenceRecord {
                     check_id: "E1_all_required_pins_connected".to_string(),
                     status: if unconnected.is_empty() {
@@ -542,6 +563,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             unconnected.join(", ")
                         )
                     },
+                    repair_suggestions,
                 });
             }
 
@@ -592,6 +614,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("Power-ground short on net(s): {}", shorts.join(", "))
                     },
+                    repair_suggestions: Vec::new(),
                 });
             }
 
@@ -638,6 +661,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("Multiple power drivers on net(s): {}", conflicts.join(", "))
                     },
+                    repair_suggestions: Vec::new(),
                 });
             }
 
@@ -705,6 +729,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("{mismatches} supply voltage compatibility violation(s) detected")
                     },
+                    repair_suggestions: Vec::new(),
                 });
             }
 
@@ -786,6 +811,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         tolerance_mm: None,
                         subjects: vec![net_a.clone(), net_b.clone()],
                         details: format!("Conductive path found via [{}]", path_comps.join(" -> ")),
+                        repair_suggestions: Vec::new(),
                     });
                 } else {
                     evidence.push(EvidenceRecord {
@@ -795,6 +821,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         tolerance_mm: None,
                         subjects: vec![net_a.clone(), net_b.clone()],
                         details: format!("0 conductive paths between '{}' and '{}' (galvanic barrier intact)", net_a, net_b),
+                        repair_suggestions: Vec::new(),
                     });
                 }
             }
@@ -837,6 +864,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     } else {
                         format!("Dangling single-pin net(s): {}", dangling.join(", "))
                     },
+                    repair_suggestions: Vec::new(),
                 });
             }
             _ => {}
@@ -3148,8 +3176,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 "Use `layout { pack: skyline }`, split groups across multiple `schematic` sheets, or increase `sheet:` (e.g., `A2 landscape` / `A1 landscape`)".to_string()
             };
             diagnostics.push(
-                Diagnostic::warning(
-                    "W_SHEET_OVERFLOW",
+                Diagnostic::error(
+                    "E_SHEET_FRAME_OVERFLOW",
                     "layout",
                     format!(
                         "Schematic '{}' bounds ({:.1}mm × {:.1}mm) exceed declared sheet '{}' ({:.0}mm × {:.0}mm){offenders_str}",
@@ -3163,24 +3191,41 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     schem.map(|s| s.span.clone()),
                 )
                 .with_entities(frame_offenders.clone())
-                .with_suggestion(space_hint),
+                .with_suggestion(space_hint.clone()),
             );
             evidence.push(EvidenceRecord {
                 check_id: format!("E11_sheet_frame_fit_{sheet_name_str}"),
                 status: VerificationStatus::Violated,
-                method: "exact_kicad_frame_and_titleblock_bounds_v3.0".to_string(),
+                method: "exact_kicad_frame_and_titleblock_bounds_v3.1".to_string(),
                 tolerance_mm: Some(10.16),
                 subjects: frame_offenders,
                 details: format!(
                     "Overflow on '{}' ({:.0}×{:.0}mm): utilization {:.0}% W × {:.0}% H{offenders_str}",
                     sheet_str, sw, sh, util_w_pct, util_h_pct
                 ),
+                repair_suggestions: vec![
+                    RepairSuggestion {
+                        fix_id: 1,
+                        description: "Add `layout { pack: skyline }` to pack groups cleanly across the full sheet width.".to_string(),
+                        auto_fixable: true,
+                    },
+                    RepairSuggestion {
+                        fix_id: 2,
+                        description: "Increase `sheet:` size (e.g. `A3 landscape` -> `A2 landscape` or `A1 landscape`).".to_string(),
+                        auto_fixable: true,
+                    },
+                    RepairSuggestion {
+                        fix_id: 3,
+                        description: "Split functional groups across multiple `schematic` sheets.".to_string(),
+                        auto_fixable: false,
+                    },
+                ],
             });
         } else {
             evidence.push(EvidenceRecord {
                 check_id: format!("E11_sheet_frame_fit_{sheet_name_str}"),
                 status: VerificationStatus::ExactlyChecked,
-                method: "exact_kicad_frame_and_titleblock_bounds_v3.0".to_string(),
+                method: "exact_kicad_frame_and_titleblock_bounds_v3.1".to_string(),
                 tolerance_mm: Some(10.16),
                 subjects: vec![sheet_name_str.clone()],
                 details: format!(
@@ -3193,6 +3238,93 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     util_w_pct,
                     util_h_pct
                 ),
+                repair_suggestions: Vec::new(),
+            });
+        }
+    }
+
+    // E12: Non-negotiable Component Body Overlap Check (`E_COMPONENT_OVERLAP`)!
+    // Engineers/AI have full creative freedom over placement, but two physical symbol bodies must NEVER collide.
+    {
+        let mut comp_boxes: Vec<(&str, Rect2, Option<crate::core::span::Span>)> = Vec::new();
+        for e in &local_entities {
+            if let EntityGeometryIr::Component { body_rect, .. } = &e.geometry {
+                comp_boxes.push((e.id.as_str(), *body_rect, e.span.clone()));
+            }
+        }
+        let mut overlap_pairs: Vec<String> = Vec::new();
+        let mut overlap_subjects: Vec<String> = Vec::new();
+        for i in 0..comp_boxes.len() {
+            for j in (i + 1)..comp_boxes.len() {
+                let (id_a, ra, sp_a) = &comp_boxes[i];
+                let (id_b, rb, _) = &comp_boxes[j];
+                let ov_x = ra.max_x.min(rb.max_x) - ra.min_x.max(rb.min_x);
+                let ov_y = ra.max_y.min(rb.max_y) - ra.min_y.max(rb.min_y);
+                if ov_x > 0.2 && ov_y > 0.2 {
+                    overlap_pairs.push(format!("{id_a}↔{id_b} ({ov_x:.2}×{ov_y:.2}mm)"));
+                    overlap_subjects.push((*id_a).to_string());
+                    overlap_subjects.push((*id_b).to_string());
+                    diagnostics.push(
+                        Diagnostic::error(
+                            "E_COMPONENT_OVERLAP",
+                            "layout",
+                            format!(
+                                "Components '{id_a}' and '{id_b}' overlap by {:.2}mm × {:.2}mm on sheet '{sheet_name_str}'",
+                                ov_x, ov_y
+                            ),
+                            sp_a.clone(),
+                        )
+                        .with_entities(vec![(*id_a).to_string(), (*id_b).to_string()])
+                        .with_suggestion(format!(
+                            "Increase relative gap/offset between '{id_a}' and '{id_b}' (minimum {:.2}mm separation) or remove conflicting explicit placement",
+                            ov_x.max(ov_y) + 5.08
+                        )),
+                    );
+                }
+            }
+        }
+        overlap_subjects.sort();
+        overlap_subjects.dedup();
+        if overlap_pairs.is_empty() {
+            evidence.push(EvidenceRecord {
+                check_id: format!("E12_no_component_overlap_{sheet_name_str}"),
+                status: VerificationStatus::ExactlyChecked,
+                method: "exact_symbol_body_aabb_collision_v3.1".to_string(),
+                tolerance_mm: Some(0.2),
+                subjects: vec![sheet_name_str.clone()],
+                details: format!(
+                    "0 component body overlaps across {} placed component(s) on '{sheet_name_str}'",
+                    comp_boxes.len()
+                ),
+                repair_suggestions: Vec::new(),
+            });
+        } else {
+            evidence.push(EvidenceRecord {
+                check_id: format!("E12_no_component_overlap_{sheet_name_str}"),
+                status: VerificationStatus::Violated,
+                method: "exact_symbol_body_aabb_collision_v3.1".to_string(),
+                tolerance_mm: Some(0.2),
+                subjects: overlap_subjects,
+                details: format!(
+                    "{} component overlap(s) on '{sheet_name_str}': {}",
+                    overlap_pairs.len(),
+                    overlap_pairs.join(", ")
+                ),
+                repair_suggestions: vec![
+                    RepairSuggestion {
+                        fix_id: 1,
+                        description: format!(
+                            "Increase `gap:` or `offset:` on the overlapping pair(s): {}",
+                            overlap_pairs.join(", ")
+                        ),
+                        auto_fixable: true,
+                    },
+                    RepairSuggestion {
+                        fix_id: 2,
+                        description: "Move one of the colliding components to an adjacent stack (`hstack`/`vstack`) or group.".to_string(),
+                        auto_fixable: false,
+                    },
+                ],
             });
         }
     }
@@ -3277,6 +3409,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 sim.branches.len(),
                 sim.rc_filters.len()
             ),
+            repair_suggestions: Vec::new(),
         });
 
         for rule in &project.verifications {
@@ -3322,6 +3455,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                                 Some(v) => format!("{net} = {v:.3}V (spec {vmin:.3}V..{vmax:.3}V)"),
                                 None => format!("Net '{net}' missing"),
                             },
+                            repair_suggestions: Vec::new(),
                         });
                     }
                 }
@@ -3372,6 +3506,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                                 Some(i) => format!("{component} = {i:.3}mA (spec {imin_ma:.3}mA..{imax_ma:.3}mA)"),
                                 None => format!("Component '{component}' missing"),
                             },
+                            repair_suggestions: Vec::new(),
                         });
                     }
                 }
@@ -3544,6 +3679,7 @@ fn run_senior_erc_checks(
                 } else {
                     format!("Missing decoupling capacitor on: {}", missing.join(", "))
                 },
+                repair_suggestions: Vec::new(),
             });
         }
     }
@@ -3621,6 +3757,7 @@ fn run_senior_erc_checks(
                 } else {
                     format!("I2C bus line(s) missing pull-up resistor: {}", missing.join(", "))
                 },
+                repair_suggestions: Vec::new(),
             });
         }
     }
@@ -3729,6 +3866,7 @@ fn run_senior_erc_checks(
                 } else {
                     format!("Unprotected inductive load(s): {}", unprotected.join(", "))
                 },
+                repair_suggestions: Vec::new(),
             });
         }
     }
@@ -3877,6 +4015,7 @@ fn run_senior_erc_checks(
                 } else {
                     format!("BOM rating violation(s): {}", violations.join("; "))
                 },
+                repair_suggestions: Vec::new(),
             });
         }
     }

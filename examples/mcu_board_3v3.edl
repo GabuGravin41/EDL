@@ -105,7 +105,7 @@ project "MCU_Board_3V3" {
     }
 
     schematic MainSheet {
-        sheet: A4 landscape
+        sheet: A3 landscape
 
         group PowerIn { members: [J1, C1] }
         group Regulator { members: [U1, C2] }

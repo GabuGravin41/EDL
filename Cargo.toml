@@ -1,10 +1,10 @@
 [package]
 name = "edl"
-version = "3.0.0"
+version = "3.1.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/GabuGravin41/EDL"
-description = "Engineering Description Language (EDL) v3.0 — AI-native coordinate-free intent compiler (idioms, pin-anchored relative solver, short-free A* router, semantic KiCad lifter + .edl.layout lockfiles) with real KiCad 9 ERC & formal proofs"
+description = "Engineering Description Language (EDL) v3.1 — AI-native coordinate-free intent compiler with Rust-style non-negotiable invariants (E1-E12 + real KiCad 9 ERC), structured repair suggestions, hierarchical nets, and semantic KiCad lifting"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

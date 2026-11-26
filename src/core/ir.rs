@@ -63,6 +63,15 @@ pub enum VerificationStatus {
     Violated,
 }
 
+/// Structured, actionable repair suggestion attached to a violated verification proof.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct RepairSuggestion {
+    pub fix_id: usize,
+    pub description: String,
+    /// True if a tool/agent can safely apply this fix mechanically without domain guesswork.
+    pub auto_fixable: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct EvidenceRecord {
     pub check_id: String,
@@ -71,6 +80,9 @@ pub struct EvidenceRecord {
     pub tolerance_mm: Option<f64>,
     pub subjects: Vec<String>,
     pub details: String,
+    /// Actionable repair suggestions when a check is violated.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub repair_suggestions: Vec<RepairSuggestion>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -237,6 +249,9 @@ pub struct EntityIr {
 pub struct RelationIr {
     pub id: String,
     pub kind: String, // e.g., "elec.net"
+    /// Optional hierarchical module path segments parsed from `/Module/Sub/Net` notation.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub hierarchy: Vec<String>,
     pub connects: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub driven_voltage_v: Option<f64>,

@@ -181,7 +181,7 @@ project "SMPS_Flyback_Isolated_52" {
     }
 
     schematic MainSMPS {
-        sheet: A2 landscape
+        sheet: A1 landscape
         title: "52-Component Discrete Isolated Flyback SMPS"
         rev: "1.0"
         author: "EDL v1.2"

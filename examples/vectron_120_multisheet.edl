@@ -351,7 +351,7 @@ project "VECTRON_V2_120" {
     // SHEET 1/4: POWER DISTRIBUTION
     // =========================================================================
     schematic Power {
-        sheet: A3 landscape
+        sheet: A2 landscape
         title: "Power Distribution & Protection"
         rev: "2.0.0"
         author: "EDL v1.2"
@@ -424,7 +424,7 @@ project "VECTRON_V2_120" {
     // SHEET 2/4: MCU CORE, CLOCK, DEBUG & PULL-UPS
     // =========================================================================
     schematic MCU_Core {
-        sheet: A3 landscape
+        sheet: A2 landscape
         title: "STM32F405 Flight Controller Core"
         rev: "2.0.0"
         author: "EDL v1.2"

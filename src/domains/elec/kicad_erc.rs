@@ -69,6 +69,7 @@ pub fn run_and_ingest_kicad_erc(ir: &mut CanonicalIr) {
             tolerance_mm: None,
             subjects: Vec::new(),
             details: format!("Failed to write temporary schematic for KiCad ERC: {e}"),
+            repair_suggestions: Vec::new(),
         });
         return;
     }
@@ -99,6 +100,7 @@ pub fn run_and_ingest_kicad_erc(ir: &mut CanonicalIr) {
                 tolerance_mm: None,
                 subjects: Vec::new(),
                 details: format!("kicad-cli unavailable ({e}); external KiCad ERC skipped"),
+                repair_suggestions: Vec::new(),
             });
             return;
         }
@@ -116,6 +118,7 @@ pub fn run_and_ingest_kicad_erc(ir: &mut CanonicalIr) {
             tolerance_mm: None,
             subjects: Vec::new(),
             details: format!("kicad-cli produced no ERC report: {}", stderr.trim()),
+            repair_suggestions: Vec::new(),
         });
         return;
     }
@@ -138,6 +141,7 @@ pub fn run_and_ingest_kicad_erc(ir: &mut CanonicalIr) {
                     tolerance_mm: None,
                     subjects: vec![ir.project.name.clone()],
                     details: "KiCad 9 CLI ERC passed with 0 error-level violations".to_string(),
+                    repair_suggestions: Vec::new(),
                 });
             } else {
                 let count = violations.len();
@@ -168,6 +172,7 @@ pub fn run_and_ingest_kicad_erc(ir: &mut CanonicalIr) {
                     tolerance_mm: None,
                     subjects: vec![ir.project.name.clone()],
                     details: format!("KiCad 9 CLI ERC reported {count} error-level violation(s)"),
+                    repair_suggestions: Vec::new(),
                 });
             }
         }
@@ -179,6 +184,7 @@ pub fn run_and_ingest_kicad_erc(ir: &mut CanonicalIr) {
                 tolerance_mm: None,
                 subjects: Vec::new(),
                 details: format!("Failed to parse KiCad ERC JSON: {e}"),
+                repair_suggestions: Vec::new(),
             });
         }
     }

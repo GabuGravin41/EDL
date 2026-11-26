@@ -664,6 +664,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             } else {
                 format!("Missing connections: {}", p1_missing.join("; "))
             },
+            repair_suggestions: Vec::new(),
         });
 
         // P2: Drainage pipe sizing and gravity slope check (EN 12056 / IPC)
@@ -773,6 +774,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             } else {
                 format!("Drainage violations: {}", p2_errs.join("; "))
             },
+            repair_suggestions: Vec::new(),
         });
 
         // P3: Unvented trap-arm maximum distance check (prevents trap siphonage!)
@@ -840,6 +842,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             } else {
                 format!("Trap-arm violations: {}", p3_errs.join("; "))
             },
+            repair_suggestions: Vec::new(),
         });
 
         // P4: Supply water velocity check (v <= 2.0 m/s to prevent water hammer & noise)
@@ -887,6 +890,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             } else {
                 format!("Velocity violations: {}", p4_errs.join("; "))
             },
+            repair_suggestions: Vec::new(),
         });
 
         // P5: Isolation shutoff valves on main cold supply & hot water heater
@@ -939,6 +943,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             } else {
                 format!("Missing isolation valve(s): {}", p5_errs.join(", "))
             },
+            repair_suggestions: Vec::new(),
         });
 
         // P6: Cross-Discipline Clash Verification (mep.plumbing <-> mep.elec)
@@ -1000,6 +1005,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             } else {
                 format!("MEP clashes: {}", p6_clashes.join("; "))
             },
+            repair_suggestions: Vec::new(),
         });
 
         // P7: Commercial Collector Header DFU Capacity (IPC Table 710.1(1) / EN 12056)
@@ -1056,6 +1062,7 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
                 } else {
                     format!("Header DFU overloads: {}", p7_errs.join("; "))
                 },
+                repair_suggestions: Vec::new(),
             });
         }
 

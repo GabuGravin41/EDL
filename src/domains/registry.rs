@@ -452,5 +452,6 @@ pub fn push_evidence(
         tolerance_mm: None,
         subjects,
         details: details.into(),
+        repair_suggestions: Vec::new(),
     });
 }

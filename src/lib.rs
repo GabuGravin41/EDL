@@ -399,7 +399,7 @@ mod tests {
         assert!(!ir.project.has_errors, "unexpected errors: {:?}", ir.diagnostics);
         assert_eq!(ir.project.component_count, 7);
         assert_eq!(ir.project.net_count, 4);
-        assert_eq!(ir.evidence.len(), 6); // E1-E5 + E11_sheet_frame_fit
+        assert_eq!(ir.evidence.len(), 7); // E1-E5 + E11_sheet_frame_fit + E12_no_component_overlap
         assert!(ir.evidence.iter().all(|e| e.status == VerificationStatus::ExactlyChecked));
 
         let svg = render_svg(&ir, true);
@@ -973,7 +973,7 @@ project "ParamEverywhere" {
     }
 
     #[test]
-    fn sheet_overflow_emits_warning_without_failing_build() {
+    fn sheet_overflow_fails_build_with_hard_error_and_repair_suggestions() {
         let src = r#"
 project "TinySheet" {
   units: mm
@@ -1001,8 +1001,16 @@ project "TinySheet" {
 }
 "#;
         let ir = compile_source("tiny_sheet.edl", src).unwrap();
-        assert!(!ir.project.has_errors);
-        assert!(ir.diagnostics.iter().any(|d| d.code == "W_SHEET_OVERFLOW"));
+        // Rust-style non-negotiable (v3.1): drawing outside the sheet frame is a hard compile error!
+        assert!(ir.project.has_errors);
+        assert!(ir.diagnostics.iter().any(|d| d.code == "E_SHEET_FRAME_OVERFLOW"));
+        let e11 = ir
+            .evidence
+            .iter()
+            .find(|e| e.check_id.starts_with("E11_sheet_frame_fit"))
+            .expect("E11_sheet_frame_fit evidence");
+        assert_eq!(e11.status, crate::core::ir::VerificationStatus::Violated);
+        assert!(!e11.repair_suggestions.is_empty());
     }
 
     #[test]
