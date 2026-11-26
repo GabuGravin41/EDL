@@ -72,7 +72,7 @@ fn build_sld_geometry(model: &SldModel) -> (f64, f64, Vec<SldDraw>) {
         let direct_w = (direct_loads.len() as f64) * load_pitch
             + if !direct_loads.is_empty() && !sub_ids.is_empty() { sub_gap } else { 0.0 };
         let src_min_w = (srcs.len().max(1) as f64) * 190.0;
-        let width = (sub_total_w + direct_w).max(src_min_w).max(340.0);
+        let width = (sub_total_w + direct_w).max(src_min_w).max(440.0);
 
         if mi > 0 {
             cur_x += coupler_gap;
@@ -88,14 +88,18 @@ fn build_sld_geometry(model: &SldModel) -> (f64, f64, Vec<SldDraw>) {
         cur_x += width;
     }
 
+    let mv_shift = if model.mv_intake.is_some() { 135.0 } else { 0.0 };
     let total_w = (cur_x + 76.0).max(1180.0);
-    let total_h = 965.0;
+    let total_h = 985.0 + mv_shift;
 
-    let y_src = 104.0;
-    let y_incomer_top = 176.0;
-    let y_main_bus = 290.0;
-    let y_sub_bus = 532.0;
-    let y_load_sym = 738.0;
+    let y_src = 104.0 + mv_shift;
+    let y_incomer_top = 176.0 + mv_shift;
+    let y_main_bus = 290.0 + mv_shift;
+    let y_sub_bus = 532.0 + mv_shift;
+    let y_load_sym = 738.0 + mv_shift;
+
+    // Collect transformer X centers to connect the 11kV MV RMU Busbar cleanly above them!
+    let mut tx_xs: Vec<(String, f64)> = Vec::new();
 
     // =========================================================================
     // 1. MAIN BUSBARS & SOURCES
@@ -161,6 +165,9 @@ fn build_sld_geometry(model: &SldModel) -> (f64, f64, Vec<SldDraw>) {
                 slot.x0 + pad + (si as f64) * ((slot.x1 - slot.x0 - 2.0 * pad) / ((ns - 1) as f64))
             };
             draw_source_symbol(&mut d, src, sx, y_src);
+            if src.kind == "transformer" {
+                tx_xs.push((src.id.clone(), sx));
+            }
             // Vertical feeder from source down through CT & Incomer Breaker to Main Busbar
             let y_sym_bot = y_src + 36.0;
             d.push(SldDraw::Line { layer: "SLD_FEEDER", x1: sx, y1: y_sym_bot, x2: sx, y2: y_incomer_top, dashed: false, thick: true, bus: false });
@@ -316,8 +323,123 @@ fn build_sld_geometry(model: &SldModel) -> (f64, f64, Vec<SldDraw>) {
     }
 
     // =========================================================================
-    // 3. ENGINEERING SUMMARY & N-1 CONTINGENCY BLOCK (Bottom Right — Image 2 style!)
+    // 1b. OPTIONAL MV UTILITY INTAKE & RING MAIN UNIT (RMU) BUSBAR
     // =========================================================================
+    if let Some(ref mv) = model.mv_intake {
+        if !tx_xs.is_empty() {
+            let y_rmu = 104.0;
+            let x_min = tx_xs.iter().map(|(_, x)| *x).fold(f64::INFINITY, f64::min) - 90.0;
+            let x_max = tx_xs.iter().map(|(_, x)| *x).fold(f64::NEG_INFINITY, f64::max) + 90.0;
+            let x_mid = (x_min + x_max) * 0.5;
+            // Utility Intake Badge & VCB drop into RMU Busbar
+            d.push(SldDraw::Rect {
+                layer: "SLD_SYMBOLS",
+                x: x_mid - 155.0,
+                y: 52.0,
+                w: 310.0,
+                h: 22.0,
+                fill: "#fef2f2",
+                stroke: "#b91c1c",
+                rx: 3.0,
+            });
+            d.push(SldDraw::Text {
+                layer: "SLD_TEXT",
+                x: x_mid,
+                y: 66.5,
+                size: 9.2,
+                anchor: "middle",
+                bold: true,
+                color: "#991b1b",
+                text: format!(
+                    "UTILITY {:.0}kV INTAKE | Sk''={:.0} MVA | Ik''={:.2} kA",
+                    mv.utility_kv, mv.sk_mva, mv.ik_mv_ka
+                ),
+            });
+            d.push(SldDraw::Line { layer: "SLD_FEEDER", x1: x_mid, y1: 74.0, x2: x_mid, y2: y_rmu, dashed: false, thick: true, bus: false });
+            // RMU Heavy MV Busbar
+            d.push(SldDraw::Line { layer: "SLD_BUSBAR", x1: x_min, y1: y_rmu, x2: x_max, y2: y_rmu, dashed: false, thick: true, bus: true });
+            d.push(SldDraw::Text {
+                layer: "SLD_TEXT",
+                x: x_min + 4.0,
+                y: y_rmu - 8.0,
+                size: 9.5,
+                anchor: "start",
+                bold: true,
+                color: "#b91c1c",
+                text: format!("{} ({:.0}kV RMU | VCB {:.0}A / {:.0}kA)", mv.id, mv.utility_kv, mv.vcb_a, mv.vcb_icu_ka),
+            });
+            // Drop MV VCB feeders cleanly down to each Transformer HV winding
+            for (tid, tx_x) in &tx_xs {
+                d.push(SldDraw::Circle { layer: "SLD_BUSBAR", cx: *tx_x, cy: y_rmu, r: 3.5, fill: "#b91c1c", stroke: "#b91c1c" });
+                d.push(SldDraw::Line { layer: "SLD_FEEDER", x1: *tx_x, y1: y_rmu, x2: *tx_x, y2: y_rmu + 16.0, dashed: false, thick: true, bus: false });
+                draw_breaker_vertical(
+                    &mut d,
+                    *tx_x,
+                    y_rmu + 16.0,
+                    y_rmu + 58.0,
+                    &format!("Q_MV_{tid}"),
+                    &format!("{:.0}A/{:.0}kA", mv.vcb_a, mv.vcb_icu_ka),
+                    "VCB",
+                );
+                d.push(SldDraw::Line { layer: "SLD_FEEDER", x1: *tx_x, y1: y_rmu + 58.0, x2: *tx_x, y2: y_src - 38.0, dashed: false, thick: true, bus: false });
+            }
+        }
+    }
+
+    // =========================================================================
+    // 3. IEC 60909 SHORT-CIRCUIT TABLE (Bottom Left) & N-1 CONTINGENCY (Bottom Right)
+    // =========================================================================
+    {
+        let mut rows: Vec<(String, String, String, String)> = Vec::new();
+        if let Some(ref mv) = model.mv_intake {
+            rows.push((
+                mv.id.clone(),
+                format!("{:.0} kV", mv.utility_kv),
+                format!("{:.2} kA", mv.ik_mv_ka),
+                format!("VCB {:.0}kA [PASS]", mv.vcb_icu_ka),
+            ));
+        }
+        for b in &model.buses {
+            rows.push((
+                b.id.clone(),
+                format!("{:.0} V", b.voltage_v),
+                format!("{:.2} kA", b.ik3_ka),
+                format!("S={:.0}kVA  I={:.0}A  PF={:.2}", b.s_kva, b.current_a, b.pf),
+            ));
+        }
+        let tbl_w = 510.0;
+        let tbl_h = 36.0 + (rows.len() as f64) * 16.0;
+        let tx = 34.0;
+        let ty = total_h - 82.0 - tbl_h;
+        d.push(SldDraw::Rect {
+            layer: "SLD_METRICS",
+            x: tx,
+            y: ty,
+            w: tbl_w,
+            h: tbl_h,
+            fill: "#f8fafc",
+            stroke: "#94a3b8",
+            rx: 4.0,
+        });
+        d.push(SldDraw::Text {
+            layer: "SLD_TEXT",
+            x: tx + 10.0,
+            y: ty + 16.0,
+            size: 9.0,
+            anchor: "start",
+            bold: true,
+            color: "#0f172a",
+            text: "IEC 60909 SHORT-CIRCUIT & SWITCHGEAR VERIFICATION TABLE".to_string(),
+        });
+        for (i, (bid, un, ik, meta)) in rows.iter().enumerate() {
+            let ry = ty + 33.0 + (i as f64) * 16.0;
+            d.push(SldDraw::Text { layer: "SLD_METRICS", x: tx + 10.0, y: ry, size: 8.2, anchor: "start", bold: true, color: "#1e3a8a", text: bid.clone() });
+            d.push(SldDraw::Text { layer: "SLD_METRICS", x: tx + 105.0, y: ry, size: 8.2, anchor: "start", bold: false, color: "#334155", text: un.clone() });
+            d.push(SldDraw::Text { layer: "SLD_METRICS", x: tx + 165.0, y: ry, size: 8.2, anchor: "start", bold: true, color: "#0f766e", text: format!("Ik3''={ik}") });
+            d.push(SldDraw::Text { layer: "SLD_METRICS", x: tx + 275.0, y: ry, size: 8.0, anchor: "start", bold: false, color: "#15803d", text: meta.clone() });
+        }
+    }
+
     if !model.contingencies.is_empty() {
         let box_w = 495.0;
         let box_h = 38.0 + (model.contingencies.len() as f64) * 18.0;
@@ -577,15 +699,25 @@ pub fn render_sld_svg(ir: &CanonicalIr) -> String {
     let fy = h - 46.0;
     let _ = writeln!(out, r##"  <line x1="28" y1="{:.1}" x2="{:.1}" y2="{:.1}" stroke="#e2e8f0" stroke-width="1.2"/>"##, fy - 18.0, w - 28.0, fy - 18.0);
     let _ = writeln!(out, r#"  <text class="title" x="32" y="{fy:.1}">EDL Power SLD: {}</text>"#, model.name);
+    let mv_part = model
+        .mv_intake
+        .as_ref()
+        .map(|mv| format!("MV Intake: {} ({:.0}kV) | ", mv.id, mv.utility_kv))
+        .unwrap_or_default();
+    let feeder_part = if model.feeders.is_empty() {
+        format!("Outgoing Loads: {}", model.loads.len())
+    } else {
+        format!("Sub-Feeders: {} | Loads: {}", model.feeders.len(), model.loads.len())
+    };
     let _ = writeln!(
         out,
-        r#"  <text class="meta" x="32" y="{:.1}">Standard: {} | Sources: {} | Switchboards: {} | Feeders: {} | Loads: {}</text>"#,
+        r#"  <text class="meta" x="32" y="{:.1}">Standard: {} | {}Sources: {} | Switchboards: {} | {}</text>"#,
         fy + 18.0,
         model.standard,
+        mv_part,
         model.sources.len(),
         model.buses.len(),
-        model.feeders.len(),
-        model.loads.len()
+        feeder_part
     );
     if ir.project.has_errors {
         let errs = ir.diagnostics.iter().filter(|d| d.severity == Severity::Error).count();

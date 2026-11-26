@@ -136,10 +136,22 @@ pub struct ContingencySummary {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SldMvIntake {
+    pub id: String,
+    pub utility_kv: f64,
+    pub sk_mva: f64,
+    pub ik_mv_ka: f64,
+    pub vcb_a: f64,
+    pub vcb_icu_ka: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SldModel {
     pub name: String,
     pub title: String,
     pub standard: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mv_intake: Option<SldMvIntake>,
     pub sources: Vec<SldSource>,
     pub buses: Vec<SldBus>,
     pub couplers: Vec<SldCoupler>,
@@ -248,6 +260,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
         .unwrap_or("IEC 60909 / IEC 60364")
         .to_string();
 
+    let mut mv_intake: Option<SldMvIntake> = None;
     let mut sources: Vec<SldSource> = Vec::new();
     let mut buses: Vec<SldBus> = Vec::new();
     let mut couplers: Vec<SldCoupler> = Vec::new();
@@ -263,6 +276,23 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
     // 1. Parse all SLD children
     for child in &tree.children {
         match child.kind.as_str() {
+            "mv_intake" | "rmu" => {
+                let id = child.name.clone().unwrap_or_else(|| "RMU_11KV".to_string());
+                let utility_kv = child.num("utility_kv").or_else(|| child.num("voltage_kv")).unwrap_or(11.0);
+                let sk_mva = child.num("sk_mva").unwrap_or(250.0);
+                let vcb_a = child.num("vcb_a").or_else(|| child.num("incomer_a")).unwrap_or(630.0);
+                let vcb_icu_ka = child.num("vcb_icu_ka").or_else(|| child.num("icu_ka")).unwrap_or(25.0);
+                // IEC 60909 MV prospective fault current: Ik'' = Sk'' / (sqrt(3) * Un)
+                let ik_mv_ka = sk_mva / (3.0_f64.sqrt() * utility_kv.max(1.0));
+                mv_intake = Some(SldMvIntake {
+                    id,
+                    utility_kv,
+                    sk_mva,
+                    ik_mv_ka,
+                    vcb_a,
+                    vcb_icu_ka,
+                });
+            }
             "source" => {
                 let id = child.name.clone().unwrap_or_else(|| format!("SRC{}", sources.len() + 1));
                 let kind = child.subtype.clone().unwrap_or_else(|| "transformer".to_string());
@@ -554,10 +584,16 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
             // Z_T = (uk/100) * Un^2 / Sn; typical LV transformer R/X ~ 0.30
             let mut sum_y_re = 0.0;
             let mut sum_y_im = 0.0;
+            let sk_mva = mv_intake.as_ref().map(|m| m.sk_mva).unwrap_or(500.0);
             for src in active_srcs {
                 let z_ohm = (src.uk_pct / 100.0) * (src.lv_v * src.lv_v) / (src.rating_kva * 1000.0);
-                // Add upstream MV grid impedance (~500 MVA -> ~0.32 mOhm at 400V)
-                let z_tot = z_ohm + 0.00032;
+                // Exact IEC 60909 upstream MV grid impedance referred to LV: Zq = (1.05 * Un^2) / Sk''
+                let z_grid = if src.kind == "transformer" {
+                    (1.05 * src.lv_v * src.lv_v) / (sk_mva.max(10.0) * 1_000_000.0)
+                } else {
+                    0.0
+                };
+                let z_tot = z_ohm + z_grid;
                 let r = z_tot * 0.28;
                 let x = z_tot * 0.96;
                 let denom = r * r + x * x;
@@ -1049,6 +1085,7 @@ pub fn compile_power_sld(project: &ProjectAst) -> CanonicalIr {
         name: name.clone(),
         title: title.clone(),
         standard,
+        mv_intake,
         sources: sources.clone(),
         buses: buses.clone(),
         couplers: couplers.clone(),

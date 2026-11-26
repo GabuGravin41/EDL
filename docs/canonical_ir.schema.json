@@ -368,6 +368,17 @@
               },
               "type": "array"
             },
+            "symbol_origin": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Point2"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exact symbol origin anchor in sheet mm (matches KiCad `(at X Y orient)` for verbatim library symbols)."
+            },
             "symbol_prims": {
               "items": {
                 "$ref": "#/definitions/SymPrim"
@@ -1363,6 +1374,12 @@
         },
         "panel_id": {
           "type": "string"
+        },
+        "phase": {
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "rating_a": {
           "format": "double",

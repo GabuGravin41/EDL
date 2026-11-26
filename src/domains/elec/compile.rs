@@ -1239,6 +1239,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                                 unit: Some(unit),
                                 hide_pin_names,
                                 symbol_prims,
+                                symbol_origin: Some(Point2::new(x, y)),
                                 body_rect: body,
                                 pins: placed_vec,
                             },
@@ -1825,12 +1826,13 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             } else {
                 (snap_grid(col_x0 + (col_body_w - bw) * 0.5), snap_grid(cur_y))
             };
-            let (body, placed, lib_id_opt, hide_pin_names, symbol_prims, routing_keys): (
+            let (body, placed, lib_id_opt, hide_pin_names, symbol_prims, symbol_origin, routing_keys): (
                 Rect2,
                 Vec<PlacedPinIr>,
                 Option<String>,
                 bool,
                 Option<Vec<SymPrim>>,
+                Option<Point2>,
                 Vec<String>,
             ) = if let Some(sym) = loaded_syms.get(cid) {
                 let u = comp.unit.unwrap_or(1);
@@ -1928,13 +1930,14 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     Some(sym.lib_id.clone()),
                     graphic.hide_pin_names,
                     Some(graphic.primitives),
+                    Some(Point2::new(cx, cy)),
                     rkeys,
                 )
             } else {
                 let body = Rect2::new(bx0, by0, snap_grid(bx0 + bw), snap_grid(by0 + bh));
                 let placed = place_pins_on_body(comp, assigned_sides, body);
                 let rkeys = placed.iter().map(|p| p.name.clone()).collect();
-                (body, placed, None, false, None, rkeys)
+                (body, placed, None, false, None, None, rkeys)
             };
 
             let local_left = snap_grid(col_x0.min(body.min_x) - PIN_LEN_MM - 2.54);
@@ -1998,6 +2001,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     unit: comp.unit,
                     hide_pin_names,
                     symbol_prims,
+                    symbol_origin,
                     body_rect: body,
                     pins: placed,
                 },
@@ -2173,6 +2177,15 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     let mut local_routes: Vec<SchematicRouteIr> = Vec::new();
     let mut astar_occ = crate::domains::elec::router::GridOccupancy::default();
     let mut pending_astar_nets: Vec<(String, bool, bool, Vec<RoutablePin>)> = Vec::new();
+    let all_sheet_pin_tips: BTreeSet<(i32, i32)> = placed_pins
+        .values()
+        .map(|rp| {
+            (
+                (rp.pin.tip_point.x / GRID_MM).round() as i32,
+                (rp.pin.tip_point.y / GRID_MM).round() as i32,
+            )
+        })
+        .collect();
     let mut top_bus_track = 0usize;
     let mut gnd_rail_track = 0usize;
 
@@ -2324,83 +2337,182 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 }
                 handled[i] = true;
                 let tip = rpi.pin.tip_point;
-                if is_gnd {
-                    let end = match rpi.pin.side {
+                let gcell = |p: Point2| -> (i32, i32) {
+                    ((p.x / GRID_MM).round() as i32, (p.y / GRID_MM).round() as i32)
+                };
+                let tip_g = gcell(tip);
+                // Helper: verify a candidate polyline path doesn't touch any foreign pin tip or existing stub!
+                let path_clear = |pts: &[Point2], occ: &crate::domains::elec::router::GridOccupancy| -> bool {
+                    for win in pts.windows(2) {
+                        let a = gcell(win[0]);
+                        let b = gcell(win[1]);
+                        if a.1 == b.1 {
+                            let (x0, x1) = (a.0.min(b.0), a.0.max(b.0));
+                            for x in x0..=x1 {
+                                let c = (x, a.1);
+                                if c != tip_g && (all_sheet_pin_tips.contains(&c) || occ.used_cells.contains(&c)) {
+                                    return false;
+                                }
+                            }
+                        } else if a.0 == b.0 {
+                            let (y0, y1) = (a.1.min(b.1), a.1.max(b.1));
+                            for y in y0..=y1 {
+                                let c = (a.0, y);
+                                if c != tip_g && (all_sheet_pin_tips.contains(&c) || occ.used_cells.contains(&c)) {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                    true
+                };
+                let chosen_pts: Vec<Point2> = if is_gnd {
+                    match rpi.pin.side {
                         Side::South => {
-                            let e = Point2::new(tip.x, snap_grid(tip.y + GRID_MM));
-                            add_ortho_seg(&mut segments, tip, e);
-                            e
+                            let mut res = vec![tip, Point2::new(tip.x, snap_grid(tip.y + GRID_MM))];
+                            for step in 1..=5 {
+                                let cand = vec![tip, Point2::new(tip.x, snap_grid(tip.y + (step as f64) * GRID_MM))];
+                                if path_clear(&cand, &astar_occ) {
+                                    res = cand;
+                                    break;
+                                }
+                            }
+                            res
                         }
                         Side::West => {
-                            let mid = Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), tip.y);
-                            let e = Point2::new(mid.x, snap_grid(mid.y + GRID_MM));
-                            add_ortho_seg(&mut segments, tip, mid);
-                            add_ortho_seg(&mut segments, mid, e);
-                            e
+                            let mut res = vec![
+                                tip,
+                                Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), tip.y),
+                                Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), snap_grid(tip.y + GRID_MM)),
+                            ];
+                            for step in 2..=6 {
+                                let mid = Point2::new(snap_grid(tip.x - (step as f64) * GRID_MM), tip.y);
+                                let e = Point2::new(mid.x, snap_grid(mid.y + GRID_MM));
+                                let cand = vec![tip, mid, e];
+                                if path_clear(&cand, &astar_occ) {
+                                    res = cand;
+                                    break;
+                                }
+                            }
+                            res
                         }
                         Side::East => {
-                            let mid = Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), tip.y);
-                            let e = Point2::new(mid.x, snap_grid(mid.y + GRID_MM));
-                            add_ortho_seg(&mut segments, tip, mid);
-                            add_ortho_seg(&mut segments, mid, e);
-                            e
+                            let mut res = vec![
+                                tip,
+                                Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), tip.y),
+                                Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), snap_grid(tip.y + GRID_MM)),
+                            ];
+                            for step in 2..=6 {
+                                let mid = Point2::new(snap_grid(tip.x + (step as f64) * GRID_MM), tip.y);
+                                let e = Point2::new(mid.x, snap_grid(mid.y + GRID_MM));
+                                let cand = vec![tip, mid, e];
+                                if path_clear(&cand, &astar_occ) {
+                                    res = cand;
+                                    break;
+                                }
+                            }
+                            res
                         }
                         Side::North => {
-                            // Elbow out left so downward GND triangle never overlaps component body!
-                            let up = Point2::new(tip.x, snap_grid(tip.y - GRID_MM));
-                            let side_pt = Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), up.y);
-                            let e = Point2::new(side_pt.x, snap_grid(side_pt.y + GRID_MM));
-                            add_ortho_seg(&mut segments, tip, up);
-                            add_ortho_seg(&mut segments, up, side_pt);
-                            add_ortho_seg(&mut segments, side_pt, e);
-                            e
+                            let mut res = vec![
+                                tip,
+                                Point2::new(tip.x, snap_grid(tip.y - GRID_MM)),
+                                Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), snap_grid(tip.y - GRID_MM)),
+                                Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), snap_grid(tip.y)),
+                            ];
+                            for step in 2..=6 {
+                                let up = Point2::new(tip.x, snap_grid(tip.y - GRID_MM));
+                                let side_pt = Point2::new(snap_grid(tip.x - (step as f64) * GRID_MM), up.y);
+                                let e = Point2::new(side_pt.x, snap_grid(side_pt.y + GRID_MM));
+                                let cand = vec![tip, up, side_pt, e];
+                                if path_clear(&cand, &astar_occ) {
+                                    res = cand;
+                                    break;
+                                }
+                            }
+                            res
                         }
-                    };
-                    terminals.push(NetTerminalIr {
-                        kind: "gnd_symbol".to_string(),
-                        pos: end,
-                        dir: Side::South,
-                        label: net.name.clone(),
-                    });
+                    }
                 } else {
-                    let end = match rpi.pin.side {
+                    match rpi.pin.side {
                         Side::North => {
-                            let e = Point2::new(tip.x, snap_grid(tip.y - GRID_MM));
-                            add_ortho_seg(&mut segments, tip, e);
-                            e
+                            let mut res = vec![tip, Point2::new(tip.x, snap_grid(tip.y - GRID_MM))];
+                            for step in 1..=5 {
+                                let cand = vec![tip, Point2::new(tip.x, snap_grid(tip.y - (step as f64) * GRID_MM))];
+                                if path_clear(&cand, &astar_occ) {
+                                    res = cand;
+                                    break;
+                                }
+                            }
+                            res
                         }
                         Side::West => {
-                            let mid = Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), tip.y);
-                            let e = Point2::new(mid.x, snap_grid(mid.y - GRID_MM));
-                            add_ortho_seg(&mut segments, tip, mid);
-                            add_ortho_seg(&mut segments, mid, e);
-                            e
+                            let mut res = vec![
+                                tip,
+                                Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), tip.y),
+                                Point2::new(snap_grid(tip.x - 2.0 * GRID_MM), snap_grid(tip.y - GRID_MM)),
+                            ];
+                            for step in 2..=6 {
+                                let mid = Point2::new(snap_grid(tip.x - (step as f64) * GRID_MM), tip.y);
+                                let e = Point2::new(mid.x, snap_grid(mid.y - GRID_MM));
+                                let cand = vec![tip, mid, e];
+                                if path_clear(&cand, &astar_occ) {
+                                    res = cand;
+                                    break;
+                                }
+                            }
+                            res
                         }
                         Side::East => {
-                            let mid = Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), tip.y);
-                            let e = Point2::new(mid.x, snap_grid(mid.y - GRID_MM));
-                            add_ortho_seg(&mut segments, tip, mid);
-                            add_ortho_seg(&mut segments, mid, e);
-                            e
+                            let mut res = vec![
+                                tip,
+                                Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), tip.y),
+                                Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), snap_grid(tip.y - GRID_MM)),
+                            ];
+                            for step in 2..=6 {
+                                let mid = Point2::new(snap_grid(tip.x + (step as f64) * GRID_MM), tip.y);
+                                let e = Point2::new(mid.x, snap_grid(mid.y - GRID_MM));
+                                let cand = vec![tip, mid, e];
+                                if path_clear(&cand, &astar_occ) {
+                                    res = cand;
+                                    break;
+                                }
+                            }
+                            res
                         }
                         Side::South => {
-                            // Elbow out right so upward power arrow never overlaps component body!
-                            let dn = Point2::new(tip.x, snap_grid(tip.y + GRID_MM));
-                            let side_pt = Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), dn.y);
-                            let e = Point2::new(side_pt.x, snap_grid(side_pt.y - GRID_MM));
-                            add_ortho_seg(&mut segments, tip, dn);
-                            add_ortho_seg(&mut segments, dn, side_pt);
-                            add_ortho_seg(&mut segments, side_pt, e);
-                            e
+                            let mut res = vec![
+                                tip,
+                                Point2::new(tip.x, snap_grid(tip.y + GRID_MM)),
+                                Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), snap_grid(tip.y + GRID_MM)),
+                                Point2::new(snap_grid(tip.x + 2.0 * GRID_MM), snap_grid(tip.y)),
+                            ];
+                            for step in 2..=6 {
+                                let dn = Point2::new(tip.x, snap_grid(tip.y + GRID_MM));
+                                let side_pt = Point2::new(snap_grid(tip.x + (step as f64) * GRID_MM), dn.y);
+                                let e = Point2::new(side_pt.x, snap_grid(side_pt.y - GRID_MM));
+                                let cand = vec![tip, dn, side_pt, e];
+                                if path_clear(&cand, &astar_occ) {
+                                    res = cand;
+                                    break;
+                                }
+                            }
+                            res
                         }
-                    };
-                    terminals.push(NetTerminalIr {
-                        kind: "power_symbol".to_string(),
-                        pos: end,
-                        dir: Side::North,
-                        label: net.name.clone(),
-                    });
+                    }
+                };
+                for win in chosen_pts.windows(2) {
+                    add_ortho_seg(&mut segments, win[0], win[1]);
+                    astar_occ.record_world_segment(Segment2::new(win[0], win[1]));
                 }
+                let end = *chosen_pts.last().unwrap();
+                astar_occ.record_terminal_point(end);
+                terminals.push(NetTerminalIr {
+                    kind: if is_gnd { "gnd_symbol" } else { "power_symbol" }.to_string(),
+                    pos: end,
+                    dir: if is_gnd { Side::South } else { Side::North },
+                    label: net.name.clone(),
+                });
             }
             local_routes.push(SchematicRouteIr {
                 net_id: net.name.clone(),
@@ -2951,21 +3063,36 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     label_pos: None,
                 });
             } else {
-                // Corridor completely congested: emit clean local `label_flag` stubs instead of risking a short!
+                // Corridor completely congested: emit clean local `label_flag` stubs — ALWAYS checking
+                // `astar_occ` so a fallback stub NEVER terminates on top of a passing A* wire!
                 let mut segments = Vec::new();
                 let mut terminals = Vec::new();
+                let to_g = |p: Point2| -> (i32, i32) {
+                    ((p.x / GRID_MM).round() as i32, (p.y / GRID_MM).round() as i32)
+                };
                 for rp in &rps {
                     let tip = rp.pin.tip_point;
                     let (end, term_dir) = match rp.pin.side {
                         Side::West => {
                             let e = Point2::new(snap_grid(tip.x - GRID_MM), tip.y);
-                            add_ortho_seg(&mut segments, tip, e);
-                            (e, Side::West)
+                            let eg = to_g(e);
+                            if !astar_occ.used_cells.contains(&eg) && !foreign_tips.contains(&eg) {
+                                add_ortho_seg(&mut segments, tip, e);
+                                (e, Side::West)
+                            } else {
+                                // Direct zero-length pin label: 100% valid in KiCad 9, mathematically short-free!
+                                (tip, Side::West)
+                            }
                         }
                         Side::East => {
                             let e = Point2::new(snap_grid(tip.x + GRID_MM), tip.y);
-                            add_ortho_seg(&mut segments, tip, e);
-                            (e, Side::East)
+                            let eg = to_g(e);
+                            if !astar_occ.used_cells.contains(&eg) && !foreign_tips.contains(&eg) {
+                                add_ortho_seg(&mut segments, tip, e);
+                                (e, Side::East)
+                            } else {
+                                (tip, Side::East)
+                            }
                         }
                         Side::North => {
                             let go_left = tip.x < rp.body_center_x - 0.1;
@@ -2975,9 +3102,19 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             } else {
                                 (Point2::new(snap_grid(tip.x + GRID_MM), mid.y), Side::East)
                             };
-                            add_ortho_seg(&mut segments, tip, mid);
-                            add_ortho_seg(&mut segments, mid, e);
-                            (e, d)
+                            let mg = to_g(mid);
+                            let eg = to_g(e);
+                            if !astar_occ.used_cells.contains(&mg)
+                                && !astar_occ.used_cells.contains(&eg)
+                                && !foreign_tips.contains(&mg)
+                                && !foreign_tips.contains(&eg)
+                            {
+                                add_ortho_seg(&mut segments, tip, mid);
+                                add_ortho_seg(&mut segments, mid, e);
+                                (e, d)
+                            } else {
+                                (tip, Side::North)
+                            }
                         }
                         Side::South => {
                             let go_left = tip.x < rp.body_center_x - 0.1;
@@ -2987,9 +3124,19 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                             } else {
                                 (Point2::new(snap_grid(tip.x + GRID_MM), mid.y), Side::East)
                             };
-                            add_ortho_seg(&mut segments, tip, mid);
-                            add_ortho_seg(&mut segments, mid, e);
-                            (e, d)
+                            let mg = to_g(mid);
+                            let eg = to_g(e);
+                            if !astar_occ.used_cells.contains(&mg)
+                                && !astar_occ.used_cells.contains(&eg)
+                                && !foreign_tips.contains(&mg)
+                                && !foreign_tips.contains(&eg)
+                            {
+                                add_ortho_seg(&mut segments, tip, mid);
+                                add_ortho_seg(&mut segments, mid, e);
+                                (e, d)
+                            } else {
+                                (tip, Side::South)
+                            }
                         }
                     };
                     terminals.push(NetTerminalIr {
@@ -4224,7 +4371,34 @@ fn run_senior_erc_checks(
                     if !is_inductive_load_comp(load) {
                         continue;
                     }
-                    let Some((na, nb)) = two_pin_nets(l_id, load) else {
+                    let load_coil_nets: Option<(String, String)> = two_pin_nets(l_id, load).or_else(|| {
+                        // Multi-pin relays (e.g. `Relay:Relay_SPDT` with coil + COM/NO/NC contacts):
+                        // locate the switched coil pin and its paired supply/ground coil pin!
+                        let mut distinct: Vec<String> = Vec::new();
+                        for p in &load.pins {
+                            if let Some(ns) = pin_to_nets.get(&(l_id.clone(), p.name.clone())) {
+                                for n in ns {
+                                    if !distinct.contains(n) {
+                                        distinct.push(n.clone());
+                                    }
+                                }
+                            }
+                        }
+                        if distinct.contains(&sw_net) {
+                            let peer = distinct.iter().find(|n| {
+                                *n != &sw_net
+                                    && (is_power_like_net(n)
+                                        || ground_nets.contains(*n)
+                                        || n.to_uppercase().contains("24V")
+                                        || n.to_uppercase().contains("12V")
+                                        || n.to_uppercase().contains("5V"))
+                            });
+                            peer.map(|p| (sw_net.clone(), p.clone()))
+                        } else {
+                            None
+                        }
+                    });
+                    let Some((na, nb)) = load_coil_nets else {
                         continue;
                     };
                     let other_net = if na == sw_net {
@@ -4234,7 +4408,11 @@ fn run_senior_erc_checks(
                     } else {
                         continue;
                     };
-                    if !is_power_like_net(other_net) && !ground_nets.contains(other_net) {
+                    if !is_power_like_net(other_net)
+                        && !ground_nets.contains(other_net)
+                        && !other_net.to_uppercase().contains("24V")
+                        && !other_net.to_uppercase().contains("12V")
+                    {
                         continue;
                     }
                     checked_loads += 1;

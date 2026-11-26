@@ -10,7 +10,7 @@ use crate::core::ir::PortRole;
 use crate::core::sync::{parse_sexpr, Sx};
 use crate::domains::elec::symbols::{SymPrim, SymbolGraphic};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -337,13 +337,200 @@ pub fn load_symbol(lib_ref: &str, extra_libs: &[PathBuf]) -> Result<KiCadLibSymb
     load_symbol_from_lib_str(lib_name, &content, sym_name)
 }
 
-/// Extract the raw verbatim `(symbol "<lib_ref>" ...)` S-expression from any project `extra_libs`
-/// or system `.kicad_sym` library (used by lossless Option-A `.kicad_sch` export).
+/// Extract top-level balanced child S-expressions inside a `(symbol "Name" <children...>)` string.
+fn split_symbol_children(raw: &str) -> Vec<String> {
+    let mut children = Vec::new();
+    let bytes = raw.as_bytes();
+    let n = bytes.len();
+    // Skip opening `(symbol "..."`
+    let mut i = 0usize;
+    let mut in_str = false;
+    let mut esc = false;
+    let mut seen_header_str = false;
+    while i < n {
+        let ch = bytes[i] as char;
+        if in_str {
+            if esc {
+                esc = false;
+            } else if ch == '\\' {
+                esc = true;
+            } else if ch == '"' {
+                in_str = false;
+                seen_header_str = true;
+            }
+            i += 1;
+            continue;
+        }
+        if ch == '"' {
+            in_str = true;
+            i += 1;
+            continue;
+        }
+        if seen_header_str && ch == '(' {
+            break;
+        }
+        i += 1;
+    }
+    while i < n {
+        while i < n && (bytes[i] as char).is_whitespace() {
+            i += 1;
+        }
+        if i >= n || bytes[i] == b')' {
+            break;
+        }
+        if bytes[i] != b'(' {
+            i += 1;
+            continue;
+        }
+        let start = i;
+        let mut depth = 0i32;
+        let mut q = false;
+        let mut e = false;
+        while i < n {
+            let c = bytes[i] as char;
+            if q {
+                if e {
+                    e = false;
+                } else if c == '\\' {
+                    e = true;
+                } else if c == '"' {
+                    q = false;
+                }
+            } else if c == '"' {
+                q = true;
+            } else if c == '(' {
+                depth += 1;
+            } else if c == ')' {
+                depth -= 1;
+                if depth == 0 {
+                    i += 1;
+                    children.push(raw[start..i].to_string());
+                    break;
+                }
+            }
+            i += 1;
+        }
+    }
+    children
+}
+
+fn child_head_and_first_str(child: &str) -> (Option<&str>, Option<String>) {
+    let trimmed = child.trim_start();
+    if !trimmed.starts_with('(') {
+        return (None, None);
+    }
+    let rest = &trimmed[1..];
+    let head_end = rest.find(|c: char| c.is_whitespace() || c == ')').unwrap_or(rest.len());
+    let head = &rest[..head_end];
+    let after = rest[head_end..].trim_start();
+    let first_str = if after.starts_with('"') {
+        let mut s = String::new();
+        let mut esc = false;
+        for ch in after[1..].chars() {
+            if esc {
+                s.push(ch);
+                esc = false;
+            } else if ch == '\\' {
+                esc = true;
+            } else if ch == '"' {
+                break;
+            } else {
+                s.push(ch);
+            }
+        }
+        Some(s)
+    } else {
+        None
+    };
+    (Some(head), first_str)
+}
+
+/// Flatten `(extends "Base")` chains inside a `.kicad_sym` library into a standalone KiCad 9
+/// `(symbol "<qualified_name>" ...)` S-expression suitable for embedding in `.kicad_sch` `(lib_symbols ...)`.
+fn flatten_symbol_sexpr(content: &str, sym_name: &str, qualified_name: &str, depth: usize) -> Option<String> {
+    if depth > 8 {
+        return None;
+    }
+    let raw = extract_top_symbol_sexpr(content, sym_name)?;
+    let children = split_symbol_children(&raw);
+    let extends_parent = children.iter().find_map(|c| {
+        let (h, s) = child_head_and_first_str(c);
+        if h == Some("extends") { s } else { None }
+    });
+
+    if let Some(parent_name) = extends_parent {
+        let parent_flat = flatten_symbol_sexpr(content, &parent_name, &parent_name, depth + 1)?;
+        let parent_children = split_symbol_children(&parent_flat);
+
+        // Collect property keys overridden by child
+        let mut child_prop_keys: BTreeSet<String> = BTreeSet::new();
+        for c in &children {
+            let (h, k) = child_head_and_first_str(c);
+            if h == Some("property") {
+                if let Some(key) = k {
+                    child_prop_keys.insert(key);
+                }
+            }
+        }
+
+        let mut merged: Vec<String> = Vec::new();
+        for pc in parent_children {
+            let (h, first) = child_head_and_first_str(&pc);
+            match h {
+                Some("extends") => continue,
+                Some("property") => {
+                    if let Some(ref key) = first {
+                        if child_prop_keys.contains(key) {
+                            continue; // overridden by child
+                        }
+                    }
+                    merged.push(pc);
+                }
+                Some("symbol") => {
+                    // Rename sub-symbol `"{parent_name}_0_1"` -> `"{sym_name}_0_1"`
+                    let old_sub_prefix = format!("(symbol \"{parent_name}_");
+                    let new_sub_prefix = format!("(symbol \"{sym_name}_");
+                    merged.push(pc.replacen(&old_sub_prefix, &new_sub_prefix, 1));
+                }
+                _ => merged.push(pc),
+            }
+        }
+        for cc in children {
+            let (h, _) = child_head_and_first_str(&cc);
+            if h == Some("extends") {
+                continue;
+            }
+            // Avoid duplicating simple flags already copied from parent (e.g. `exclude_from_sim`)
+            if matches!(h, Some("pin_names" | "pin_numbers" | "exclude_from_sim" | "in_bom" | "on_board")) {
+                merged.retain(|m| child_head_and_first_str(m).0 != h);
+            }
+            merged.push(cc);
+        }
+
+        let mut out = format!("(symbol \"{qualified_name}\"\n");
+        for item in merged {
+            for line in item.lines() {
+                out.push_str("  ");
+                out.push_str(line);
+                out.push('\n');
+            }
+        }
+        out.push(')');
+        Some(out)
+    } else {
+        let old_hdr = format!("(symbol \"{sym_name}\"");
+        let new_hdr = format!("(symbol \"{qualified_name}\"");
+        Some(raw.replacen(&old_hdr, &new_hdr, 1))
+    }
+}
+
+/// Extract the raw verbatim (and `(extends)`-flattened) `(symbol "<lib_ref>" ...)` S-expression
+/// from any project `extra_libs` or system `.kicad_sym` library.
 pub fn load_raw_symbol_sexpr(lib_ref: &str, extra_libs: &[PathBuf]) -> Option<String> {
     for p in extra_libs {
         if p.is_file() {
             if let Ok(content) = fs::read_to_string(p) {
-                if let Some(raw) = extract_top_symbol_sexpr(&content, lib_ref) {
+                if let Some(raw) = flatten_symbol_sexpr(&content, lib_ref, lib_ref, 0) {
                     return Some(raw);
                 }
             }
@@ -353,11 +540,8 @@ pub fn load_raw_symbol_sexpr(lib_ref: &str, extra_libs: &[PathBuf]) -> Option<St
         let libs = list_symbol_library_files(extra_libs);
         if let Some((_, path)) = libs.iter().find(|(name, _)| name == lib_name) {
             if let Ok(content) = fs::read_to_string(path) {
-                if let Some(raw) = extract_top_symbol_sexpr(&content, sym_name) {
-                    // Qualify top-level symbol header `(symbol "Sym"` -> `(symbol "Lib:Sym"` for `.kicad_sch`
-                    let old_hdr = format!("(symbol \"{sym_name}\"");
-                    let new_hdr = format!("(symbol \"{lib_ref}\"");
-                    return Some(raw.replacen(&old_hdr, &new_hdr, 1));
+                if let Some(raw) = flatten_symbol_sexpr(&content, sym_name, lib_ref, 0) {
+                    return Some(raw);
                 }
             }
         }
@@ -640,7 +824,13 @@ fn map_kicad_etype(etype: &str, name: &str) -> PortRole {
     let nl = name.to_uppercase();
     match etype {
         "power_in" => {
-            if nl == "GND" || nl.starts_with("GND") || nl == "VSS" || nl == "AGND" || nl == "PGND" || nl == "DGND" {
+            if nl == "GND"
+                || nl.starts_with("GND")
+                || nl.ends_with("GND")
+                || nl == "VSS"
+                || nl.starts_with("VSS")
+                || nl.ends_with("VSS")
+            {
                 PortRole::Ground
             } else {
                 PortRole::PowerIn

@@ -406,6 +406,7 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
                 supply_v,
                 rating_a,
                 cable_mm2,
+                phase: br.phase.clone(),
                 rcd_ma,
                 max_voltage_drop_pct: max_vdrop,
                 connected_devices: members.iter().map(|d| d.id.clone()).collect(),
@@ -538,6 +539,29 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
                     .with_suggestion(format!(
                         "Split loads on '{}' across two circuits or increase breaker rating & cable gauge",
                         c.id
+                    )),
+                );
+            }
+            // IEC 60364-5-52 cable ampacity coordination: breaker rating In <= cable Iz (Cu PVC/XLPE in conduit)
+            let iz_a = iec_copper_ampacity_a(c.cable_mm2, c.phase.as_deref() == Some("3P"));
+            if c.rating_a > iz_a + 1e-4 {
+                c.status = "CABLE_UNDERSIZED".to_string();
+                viols += 1;
+                ir.diagnostics.push(
+                    Diagnostic::error(
+                        "E_MEP_CABLE_UNDERSIZED",
+                        "mep.elec",
+                        format!(
+                            "Circuit '{}' breaker {:.0}A exceeds {:.1}mm² copper cable ampacity ({:.1}A, IEC 60364-5-52)",
+                            c.id, c.rating_a, c.cable_mm2, iz_a
+                        ),
+                        circuit_spans.get(&c.id).cloned(),
+                    )
+                    .with_entities(vec![c.id.clone()])
+                    .with_measurement(c.rating_a, iz_a, "A")
+                    .with_suggestion(format!(
+                        "Increase cable cross-section on '{}' so Iz >= {:.0}A (e.g. 2.5mm² for 20A, 4mm² for 25A-32A)",
+                        c.id, c.rating_a
                     )),
                 );
             }
@@ -876,9 +900,181 @@ pub fn compile_building_electrical(project: &ProjectAst, ir: &mut CanonicalIr) {
         });
     }
 
+    // M7: 3-Phase Load Balancing Proof (emitted whenever circuits declare `phase: L1|L2|L3|3P`)
+    let has_phases = all_circuits.iter().any(|c| c.phase.is_some());
+    if has_phases {
+        let (mut l1, mut l2, mut l3) = (0.0_f64, 0.0_f64, 0.0_f64);
+        for c in &all_circuits {
+            match c.phase.as_deref() {
+                Some("L1") => l1 += c.total_load_w,
+                Some("L2") => l2 += c.total_load_w,
+                Some("L3") => l3 += c.total_load_w,
+                Some("3P") => {
+                    l1 += c.total_load_w / 3.0;
+                    l2 += c.total_load_w / 3.0;
+                    l3 += c.total_load_w / 3.0;
+                }
+                _ => {}
+            }
+        }
+        let avg = (l1 + l2 + l3) / 3.0;
+        let imbalance_pct = if avg > 1e-6 {
+            ((l1.max(l2).max(l3) - l1.min(l2).min(l3)) / avg) * 100.0
+        } else {
+            0.0
+        };
+        let mut rep = Vec::new();
+        if imbalance_pct > 15.0 + 1e-4 {
+            let fix = format!(
+                "Reassign circuits from heaviest phase to lightest phase to bring 3-phase imbalance ({imbalance_pct:.1}%) <= 15.0%"
+            );
+            rep.push(RepairSuggestion {
+                fix_id: 1,
+                description: fix.clone(),
+                auto_fixable: false,
+            });
+            ir.diagnostics.push(
+                Diagnostic::error(
+                    "E_MEP_PHASE_IMBALANCE",
+                    "mep.elec",
+                    format!(
+                        "3-phase load imbalance is {imbalance_pct:.2}% (limit <= 15.0%): L1={l1:.0}W, L2={l2:.0}W, L3={l3:.0}W"
+                    ),
+                    None,
+                )
+                .with_measurement(round2(imbalance_pct), 15.0, "%")
+                .with_suggestion(fix),
+            );
+        }
+        ir.evidence.push(EvidenceRecord {
+            check_id: "M7_three_phase_balance".to_string(),
+            status: if imbalance_pct <= 15.0 + 1e-4 {
+                VerificationStatus::ExactlyChecked
+            } else {
+                VerificationStatus::Violated
+            },
+            method: "iec60364_three_phase_load_balance_v3.3".to_string(),
+            tolerance_mm: None,
+            subjects: all_circuits.iter().filter(|c| c.phase.is_some()).map(|c| c.id.clone()).collect(),
+            details: format!(
+                "3-phase load balance {imbalance_pct:.2}% (limit <= 15%): L1={l1:.0}W, L2={l2:.0}W, L3={l3:.0}W"
+            ),
+            repair_suggestions: rep,
+        });
+    }
+
+    // M8: DB Panel >= 900mm Front Working Clearance Proof (emitted when >= 2 panels or structural grid present)
+    let panels_placed: Vec<_> = all_devices.iter().filter(|d| d.device_kind == "panel").collect();
+    let grid_opt = crate::domains::arch::grid::extract_grid_from_ir(ir);
+    if panels_placed.len() >= 2 || grid_opt.as_ref().map(|g| !g.columns.is_empty()).unwrap_or(false) {
+        let mut clr_clashes: Vec<String> = Vec::new();
+        let mut clr_repairs: Vec<RepairSuggestion> = Vec::new();
+        let mut obstacles: Vec<(String, Rect2)> = Vec::new();
+        if let Some(ref g) = grid_opt {
+            for col in &g.columns {
+                obstacles.push((col.id.clone(), crate::domains::arch::grid::column_rect(col)));
+            }
+        }
+        for e in &ir.entities {
+            if let EntityGeometryIr::Door { swing_arc, .. } = &e.geometry {
+                let p0 = swing_arc.start_point();
+                let p1 = swing_arc.end_point();
+                let c = swing_arc.center;
+                obstacles.push((
+                    e.id.clone(),
+                    Rect2::new(
+                        c.x.min(p0.x).min(p1.x),
+                        c.y.min(p0.y).min(p1.y),
+                        c.x.max(p0.x).max(p1.x),
+                        c.y.max(p0.y).max(p1.y),
+                    ),
+                ));
+            }
+        }
+        for p in &panels_placed {
+            let clr = match p.facing {
+                Some(Side::East) => Rect2::new(p.pos.x + 50.0, p.pos.y - 450.0, p.pos.x + 950.0, p.pos.y + 450.0),
+                Some(Side::West) => Rect2::new(p.pos.x - 950.0, p.pos.y - 450.0, p.pos.x - 50.0, p.pos.y + 450.0),
+                Some(Side::North) => Rect2::new(p.pos.x - 450.0, p.pos.y + 50.0, p.pos.x + 450.0, p.pos.y + 950.0),
+                Some(Side::South) => Rect2::new(p.pos.x - 450.0, p.pos.y - 950.0, p.pos.x + 450.0, p.pos.y - 50.0),
+                None => Rect2::new(p.pos.x - 450.0, p.pos.y - 450.0, p.pos.x + 450.0, p.pos.y + 450.0),
+            };
+            for (oid, ob) in &obstacles {
+                if clr.overlaps_strict(*ob) {
+                    let tag = format!("{}<->{}", p.id, oid);
+                    clr_clashes.push(tag);
+                    let fix = format!(
+                        "Relocate panel '{}' along its wall so its 900x900mm front working zone clears '{}'",
+                        p.id, oid
+                    );
+                    clr_repairs.push(RepairSuggestion {
+                        fix_id: clr_clashes.len(),
+                        description: fix.clone(),
+                        auto_fixable: false,
+                    });
+                    ir.diagnostics.push(
+                        Diagnostic::error(
+                            "E_MEP_PANEL_CLEARANCE",
+                            "mep.elec",
+                            format!(
+                                "Distribution board '{}' 900mm front working zone is obstructed by '{}'",
+                                p.id, oid
+                            ),
+                            None,
+                        )
+                        .with_entities(vec![p.id.clone(), oid.clone()])
+                        .with_suggestion(fix),
+                    );
+                }
+            }
+        }
+        ir.evidence.push(EvidenceRecord {
+            check_id: "M8_panel_working_clearance".to_string(),
+            status: if clr_clashes.is_empty() {
+                VerificationStatus::ExactlyChecked
+            } else {
+                VerificationStatus::Violated
+            },
+            method: "iec60364_db_900mm_working_clearance_v3.3".to_string(),
+            tolerance_mm: Some(1.0),
+            subjects: panels_placed.iter().map(|p| p.id.clone()).collect(),
+            details: if clr_clashes.is_empty() {
+                format!(
+                    "All {} distribution board(s) have unobstructed >= 900mm front working clearance",
+                    panels_placed.len()
+                )
+            } else {
+                format!("Panel clearance obstructions: {}", clr_clashes.join(", "))
+            },
+            repair_suggestions: clr_repairs,
+        });
+    }
+
     ir.mep_circuits = all_circuits;
     ir.mep_wires = all_wires;
     ir.project.has_errors = ir.diagnostics.iter().any(|d| d.severity == Severity::Error);
+}
+
+fn iec_copper_ampacity_a(mm2: f64, three_phase: bool) -> f64 {
+    let table: &[(f64, f64)] = if three_phase {
+        &[
+            (1.5, 15.5), (2.5, 21.0), (4.0, 28.0), (6.0, 36.0), (10.0, 50.0),
+            (16.0, 68.0), (25.0, 89.0), (35.0, 110.0), (50.0, 134.0),
+            (70.0, 171.0), (95.0, 207.0), (120.0, 239.0), (150.0, 275.0),
+        ]
+    } else {
+        &[
+            (1.5, 17.5), (2.5, 24.0), (4.0, 32.0), (6.0, 41.0), (10.0, 57.0),
+            (16.0, 76.0), (25.0, 101.0), (35.0, 125.0), (50.0, 151.0),
+            (70.0, 192.0), (95.0, 232.0), (120.0, 269.0), (150.0, 309.0),
+        ]
+    };
+    for &(s, iz) in table {
+        if (mm2 - s).abs() <= 0.1 {
+            return iz;
+        }
+    }
+    mm2 * if three_phase { 4.2 } else { 5.0 }
 }
 
 fn resolve_mount(

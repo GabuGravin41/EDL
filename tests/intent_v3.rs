@@ -328,3 +328,55 @@ project "UnderratedParts" {
     assert!(e13.repair_suggestions[0].description.contains("16.0V"));
     assert!(e14.repair_suggestions[0].description.contains("0.500W"));
 }
+
+#[test]
+fn v33_multipin_relay_flyback_and_vssa_ground_verify_cleanly() {
+    let src = r#"
+project "RelayFlybackV33" {
+    units: mm
+    circuit Main {
+        component J_ISO: "Connector:Conn_01x02_Pin" { value: "ISO_24V" }
+        component K1: "Relay:Relay_SPDT" { value: "G5LE-1-DC24" }
+        component D_FLY: "Device:D" { value: "1N4148W" }
+        component Q1: "Transistor_FET:2N7002" { value: "2N7002" }
+        net ISO_24V { connect: [J_ISO.1, K1.A1, D_FLY.K] power_flag: true }
+        net COIL_SW { connect: [K1.A2, D_FLY.A, Q1.D] }
+        net ISO_GND { connect: [J_ISO.2, Q1.S] }
+        net GATE_DRV { connect: [Q1.G] }
+    }
+    schematic Main {
+        sheet: A4 landscape
+        group Relay { members: [J_ISO, K1, D_FLY, Q1] }
+    }
+    verify {
+        require inductive_flyback
+    }
+}
+"#;
+    let ir = edl::compile_source("relay_v33.edl", src).expect("compiles cleanly");
+    let e9 = ir
+        .evidence
+        .iter()
+        .find(|e| e.check_id == "E9_inductive_flyback")
+        .expect("E9 evidence");
+    assert_eq!(
+        e9.status,
+        VerificationStatus::ExactlyChecked,
+        "multi-pin Relay:Relay_SPDT with antiparallel D_FLY should pass E9: {}",
+        e9.details
+    );
+    assert!(e9.details.contains("1 transistor-switched inductive"), "details: {}", e9.details);
+
+    // Negative check: removing flyback diode D_FLY must fail E9 on multi-pin Relay_SPDT K1!
+    let no_fly = src
+        .replace("component D_FLY: \"Device:D\" { value: \"1N4148W\" }\n", "")
+        .replace(", D_FLY.K", "")
+        .replace(", D_FLY.A", "")
+        .replace(", D_FLY", "");
+    let bad_ir = edl::compile_source("relay_no_fly.edl", &no_fly).expect("parses");
+    assert!(
+        bad_ir.diagnostics.iter().any(|d| d.code == "E_ERC_MISSING_FLYBACK" && d.message.contains("K1")),
+        "expected E_ERC_MISSING_FLYBACK mentioning K1, got: {:?}",
+        bad_ir.diagnostics
+    );
+}

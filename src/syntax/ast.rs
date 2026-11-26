@@ -75,6 +75,8 @@ pub struct ProjectAst {
     pub span: Span,
     pub default_unit: Unit,
     pub imports: Vec<ImportDecl>,
+    /// Optional base project files overlaid by this project (`overlay "clinic_arch.edl"`).
+    pub overlays: Vec<ImportDecl>,
     pub modules: Vec<ModuleDecl>,
     pub uses: Vec<UseDecl>,
     pub frames: Vec<FrameDecl>,

@@ -1066,6 +1066,184 @@ pub fn compile_building_plumbing(ast: &ProjectAst, ir: &mut CanonicalIr) {
             });
         }
 
+        // Helper: exact Liang-Barsky segment-vs-AABB intersection in mm
+        let seg_hits_rect = |p0: [f64; 2], p1: [f64; 2], r: Rect2| -> bool {
+            let dx = p1[0] - p0[0];
+            let dy = p1[1] - p0[1];
+            let mut t0 = 0.0_f64;
+            let mut t1 = 1.0_f64;
+            let clip = |p: f64, q: f64, t0: &mut f64, t1: &mut f64| -> bool {
+                if p.abs() < 1e-9 {
+                    return q >= 0.0;
+                }
+                let r = q / p;
+                if p < 0.0 {
+                    if r > *t1 { return false; }
+                    if r > *t0 { *t0 = r; }
+                } else {
+                    if r < *t0 { return false; }
+                    if r < *t1 { *t1 = r; }
+                }
+                true
+            };
+            clip(-dx, p0[0] - r.min_x, &mut t0, &mut t1)
+                && clip(dx, r.max_x - p0[0], &mut t0, &mut t1)
+                && clip(-dy, p0[1] - r.min_y, &mut t0, &mut t1)
+                && clip(dy, r.max_y - p0[1], &mut t0, &mut t1)
+        };
+
+        // P8: Built-in cross-discipline dry-room protection (forbids plumbing pipes inside Electrical/IT/Server rooms!)
+        let dry_rooms: Vec<(String, Rect2)> = ir
+            .entities
+            .iter()
+            .filter_map(|e| {
+                if e.kind != "arch.room" {
+                    return None;
+                }
+                let low = e.id.to_ascii_lowercase();
+                let role = e.props.get("role").and_then(|v| v.as_str()).unwrap_or("");
+                if role == "dry"
+                    || low.contains("elec")
+                    || low.contains("server")
+                    || low.contains("switchgear")
+                    || low.contains("itroom")
+                {
+                    if let EntityGeometryIr::Rect { min, max, .. } = e.geometry {
+                        // Inset 40mm from wall faces so perimeter chase pipes in adjacent corridors stay clear
+                        let inset = 40.0;
+                        if max[0] - min[0] > 2.0 * inset && max[1] - min[1] > 2.0 * inset {
+                            return Some((
+                                e.id.clone(),
+                                Rect2::new(min[0] + inset, min[1] + inset, max[0] - inset, max[1] - inset),
+                            ));
+                        }
+                    }
+                }
+                None
+            })
+            .collect();
+        if !dry_rooms.is_empty() {
+            let mut dry_clashes: Vec<String> = Vec::new();
+            let mut dry_repairs: Vec<RepairSuggestion> = Vec::new();
+            for pipe in &pipes {
+                for win in pipe.points.windows(2) {
+                    for (rid, rrect) in &dry_rooms {
+                        if seg_hits_rect(win[0], win[1], *rrect) {
+                            let tag = format!("{}<->{}", pipe.id, rid);
+                            if !dry_clashes.contains(&tag) {
+                                dry_clashes.push(tag);
+                                let fix = format!(
+                                    "Re-route plumbing pipe '{}' outside dry electrical/IT room '{}' (e.g. via corridor chase)",
+                                    pipe.id, rid
+                                );
+                                dry_repairs.push(RepairSuggestion {
+                                    fix_id: dry_clashes.len(),
+                                    description: fix.clone(),
+                                    auto_fixable: false,
+                                });
+                                ir.diagnostics.push(
+                                    Diagnostic::error(
+                                        "E_PLUMB_DRY_ROOM_CLASH",
+                                        "plumbing",
+                                        format!(
+                                            "Plumbing pipe '{}' ({}) enters dry Electrical/IT room '{}'",
+                                            pipe.id, pipe.system, rid
+                                        ),
+                                        Some(block.span.clone()),
+                                    )
+                                    .with_entities(vec![pipe.id.clone(), rid.clone()])
+                                    .with_suggestion(fix),
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+            ir.evidence.push(EvidenceRecord {
+                check_id: "P8_no_plumbing_in_dry_rooms".to_string(),
+                status: if dry_clashes.is_empty() {
+                    VerificationStatus::ExactlyChecked
+                } else {
+                    VerificationStatus::Violated
+                },
+                method: "exact_pipe_dry_room_exclusion_v3.3".to_string(),
+                tolerance_mm: Some(40.0),
+                subjects: dry_rooms.iter().map(|(id, _)| id.clone()).collect(),
+                details: if dry_clashes.is_empty() {
+                    format!(
+                        "0 plumbing pipes entering {} dry electrical/IT room(s)",
+                        dry_rooms.len()
+                    )
+                } else {
+                    format!("Dry-room plumbing clashes: {}", dry_clashes.join(", "))
+                },
+                repair_suggestions: dry_repairs,
+            });
+        }
+
+        // P9: Built-in plumbing-vs-structural-column clash proof
+        if let Some(grid) = crate::domains::arch::grid::extract_grid_from_ir(ir) {
+            if !grid.columns.is_empty() {
+                let mut col_clashes: Vec<String> = Vec::new();
+                let mut col_repairs: Vec<RepairSuggestion> = Vec::new();
+                for pipe in &pipes {
+                    for win in pipe.points.windows(2) {
+                        for col in &grid.columns {
+                            let cr = crate::domains::arch::grid::column_rect(col);
+                            if seg_hits_rect(win[0], win[1], cr) {
+                                let tag = format!("{}<->{}", pipe.id, col.id);
+                                if !col_clashes.contains(&tag) {
+                                    col_clashes.push(tag);
+                                    let fix = format!(
+                                        "Offset plumbing pipe '{}' around structural column '{}'",
+                                        pipe.id, col.id
+                                    );
+                                    col_repairs.push(RepairSuggestion {
+                                        fix_id: col_clashes.len(),
+                                        description: fix.clone(),
+                                        auto_fixable: false,
+                                    });
+                                    ir.diagnostics.push(
+                                        Diagnostic::error(
+                                            "E_PLUMB_COLUMN_CLASH",
+                                            "plumbing",
+                                            format!(
+                                                "Plumbing pipe '{}' ({}) clashes with structural column '{}'",
+                                                pipe.id, pipe.system, col.id
+                                            ),
+                                            Some(block.span.clone()),
+                                        )
+                                        .with_entities(vec![pipe.id.clone(), col.id.clone()])
+                                        .with_suggestion(fix),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+                ir.evidence.push(EvidenceRecord {
+                    check_id: "P9_no_pipe_column_clash".to_string(),
+                    status: if col_clashes.is_empty() {
+                        VerificationStatus::ExactlyChecked
+                    } else {
+                        VerificationStatus::Violated
+                    },
+                    method: "exact_pipe_structural_column_clearance_v3.3".to_string(),
+                    tolerance_mm: Some(1e-6),
+                    subjects: grid.columns.iter().map(|c| c.id.clone()).collect(),
+                    details: if col_clashes.is_empty() {
+                        format!(
+                            "0 plumbing clashes across {} structural column(s)",
+                            grid.columns.len()
+                        )
+                    } else {
+                        format!("Pipe-column clashes: {}", col_clashes.join(", "))
+                    },
+                    repair_suggestions: col_repairs,
+                });
+            }
+        }
+
         // 5. Emit CanonicalIr entities (full plumbing model + individual nodes for query/diff)
         let model = PlumbingModel {
             name: model_name.clone(),

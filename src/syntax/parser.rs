@@ -235,6 +235,7 @@ impl Parser {
 
     fn parse_file(&mut self) -> Result<FileAst, Diagnostic> {
         let mut imports = Vec::new();
+        let mut overlays = Vec::new();
         let mut modules = Vec::new();
         let mut project = None;
 
@@ -252,6 +253,17 @@ impl Parser {
             };
             match kw {
                 "import" => imports.push(self.parse_import()?),
+                "overlay" => {
+                    let st = self.expect_keyword("overlay")?;
+                    if self.peek().kind == TokenKind::Colon {
+                        self.bump();
+                    }
+                    let (p, psp) = self.expect_string("overlay project path")?;
+                    overlays.push(ImportDecl {
+                        path: p,
+                        span: st.merge(&psp),
+                    });
+                }
                 "module" => modules.push(self.parse_module()?),
                 "project" => {
                     let mut proj = self.parse_project()?;
@@ -259,6 +271,9 @@ impl Parser {
                     let mut combined_imports = imports.clone();
                     combined_imports.extend(proj.imports);
                     proj.imports = combined_imports;
+                    let mut combined_overlays = overlays.clone();
+                    combined_overlays.extend(proj.overlays);
+                    proj.overlays = combined_overlays;
                     let mut combined_mods = modules.clone();
                     combined_mods.extend(proj.modules);
                     proj.modules = combined_mods;
@@ -523,6 +538,7 @@ impl Parser {
 
         let mut default_unit = Unit::Mm;
         let mut imports = Vec::new();
+        let mut overlays = Vec::new();
         let mut modules = Vec::new();
         let mut uses = Vec::new();
         let mut frames = Vec::new();
@@ -548,6 +564,17 @@ impl Parser {
             };
             match kw {
                 "import" => imports.push(self.parse_import()?),
+                "overlay" => {
+                    let st = self.expect_keyword("overlay")?;
+                    if self.peek().kind == TokenKind::Colon {
+                        self.bump();
+                    }
+                    let (p, psp) = self.expect_string("overlay project path")?;
+                    overlays.push(ImportDecl {
+                        path: p,
+                        span: st.merge(&psp),
+                    });
+                }
                 "module" => modules.push(self.parse_module()?),
                 "use" => uses.push(self.parse_use()?),
                 "units" => {
@@ -610,6 +637,7 @@ impl Parser {
             span: start.merge(&end),
             default_unit,
             imports,
+            overlays,
             modules,
             uses,
             frames,
@@ -3656,6 +3684,7 @@ impl Parser {
         let mut from_panel = String::new();
         let mut rating = Quantity::new(16.0, Unit::A);
         let mut cable = Quantity::new(2.5, Unit::Mm2);
+        let mut phase = None;
         let mut rcd = None;
         let mut max_voltage_drop_pct = None;
 
@@ -3674,6 +3703,16 @@ impl Parser {
                 "cable" => {
                     let (q, _) = self.parse_quantity()?;
                     cable = q;
+                }
+                "phase" => {
+                    let (ph, _) = match self.peek().kind.clone() {
+                        TokenKind::Number(n, u) => {
+                            let sp = self.bump().span(&self.file);
+                            (format!("{}{}", n.round() as i64, u), sp)
+                        }
+                        _ => self.expect_ident_or_str("phase (L1, L2, L3, 3P)")?,
+                    };
+                    phase = Some(ph.to_uppercase());
                 }
                 "rcd" => {
                     let (q, _) = self.parse_quantity()?;
@@ -3700,6 +3739,7 @@ impl Parser {
             from_panel,
             rating,
             cable,
+            phase,
             rcd,
             max_voltage_drop_pct,
             span: start.merge(&end),

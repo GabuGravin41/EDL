@@ -208,6 +208,9 @@ pub enum EntityGeometryIr {
         hide_pin_names: bool,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         symbol_prims: Option<Vec<SymPrim>>,
+        /// Exact symbol origin anchor in sheet mm (matches KiCad `(at X Y orient)` for verbatim library symbols).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        symbol_origin: Option<Point2>,
         body_rect: Rect2,
         pins: Vec<PlacedPinIr>,
     },
@@ -319,6 +322,8 @@ pub struct MepCircuitIr {
     pub supply_v: f64,
     pub rating_a: f64,
     pub cable_mm2: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub phase: Option<String>, // "L1" | "L2" | "L3" | "3P"
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rcd_ma: Option<f64>,
     pub max_voltage_drop_pct: f64,

@@ -232,12 +232,28 @@ impl DomainRegistry {
                 })
                 .unwrap_or(true);
 
+        let want_plumbing = want_all
+            || layers
+                .map(|ls| {
+                    ls.iter().any(|s| {
+                        let low = s.to_ascii_lowercase();
+                        low == "plumbing" || low == "mep.plumbing" || low == "mep"
+                    })
+                })
+                .unwrap_or(true);
+        let has_plumbing = !super::mep_plumbing::render::extract_plumbing_models(ir).is_empty();
+
         let is_arch = ir.project.domain == "architecture"
             || ir.project.domain.starts_with("arch")
             || ir.project.domain.is_empty();
 
         let mut svg = if is_arch {
-            super::arch::svg::render_svg_filtered(ir, annotated, want_elec)
+            super::arch::svg::render_svg_with_mode(
+                ir,
+                annotated,
+                want_elec,
+                want_plumbing && has_plumbing,
+            )
         } else {
             self.engines
                 .iter()

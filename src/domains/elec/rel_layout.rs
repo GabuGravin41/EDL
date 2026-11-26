@@ -30,9 +30,14 @@ pub fn translate_entity(ent: &mut EntityIr, dx: f64, dy: f64) {
         ref mut body_rect,
         ref mut pins,
         ref mut symbol_prims,
+        ref mut symbol_origin,
         ..
     } = ent.geometry
     {
+        if let Some(orig) = symbol_origin.as_mut() {
+            orig.x += dx;
+            orig.y += dy;
+        }
         body_rect.min_x += dx;
         body_rect.max_x += dx;
         body_rect.min_y += dy;

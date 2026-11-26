@@ -54,6 +54,7 @@ pub struct BreakerDecl {
     pub from_panel: String,
     pub rating: Quantity,
     pub cable: Quantity,
+    pub phase: Option<String>, // "L1" | "L2" | "L3" | "3P"
     pub rcd: Option<Quantity>,
     pub max_voltage_drop_pct: Option<f64>,
     pub span: Span,

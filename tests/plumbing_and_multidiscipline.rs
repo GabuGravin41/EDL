@@ -210,3 +210,127 @@ fn commercial_restroom_collector_headers_dfu_vents_and_cleanouts_verify_cleanly(
         .iter()
         .any(|d| d.code == "E_PLUMB_HEADER_DFU_OVERLOAD"));
 }
+
+#[test]
+fn v33_overlay_inherits_arch_deduplicates_verify_and_enforces_p8_p9_m7_m8() {
+    let dir = std::env::temp_dir().join("edl_v33_overlay_test");
+    let _ = std::fs::create_dir_all(&dir);
+    let base_path = dir.join("base_arch.edl");
+    let plumb_path = dir.join("overlay_plumb.edl");
+    let elec_path = dir.join("overlay_elec.edl");
+
+    std::fs::write(
+        &base_path,
+        r#"
+project "OverlayBase" {
+    units: mm
+    frame Plan: Frame2
+    architecture.defaults {
+        measurement_basis: clear_interior
+        exterior_wall: 200mm
+        interior_wall: 120mm
+    }
+    room ElecITRoom { role: service  clear_size: (4000mm, 3600mm)  anchor: southwest at Plan.origin }
+    room Bath       { role: wet      clear_size: (3600mm, 3600mm) }
+    layout Plan {
+        require Bath.west == ElecITRoom.east + interior_wall
+        require Bath.south == ElecITRoom.south
+    }
+    opening MainDoor: door { host: exterior(ElecITRoom, south)  width: 900mm  offset: 1800mm from start  hinge: start  swing: into ElecITRoom }
+    opening BathDoor: door { host: shared_wall(ElecITRoom, Bath) width: 900mm offset: 1500mm from start  hinge: start  swing: into Bath }
+    fixture WC1: toilet    { room: Bath  against: north  offset: 600mm from start  size: (400mm, 650mm) }
+    fixture Basin1: vanity { room: Bath  against: north  offset: 1600mm from start size: (550mm, 450mm) }
+    verify {
+        require no_room_overlap
+        require all_rooms_reachable
+    }
+}
+"#,
+    )
+    .unwrap();
+
+    // 1. Plumbing overlay with a dry-room pipe clash (P8) -> must catch E_PLUMB_DRY_ROOM_CLASH
+    std::fs::write(
+        &plumb_path,
+        r#"
+project "OverlayPlumb" {
+    units: mm
+    overlay "base_arch.edl"
+    building_plumbing MainPlumb {
+        riser ColdMain: cold_riser { host: Bath.east  at: 400mm  dia: 25mm }
+        riser SoilStack: soil_stack { host: Bath.east  at: 900mm  dia: 110mm }
+        heater WH1: water_heater { host: ElecITRoom.north  at: 800mm  capacity_l: 100 }
+        valve V1: isolation_valve { host: Bath.east  at: 500mm  serves: ColdMain  dia: 25mm }
+        connect WC1    { cold: ColdMain  cold_dia: 15mm  soil: SoilStack  drain_dia: 110mm  slope: "1:60" }
+        connect Basin1 { cold: ColdMain  cold_dia: 15mm  hot: WH1  hot_dia: 15mm  waste: SoilStack  drain_dia: 50mm  slope: "1:40" }
+    }
+    verify {
+        require no_room_overlap
+    }
+}
+"#,
+    )
+    .unwrap();
+    let pir = edl::compile_file(&plumb_path).expect("plumbing overlay parses");
+    assert_eq!(pir.project.room_count, 2);
+    // Deduplicated verify rules: V1_no_room_overlap should appear exactly ONCE
+    assert_eq!(
+        pir.evidence.iter().filter(|e| e.check_id == "V1_no_room_overlap").count(),
+        1
+    );
+    assert!(
+        pir.diagnostics.iter().any(|d| d.code == "E_PLUMB_DRY_ROOM_CLASH"),
+        "expected P8 dry room clash in ElecITRoom, got: {:?}",
+        pir.diagnostics
+    );
+    let psvg = render_svg_with_layers(&pir, false, None);
+    assert!(psvg.contains("NO PLUMBING ZONE"));
+
+    // 2. Electrical overlay testing 3-phase balance (M7), undersized cable (M1), and DB clearance (M8)
+    std::fs::write(
+        &elec_path,
+        r#"
+project "OverlayElec" {
+    units: mm
+    overlay "base_arch.edl"
+    building_electrical MainElec {
+        supply: 230V 50Hz
+        ceiling_height: 2700mm
+        panel DB1 { host: wall(ElecITRoom, north)  offset: 600mm from start  main_breaker: 63A  height: 1500mm }
+        panel DB2 { host: wall(ElecITRoom, north)  offset: 2600mm from start main_breaker: 40A  height: 1500mm }
+        breaker C1: socket   { from: DB1  rating: 20A  phase: L1  cable: 1.5mm2  rcd: 30mA  max_voltage_drop: 5% }
+        breaker C2: socket   { from: DB1  rating: 20A  phase: L1  cable: 2.5mm2  rcd: 30mA  max_voltage_drop: 5% }
+        breaker C3: lighting { from: DB1  rating: 10A  phase: L2  cable: 1.5mm2  rcd: 30mA  max_voltage_drop: 3% }
+        light L1: ceiling { room: ElecITRoom  at: center  load: 30W  circuit: C3 }
+        light L2: ceiling { room: Bath        at: center  load: 30W  circuit: C3  ip: IP44 }
+        outlet S1: duplex { host: wall(ElecITRoom, west)  offset: 1200mm from start  height: 300mm  load: 3200W  circuit: C1 }
+        outlet S2: duplex { host: wall(Bath, east)        offset: 1200mm from start  height: 300mm  load: 3200W  circuit: C2 }
+    }
+    verify {
+        require breaker_load_ok
+        require voltage_drop_ok
+        require electrical_device_clear
+    }
+}
+"#,
+    )
+    .unwrap();
+    let eir = edl::compile_file(&elec_path).expect("elec overlay parses");
+    assert!(
+        eir.diagnostics.iter().any(|d| d.code == "E_MEP_CABLE_UNDERSIZED"),
+        "expected 20A on 1.5mm2 to fail ampacity check, got: {:?}",
+        eir.diagnostics
+    );
+    assert!(
+        eir.diagnostics.iter().any(|d| d.code == "E_MEP_PHASE_IMBALANCE"),
+        "expected heavy L1 vs empty L3 to fail M7 3-phase balance, got: {:?}",
+        eir.diagnostics
+    );
+    assert!(eir.evidence.iter().any(|e| e.check_id == "M8_panel_working_clearance"));
+    let esvg = render_svg_with_layers(&eir, false, None);
+    assert!(esvg.contains("id=\"mep-electrical\""));
+    assert!(esvg.contains("DB1"));
+    assert!(esvg.contains("db-clr-hatch"));
+
+    let _ = std::fs::remove_dir_all(&dir);
+}

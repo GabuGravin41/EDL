@@ -15,6 +15,26 @@ pub fn render_svg(ir: &CanonicalIr, annotated: bool) -> String {
 
 /// Render an architectural floor plan with optional electrical overlay (`show_elec`).
 pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -> String {
+    render_svg_with_mode(ir, annotated, show_elec, false)
+}
+
+/// Render an architectural floor plan with optional electrical (`show_elec`) and/or plumbing (`show_plumbing`)
+/// overlay awareness. When any MEP overlay is active, automatically switches the architectural background to
+/// consultant-grade dimmed underlay styling (light gray walls, muted room tags, no arch clearance clutter)
+/// so pipes, conduits, panels, and fixtures pop cleanly.
+pub fn render_svg_with_mode(
+    ir: &CanonicalIr,
+    annotated: bool,
+    show_elec: bool,
+    show_plumbing: bool,
+) -> String {
+    let has_elec_content = show_elec
+        && (!ir.mep_wires.is_empty()
+            || ir
+                .entities
+                .iter()
+                .any(|e| matches!(e.geometry, EntityGeometryIr::MepDevice { .. })));
+    let mep_underlay = has_elec_content || show_plumbing;
     let grid = crate::domains::arch::grid::extract_grid_from_ir(ir);
     let mut bounds = ir
         .project
@@ -45,7 +65,7 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
     let scale_px_per_mm = (1280.0 / max_world).clamp(0.015, 0.13);
 
     let plan_svg_w = (world_w * scale_px_per_mm).round();
-    let sidebar_w = if show_elec && ir.mep_circuits.len() >= 6 { 286.0 } else { 0.0 };
+    let sidebar_w = if has_elec_content && ir.mep_circuits.len() >= 6 { 340.0 } else { 0.0 };
     let svg_w = plan_svg_w + sidebar_w;
     let svg_h = (world_h * scale_px_per_mm).round();
 
@@ -74,67 +94,89 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
         scale_px_per_mm,
         -scale_px_per_mm
     );
+    let (wall_ext_fill, wall_ext_stroke, wall_int_fill, wall_int_stroke, col_fill, door_leaf_col, door_arc_col, win_fill, win_stroke, fx_fill, fx_stroke, room_fill_norm, room_title_col) =
+        if mep_underlay {
+            (
+                "#94a3b8", "#64748b", "#cbd5e1", "#94a3b8", "#64748b",
+                "#94a3b8", "#cbd5e1", "#f1f5f9", "#94a3b8", "#f1f5f9", "#cbd5e1",
+                "#fcfdfe", "#64748b",
+            )
+        } else {
+            (
+                "#1e293b", "#0f172a", "#475569", "#334155", "#0f172a",
+                "#0f172a", "#2563eb", "#e0f2fe", "#0284c7", "#e2e8f0", "#475569",
+                "#f1f5f9", "#0f172a",
+            )
+        };
     let _ = writeln!(
         out,
         r##"  <defs>
+    <pattern id="dry-zone-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#ef4444" stroke-width="1.4" stroke-opacity="0.38"/>
+    </pattern>
+    <pattern id="db-clr-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+      <line x1="0" y1="0" x2="0" y2="7" stroke="#dc2626" stroke-width="1.2" stroke-opacity="0.35"/>
+    </pattern>
     <style>
       .bg {{ fill: #f8f9fb; }}
       .sheet {{ fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; }}
-      .room-fill {{ fill: #f1f5f9; stroke: #94a3b8; stroke-width: 0.7; }}
-      .room-fill-alt {{ fill: #eef6ff; stroke: #94a3b8; stroke-width: 0.7; }}
-      .room-fill-bath {{ fill: #ecfeff; stroke: #94a3b8; stroke-width: 0.7; }}
-      .room-fill-circ {{ fill: #f8fafc; stroke: #94a3b8; stroke-width: 0.7; }}
+      .room-fill {{ fill: {room_fill_norm}; stroke: #cbd5e1; stroke-width: 0.7; }}
+      .room-fill-alt {{ fill: {room_fill_alt}; stroke: #cbd5e1; stroke-width: 0.7; }}
+      .room-fill-bath {{ fill: {room_fill_bath}; stroke: #cbd5e1; stroke-width: 0.7; }}
+      .room-fill-circ {{ fill: #f8fafc; stroke: #cbd5e1; stroke-width: 0.7; }}
       .room-fill-outdoor {{ fill: #fefce8; stroke: #a16207; stroke-width: 1.0; stroke-dasharray: 5 3; }}
       .room-fill-err {{ fill: #fef2f2; stroke: #dc2626; stroke-width: 1.5; }}
-      .grid-line {{ stroke: #94a3b8; stroke-width: 0.75; stroke-dasharray: 8 4 2 4; stroke-opacity: 0.75; }}
-      .grid-bubble {{ fill: #ffffff; stroke: #334155; stroke-width: 1.3; }}
+      .grid-line {{ stroke: #94a3b8; stroke-width: 0.7; stroke-dasharray: 8 4 2 4; stroke-opacity: 0.55; }}
+      .grid-bubble {{ fill: #ffffff; stroke: #475569; stroke-width: 1.2; }}
       .grid-bubble-txt {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10px; font-weight: 700; fill: #0f172a; text-anchor: middle; }}
-      .grid-bay-dim {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9px; fill: #475569; text-anchor: middle; }}
-      .col-concrete {{ fill: #0f172a; stroke: #020617; stroke-width: 0.8; }}
-      .col-steel {{ fill: none; stroke: #0f172a; stroke-width: 2.0; stroke-linecap: square; }}
+      .grid-bay-dim {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9px; fill: #64748b; text-anchor: middle; }}
+      .col-concrete {{ fill: {col_fill}; stroke: #334155; stroke-width: 0.7; }}
+      .col-steel {{ fill: none; stroke: {col_fill}; stroke-width: 2.0; stroke-linecap: square; }}
       .elev-box {{ fill: #ffffff; fill-opacity: 0.9; stroke: #475569; stroke-width: 0.8; }}
       .elev-txt {{ font-family: monospace; font-size: 8.5px; font-weight: 700; fill: #0f172a; text-anchor: middle; }}
-      .stair-tread {{ stroke: #334155; stroke-width: 0.85; }}
-      .stair-arrow {{ stroke: #0f172a; stroke-width: 1.25; fill: none; }}
-      .elev-x {{ stroke: #475569; stroke-width: 1.2; }}
-      .wall-ext {{ fill: #1e293b; stroke: #0f172a; stroke-width: 0.4; }}
-      .wall-int {{ fill: #475569; stroke: #334155; stroke-width: 0.4; }}
-      .door-leaf {{ stroke: #0f172a; stroke-width: 2.0; stroke-linecap: round; }}
-      .door-arc {{ fill: #3b82f6; fill-opacity: 0.10; stroke: #2563eb; stroke-width: 1.25; stroke-dasharray: 4 3; }}
+      .stair-tread {{ stroke: #64748b; stroke-width: 0.85; }}
+      .stair-arrow {{ stroke: #334155; stroke-width: 1.25; fill: none; }}
+      .elev-x {{ stroke: #64748b; stroke-width: 1.2; }}
+      .wall-ext {{ fill: {wall_ext_fill}; stroke: {wall_ext_stroke}; stroke-width: 0.4; }}
+      .wall-int {{ fill: {wall_int_fill}; stroke: {wall_int_stroke}; stroke-width: 0.4; }}
+      .door-leaf {{ stroke: {door_leaf_col}; stroke-width: 1.6; stroke-linecap: round; }}
+      .door-arc {{ fill: {door_arc_col}; fill-opacity: 0.06; stroke: {door_arc_col}; stroke-width: 1.1; stroke-dasharray: 4 3; }}
       .door-arc-err {{ fill: #ef4444; fill-opacity: 0.22; stroke: #dc2626; stroke-width: 2.0; stroke-dasharray: 5 3; }}
-      .win-frame {{ fill: #e0f2fe; stroke: #0284c7; stroke-width: 1.3; }}
-      .win-glass {{ stroke: #0369a1; stroke-width: 1.1; }}
-      .passage-line {{ stroke: #64748b; stroke-width: 1.1; stroke-dasharray: 4 3; }}
-      .passage-jamb {{ stroke: #334155; stroke-width: 1.8; }}
-      .fx-body {{ fill: #e2e8f0; fill-opacity: 0.85; stroke: #475569; stroke-width: 1.2; }}
-      .fx-detail {{ fill: none; stroke: #64748b; stroke-width: 0.85; }}
+      .win-frame {{ fill: {win_fill}; stroke: {win_stroke}; stroke-width: 1.2; }}
+      .win-glass {{ stroke: {win_stroke}; stroke-width: 1.0; }}
+      .passage-line {{ stroke: #94a3b8; stroke-width: 1.0; stroke-dasharray: 4 3; }}
+      .passage-jamb {{ stroke: #64748b; stroke-width: 1.5; }}
+      .fx-body {{ fill: {fx_fill}; fill-opacity: 0.72; stroke: {fx_stroke}; stroke-width: 1.0; }}
+      .fx-detail {{ fill: none; stroke: #94a3b8; stroke-width: 0.8; }}
       .fx-body-err {{ fill: #fecaca; fill-opacity: 0.85; stroke: #dc2626; stroke-width: 1.8; }}
-      .fx-clear {{ fill: #22c55e; fill-opacity: 0.08; stroke: #16a34a; stroke-width: 0.9; stroke-dasharray: 3 3; }}
+      .fx-clear {{ fill: #22c55e; fill-opacity: 0.06; stroke: #16a34a; stroke-width: 0.8; stroke-dasharray: 3 3; }}
       .fx-clear-err {{ fill: #ef4444; fill-opacity: 0.16; stroke: #dc2626; stroke-width: 1.4; stroke-dasharray: 3 3; }}
-      .fx-label {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9px; font-weight: 600; fill: #334155; text-anchor: middle; }}
-      .dim-line {{ stroke: #64748b; stroke-width: 1.0; }}
-      .dim-text {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 11px; fill: #334155; text-anchor: middle; }}
-      .room-dim {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9.5px; fill: #64748b; text-anchor: middle; }}
-      .room-title {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 13px; font-weight: 700; fill: #0f172a; text-anchor: middle; }}
-      .room-sub {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10.5px; fill: #475569; text-anchor: middle; }}
-      .badge {{ font-family: monospace; font-size: 9.5px; font-weight: 600; fill: #1d4ed8; text-anchor: middle; }}
-      .badge-err {{ font-family: monospace; font-size: 9.5px; font-weight: 700; fill: #dc2626; text-anchor: middle; }}
+      .fx-label {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 8.2px; font-weight: 600; fill: #334155; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.4px; stroke-linejoin: round; }}
+      .dim-line {{ stroke: #64748b; stroke-width: 0.9; }}
+      .dim-text {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10.5px; fill: #475569; text-anchor: middle; }}
+      .room-dim {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9px; fill: #64748b; text-anchor: middle; }}
+      .room-title {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 12px; font-weight: 700; fill: {room_title_col}; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.5px; stroke-linejoin: round; }}
+      .room-sub {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9.5px; fill: #64748b; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.0px; stroke-linejoin: round; }}
+      .badge {{ font-family: monospace; font-size: 8.5px; font-weight: 600; fill: #1d4ed8; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.4px; stroke-linejoin: round; }}
+      .badge-err {{ font-family: monospace; font-size: 9px; font-weight: 700; fill: #dc2626; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.5px; stroke-linejoin: round; }}
       .title-text {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 15px; font-weight: 700; fill: #0f172a; }}
       .meta-text {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 11px; fill: #475569; }}
       .status-ok {{ font-family: monospace; font-size: 11px; font-weight: 700; fill: #15803d; text-anchor: end; }}
       .status-err {{ font-family: monospace; font-size: 11px; font-weight: 700; fill: #dc2626; text-anchor: end; }}
       .status-err-sub {{ font-family: monospace; font-size: 10px; font-weight: 600; fill: #b91c1c; text-anchor: end; }}
-      .mep-wire-light {{ fill: none; stroke: #0284c7; stroke-width: 1.3; stroke-opacity: 0.72; }}
-      .mep-wire-power {{ fill: none; stroke: #ea580c; stroke-width: 1.4; stroke-opacity: 0.72; }}
-      .mep-wire-swleg {{ fill: none; stroke: #9333ea; stroke-width: 1.1; stroke-dasharray: 4 3; stroke-opacity: 0.85; }}
-      .mep-panel {{ fill: #dc2626; stroke: #7f1d1d; stroke-width: 1.3; }}
+      .mep-wire-light {{ fill: none; stroke: #0284c7; stroke-width: 1.45; stroke-opacity: 0.85; }}
+      .mep-wire-power {{ fill: none; stroke: #ea580c; stroke-width: 1.55; stroke-opacity: 0.85; }}
+      .mep-wire-swleg {{ fill: none; stroke: #9333ea; stroke-width: 1.15; stroke-dasharray: 4 3; stroke-opacity: 0.85; }}
+      .mep-panel {{ fill: #dc2626; stroke: #7f1d1d; stroke-width: 1.4; }}
       .mep-light {{ fill: #fef08a; stroke: #ca8a04; stroke-width: 1.6; }}
       .mep-switch {{ fill: #ffffff; stroke: #7e22ce; stroke-width: 1.6; }}
       .mep-outlet {{ fill: #ffedd5; stroke: #c2410c; stroke-width: 1.5; }}
       .mep-err {{ fill: #fecaca; stroke: #dc2626; stroke-width: 2.2; }}
-      .mep-lbl {{ font-family: monospace; font-size: 8.5px; font-weight: 700; fill: #1e293b; text-anchor: middle; }}
+      .mep-lbl {{ font-family: monospace; font-size: 7.8px; font-weight: 700; fill: #0f172a; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.6px; stroke-linejoin: round; }}
     </style>
-  </defs>"##
+  </defs>"##,
+        room_fill_alt = if mep_underlay { "#fbfcfe" } else { "#eef6ff" },
+        room_fill_bath = if mep_underlay { "#f8fcfd" } else { "#ecfeff" },
     );
 
     let _ = writeln!(out, r#"  <rect class="bg" x="0" y="0" width="{svg_w:.1}" height="{svg_h:.1}"/>"#);
@@ -198,6 +240,23 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                     r#"    <rect id="room-{id}" class="{cls}" x="{x:.2}" y="{y:.2}" width="{w:.2}" height="{h:.2}"/>"#,
                     id = e.id
                 );
+                if show_plumbing
+                    && (lower.contains("elec")
+                        || lower.contains("server")
+                        || lower.contains("switchgear")
+                        || lower.contains("itroom"))
+                {
+                    let _ = writeln!(
+                        out,
+                        r##"    <rect x="{x:.2}" y="{y:.2}" width="{w:.2}" height="{h:.2}" fill="url(#dry-zone-hatch)" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="5 3"/>"##
+                    );
+                    let _ = writeln!(
+                        out,
+                        r##"    <text x="{:.2}" y="{:.2}" font-family="monospace" font-size="7.6" font-weight="700" fill="#b91c1c" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="2.5">NO PLUMBING ZONE</text>"##,
+                        x + w * 0.5,
+                        y + h * 0.5 + 22.0
+                    );
+                }
             }
         }
     }
@@ -273,17 +332,19 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
         } = &e.geometry
         {
             let is_violated = violated_entities.contains(e.id.as_str());
-            if let Some(clr) = clearance_rect {
-                let c_cls = if is_violated { "fx-clear-err" } else { "fx-clear" };
-                let _ = writeln!(
-                    out,
-                    r#"    <rect id="fx-clear-{id}" class="{c_cls}" x="{:.2}" y="{:.2}" width="{:.2}" height="{:.2}"/>"#,
-                    sx(clr.min_x),
-                    sy(clr.max_y),
-                    sl(clr.width()),
-                    sl(clr.depth()),
-                    id = e.id
-                );
+            if !mep_underlay || is_violated {
+                if let Some(clr) = clearance_rect {
+                    let c_cls = if is_violated { "fx-clear-err" } else { "fx-clear" };
+                    let _ = writeln!(
+                        out,
+                        r#"    <rect id="fx-clear-{id}" class="{c_cls}" x="{:.2}" y="{:.2}" width="{:.2}" height="{:.2}"/>"#,
+                        sx(clr.min_x),
+                        sy(clr.max_y),
+                        sl(clr.width()),
+                        sl(clr.depth()),
+                        id = e.id
+                    );
+                }
             }
             let b_cls = if is_violated { "fx-body-err" } else { "fx-body" };
             let x = sx(body_rect.min_x);
@@ -377,8 +438,9 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                 let _ = writeln!(out, r#"    <rect class="col-concrete" x="{x:.2}" y="{y:.2}" width="{w:.2}" height="{h:.2}"/>"#);
             }
 
-            // Label fixture if box is big enough (strip redundant module instance prefix for clean display)
-            if w >= 24.0 && h >= 14.0 {
+            // Label fixture only on pure architectural views (hidden on MEP underlays to avoid clutter)
+            // and only when the label actually fits inside the fixture box!
+            if !mep_underlay && w >= 28.0 && h >= 15.0 {
                 let display_label = if let Some(ref prov) = e.provenance {
                     let prefix = format!("{}_", prov.instance);
                     e.id.strip_prefix(&prefix).unwrap_or(&e.id)
@@ -387,14 +449,14 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                 };
                 let cx = x + w * 0.5;
                 let cy = y + h * 0.5;
-                let est_w = (display_label.len() as f64) * 5.6;
-                if h > w * 1.35 && est_w > w - 6.0 {
+                let est_w = (display_label.len() as f64) * 4.9;
+                if h > w * 1.35 && est_w <= h + 8.0 {
                     let _ = writeln!(
                         out,
                         r#"    <text class="fx-label" x="{cx:.2}" y="{:.2}" transform="rotate(-90 {cx:.2} {cy:.2})">{display_label}</text>"#,
                         cy + 3.0
                     );
-                } else {
+                } else if est_w <= w + 10.0 {
                     let _ = writeln!(
                         out,
                         r#"    <text class="fx-label" x="{cx:.2}" y="{:.2}">{display_label}</text>"#,
@@ -475,7 +537,7 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                     sx(opening_segment.p1.x),
                     sy(opening_segment.p1.y)
                 );
-                if annotated || is_violated {
+                if (annotated && !mep_underlay) || is_violated {
                     let is_horiz = cutout_rect.width() >= cutout_rect.depth();
                     let (lx, ly) = if is_horiz {
                         (sx(cutout_rect.center().x), sy(cutout_rect.max_y) - 6.0)
@@ -580,17 +642,22 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                         sl(cutout_rect.depth())
                     );
                 }
-                if annotated || is_violated {
+                if (annotated && !mep_underlay) || is_violated {
                     let mid_angle = (swing_arc.start_deg + 0.5 * swing_arc.sweep_deg).to_radians();
                     let mx = c.x + 0.52 * swing_arc.radius * mid_angle.cos();
                     let my = c.y + 0.52 * swing_arc.radius * mid_angle.sin();
                     let cls = if is_violated { "badge-err" } else { "badge" };
+                    // Compact door tag in tight utility rooms to prevent overlapping room titles
+                    let short_door = if !is_violated && e.id.len() > 12 {
+                        e.id.strip_prefix("Door").unwrap_or(&e.id)
+                    } else {
+                        e.id.as_str()
+                    };
                     let _ = writeln!(
                         out,
-                        r#"    <text class="{cls}" x="{:.2}" y="{:.2}">{}</text>"#,
+                        r#"    <text class="{cls}" x="{:.2}" y="{:.2}">{short_door}</text>"#,
                         sx(mx),
                         sy(my) + 3.0,
-                        e.id
                     );
                 }
             }
@@ -643,40 +710,72 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
             let best_pt = pick_clear_room_label_pos(&subs, &label_obstacles, e.id.len());
             let cx = sx(best_pt.x);
             let cy = sy(best_pt.y);
-            let _ = writeln!(
-                out,
-                r#"    <text class="room-title" x="{cx:.2}" y="{:.2}">{}</text>"#,
-                cy - 7.0,
-                e.id
-            );
-            let _ = writeln!(
-                out,
-                r#"    <text class="room-sub" x="{cx:.2}" y="{:.2}">{:.2}m × {:.2}m{}</text>"#,
-                cy + 8.0,
-                width_mm / 1000.0,
-                depth_mm / 1000.0,
-                if notch_rect.is_some() { " (L)" } else { "" }
-            );
-            let _ = writeln!(
-                out,
-                r#"    <text class="room-sub" x="{cx:.2}" y="{:.2}">{:.2} m²</text>"#,
-                cy + 21.0,
-                area_m2
-            );
-            if let Some(ref g) = grid {
-                if let Some(elev) = g.room_elevations.get(&e.id) {
-                    let bw = (elev.len() as f64) * 5.2 + 8.0;
-                    let _ = writeln!(
-                        out,
-                        r#"    <rect class="elev-box" x="{:.2}" y="{:.2}" width="{bw:.1}" height="12" rx="1.5"/>"#,
-                        cx - bw * 0.5,
-                        cy + 26.0
-                    );
-                    let _ = writeln!(
-                        out,
-                        r#"    <text class="elev-txt" x="{cx:.2}" y="{:.2}">{elev}</text>"#,
-                        cy + 35.0
-                    );
+            let tight_room = area_m2 < 7.0 || width_mm < 2500.0 || depth_mm < 2300.0;
+            if mep_underlay {
+                // Dimmed consultant-grade single/two-line room tag on MEP overlays
+                let title_fs = if tight_room { "9.0" } else { "10.5" };
+                let _ = writeln!(
+                    out,
+                    r#"    <text class="room-title" style="font-size:{title_fs}px;fill:#64748b;" x="{cx:.2}" y="{:.2}">{}</text>"#,
+                    cy - 2.0,
+                    e.id
+                );
+                let _ = writeln!(
+                    out,
+                    r#"    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="{cx:.2}" y="{:.2}">{:.1} m²</text>"#,
+                    cy + 9.0,
+                    area_m2
+                );
+            } else if tight_room {
+                // Tight utility/WC rooms: compact 2-line label so it never collides with doors/fixtures!
+                let _ = writeln!(
+                    out,
+                    r#"    <text class="room-title" style="font-size:10.5px;" x="{cx:.2}" y="{:.2}">{}</text>"#,
+                    cy - 3.0,
+                    e.id
+                );
+                let _ = writeln!(
+                    out,
+                    r#"    <text class="room-sub" style="font-size:8.8px;" x="{cx:.2}" y="{:.2}">{:.2} m²</text>"#,
+                    cy + 9.0,
+                    area_m2
+                );
+            } else {
+                let _ = writeln!(
+                    out,
+                    r#"    <text class="room-title" x="{cx:.2}" y="{:.2}">{}</text>"#,
+                    cy - 7.0,
+                    e.id
+                );
+                let _ = writeln!(
+                    out,
+                    r#"    <text class="room-sub" x="{cx:.2}" y="{:.2}">{:.2}m × {:.2}m{}</text>"#,
+                    cy + 8.0,
+                    width_mm / 1000.0,
+                    depth_mm / 1000.0,
+                    if notch_rect.is_some() { " (L)" } else { "" }
+                );
+                let _ = writeln!(
+                    out,
+                    r#"    <text class="room-sub" x="{cx:.2}" y="{:.2}">{:.2} m²</text>"#,
+                    cy + 21.0,
+                    area_m2
+                );
+                if let Some(ref g) = grid {
+                    if let Some(elev) = g.room_elevations.get(&e.id) {
+                        let bw = (elev.len() as f64) * 5.2 + 8.0;
+                        let _ = writeln!(
+                            out,
+                            r#"    <rect class="elev-box" x="{:.2}" y="{:.2}" width="{bw:.1}" height="12" rx="1.5"/>"#,
+                            cx - bw * 0.5,
+                            cy + 26.0
+                        );
+                        let _ = writeln!(
+                            out,
+                            r#"    <text class="elev-txt" x="{cx:.2}" y="{:.2}">{elev}</text>"#,
+                            cy + 35.0
+                        );
+                    }
                 }
             }
         }
@@ -752,7 +851,23 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                     let cls = if is_err { "mep-err" } else { "mep-panel" };
                     let cx = px + nx * 6.0;
                     let cy = py + ny * 6.0;
-                    let (rw, rh) = if ny.abs() > 0.5 { (20.0, 8.0) } else { (8.0, 20.0) };
+                    let (rw, rh) = if ny.abs() > 0.5 { (22.0, 8.0) } else { (8.0, 22.0) };
+                    // IEC 60364 >= 900mm front working clearance hatched box in front of panel
+                    let clr_d = sl(900.0);
+                    let clr_w = sl(900.0);
+                    let (clx, cly, clw, clh) = if nx > 0.5 {
+                        (px + 6.0, py - clr_w * 0.5, clr_d, clr_w)
+                    } else if nx < -0.5 {
+                        (px - 6.0 - clr_d, py - clr_w * 0.5, clr_d, clr_w)
+                    } else if ny > 0.5 {
+                        (px - clr_w * 0.5, py + 6.0, clr_w, clr_d)
+                    } else {
+                        (px - clr_w * 0.5, py - 6.0 - clr_d, clr_w, clr_d)
+                    };
+                    let _ = writeln!(
+                        out,
+                        r##"    <rect x="{clx:.2}" y="{cly:.2}" width="{clw:.2}" height="{clh:.2}" fill="url(#db-clr-hatch)" stroke="#dc2626" stroke-width="0.9" stroke-dasharray="4 2"/>"##
+                    );
                     let _ = writeln!(
                         out,
                         r#"    <rect id="mep-{id}" class="{cls}" x="{:.2}" y="{:.2}" width="{rw:.1}" height="{rh:.1}" rx="1.5"/>"#,
@@ -762,9 +877,9 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                     );
                     let _ = writeln!(
                         out,
-                        r#"    <text class="mep-lbl" x="{:.2}" y="{:.2}">{}</text>"#,
-                        cx + nx * 13.0,
-                        cy + ny * 12.0 + 3.0,
+                        r##"    <text class="mep-lbl" style="fill:#991b1b;font-size:8.5px;" x="{:.2}" y="{:.2}">{}</text>"##,
+                        clx + clw * 0.5,
+                        cly + clh * 0.5 + 3.0,
                         e.id
                     );
                 }
@@ -929,17 +1044,17 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                 let _ = writeln!(
                     out,
                     r##"    <text x="{:.1}" y="{hy:.1}" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">LOAD</text>"##,
-                    sx0 + 114.0
+                    sx0 + 154.0
                 );
                 let _ = writeln!(
                     out,
                     r##"    <text x="{:.1}" y="{hy:.1}" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">MCB</text>"##,
-                    sx0 + 158.0
+                    sx0 + 206.0
                 );
                 let _ = writeln!(
                     out,
                     r##"    <text x="{:.1}" y="{hy:.1}" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">dU%</text>"##,
-                    sx0 + 206.0
+                    sx0 + 254.0
                 );
                 let _ = writeln!(
                     out,
@@ -948,7 +1063,7 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                 );
                 for (i, c) in ckts.iter().enumerate() {
                     let ry = hy + 16.0 + (i as f64) * row_h;
-                    let short_id = if c.id.len() > 14 { &c.id[..14] } else { &c.id };
+                    let short_id = if c.id.len() > 22 { &c.id[..22] } else { &c.id };
                     let _ = writeln!(
                         out,
                         r##"    <text x="{:.1}" y="{ry:.1}" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">{short_id}</text>"##,
@@ -957,19 +1072,19 @@ pub fn render_svg_filtered(ir: &CanonicalIr, annotated: bool, show_elec: bool) -
                     let _ = writeln!(
                         out,
                         r##"    <text x="{:.1}" y="{ry:.1}" font-family="monospace" font-size="7.6" fill="#334155">{:.0}W</text>"##,
-                        sx0 + 114.0,
+                        sx0 + 154.0,
                         c.total_load_w
                     );
                     let _ = writeln!(
                         out,
                         r##"    <text x="{:.1}" y="{ry:.1}" font-family="monospace" font-size="7.6" fill="#334155">{:.0}A</text>"##,
-                        sx0 + 158.0,
+                        sx0 + 206.0,
                         c.rating_a
                     );
                     let _ = writeln!(
                         out,
                         r##"    <text x="{:.1}" y="{ry:.1}" font-family="monospace" font-size="7.6" fill="#0369a1">{:.2}%</text>"##,
-                        sx0 + 206.0,
+                        sx0 + 254.0,
                         c.voltage_drop_pct
                     );
                 }

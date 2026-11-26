@@ -13,6 +13,106 @@ pub fn elaborate_project(
     project: &mut ProjectAst,
     base_dir: Option<&Path>,
 ) -> Result<(), Diagnostic> {
+    // 0. Recursively merge any overlaid base projects (`overlay "clinic_arch.edl"`)
+    if !project.overlays.is_empty() {
+        let dir = base_dir.ok_or_else(|| {
+            Diagnostic::error(
+                "E_OVERLAY_NO_BASE_DIR",
+                "imports",
+                format!(
+                    "Cannot resolve overlay '{}' without a filesystem base directory (use compile_file)",
+                    project.overlays[0].path
+                ),
+                Some(project.overlays[0].span.clone()),
+            )
+        })?;
+        let overlays = std::mem::take(&mut project.overlays);
+        for ov in overlays {
+            let ov_path = dir.join(&ov.path);
+            let src = fs::read_to_string(&ov_path).map_err(|e| {
+                Diagnostic::error(
+                    "E_OVERLAY_NOT_FOUND",
+                    "imports",
+                    format!("Cannot read overlay '{}': {e}", ov_path.display()),
+                    Some(ov.span.clone()),
+                )
+            })?;
+            let mut parsed = parse_file(&ov_path.to_string_lossy(), &src)?;
+            let Some(mut base_proj) = parsed.project.take() else {
+                return Err(Diagnostic::error(
+                    "E_OVERLAY_NO_PROJECT",
+                    "imports",
+                    format!("Overlay file '{}' does not contain a `project` block", ov.path),
+                    Some(ov.span.clone()),
+                ));
+            };
+            base_proj.imports.extend(parsed.imports);
+            base_proj.modules.extend(parsed.modules);
+            elaborate_project(&mut base_proj, ov_path.parent())?;
+
+            // Merge base project geometry/rules underneath local project declarations (local overrides)
+            let existing_frames: BTreeSet<String> =
+                project.frames.iter().map(|f| f.name.clone()).collect();
+            let mut merged_frames: Vec<FrameDecl> = base_proj
+                .frames
+                .into_iter()
+                .filter(|f| !existing_frames.contains(&f.name))
+                .collect();
+            merged_frames.append(&mut project.frames);
+            project.frames = merged_frames;
+
+            let mut merged_params = base_proj.parameters;
+            merged_params.append(&mut project.parameters);
+            project.parameters = merged_params;
+
+            // Architecture merge (keep base arch defaults if local didn't declare rooms)
+            if project.arch.rooms.is_empty() {
+                project.arch.defaults = base_proj.arch.defaults;
+            }
+            let mut rooms = base_proj.arch.rooms;
+            rooms.append(&mut project.arch.rooms);
+            project.arch.rooms = rooms;
+            let mut layouts = base_proj.arch.layouts;
+            layouts.append(&mut project.arch.layouts);
+            project.arch.layouts = layouts;
+            let mut openings = base_proj.arch.openings;
+            openings.append(&mut project.arch.openings);
+            project.arch.openings = openings;
+            let mut fixtures = base_proj.arch.fixtures;
+            fixtures.append(&mut project.arch.fixtures);
+            project.arch.fixtures = fixtures;
+
+            let mut exts = base_proj.extensions;
+            exts.append(&mut project.extensions);
+            project.extensions = exts;
+
+            let mut meps = base_proj.mep_elec.installations;
+            meps.append(&mut project.mep_elec.installations);
+            project.mep_elec.installations = meps;
+
+            let rule_key = |r: &VerifyRule| -> String {
+                let dbg = format!("{r:?}");
+                if let Some(pos) = dbg.find("span: Span {") {
+                    dbg[..pos].trim_end_matches([',', ' ', '{']).to_string()
+                } else {
+                    dbg
+                }
+            };
+            let mut verifs = base_proj.verifications;
+            let mut seen_verifs: BTreeSet<String> = verifs.iter().map(rule_key).collect();
+            for r in std::mem::take(&mut project.verifications) {
+                if seen_verifs.insert(rule_key(&r)) {
+                    verifs.push(r);
+                }
+            }
+            project.verifications = verifs;
+
+            if project.views.is_empty() {
+                project.views = base_proj.views;
+            }
+        }
+    }
+
     // 1. Recursively load imported module libraries
     let mut modules: BTreeMap<String, ModuleDecl> = BTreeMap::new();
     let mut visited_files: BTreeSet<PathBuf> = BTreeSet::new();
