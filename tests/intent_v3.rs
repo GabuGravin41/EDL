@@ -542,79 +542,77 @@ fn v36_tier1_kicad_hierarchy_custom_power_ergonomics_and_tier2_cd_arch_mep_dxf()
     let src = r#"
 project Tier1_V36_Test {
     circuit Main {
-        component J1: conn {
-            symbol: "Connector:Conn_01x02_Pin"
+        component J1: "Connector:Conn_01x02_Pin" {
             value: "PWR_IN"
             footprint: "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
             pin 1: power_out(5V)
             pin 2: ground
         }
-        component R1: resistor {
-            symbol: "Device:R"
+        component R1: "Device:R" {
             value: 4.7k
             footprint: "Resistor_SMD:R_0603_1608Metric"
         }
-        component R2: resistor {
-            symbol: "Device:R"
+        component R2: "Device:R" {
             value: 100R
             footprint: "Resistor_SMD:R_0603_1608Metric"
         }
-        component U1: ic {
-            symbol: "Amplifier_Operational:LM321"
+        component U1: "Amplifier_Operational:LM321" {
             value: "LM321"
             footprint: "Package_TO_SOT_SMD:SOT-23-5"
             pin "V-": ground
         }
-        component R3: resistor {
-            symbol: "Device:R"
+        component C1: "Device:C" {
+            value: 100nF
+            footprint: "Capacitor_SMD:C_0603_1608Metric"
+        }
+        component R3: "Device:R" {
             value: 1M
             footprint: "Resistor_SMD:R_0603_1608Metric"
         }
-        component J2: conn {
-            symbol: "Connector:Conn_01x02_Pin"
+        component J2: "Connector:Conn_01x02_Pin" {
             value: "ISO_PORT"
             footprint: "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
             pin 1: power_out(24V)
             pin 2: ground
         }
-        component R4: resistor {
-            symbol: "Device:R"
+        component R4: "Device:R" {
             value: 4.7k
             footprint: "Resistor_SMD:R_0603_1608Metric"
         }
 
-        net "+5V" { J1.1, R1.1, U1."V+" }
-        net GND { J1.2, U1."V-", R2.2, R3.2 }
-        net SIG_MID { R1.2, R2.1, U1."+" }
-        net SIG_OUT { U1.1, U1."-", R3.1 }
-        net ISO_24V { J2.1, R4.1 }
-        net ISO_GND { J2.2, R4.2 }
+        net "+5V" { connect: [J1.1, R1.1, U1."V+", C1.1] }
+        net GND { connect: [J1.2, U1."V-", C1.2, R2.2, R3.2] }
+        net SIG_MID { connect: [R1.2, R2.1, U1."+" ] }
+        net SIG_OUT { connect: [U1.4, U1."-", R3.1] }
+        net ISO_24V { connect: [J2.1, R4.1] }
+        net ISO_GND { connect: [J2.2, R4.2] }
     }
 
     schematic Sheet1_AFE {
         sheet: A4 landscape
         title: "Sheet 1: Analog Front End"
-        routing { power: symbol  ground: symbol  signals: zone_local }
+        routing { power: symbol  ground: symbol  default: zone_local }
         group Input {
             rect: (25.4mm, 25.4mm, 114.3mm, 127.0mm)
             color: blue
             members: [J1, R1, R2]
         }
         group Buffer {
-            rect: (127.0mm, 25.4mm, 215.9mm, 127.0mm)
+            rect: (127.0mm, 25.4mm, 228.6mm, 127.0mm)
             color: green
-            members: [U1]
+            members: [U1, C1]
         }
         place J1 center (50.8mm, 76.2mm) orient: 180
         place R1 center (88.9mm, 63.5mm)
         place R2 center (88.9mm, 91.44mm)
         place U1 center (165.1mm, 76.2mm)
+        place C1 center (203.2mm, 76.2mm)
     }
 
     schematic Sheet2_Output {
         sheet: A4 landscape
         title: "Sheet 2: Output & Isolated Rail"
-        routing { power: symbol  ground: symbol  signals: zone_local }
+        routing { power: symbol  ground: symbol  default: zone_local }
         group OutZone {
             rect: (25.4mm, 25.4mm, 114.3mm, 127.0mm)
             color: blue
@@ -676,14 +674,15 @@ project Tier1_V36_Test {
     let clinic_ir = edl::compile_file(std::path::Path::new("examples/villa_3br_arch_elec_plumbing.edl"))
         .expect("compile multi-discipline villa");
     assert!(!clinic_ir.project.has_errors);
-    let arch_svg = edl::render_arch_svg_layers(&clinic_ir, false, false, false);
+    let arch_only = vec!["arch".to_string()];
+    let arch_svg = edl::render_svg_with_layers(&clinic_ir, false, Some(&arch_only));
     assert!(arch_svg.contains("class=\"dim-tick\""), "45-deg architectural dim ticks");
     assert!(arch_svg.contains("class=\"tag-door-bg\""), "CAD door badges");
     assert!(arch_svg.contains("class=\"tag-win-bg\""), "CAD window badges");
     assert!(arch_svg.contains("id=\"cd-title-block\""), "boxed CD title block");
     assert!(arch_svg.contains("GRAPHIC SCALE (m)"), "calibrated scale bar");
 
-    let all_svg = edl::render_arch_svg_layers(&clinic_ir, false, true, true);
+    let all_svg = edl::render_svg_with_layers(&clinic_ir, false, None);
     assert!(all_svg.contains("class=\"ckt-tag-bg\""), "inline electrical circuit tags");
 
     let dxf = edl::export_dxf(&clinic_ir);
