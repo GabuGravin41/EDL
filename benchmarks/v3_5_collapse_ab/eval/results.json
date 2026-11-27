@@ -1,0 +1,184 @@
+{
+  "b6_clinic_eco": {
+    "baseline": {
+      "arm": "baseline",
+      "timing": {
+        "notes_exists": true,
+        "elapsed_sec": 1066,
+        "iterations": 4
+      },
+      "source_lines": 3609,
+      "source_files": [
+        "generate_clinic.py:1252L",
+        "generate_electrical.py:1151L",
+        "generate_plumbing.py:1206L"
+      ],
+      "eco_diff_lines": 1522,
+      "eco_diff_per_file": {
+        "generate_clinic.py": 577,
+        "generate_electrical.py": 543,
+        "generate_plumbing.py": 402
+      },
+      "deliverables": {
+        "clinic_arch.dxf": true,
+        "clinic_arch.png": true,
+        "clinic_plumbing.dxf": true,
+        "clinic_plumbing.png": true,
+        "plumbing_schedule.csv": true,
+        "clinic_electrical.dxf": true,
+        "clinic_electrical.png": true,
+        "panel_schedule.csv": true
+      },
+      "eco_checks": {
+        "has_exam5_in_arch": true,
+        "has_exam5_in_plumbing": true,
+        "has_exam5_in_electrical": true,
+        "all_deliverables_present": true
+      },
+      "edl_build": {}
+    },
+    "edl": {
+      "arm": "edl",
+      "timing": {
+        "notes_exists": true,
+        "elapsed_sec": 374,
+        "iterations": 3
+      },
+      "source_lines": 625,
+      "source_files": [
+        "clinic_arch.edl:317L",
+        "clinic_electrical.edl:212L",
+        "clinic_plumbing.edl:96L"
+      ],
+      "eco_diff_lines": 184,
+      "eco_diff_per_file": {
+        "clinic_arch.edl": 80,
+        "clinic_electrical.edl": 87,
+        "clinic_plumbing.edl": 17
+      },
+      "deliverables": {
+        "clinic_arch.dxf": true,
+        "clinic_arch.png": true,
+        "clinic_plumbing.dxf": true,
+        "clinic_plumbing.png": true,
+        "plumbing_schedule.csv": true,
+        "clinic_electrical.dxf": true,
+        "clinic_electrical.png": true,
+        "panel_schedule.csv": true
+      },
+      "eco_checks": {
+        "has_exam5_in_arch": true,
+        "has_exam5_in_plumbing": true,
+        "has_exam5_in_electrical": true,
+        "all_deliverables_present": true
+      },
+      "edl_build": {
+        "clinic_arch.edl": {
+          "rc": 0,
+          "ok": true
+        },
+        "clinic_plumbing.edl": {
+          "rc": 0,
+          "ok": true
+        },
+        "clinic_electrical.edl": {
+          "rc": 0,
+          "ok": true
+        }
+      }
+    }
+  },
+  "b7_plc_4sheet": {
+    "baseline": {
+      "arm": "baseline",
+      "timing": {
+        "notes_exists": true,
+        "elapsed_sec": 1729,
+        "iterations": 5
+      },
+      "source_lines": 3331,
+      "source_files": [
+        "generate_plc.py:2254L",
+        "kicad_lib.py:916L",
+        "verify_and_render.py:161L"
+      ],
+      "kicad_sheet_files": [
+        "Sheet1_Power.kicad_sch",
+        "Sheet2_MCU_Ethernet.kicad_sch",
+        "Sheet3_Isolated_IO.kicad_sch",
+        "Sheet4_Analog_Fieldbus.kicad_sch",
+        "plc_controller.kicad_sch"
+      ],
+      "root_sheet": "plc_controller.kicad_sch",
+      "png_files": [
+        "root.png",
+        "sheet1_power.png",
+        "sheet2_mcu_eth.png",
+        "sheet3_iso_io.png",
+        "sheet4_analog_bus.png"
+      ],
+      "erc_cli_rc": 0,
+      "erc_errors": 0,
+      "erc_warnings": 0,
+      "component_count": 243,
+      "multi_pin_nets": 163,
+      "single_pin_nets": 0,
+      "isolation_check": {
+        "GND_refs": 93,
+        "ISO_IO_GND_refs": 17,
+        "ISO_BUS_GND_refs": 22,
+        "non_isolator_shared_GND_vs_ISO_IO": [],
+        "non_isolator_shared_GND_vs_ISO_BUS": [],
+        "non_isolator_shared_ISO_IO_vs_ISO_BUS": []
+      },
+      "erc_error_samples": [],
+      "erc_warning_samples": [],
+      "netlist_cli_rc": 0
+    },
+    "edl": {
+      "arm": "edl",
+      "timing": {
+        "notes_exists": true,
+        "elapsed_sec": 891,
+        "iterations": 10
+      },
+      "source_lines": 1099,
+      "source_files": [
+        "plc_controller.edl:1099L"
+      ],
+      "kicad_sheet_files": [
+        "Industrial_PLC_Controller.kicad_sch",
+        "Sheet1_Power.kicad_sch",
+        "Sheet2_MCU_Ethernet.kicad_sch",
+        "Sheet3_Isolated_IO.kicad_sch",
+        "Sheet4_Analog_Fieldbus.kicad_sch"
+      ],
+      "root_sheet": "Industrial_PLC_Controller.kicad_sch",
+      "png_files": [
+        "root.png",
+        "sheet1_power.png",
+        "sheet2_mcu_eth.png",
+        "sheet3_iso_io.png",
+        "sheet4_analog_bus.png"
+      ],
+      "erc_cli_rc": 0,
+      "erc_errors": 0,
+      "erc_warnings": 0,
+      "component_count": 210,
+      "multi_pin_nets": 144,
+      "single_pin_nets": 0,
+      "isolation_check": {
+        "GND_refs": 74,
+        "ISO_IO_GND_refs": 16,
+        "ISO_BUS_GND_refs": 17,
+        "non_isolator_shared_GND_vs_ISO_IO": [],
+        "non_isolator_shared_GND_vs_ISO_BUS": [],
+        "non_isolator_shared_ISO_IO_vs_ISO_BUS": []
+      },
+      "erc_error_samples": [],
+      "erc_warning_samples": [],
+      "netlist_cli_rc": 0,
+      "edl_build_rc": 0
+    }
+  }
+}

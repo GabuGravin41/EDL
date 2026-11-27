@@ -1,0 +1,1099 @@
+// ============================================================================
+// Industrial 4-Sheet Hierarchical PLC & Ethernet/Fieldbus Controller
+// EDL v3.5.0 — 3 Galvanic Isolation Domains (GND, ISO_IO_GND, ISO_BUS_GND)
+// Sheets:
+//   1. Sheet1_Power          : 24V -> 5V Buck -> 3.3V Digital + 3.3VA Analog + Supervisor
+//   2. Sheet2_MCU_Ethernet   : STM32F407 MCU, LAN8720A Ethernet PHY + RJ45, Flash, I2C Temp, SWD
+//   3. Sheet3_Isolated_IO    : Galvanically Isolated 4-Ch 24V DI + 4-Ch 24V Relay Outputs
+//   4. Sheet4_Analog_Fieldbus: 2-Ch 0-10V/4-20mA AFE + Isolated RS-485 & CAN Bus
+// ============================================================================
+
+project "Industrial_PLC_Controller" {
+  units: mm
+  frame Sheet: Frame2
+
+  circuit Main {
+
+    // ========================================================================
+    // SHEET 1: MULTI-RAIL INDUSTRIAL POWER ARCHITECTURE (48 components)
+    // ========================================================================
+
+    // --- Stage 1: 24V Industrial Input, Fuse, Reverse Schottky, TVS, Pi EMI Filter ---
+    component J_PWR:      "Connector:Screw_Terminal_01x02" { value: "24V_IN"     footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal" }
+    component F1:         "Device:Polyfuse"                { value: "2.0A"       footprint: "Fuse:Fuse_1812_4532Metric" }
+    component D_REV:      "Device:D_Schottky"              { value: "SS34"       footprint: "Diode_SMD:D_SMA" }
+    component D_TVS_24V:  "Device:D_TVS"                   { value: "SMBJ28A"    footprint: "Diode_SMD:D_SMB" }
+    component C_EMI1:     "Device:C"                       { value: 100nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_EMI2:     "Device:C_Polarized"             { value: 47uF   voltage_rating: 50V  footprint: "Capacitor_SMD:CP_Elec_8x10" }
+    component L_EMI:      "Device:L"                       { value: "10uH"       footprint: "Inductor_SMD:L_1210_3225Metric" }
+    component C_EMI3:     "Device:C"                       { value: 100nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_EMI4:     "Device:C_Polarized"             { value: 100uF  voltage_rating: 50V  footprint: "Capacitor_SMD:CP_Elec_8x10" }
+    component R_LED_24V:  "Device:R"                       { value: 4.7kOhm   power_rating: 0.25W  footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component D_LED_24V:  "Device:LED"                     { value: "GREEN_24V"  footprint: "LED_SMD:LED_0603_1608Metric" }
+    component TP_24V:     "Connector:TestPoint"            { value: "TP_24V"     footprint: "TestPoint:TestPoint_Pad_D1.5mm" }
+
+    // --- Stage 2: 24V -> 5V Buck Converter (LM2596S-ADJ) ---
+    component U_BUCK:     "Regulator_Switching:LM2596S-ADJ" {
+      value: "LM2596S-ADJ"
+      footprint: "Package_TO_SOT_SMD:TO-263-5_TabPin3"
+      pin VIN: power_in(7V..40V)
+    }
+    component C_BUCK_IN1: "Device:C"                       { value: 100nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_BUCK_IN2: "Device:C_Polarized"             { value: 220uF  voltage_rating: 50V  footprint: "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm" }
+    component D_BUCK:     "Device:D_Schottky"              { value: "SS54"       footprint: "Diode_SMD:D_SMB" }
+    component L_BUCK:     "Device:L"                       { value: "33uH"       footprint: "Inductor_SMD:L_Bourns_SRR1260" }
+    component C_BUCK_OUT1:"Device:C_Polarized"             { value: 220uF  voltage_rating: 25V  footprint: "Capacitor_SMD:CP_Elec_8x10" }
+    component C_BUCK_OUT2:"Device:C"                       { value: 100nF  voltage_rating: 25V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_FB_TOP:   "Device:R"                       { value: 3.09kOhm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_FB_BOT:   "Device:R"                       { value: 1.0kOhm   power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_FF:       "Device:C"                       { value: 10nF   voltage_rating: 25V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_LED_5V:   "Device:R"                       { value: 1.0kOhm   power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component D_LED_5V:   "Device:LED"                     { value: "GREEN_5V"   footprint: "LED_SMD:LED_0603_1608Metric" }
+    component TP_5V:      "Connector:TestPoint"            { value: "TP_5V"      footprint: "TestPoint:TestPoint_Pad_D1.5mm" }
+
+    // --- Stage 3: 5V -> 3.3V Digital LDO & 5V -> 3.3VA Low-Noise Analog LDO ---
+    component U_LDO_DIG:  "Regulator_Linear:AMS1117-3.3" {
+      value: "AMS1117-3.3"
+      footprint: "Package_TO_SOT_SMD:SOT-223-3_TabPin2"
+      pin VI: power_in(4.5V..15V)
+      pin VO: power_out(3.3V)
+    }
+    component C_LDO1_IN:  "Device:C"                       { value: 10uF   voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_LDO1_OUT1:"Device:C"                       { value: 22uF   voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_LDO1_OUT2:"Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_LED_3V3:  "Device:R"                       { value: 470Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component D_LED_3V3:  "Device:LED"                     { value: "BLUE_3V3"   footprint: "LED_SMD:LED_0603_1608Metric" }
+    component TP_3V3:     "Connector:TestPoint"            { value: "TP_3V3"     footprint: "TestPoint:TestPoint_Pad_D1.5mm" }
+
+    component U_LDO_ANA:  "Regulator_Linear:AMS1117-3.3" {
+      value: "AMS1117-3.3"
+      footprint: "Package_TO_SOT_SMD:SOT-223-3_TabPin2"
+      pin VI: power_in(4.5V..15V)
+      pin VO: power_out(3.3V)
+    }
+    component C_LDO2_IN:  "Device:C"                       { value: 10uF   voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_LDO2_OUT1:"Device:C"                       { value: 22uF   voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component FB_ANA:     "Device:FerriteBead"             { value: "600R@100MHz" footprint: "Inductor_SMD:L_0805_2012Metric" }
+    component C_ANA_FILT1:"Device:C"                       { value: 10uF   voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_ANA_FILT2:"Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component TP_3V3A:    "Connector:TestPoint"            { value: "TP_3V3A"    footprint: "TestPoint:TestPoint_Pad_D1.5mm" }
+
+    // --- Stage 4: Voltage Supervisor & Reference Test Points ---
+    component U_SUP:      "Power_Supervisor:TPS3808DBV" {
+      value: "TPS3808G01"
+      footprint: "Package_TO_SOT_SMD:SOT-23-6"
+      pin VDD: power_in(1.7V..6.5V)
+    }
+    component C_SUP_DEC:  "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_SUP_TOP:  "Device:R"                       { value: 100kOhm   power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_SUP_BOT:  "Device:R"                       { value: 15kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_SUP_CT:   "Device:C"                       { value: 10nF   voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_SUP_MR:   "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_PGOOD_PU: "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component TP_PGOOD:   "Connector:TestPoint"            { value: "TP_PGOOD"   footprint: "TestPoint:TestPoint_Pad_D1.5mm" }
+    component TP_GND:     "Connector:TestPoint"            { value: "TP_GND"     footprint: "TestPoint:TestPoint_Pad_D1.5mm" }
+
+    // ========================================================================
+    // SHEET 2: STM32F407 MCU CORE, ETHERNET PHY, FLASH/I2C & DEBUG (60 components)
+    // ========================================================================
+
+    // --- MCU Core ---
+    component U_MCU:      "MCU_ST_STM32F4:STM32F407V_E-G_Tx" {
+      value: "STM32F407VGT6"
+      footprint: "Package_QFP:LQFP-100_14x14mm_P0.5mm"
+      no_connect: [PE7, PE8, PE9, PE10, PE11, PE12, PE13, PE14, PE15, PD8, PD9, PD10, PD11, PD12, PD13, PD14, PD15, PA8, PA11, PA12, PA15, PB0, PB1, PB2, PB4, PB10, PB14, PB15, PC0, PC2, PC3, PC6, PC7, PC8, PC9, PC10, PC11, PC12, PC13, PC14, PC15]
+    }
+    component C_MCU1:     "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU2:     "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU3:     "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU4:     "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU5:     "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU6:     "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU_BULK: "Device:C"                       { value: 4.7uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_VDDA1:    "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_VDDA2:    "Device:C"                       { value: 1uF    voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_VCAP1:    "Device:C"                       { value: 2.2uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_VCAP2:    "Device:C"                       { value: 2.2uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component Y_HSE:      "Device:Crystal"                 { value: "8MHz"       footprint: "Crystal:Crystal_SMD_HC49-SD" }
+    component C_HSE1:     "Device:C"                       { value: 18pF   voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_HSE2:     "Device:C"                       { value: 18pF   voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_NRST:     "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_NRST:     "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component SW_RST:     "Switch:SW_Push"                 { value: "RESET"      footprint: "Button_Switch_SMD:SW_SPST_TL3342" }
+    component R_BOOT0:    "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_STAT_LED: "Device:R"                       { value: 470Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component D_STAT_LED: "Device:LED"                     { value: "GREEN_RUN"  footprint: "LED_SMD:LED_0603_1608Metric" }
+
+    // --- Debug, SPI Flash & I2C Temperature Sensor ---
+    component J_SWD:      "Connector_Generic:Conn_02x05_Odd_Even" { value: "SWD_10P"  footprint: "Connector_PinHeader_1.27mm:PinHeader_2x05_P1.27mm_Vertical"  no_connect: [Pin_7, Pin_8] }
+    component J_UART:     "Connector_Generic:Conn_01x04"          { value: "DBG_UART" footprint: "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical" }
+    component U_FLASH:    "Memory_Flash:W25Q128JVS" {
+      value: "W25Q128JV"
+      footprint: "Package_SO:SOIC-8_5.3x5.3mm_P1.27mm"
+      pin VCC: power_in(2.7V..3.6V)
+    }
+    component C_FLASH:    "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_FL_WP:    "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_FL_HOLD:  "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component U_TEMP:     "Sensor_Temperature:LM75C" {
+      value: "LM75CIM"
+      footprint: "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+    }
+    component C_TEMP:     "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_I2C_SDA:  "Device:R"                       { value: 4.7kOhm   power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_I2C_SCL:  "Device:R"                       { value: 4.7kOhm   power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_TEMP_OS:  "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+
+    // --- Ethernet PHY (LAN8720A) ---
+    component U_PHY:      "Interface_Ethernet:LAN8720A" {
+      value: "LAN8720A"
+      footprint: "Package_DFN_QFN:VQFN-24-1EP_4x4mm_P0.5mm_EP2.5x2.5mm_ThermalVias"
+      no_connect: ["RXER/PHYAD0"]
+    }
+    component C_PHY1:     "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_PHY2:     "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_PHY3:     "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_PHY_BULK: "Device:C"                       { value: 10uF   voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_VDDCR1:   "Device:C"                       { value: 1uF    voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_VDDCR2:   "Device:C"                       { value: 470pF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_RBIAS:    "Device:R"                       { value: 12.1kOhm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component Y_ETH:      "Device:Crystal"                 { value: "25MHz"      footprint: "Crystal:Crystal_SMD_HC49-SD" }
+    component C_ETH_X1:   "Device:C"                       { value: 18pF   voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_ETH_X2:   "Device:C"                       { value: 18pF   voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_RMII_TXEN:"Device:R"                       { value: 33Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_RMII_TXD0:"Device:R"                       { value: 33Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_RMII_TXD1:"Device:R"                       { value: 33Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_RMII_RXD0:"Device:R"                       { value: 33Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_RMII_RXD1:"Device:R"                       { value: 33Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_RMII_CRSDV:"Device:R"                      { value: 33Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_RMII_CLK: "Device:R"                       { value: 33Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_MDIO_PU:  "Device:R"                       { value: 1.5kOhm   power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_PHY_RST:  "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+
+    // --- RJ45 MagJack & Termination ---
+    component J_ETH:      "Connector:RJ45_Bel_SI-60062-F"  { value: "RJ45_MAG"   footprint: "Connector_RJ:RJ45_Bel_SI-60062-F" }
+    component R_ETH_TXP:  "Device:R"                       { value: 49.9Ohm  power_rating: 0.5W   footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component R_ETH_TXN:  "Device:R"                       { value: 49.9Ohm  power_rating: 0.5W   footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component R_ETH_RXP:  "Device:R"                       { value: 49.9Ohm  power_rating: 0.5W   footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component R_ETH_RXN:  "Device:R"                       { value: 49.9Ohm  power_rating: 0.5W   footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component C_ETH_TCT:  "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_ETH_RCT:  "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_ETH_LED1: "Device:R"                       { value: 330Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_ETH_LED2: "Device:R"                       { value: 330Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_ETH_SH:   "Device:C"                       { value: 1nF    voltage_rating: 100V footprint: "Capacitor_SMD:C_1206_3216Metric" }
+
+    // ========================================================================
+    // SHEET 3: GALVANICALLY ISOLATED 4-CH DIGITAL INPUTS + 4-CH RELAY OUTPUTS (54 components)
+    // ========================================================================
+
+    // --- 4-Ch Digital Inputs (Logic Side) ---
+    component R_DIN_PU1:  "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_DIN_PU2:  "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_DIN_PU3:  "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_DIN_PU4:  "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_DIN_DB1:  "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_DIN_DB2:  "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_DIN_DB3:  "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_DIN_DB4:  "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // --- 4-Ch Digital Input Optocouplers (Barrier) ---
+    component U_DIN1:     "Isolator:PC817"                 { value: "PC817"      footprint: "Package_DIP:DIP-4_W7.62mm" }
+    component U_DIN2:     "Isolator:PC817"                 { value: "PC817"      footprint: "Package_DIP:DIP-4_W7.62mm" }
+    component U_DIN3:     "Isolator:PC817"                 { value: "PC817"      footprint: "Package_DIP:DIP-4_W7.62mm" }
+    component U_DIN4:     "Isolator:PC817"                 { value: "PC817"      footprint: "Package_DIP:DIP-4_W7.62mm" }
+
+    // --- 4-Ch Digital Inputs (Field Side — ISO_IO_GND) ---
+    component J_DIN:      "Connector:Screw_Terminal_01x06" { value: "DIN_24V_CH1-4" footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-6-5.08_1x06_P5.08mm_Horizontal" }
+    component R_DIN_LIM1: "Device:R"                       { value: 4.7kOhm   power_rating: 0.25W  footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component R_DIN_LIM2: "Device:R"                       { value: 4.7kOhm   power_rating: 0.25W  footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component R_DIN_LIM3: "Device:R"                       { value: 4.7kOhm   power_rating: 0.25W  footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component R_DIN_LIM4: "Device:R"                       { value: 4.7kOhm   power_rating: 0.25W  footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component D_DIN_REV1: "Device:D"                       { value: "1N4148W"    footprint: "Diode_SMD:D_SOD-123" }
+    component D_DIN_REV2: "Device:D"                       { value: "1N4148W"    footprint: "Diode_SMD:D_SOD-123" }
+    component D_DIN_REV3: "Device:D"                       { value: "1N4148W"    footprint: "Diode_SMD:D_SOD-123" }
+    component D_DIN_REV4: "Device:D"                       { value: "1N4148W"    footprint: "Diode_SMD:D_SOD-123" }
+
+    // --- 4-Ch Relay Outputs (Logic Side) ---
+    component R_DO_LED1:  "Device:R"                       { value: 330Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_DO_LED2:  "Device:R"                       { value: 330Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_DO_LED3:  "Device:R"                       { value: 330Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_DO_LED4:  "Device:R"                       { value: 330Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+
+    // --- 4-Ch Relay Output Optocouplers (Barrier) ---
+    component U_DOUT1:    "Isolator:PC817"                 { value: "PC817"      footprint: "Package_DIP:DIP-4_W7.62mm" }
+    component U_DOUT2:    "Isolator:PC817"                 { value: "PC817"      footprint: "Package_DIP:DIP-4_W7.62mm" }
+    component U_DOUT3:    "Isolator:PC817"                 { value: "PC817"      footprint: "Package_DIP:DIP-4_W7.62mm" }
+    component U_DOUT4:    "Isolator:PC817"                 { value: "PC817"      footprint: "Package_DIP:DIP-4_W7.62mm" }
+
+    // --- 4-Ch Relay Outputs (Field Side — ISO_IO_24V / ISO_IO_GND) ---
+    component J_ISO_PWR:  "Connector:Screw_Terminal_01x02" { value: "ISO_IO_24V" footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal" }
+    component C_ISO_BULK: "Device:C_Polarized"             { value: 47uF   voltage_rating: 50V  footprint: "Capacitor_SMD:CP_Elec_8x10" }
+    component C_ISO_DEC:  "Device:C"                       { value: 100nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+
+    component R_DO_GTOP1: "Device:R"                       { value: 15kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_DO_GBOT1: "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component Q_RLY1:     "Transistor_FET:2N7002"          { value: "2N7002"     footprint: "Package_TO_SOT_SMD:SOT-23" }
+    component K_RLY1:     "Relay:Relay_SPDT"               { value: "G5LE-1-DC24" footprint: "Relay_THT:Relay_SPDT_Omron-G5LE-1" }
+    component D_FLY1:     "Device:D"                       { value: "1N4148W"    footprint: "Diode_SMD:D_SOD-123" }
+
+    component R_DO_GTOP2: "Device:R"                       { value: 15kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_DO_GBOT2: "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component Q_RLY2:     "Transistor_FET:2N7002"          { value: "2N7002"     footprint: "Package_TO_SOT_SMD:SOT-23" }
+    component K_RLY2:     "Relay:Relay_SPDT"               { value: "G5LE-1-DC24" footprint: "Relay_THT:Relay_SPDT_Omron-G5LE-1" }
+    component D_FLY2:     "Device:D"                       { value: "1N4148W"    footprint: "Diode_SMD:D_SOD-123" }
+
+    component R_DO_GTOP3: "Device:R"                       { value: 15kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_DO_GBOT3: "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component Q_RLY3:     "Transistor_FET:2N7002"          { value: "2N7002"     footprint: "Package_TO_SOT_SMD:SOT-23" }
+    component K_RLY3:     "Relay:Relay_SPDT"               { value: "G5LE-1-DC24" footprint: "Relay_THT:Relay_SPDT_Omron-G5LE-1" }
+    component D_FLY3:     "Device:D"                       { value: "1N4148W"    footprint: "Diode_SMD:D_SOD-123" }
+
+    component R_DO_GTOP4: "Device:R"                       { value: 15kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_DO_GBOT4: "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component Q_RLY4:     "Transistor_FET:2N7002"          { value: "2N7002"     footprint: "Package_TO_SOT_SMD:SOT-23" }
+    component K_RLY4:     "Relay:Relay_SPDT"               { value: "G5LE-1-DC24" footprint: "Relay_THT:Relay_SPDT_Omron-G5LE-1" }
+    component D_FLY4:     "Device:D"                       { value: "1N4148W"    footprint: "Diode_SMD:D_SOD-123" }
+
+    component J_RLY_12:   "Connector:Screw_Terminal_01x06" { value: "RLY_CH1_CH2" footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-6-5.08_1x06_P5.08mm_Horizontal" }
+    component J_RLY_34:   "Connector:Screw_Terminal_01x06" { value: "RLY_CH3_CH4" footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-6-5.08_1x06_P5.08mm_Horizontal" }
+
+    // ========================================================================
+    // SHEET 4: 2-CH ANALOG FRONT-END + ISOLATED RS-485 & CAN BUS (45 components)
+    // ========================================================================
+
+    // --- 2-Ch Analog Front-End (0-10V / 4-20mA on +3.3VA / GND) ---
+    component J_AIN1:      "Connector:Screw_Terminal_01x03" { value: "AIN1_0-10V"  footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-3-5.08_1x03_P5.08mm_Horizontal" }
+    component R_AIN_TOP1:  "Device:R"                       { value: 24.9kOhm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_AIN_BOT1:  "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component D_CLAMP_HI1: "Device:D_Schottky"              { value: "BAT54"      footprint: "Diode_SMD:D_SOD-323" }
+    component D_CLAMP_LO1: "Device:D_Schottky"              { value: "BAT54"      footprint: "Diode_SMD:D_SOD-323" }
+    component R_AAF1:      "Device:R"                       { value: 1.0kOhm   power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_AAF1:      "Device:C"                       { value: 10nF   voltage_rating: 25V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component U_OPA1:      "Amplifier_Operational:LM321"    { value: "LM321"      footprint: "Package_TO_SOT_SMD:SOT-23-5" }
+    component C_OPA1:      "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    component J_AIN2:      "Connector:Screw_Terminal_01x03" { value: "AIN2_4-20mA" footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-3-5.08_1x03_P5.08mm_Horizontal" }
+    component R_AIN_TOP2:  "Device:R"                       { value: 100Ohm  power_rating: 0.25W  footprint: "Resistor_SMD:R_0805_2012Metric" }
+    component R_AIN_BOT2:  "Device:R"                       { value: 150Ohm  power_rating: 0.25W  footprint: "Resistor_SMD:R_0805_2012Metric" }
+    component D_CLAMP_HI2: "Device:D_Schottky"              { value: "BAT54"      footprint: "Diode_SMD:D_SOD-323" }
+    component D_CLAMP_LO2: "Device:D_Schottky"              { value: "BAT54"      footprint: "Diode_SMD:D_SOD-323" }
+    component R_AAF2:      "Device:R"                       { value: 1.0kOhm   power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_AAF2:      "Device:C"                       { value: 10nF   voltage_rating: 25V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component U_OPA2:      "Amplifier_Operational:LM321"    { value: "LM321"      footprint: "Package_TO_SOT_SMD:SOT-23-5" }
+    component C_OPA2:      "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component FB_AGND:     "Device:FerriteBead"             { value: "AGND_TIE"   footprint: "Inductor_SMD:L_0805_2012Metric" }
+
+    // --- Fieldbus Isolation Barrier (Logic + Isolators) ---
+    component C_ISO_L1:    "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_ISO_L2:    "Device:C"                       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_RS485_DEL: "Device:R"                       { value: 330Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component U_ISO_RS485: "Isolator:ADuM1201AR"            { value: "ADuM1201AR" footprint: "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" }
+    component U_ISO_DE:    "Isolator:PC817"                 { value: "PC817"      footprint: "Package_DIP:DIP-4_W7.62mm" }
+    component U_ISO_CAN:   "Isolator:ADuM1201AR"            { value: "ADuM1201AR" footprint: "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" }
+
+    // --- Isolated RS-485 Bus (ISO_BUS_5V / ISO_BUS_GND) ---
+    component J_BUS_PWR:   "Connector:Screw_Terminal_01x02" { value: "ISO_BUS_5V" footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal" }
+    component C_BUS_BULK:  "Device:C_Polarized"             { value: 22uF   voltage_rating: 25V  footprint: "Capacitor_SMD:CP_Elec_6.3x7.7" }
+    component C_BUS_DEC1:  "Device:C"                       { value: 100nF  voltage_rating: 25V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_BUS_DEC2:  "Device:C"                       { value: 100nF  voltage_rating: 25V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component U_RS485:     "Interface_UART:LTC2850xS8"      { value: "LTC2850CS8" footprint: "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" }
+    component R_DE_PD:     "Device:R"                       { value: 4.7kOhm   power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_RS485_TERM:"Device:R"                       { value: 120Ohm  power_rating: 0.25W  footprint: "Resistor_SMD:R_0805_2012Metric" }
+    component R_RS485_PU:  "Device:R"                       { value: 680Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_RS485_PD:  "Device:R"                       { value: 680Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component D_TVS_485A:  "Device:D_TVS"                   { value: "SMBJ12A"    footprint: "Diode_SMD:D_SMB" }
+    component D_TVS_485B:  "Device:D_TVS"                   { value: "SMBJ12A"    footprint: "Diode_SMD:D_SMB" }
+    component J_RS485:     "Connector:Screw_Terminal_01x03" { value: "RS485_BUS"  footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-3-5.08_1x03_P5.08mm_Horizontal" }
+
+    // --- Isolated CAN Bus (ISO_BUS_5V / ISO_BUS_GND) ---
+    component U_CAN:       "Interface_CAN_LIN:TJA1051T"     { value: "TJA1051T"   footprint: "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" }
+    component C_CAN_DEC:   "Device:C"                       { value: 100nF  voltage_rating: 25V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_CAN_S:     "Device:R"                       { value: 10kOhm    power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_CAN_T1:    "Device:R"                       { value: 60.4Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_CAN_T2:    "Device:R"                       { value: 60.4Ohm  power_rating: 0.1W   footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_CAN_SPLIT: "Device:C"                       { value: 4.7nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component D_TVS_CANH:  "Device:D_TVS"                   { value: "SMBJ12A"    footprint: "Diode_SMD:D_SMB" }
+    component D_TVS_CANL:  "Device:D_TVS"                   { value: "SMBJ12A"    footprint: "Diode_SMD:D_SMB" }
+    component J_CAN:       "Connector:Screw_Terminal_01x03" { value: "CAN_BUS"    footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-3-5.08_1x03_P5.08mm_Horizontal" }
+
+    // ========================================================================
+    // NETS — DOMAIN 1: MAIN POWER & GROUND (GND, +24V, +5V, +3V3, +3.3VA)
+    // ========================================================================
+    net "+24V" {
+      connect: [J_PWR.1, F1.1]
+      power_flag: true
+    }
+    net IN_FUSED { connect: [F1.2, D_REV.2] }
+    net IN_PROT  { connect: [D_REV.1, D_TVS_24V.1, C_EMI1.1, C_EMI2.1, L_EMI.1] }
+    net IN_FILT  { connect: [L_EMI.2, C_EMI3.1, C_EMI4.1, R_LED_24V.1, TP_24V.1, C_BUCK_IN1.1, C_BUCK_IN2.1, U_BUCK.VIN] }
+    net LED_24V_A { connect: [R_LED_24V.2, D_LED_24V.2] }
+    net BUCK_SW   { connect: [U_BUCK.OUT, D_BUCK.1, L_BUCK.1] }
+    net BUCK_FB   { connect: [U_BUCK.FB, R_FB_TOP.2, R_FB_BOT.1, C_FF.2] }
+
+    net "+5V" {
+      connect: [
+        L_BUCK.2, C_BUCK_OUT1.1, C_BUCK_OUT2.1, R_FB_TOP.1, C_FF.1, R_LED_5V.1, TP_5V.1,
+        C_LDO1_IN.1, U_LDO_DIG.VI, C_LDO2_IN.1, U_LDO_ANA.VI
+      ]
+      power_flag: true
+    }
+    net LED_5V_A  { connect: [R_LED_5V.2, D_LED_5V.2] }
+
+    net "+3V3" {
+      connect: [
+        U_LDO_DIG.VO, C_LDO1_OUT1.1, C_LDO1_OUT2.1, R_LED_3V3.1, TP_3V3.1,
+        U_SUP.VDD, C_SUP_DEC.1, R_SUP_TOP.1, R_SUP_MR.1, R_PGOOD_PU.1,
+        U_MCU.6, U_MCU.11, U_MCU.19, U_MCU.28, U_MCU.50, U_MCU.75, U_MCU.100,
+        C_MCU1.1, C_MCU2.1, C_MCU3.1, C_MCU4.1, C_MCU5.1, C_MCU6.1, C_MCU_BULK.1,
+        R_NRST.1, J_SWD.1, J_UART.1,
+        U_FLASH.VCC, C_FLASH.1, R_FL_WP.1, R_FL_HOLD.1,
+        U_TEMP.8, C_TEMP.1, R_I2C_SDA.1, R_I2C_SCL.1, R_TEMP_OS.1,
+        U_PHY.9, U_PHY.19, U_PHY.1, C_PHY1.1, C_PHY2.1, C_PHY3.1, C_PHY_BULK.1,
+        R_MDIO_PU.1, R_PHY_RST.1,
+        J_ETH.2, J_ETH.5, R_ETH_TXP.1, R_ETH_TXN.1, R_ETH_RXP.1, R_ETH_RXN.1,
+        C_ETH_TCT.1, C_ETH_RCT.1, R_ETH_LED1.1, R_ETH_LED2.1,
+        R_DIN_PU1.1, R_DIN_PU2.1, R_DIN_PU3.1, R_DIN_PU4.1,
+        C_ISO_L1.1, C_ISO_L2.1, U_ISO_RS485.VDD1, U_ISO_CAN.VDD1
+      ]
+    }
+    net LED_3V3_A { connect: [R_LED_3V3.2, D_LED_3V3.2] }
+
+    net VAA { connect: [U_LDO_ANA.VO, C_LDO2_OUT1.1, FB_ANA.1] }
+    net "+3.3VA" {
+      connect: [
+        FB_ANA.2, C_ANA_FILT1.1, C_ANA_FILT2.1, TP_3V3A.1,
+        U_MCU.22, U_MCU.21, C_VDDA1.1, C_VDDA2.1,
+        D_CLAMP_HI1.1, D_CLAMP_HI2.1, U_OPA1.5, U_OPA2.5, C_OPA1.1, C_OPA2.1
+      ]
+      power_flag: true
+    }
+
+    net SUP_SENSE { connect: [R_SUP_TOP.2, R_SUP_BOT.1, U_SUP.SENSE] }
+    net SUP_CT    { connect: [U_SUP.CT, C_SUP_CT.1] }
+    net SUP_MR    { connect: [R_SUP_MR.2, U_SUP.MR] }
+    net SYS_PGOOD { connect: [U_SUP.RESET, R_PGOOD_PU.2, TP_PGOOD.1, U_MCU.97] }
+
+    net GND {
+      connect: [
+        J_PWR.2, D_TVS_24V.2, C_EMI1.2, C_EMI2.2, C_EMI3.2, C_EMI4.2, D_LED_24V.1,
+        U_BUCK.GND, U_BUCK.5, C_BUCK_IN1.2, C_BUCK_IN2.2, D_BUCK.2, C_BUCK_OUT1.2, C_BUCK_OUT2.2, R_FB_BOT.2, D_LED_5V.1,
+        U_LDO_DIG.GND, C_LDO1_IN.2, C_LDO1_OUT1.2, C_LDO1_OUT2.2, D_LED_3V3.1,
+        U_LDO_ANA.GND, C_LDO2_IN.2, C_LDO2_OUT1.2, C_ANA_FILT1.2, C_ANA_FILT2.2,
+        U_SUP.GND, C_SUP_DEC.2, R_SUP_BOT.2, C_SUP_CT.2, TP_GND.1,
+        U_MCU.10, U_MCU.20,
+        C_MCU1.2, C_MCU2.2, C_MCU3.2, C_MCU4.2, C_MCU5.2, C_MCU6.2, C_MCU_BULK.2,
+        C_VDDA1.2, C_VDDA2.2, C_VCAP1.2, C_VCAP2.2, C_HSE1.2, C_HSE2.2,
+        C_NRST.2, SW_RST.2, R_BOOT0.2, D_STAT_LED.1,
+        J_SWD.3, J_SWD.5, J_SWD.9, J_UART.4,
+        U_FLASH.GND, C_FLASH.2,
+        U_TEMP.4, U_TEMP.5, U_TEMP.6, U_TEMP.7, C_TEMP.2,
+        U_PHY.25, C_PHY1.2, C_PHY2.2, C_PHY3.2, C_PHY_BULK.2, C_VDDCR1.2, C_VDDCR2.2,
+        R_RBIAS.2, C_ETH_X1.2, C_ETH_X2.2,
+        C_ETH_TCT.2, C_ETH_RCT.2, C_ETH_SH.2,
+        C_DIN_DB1.2, C_DIN_DB2.2, C_DIN_DB3.2, C_DIN_DB4.2,
+        U_DIN1.3, U_DIN2.3, U_DIN3.3, U_DIN4.3,
+        U_DOUT1.2, U_DOUT2.2, U_DOUT3.2, U_DOUT4.2,
+        FB_AGND.2,
+        C_ISO_L1.2, C_ISO_L2.2, U_ISO_RS485.GND1, U_ISO_DE.2, U_ISO_CAN.GND1
+      ]
+      power_flag: true
+    }
+
+    // ========================================================================
+    // NETS — SHEET 2: MCU, MEMORY, DEBUG & ETHERNET
+    // ========================================================================
+    net MCU_VCAP1    { connect: [U_MCU.49, C_VCAP1.1] }
+    net MCU_VCAP2    { connect: [U_MCU.73, C_VCAP2.1] }
+    net HSE_IN       { connect: [U_MCU.12, Y_HSE.1, C_HSE1.1] }
+    net HSE_OUT      { connect: [U_MCU.13, Y_HSE.2, C_HSE2.1] }
+    net MCU_NRST     { connect: [U_MCU.14, R_NRST.2, C_NRST.1, SW_RST.1, J_SWD.10] }
+    net MCU_BOOT0    { connect: [U_MCU.94, R_BOOT0.1] }
+    net MCU_STAT_LED { connect: [U_MCU.98, R_STAT_LED.1] }
+    net STAT_LED_A   { connect: [R_STAT_LED.2, D_STAT_LED.2] }
+
+    net SWDIO        { connect: [U_MCU.72, J_SWD.2] }
+    net SWCLK        { connect: [U_MCU.76, J_SWD.4] }
+    net SWO          { connect: [U_MCU.89, J_SWD.6] }
+    net DBG_TX       { connect: [U_MCU.68, J_UART.2] }
+    net DBG_RX       { connect: [U_MCU.69, J_UART.3] }
+
+    net SPI_CS       { connect: [U_MCU.29, U_FLASH.1] }
+    net SPI_SCK      { connect: [U_MCU.30, U_FLASH.6] }
+    net SPI_MISO     { connect: [U_MCU.31, U_FLASH.2] }
+    net SPI_MOSI     { connect: [U_MCU.91, U_FLASH.5] }
+    net FL_WP        { connect: [R_FL_WP.2, U_FLASH.3] }
+    net FL_HOLD      { connect: [R_FL_HOLD.2, U_FLASH.7] }
+
+    net I2C_SCL      { connect: [U_MCU.92, U_TEMP.2, R_I2C_SCL.2] }
+    net I2C_SDA      { connect: [U_MCU.93, U_TEMP.1, R_I2C_SDA.2] }
+    net TEMP_OS      { connect: [U_MCU.5, U_TEMP.3, R_TEMP_OS.2] }
+
+    // Ethernet PHY & RMII
+    net PHY_VDDCR    { connect: [U_PHY.6, C_VDDCR1.1, C_VDDCR2.1] power_flag: true }
+    net PHY_RBIAS    { connect: [U_PHY.24, R_RBIAS.1] }
+    net ETH_XI       { connect: [U_PHY.5, Y_ETH.1, C_ETH_X1.1] }
+    net ETH_XO       { connect: [U_PHY.4, Y_ETH.2, C_ETH_X2.1] }
+    net ETH_MDIO     { connect: [U_MCU.25, U_PHY.12, R_MDIO_PU.2] }
+    net ETH_MDC      { connect: [U_MCU.16, U_PHY.13] }
+    net ETH_RST      { connect: [U_MCU.81, U_PHY.15, R_PHY_RST.2] }
+
+    net RMII_TXEN    { connect: [U_MCU.48, R_RMII_TXEN.1] }
+    net PHY_TXEN     { connect: [R_RMII_TXEN.2, U_PHY.16] }
+    net RMII_TXD0    { connect: [U_MCU.51, R_RMII_TXD0.1] }
+    net PHY_TXD0     { connect: [R_RMII_TXD0.2, U_PHY.17] }
+    net RMII_TXD1    { connect: [U_MCU.52, R_RMII_TXD1.1] }
+    net PHY_TXD1     { connect: [R_RMII_TXD1.2, U_PHY.18] }
+    net RMII_RXD0    { connect: [U_MCU.33, R_RMII_RXD0.1] }
+    net PHY_RXD0     { connect: [R_RMII_RXD0.2, U_PHY.8] }
+    net RMII_RXD1    { connect: [U_MCU.34, R_RMII_RXD1.1] }
+    net PHY_RXD1     { connect: [R_RMII_RXD1.2, U_PHY.7] }
+    net RMII_CRSDV   { connect: [U_MCU.32, R_RMII_CRSDV.1] }
+    net PHY_CRSDV    { connect: [R_RMII_CRSDV.2, U_PHY.11] }
+    net RMII_REFCLK  { connect: [U_MCU.24, R_RMII_CLK.1] }
+    net PHY_REFCLK   { connect: [R_RMII_CLK.2, U_PHY.14] }
+
+    net ETH_TXP      { connect: [U_PHY.21, R_ETH_TXP.2, J_ETH.1] }
+    net ETH_TXN      { connect: [U_PHY.20, R_ETH_TXN.2, J_ETH.3] }
+    net ETH_RXP      { connect: [U_PHY.23, R_ETH_RXP.2, J_ETH.4] }
+    net ETH_RXN      { connect: [U_PHY.22, R_ETH_RXN.2, J_ETH.6] }
+    net ETH_LED1_A   { connect: [R_ETH_LED1.2, J_ETH.L1] }
+    net ETH_LED1_K   { connect: [J_ETH.L2, U_PHY.3] }
+    net ETH_LED2_A   { connect: [R_ETH_LED2.2, J_ETH.L3] }
+    net ETH_LED2_K   { connect: [J_ETH.L4, U_PHY.2] }
+    net ETH_SHIELD   { connect: [J_ETH.8, J_ETH.SH, C_ETH_SH.1] power_flag: true }
+
+    // ========================================================================
+    // NETS — SHEET 3: ISOLATED I/O (DOMAIN 2: ISO_IO_24V / ISO_IO_GND)
+    // ========================================================================
+    net MCU_DI1      { connect: [U_MCU.1, R_DIN_PU1.2, C_DIN_DB1.1, U_DIN1.4] }
+    net MCU_DI2      { connect: [U_MCU.2, R_DIN_PU2.2, C_DIN_DB2.1, U_DIN2.4] }
+    net MCU_DI3      { connect: [U_MCU.3, R_DIN_PU3.2, C_DIN_DB3.1, U_DIN3.4] }
+    net MCU_DI4      { connect: [U_MCU.4, R_DIN_PU4.2, C_DIN_DB4.1, U_DIN4.4] }
+
+    net DI1_IN       { connect: [J_DIN.1, R_DIN_LIM1.1] }
+    net DI2_IN       { connect: [J_DIN.2, R_DIN_LIM2.1] }
+    net DI3_IN       { connect: [J_DIN.3, R_DIN_LIM3.1] }
+    net DI4_IN       { connect: [J_DIN.4, R_DIN_LIM4.1] }
+    net DI1_ANODE    { connect: [R_DIN_LIM1.2, D_DIN_REV1.1, U_DIN1.1] }
+    net DI2_ANODE    { connect: [R_DIN_LIM2.2, D_DIN_REV2.1, U_DIN2.1] }
+    net DI3_ANODE    { connect: [R_DIN_LIM3.2, D_DIN_REV3.1, U_DIN3.1] }
+    net DI4_ANODE    { connect: [R_DIN_LIM4.2, D_DIN_REV4.1, U_DIN4.1] }
+
+    net MCU_DO1      { connect: [U_MCU.82, R_DO_LED1.1] }
+    net MCU_DO2      { connect: [U_MCU.83, R_DO_LED2.1] }
+    net MCU_DO3      { connect: [U_MCU.84, R_DO_LED3.1] }
+    net MCU_DO4      { connect: [U_MCU.85, R_DO_LED4.1] }
+    net DO1_OPTO_A   { connect: [R_DO_LED1.2, U_DOUT1.1] }
+    net DO2_OPTO_A   { connect: [R_DO_LED2.2, U_DOUT2.1] }
+    net DO3_OPTO_A   { connect: [R_DO_LED3.2, U_DOUT3.1] }
+    net DO4_OPTO_A   { connect: [R_DO_LED4.2, U_DOUT4.1] }
+
+    net ISO_IO_24V {
+      connect: [
+        J_ISO_PWR.1, C_ISO_BULK.1, C_ISO_DEC.1,
+        R_DO_GTOP1.1, R_DO_GTOP2.1, R_DO_GTOP3.1, R_DO_GTOP4.1,
+        K_RLY1.A1, K_RLY2.A1, K_RLY3.A1, K_RLY4.A1,
+        D_FLY1.1, D_FLY2.1, D_FLY3.1, D_FLY4.1
+      ]
+    }
+    net ISO_IO_GND {
+      connect: [
+        J_ISO_PWR.2, C_ISO_BULK.2, C_ISO_DEC.2,
+        J_DIN.5, J_DIN.6,
+        D_DIN_REV1.2, D_DIN_REV2.2, D_DIN_REV3.2, D_DIN_REV4.2,
+        U_DIN1.2, U_DIN2.2, U_DIN3.2, U_DIN4.2,
+        R_DO_GBOT1.2, R_DO_GBOT2.2, R_DO_GBOT3.2, R_DO_GBOT4.2,
+        Q_RLY1.2, Q_RLY2.2, Q_RLY3.2, Q_RLY4.2
+      ]
+    }
+
+    net DO1_COL      { connect: [R_DO_GTOP1.2, U_DOUT1.4] }
+    net DO2_COL      { connect: [R_DO_GTOP2.2, U_DOUT2.4] }
+    net DO3_COL      { connect: [R_DO_GTOP3.2, U_DOUT3.4] }
+    net DO4_COL      { connect: [R_DO_GTOP4.2, U_DOUT4.4] }
+    net DO1_GATE     { connect: [U_DOUT1.3, R_DO_GBOT1.1, Q_RLY1.1] }
+    net DO2_GATE     { connect: [U_DOUT2.3, R_DO_GBOT2.1, Q_RLY2.1] }
+    net DO3_GATE     { connect: [U_DOUT3.3, R_DO_GBOT3.1, Q_RLY3.1] }
+    net DO4_GATE     { connect: [U_DOUT4.3, R_DO_GBOT4.1, Q_RLY4.1] }
+    net RLY1_COIL_N  { connect: [Q_RLY1.3, K_RLY1.A2, D_FLY1.2] }
+    net RLY2_COIL_N  { connect: [Q_RLY2.3, K_RLY2.A2, D_FLY2.2] }
+    net RLY3_COIL_N  { connect: [Q_RLY3.3, K_RLY3.A2, D_FLY3.2] }
+    net RLY4_COIL_N  { connect: [Q_RLY4.3, K_RLY4.A2, D_FLY4.2] }
+
+    net RLY1_COM     { connect: [K_RLY1.11, J_RLY_12.1] }
+    net RLY1_NO      { connect: [K_RLY1.14, J_RLY_12.2] }
+    net RLY1_NC      { connect: [K_RLY1.12, J_RLY_12.3] }
+    net RLY2_COM     { connect: [K_RLY2.11, J_RLY_12.4] }
+    net RLY2_NO      { connect: [K_RLY2.14, J_RLY_12.5] }
+    net RLY2_NC      { connect: [K_RLY2.12, J_RLY_12.6] }
+    net RLY3_COM     { connect: [K_RLY3.11, J_RLY_34.1] }
+    net RLY3_NO      { connect: [K_RLY3.14, J_RLY_34.2] }
+    net RLY3_NC      { connect: [K_RLY3.12, J_RLY_34.3] }
+    net RLY4_COM     { connect: [K_RLY4.11, J_RLY_34.4] }
+    net RLY4_NO      { connect: [K_RLY4.14, J_RLY_34.5] }
+    net RLY4_NC      { connect: [K_RLY4.12, J_RLY_34.6] }
+
+    // ========================================================================
+    // NETS — SHEET 4: ANALOG AFE & ISOLATED FIELDBUS (DOMAIN 3: ISO_BUS_5V / ISO_BUS_GND)
+    // ========================================================================
+    net GNDA {
+      connect: [
+        FB_AGND.1,
+        J_AIN1.2, J_AIN1.3, R_AIN_BOT1.2, D_CLAMP_LO1.2, C_AAF1.2, U_OPA1.2, C_OPA1.2,
+        J_AIN2.2, J_AIN2.3, R_AIN_BOT2.2, D_CLAMP_LO2.2, C_AAF2.2, U_OPA2.2, C_OPA2.2
+      ]
+      power_flag: true
+    }
+    net AIN1_IN      { connect: [J_AIN1.1, R_AIN_TOP1.1] }
+    net AIN1_DIV     { connect: [R_AIN_TOP1.2, R_AIN_BOT1.1, D_CLAMP_HI1.2, D_CLAMP_LO1.1, R_AAF1.1] }
+    net AIN1_FILT    { connect: [R_AAF1.2, C_AAF1.1, U_OPA1.1] }
+    net MCU_ADC1     { connect: [U_OPA1.4, U_OPA1.3, U_MCU.23] }
+
+    net AIN2_IN      { connect: [J_AIN2.1, R_AIN_TOP2.1] }
+    net AIN2_DIV     { connect: [R_AIN_TOP2.2, R_AIN_BOT2.1, D_CLAMP_HI2.2, D_CLAMP_LO2.1, R_AAF2.1] }
+    net AIN2_FILT    { connect: [R_AAF2.2, C_AAF2.1, U_OPA2.1] }
+    net MCU_ADC2     { connect: [U_OPA2.4, U_OPA2.3, U_MCU.26] }
+
+    net MCU_RS485_TX { connect: [U_MCU.86, U_ISO_RS485.VIB] }
+    net MCU_RS485_RX { connect: [U_MCU.87, U_ISO_RS485.VOA] }
+    net MCU_RS485_DE { connect: [U_MCU.88, R_RS485_DEL.1] }
+    net RS485_DE_LED { connect: [R_RS485_DEL.2, U_ISO_DE.1] }
+
+    net MCU_CAN_TX   { connect: [U_MCU.96, U_ISO_CAN.VIB] }
+    net MCU_CAN_RX   { connect: [U_MCU.95, U_ISO_CAN.VOA] }
+
+    net ISO_BUS_5V {
+      connect: [
+        J_BUS_PWR.1, C_BUS_BULK.1, C_BUS_DEC1.1, C_BUS_DEC2.1,
+        U_ISO_RS485.VDD2, U_ISO_DE.4, U_ISO_CAN.VDD2,
+        U_RS485.VCC, R_RS485_PU.1,
+        U_CAN.VCC, C_CAN_DEC.1
+      ]
+      power_flag: true
+    }
+    net ISO_BUS_GND {
+      connect: [
+        J_BUS_PWR.2, C_BUS_BULK.2, C_BUS_DEC1.2, C_BUS_DEC2.2,
+        U_ISO_RS485.GND2, U_ISO_CAN.GND2,
+        U_RS485.GND, R_DE_PD.2, R_RS485_PD.2, D_TVS_485A.2, D_TVS_485B.2, J_RS485.3,
+        U_CAN.GND, C_CAN_DEC.2, R_CAN_S.2, C_CAN_SPLIT.2, D_TVS_CANH.2, D_TVS_CANL.2, J_CAN.3
+      ]
+      power_flag: true
+    }
+
+    net ISO_RS485_RO { connect: [U_ISO_RS485.VIA, U_RS485.RO] }
+    net ISO_RS485_DI { connect: [U_ISO_RS485.VOB, U_RS485.DI] }
+    net ISO_RS485_DE { connect: [U_ISO_DE.3, R_DE_PD.1, U_RS485.DE, U_RS485.RE] }
+    net RS485_A      { connect: [U_RS485.A, R_RS485_TERM.1, R_RS485_PU.2, D_TVS_485A.1, J_RS485.1] }
+    net RS485_B      { connect: [U_RS485.B, R_RS485_TERM.2, R_RS485_PD.1, D_TVS_485B.1, J_RS485.2] }
+
+    net ISO_CAN_RXD  { connect: [U_ISO_CAN.VIA, U_CAN.RXD] }
+    net ISO_CAN_TXD  { connect: [U_ISO_CAN.VOB, U_CAN.TXD] }
+    net CAN_S_PIN    { connect: [U_CAN.S, R_CAN_S.1] }
+    net CAN_H        { connect: [U_CAN.CANH, R_CAN_T1.1, D_TVS_CANH.1, J_CAN.1] }
+    net CAN_L        { connect: [U_CAN.CANL, R_CAN_T2.2, D_TVS_CANL.1, J_CAN.2] }
+    net CAN_SPLIT    { connect: [R_CAN_T1.2, R_CAN_T2.1, C_CAN_SPLIT.1] }
+  }
+
+  // ==========================================================================
+  // SCHEMATIC SHEET 1: POWER ARCHITECTURE (A2 Landscape: 594 x 420 mm)
+  // ==========================================================================
+  schematic Sheet1_Power {
+    sheet: A2 landscape
+    title: "Sheet 1: Industrial Power (24V/5V/3.3V/3.3VA)"
+    routing { default: zone_local  power: symbol  ground: symbol }
+
+    group Stage1_Input {
+      title: "STAGE 1: 24V INPUT, PROTECTION & PI EMI FILTER"
+      rect: (17.78mm, 17.78mm, 279.40mm, 165.10mm)
+      border: dashed
+      color: blue
+      members: [J_PWR, F1, D_REV, D_TVS_24V, C_EMI1, C_EMI2, L_EMI, C_EMI3, C_EMI4, R_LED_24V, D_LED_24V, TP_24V]
+      note: "24V Industrial Input | 2A Polyfuse | SS34 Reverse | SMBJ28A TVS | 50V Caps"
+    }
+
+    group Stage2_Buck5V {
+      title: "STAGE 2: 24V -> 5V BUCK CONVERTER (LM2596S-ADJ)"
+      rect: (294.64mm, 17.78mm, 556.26mm, 165.10mm)
+      border: dashed
+      color: amber
+      members: [C_BUCK_IN1, C_BUCK_IN2, U_BUCK, D_BUCK, L_BUCK, C_BUCK_OUT1, C_BUCK_OUT2, R_FB_TOP, R_FB_BOT, C_FF, R_LED_5V, D_LED_5V, TP_5V]
+      note: "Vout = 1.23V * (1 + 3.09k/1.0k) = 5.03V | 3A Max"
+    }
+
+    group Stage3_LDOs {
+      title: "STAGE 3: 5V -> 3.3V DIGITAL & LOW-NOISE ANALOG (+3.3VA) LDOs"
+      rect: (17.78mm, 182.88mm, 355.60mm, 355.60mm)
+      border: dashed
+      color: green
+      members: [C_LDO1_IN, U_LDO_DIG, C_LDO1_OUT1, C_LDO1_OUT2, R_LED_3V3, D_LED_3V3, TP_3V3, C_LDO2_IN, U_LDO_ANA, C_LDO2_OUT1, FB_ANA, C_ANA_FILT1, C_ANA_FILT2, TP_3V3A]
+      note: "Separate Digital +3V3 & Ferrite-Filtered Low-Noise Analog +3.3VA"
+    }
+
+    group Stage4_Supervisor {
+      title: "STAGE 4: VOLTAGE SUPERVISOR & SYSTEM TEST POINTS"
+      rect: (370.84mm, 182.88mm, 556.26mm, 355.60mm)
+      border: dashed
+      color: slate
+      members: [C_SUP_DEC, R_SUP_TOP, R_SUP_BOT, U_SUP, C_SUP_CT, R_SUP_MR, R_PGOOD_PU, TP_PGOOD, TP_GND]
+      note: "TPS3808 Voltage Supervisor | Monitors +3V3 -> SYS_PGOOD"
+    }
+
+    // Stage 1 placements
+    place J_PWR      center (35.56mm, 68.58mm)  orient: 180
+    place F1         center (63.50mm, 63.50mm)  orient: 90
+    place D_REV      center (91.44mm, 63.50mm)  orient: 180
+    place D_TVS_24V  center (116.84mm, 101.60mm) orient: 270
+    place C_EMI1     center (137.16mm, 101.60mm)
+    place C_EMI2     center (157.48mm, 101.60mm)
+    place L_EMI      center (177.80mm, 63.50mm) orient: 90
+    place C_EMI3     center (198.12mm, 101.60mm)
+    place C_EMI4     center (218.44mm, 101.60mm)
+    place R_LED_24V  center (241.30mm, 86.36mm)
+    place D_LED_24V  center (241.30mm, 114.30mm) orient: 90
+    place TP_24V     center (261.62mm, 63.50mm)
+
+    // Stage 2 placements
+    place C_BUCK_IN1 center (317.50mm, 101.60mm)
+    place C_BUCK_IN2 center (337.82mm, 101.60mm)
+    place U_BUCK     center (373.38mm, 68.58mm)
+    place D_BUCK     center (408.94mm, 101.60mm) orient: 270
+    place L_BUCK     center (429.26mm, 63.50mm)  orient: 90
+    place C_BUCK_OUT1 center (452.12mm, 101.60mm)
+    place C_BUCK_OUT2 center (472.44mm, 101.60mm)
+    place R_FB_TOP   center (495.30mm, 81.28mm)
+    place R_FB_BOT   center (495.30mm, 114.30mm)
+    place C_FF       center (513.08mm, 81.28mm)
+    place R_LED_5V   center (535.94mm, 86.36mm)
+    place D_LED_5V   center (535.94mm, 114.30mm) orient: 90
+    place TP_5V      center (538.48mm, 63.50mm)
+
+    // Stage 3 placements (Top row: Digital 3.3V, Bottom row: Analog 3.3VA)
+    place C_LDO1_IN   center (48.26mm, 236.22mm)
+    place U_LDO_DIG   center (86.36mm, 223.52mm)
+    place C_LDO1_OUT1 center (127.00mm, 236.22mm)
+    place C_LDO1_OUT2 center (152.40mm, 236.22mm)
+    place R_LED_3V3   center (182.88mm, 223.52mm)
+    place D_LED_3V3   center (182.88mm, 248.92mm) orient: 90
+    place TP_3V3      center (213.36mm, 223.52mm)
+
+    place C_LDO2_IN   center (48.26mm, 312.42mm)
+    place U_LDO_ANA   center (86.36mm, 299.72mm)
+    place C_LDO2_OUT1 center (127.00mm, 312.42mm)
+    place FB_ANA      center (162.56mm, 299.72mm) orient: 90
+    place C_ANA_FILT1 center (203.20mm, 312.42mm)
+    place C_ANA_FILT2 center (228.60mm, 312.42mm)
+    place TP_3V3A     center (264.16mm, 299.72mm)
+
+    // Stage 4 placements
+    place C_SUP_DEC   center (386.08mm, 236.22mm)
+    place R_SUP_TOP   center (421.64mm, 236.22mm)
+    place R_SUP_BOT   center (421.64mm, 269.24mm)
+    place R_SUP_MR    center (447.04mm, 236.22mm)
+    place U_SUP       center (477.52mm, 259.08mm)
+    place C_SUP_CT    center (452.12mm, 292.10mm)
+    place R_PGOOD_PU  center (518.16mm, 236.22mm)
+    place TP_PGOOD    center (533.40mm, 259.08mm)
+    place TP_GND      center (533.40mm, 304.80mm)
+  }
+
+  // ==========================================================================
+  // SCHEMATIC SHEET 2: STM32F407 MCU, ETHERNET PHY, FLASH/I2C & DEBUG
+  // ==========================================================================
+  schematic Sheet2_MCU_Ethernet {
+    sheet: A2 landscape
+    title: "Sheet 2: STM32F407 MCU, Ethernet PHY & Memory"
+    routing { default: zone_local  power: symbol  ground: symbol }
+
+    group MCU_Core {
+      title: "MCU CORE: STM32F407VGT6, CLOCK, RESET & DECOUPLING"
+      rect: (17.78mm, 17.78mm, 248.92mm, 264.16mm)
+      border: dashed
+      color: blue
+      members: [U_MCU, C_MCU1, C_MCU2, C_MCU3, C_MCU4, C_MCU5, C_MCU6, C_MCU_BULK, C_VDDA1, C_VDDA2, C_VCAP1, C_VCAP2, Y_HSE, C_HSE1, C_HSE2, R_NRST, C_NRST, SW_RST, R_BOOT0, R_STAT_LED, D_STAT_LED]
+      note: "STM32F407VGT6 168MHz | 8MHz HSE | 6x100nF + 4.7uF Shared Rail | 2x2.2uF VCAP"
+    }
+
+    group Debug_Memory {
+      title: "DEBUG (SWD/UART), 128Mbit SPI FLASH & I2C TEMP SENSOR"
+      rect: (17.78mm, 274.32mm, 248.92mm, 373.38mm)
+      border: dashed
+      color: green
+      members: [J_SWD, J_UART, U_FLASH, C_FLASH, R_FL_WP, R_FL_HOLD, U_TEMP, C_TEMP, R_I2C_SDA, R_I2C_SCL, R_TEMP_OS]
+      note: "10-Pin SWD | UART1 Debug | W25Q128JV SPI1 Flash | LM75C I2C1 (4.7k Pull-Ups)"
+    }
+
+    group Ethernet_PHY {
+      title: "10/100 ETHERNET PHY (LAN8720A, RMII & 25MHz CLOCK)"
+      rect: (264.16mm, 17.78mm, 563.88mm, 228.60mm)
+      border: dashed
+      color: amber
+      members: [U_PHY, C_PHY1, C_PHY2, C_PHY3, C_PHY_BULK, C_VDDCR1, C_VDDCR2, R_RBIAS, Y_ETH, C_ETH_X1, C_ETH_X2, R_RMII_TXEN, R_RMII_TXD0, R_RMII_TXD1, R_RMII_RXD0, R_RMII_RXD1, R_RMII_CRSDV, R_RMII_CLK, R_MDIO_PU, R_PHY_RST]
+      note: "LAN8720A RMII | 33R Series Damping | 12.1k RBIAS | 25MHz XTAL"
+    }
+
+    group Ethernet_RJ45 {
+      title: "RJ45 MAGJACK, TERMINATION & LINK/ACT LEDs"
+      rect: (264.16mm, 246.38mm, 563.88mm, 355.60mm)
+      border: dashed
+      color: slate
+      members: [J_ETH, R_ETH_TXP, R_ETH_TXN, R_ETH_RXP, R_ETH_RXN, C_ETH_TCT, C_ETH_RCT, R_ETH_LED1, R_ETH_LED2, C_ETH_SH]
+      note: "Bel SI-60062-F 10/100 MagJack | 49.9R Pull-Ups to +3V3"
+    }
+
+    // MCU Core placements (U_MCU is 50.8mm W x 144.8mm H -> center at x=165.10, y=144.78)
+    place U_MCU      center (167.64mm, 147.32mm)
+    // Shared horizontal decoupling rail along top of MCU_Core
+    place C_MCU1     center (35.56mm, 45.72mm)
+    place C_MCU2     center (50.80mm, 45.72mm)
+    place C_MCU3     center (66.04mm, 45.72mm)
+    place C_MCU4     center (81.28mm, 45.72mm)
+    place C_MCU5     center (96.52mm, 45.72mm)
+    place C_MCU6     center (111.76mm, 45.72mm)
+    place C_MCU_BULK center (127.00mm, 45.72mm)
+    // VDDA decoupling
+    place C_VDDA1    center (213.36mm, 45.72mm)
+    place C_VDDA2    center (231.14mm, 45.72mm)
+    // Reset, BOOT0, HSE crystal, VCAPs on left of MCU
+    place R_NRST     center (45.72mm, 91.44mm)
+    place C_NRST     center (66.04mm, 91.44mm)
+    place SW_RST     center (91.44mm, 91.44mm)
+    place R_BOOT0    center (45.72mm, 124.46mm)
+    place Y_HSE      center (63.50mm, 152.40mm)
+    place C_HSE1     center (45.72mm, 177.80mm)
+    place C_HSE2     center (81.28mm, 177.80mm)
+    place C_VCAP1    center (45.72mm, 223.52mm)
+    place C_VCAP2    center (68.58mm, 223.52mm)
+    place R_STAT_LED center (223.52mm, 198.12mm)
+    place D_STAT_LED center (223.52mm, 226.06mm) orient: 90
+
+    // Debug & Memory placements
+    place J_SWD      center (43.18mm, 312.42mm)
+    place J_UART     center (43.18mm, 355.60mm) orient: 180
+    place U_FLASH    center (114.30mm, 317.50mm)
+    place C_FLASH    center (137.16mm, 317.50mm)
+    place R_FL_WP    center (83.82mm, 353.06mm)
+    place R_FL_HOLD  center (101.60mm, 353.06mm)
+    place U_TEMP     center (198.12mm, 317.50mm)
+    place C_TEMP     center (157.48mm, 317.50mm)
+    place R_I2C_SCL  center (157.48mm, 353.06mm)
+    place R_I2C_SDA  center (175.26mm, 353.06mm)
+    place R_TEMP_OS  center (231.14mm, 353.06mm)
+
+    // Ethernet PHY placements
+    place C_PHY1     center (284.48mm, 45.72mm)
+    place C_PHY2     center (299.72mm, 45.72mm)
+    place C_PHY3     center (314.96mm, 45.72mm)
+    place C_PHY_BULK center (330.20mm, 45.72mm)
+    place C_VDDCR1   center (360.68mm, 45.72mm)
+    place C_VDDCR2   center (378.46mm, 45.72mm)
+    place R_MDIO_PU  center (406.40mm, 45.72mm)
+    place R_PHY_RST  center (424.18mm, 45.72mm)
+    // RMII series damping resistors column on west of PHY
+    place R_RMII_TXEN  center (297.18mm, 91.44mm)  orient: 90
+    place R_RMII_TXD0  center (297.18mm, 106.68mm) orient: 90
+    place R_RMII_TXD1  center (297.18mm, 121.92mm) orient: 90
+    place R_RMII_RXD0  center (297.18mm, 137.16mm) orient: 90
+    place R_RMII_RXD1  center (297.18mm, 152.40mm) orient: 90
+    place R_RMII_CRSDV center (297.18mm, 167.64mm) orient: 90
+    place R_RMII_CLK   center (297.18mm, 182.88mm) orient: 90
+    // PHY center & 25MHz XTAL + RBIAS
+    place U_PHY      center (431.80mm, 132.08mm)
+    place Y_ETH      center (360.68mm, 180.34mm)
+    place C_ETH_X1   center (342.90mm, 198.12mm)
+    place C_ETH_X2   center (378.46mm, 198.12mm)
+    place R_RBIAS    center (513.08mm, 167.64mm)
+
+    // RJ45 MagJack placements
+    place R_ETH_TXP  center (294.64mm, 279.40mm)
+    place R_ETH_TXN  center (314.96mm, 279.40mm)
+    place R_ETH_RXP  center (335.28mm, 279.40mm)
+    place R_ETH_RXN  center (355.60mm, 279.40mm)
+    place C_ETH_TCT  center (381.00mm, 279.40mm)
+    place C_ETH_RCT  center (401.32mm, 279.40mm)
+    place J_ETH      center (464.82mm, 297.18mm)
+    place R_ETH_LED1 center (528.32mm, 276.86mm)
+    place R_ETH_LED2 center (543.56mm, 276.86mm)
+    place C_ETH_SH   center (464.82mm, 335.28mm)
+  }
+
+  // ==========================================================================
+  // SCHEMATIC SHEET 3: GALVANICALLY ISOLATED 4-CH DI + 4-CH RELAY OUTPUTS
+  // ==========================================================================
+  schematic Sheet3_Isolated_IO {
+    sheet: A2 landscape
+    title: "Sheet 3: Isolated 4-Ch DI & 4-Ch 24V Relays"
+    routing { default: zone_local  power: label_stub  ground: label_stub }
+
+    // Vertical red dashed galvanic isolation barrier proved wire-crossing-free by E15!
+    divider { from: (241.30mm, 17.78mm) to: (241.30mm, 365.76mm) label: "ISOLATION BARRIER" color: red }
+
+    group DIN_Logic {
+      title: "DIGITAL INPUTS — MCU LOGIC SIDE (+3V3 / GND)"
+      rect: (17.78mm, 17.78mm, 203.20mm, 180.34mm)
+      border: dashed
+      color: blue
+      members: [R_DIN_PU1, C_DIN_DB1, R_DIN_PU2, C_DIN_DB2, R_DIN_PU3, C_DIN_DB3, R_DIN_PU4, C_DIN_DB4]
+      note: "10k Pull-Up + 100nF RC Debounce -> STM32 PE2..PE5"
+    }
+
+    group DIN_Optos {
+      title: "DI BARRIER"
+      rect: (218.44mm, 17.78mm, 264.16mm, 180.34mm)
+      border: dashed
+      color: red
+      members: [U_DIN1, U_DIN2, U_DIN3, U_DIN4]
+      note: "PC817 5kVrms"
+    }
+
+    group DIN_Field {
+      title: "DIGITAL INPUTS — FIELD 24V SIDE (ISO_IO_GND)"
+      rect: (279.40mm, 17.78mm, 563.88mm, 180.34mm)
+      border: dashed
+      color: red
+      members: [R_DIN_LIM1, D_DIN_REV1, R_DIN_LIM2, D_DIN_REV2, R_DIN_LIM3, D_DIN_REV3, R_DIN_LIM4, D_DIN_REV4, J_DIN]
+      note: "24V Field Inputs | 4.7k 0.25W Current Limit | 1N4148W Reverse Protection"
+    }
+
+    group DOUT_Logic {
+      title: "RELAY OUTPUTS — MCU LOGIC SIDE (+3V3 / GND)"
+      rect: (17.78mm, 195.58mm, 203.20mm, 365.76mm)
+      border: dashed
+      color: blue
+      members: [R_DO_LED1, R_DO_LED2, R_DO_LED3, R_DO_LED4]
+      note: "STM32 PD1..PD4 -> 330R Opto LED Drive"
+    }
+
+    group DOUT_Optos {
+      title: "DO BARRIER"
+      rect: (218.44mm, 195.58mm, 264.16mm, 365.76mm)
+      border: dashed
+      color: red
+      members: [U_DOUT1, U_DOUT2, U_DOUT3, U_DOUT4]
+      note: "PC817 5kVrms"
+    }
+
+    group DOUT_Field {
+      title: "RELAY OUTPUTS — FIELD 24V DRIVERS & SPDT RELAYS (ISO_IO_24V / ISO_IO_GND)"
+      rect: (279.40mm, 195.58mm, 563.88mm, 355.60mm)
+      border: dashed
+      color: amber
+      members: [
+        J_ISO_PWR, C_ISO_BULK, C_ISO_DEC,
+        R_DO_GTOP1, R_DO_GBOT1, Q_RLY1, K_RLY1, D_FLY1,
+        R_DO_GTOP2, R_DO_GBOT2, Q_RLY2, K_RLY2, D_FLY2,
+        R_DO_GTOP3, R_DO_GBOT3, Q_RLY3, K_RLY3, D_FLY3,
+        R_DO_GTOP4, R_DO_GBOT4, Q_RLY4, K_RLY4, D_FLY4,
+        J_RLY_12, J_RLY_34
+      ]
+      note: "2N7002 Gate Divider (Vgs=9.6V) | G5LE-1-DC24 SPDT Relays | 1N4148W Flyback"
+    }
+
+    // DI Logic placements (4 horizontal rows)
+    place R_DIN_PU1 center (76.20mm, 50.80mm)
+    place C_DIN_DB1 center (139.70mm, 50.80mm)
+    place R_DIN_PU2 center (76.20mm, 83.82mm)
+    place C_DIN_DB2 center (139.70mm, 83.82mm)
+    place R_DIN_PU3 center (76.20mm, 116.84mm)
+    place C_DIN_DB3 center (139.70mm, 116.84mm)
+    place R_DIN_PU4 center (76.20mm, 149.86mm)
+    place C_DIN_DB4 center (139.70mm, 149.86mm)
+
+    // DI Optocouplers straddling barrier x=241.30 (orient 180 -> pins 4,3 on west, pins 1,2 on east)
+    place U_DIN1 center (241.30mm, 50.80mm)  orient: 180
+    place U_DIN2 center (241.30mm, 83.82mm)  orient: 180
+    place U_DIN3 center (241.30mm, 116.84mm) orient: 180
+    place U_DIN4 center (241.30mm, 149.86mm) orient: 180
+
+    // DI Field placements
+    place D_DIN_REV1 center (325.12mm, 50.80mm)  orient: 270
+    place R_DIN_LIM1 center (393.70mm, 50.80mm)  orient: 90
+    place D_DIN_REV2 center (325.12mm, 83.82mm)  orient: 270
+    place R_DIN_LIM2 center (393.70mm, 83.82mm)  orient: 90
+    place D_DIN_REV3 center (325.12mm, 116.84mm) orient: 270
+    place R_DIN_LIM3 center (393.70mm, 116.84mm) orient: 90
+    place D_DIN_REV4 center (325.12mm, 149.86mm) orient: 270
+    place R_DIN_LIM4 center (393.70mm, 149.86mm) orient: 90
+    place J_DIN      center (520.70mm, 99.06mm)
+
+    // DO Logic placements
+    place R_DO_LED1 center (114.30mm, 231.14mm) orient: 90
+    place R_DO_LED2 center (114.30mm, 266.70mm) orient: 90
+    place R_DO_LED3 center (114.30mm, 302.26mm) orient: 90
+    place R_DO_LED4 center (114.30mm, 337.82mm) orient: 90
+
+    // DO Optocouplers straddling barrier x=241.30 (orient 0 -> pins 1,2 on west, pins 4,3 on east)
+    place U_DOUT1 center (241.30mm, 231.14mm)
+    place U_DOUT2 center (241.30mm, 266.70mm)
+    place U_DOUT3 center (241.30mm, 302.26mm)
+    place U_DOUT4 center (241.30mm, 337.82mm)
+
+    // DO Field placements — 24V supply + 2x2 grid of relay channels + 2 output terminals
+    place J_ISO_PWR  center (294.64mm, 226.06mm) orient: 180
+    place C_ISO_BULK center (294.64mm, 269.24mm)
+    place C_ISO_DEC  center (294.64mm, 309.88mm)
+
+    // Channel 1 (top-left of DOUT_Field)
+    place R_DO_GTOP1 center (330.20mm, 220.98mm)
+    place R_DO_GBOT1 center (330.20mm, 254.00mm)
+    place Q_RLY1     center (355.60mm, 241.30mm)
+    place D_FLY1     center (378.46mm, 241.30mm) orient: 270
+    place K_RLY1     center (401.32mm, 241.30mm)
+
+    // Channel 2 (bottom-left of DOUT_Field)
+    place R_DO_GTOP2 center (330.20mm, 294.64mm)
+    place R_DO_GBOT2 center (330.20mm, 327.66mm)
+    place Q_RLY2     center (355.60mm, 314.96mm)
+    place D_FLY2     center (378.46mm, 314.96mm) orient: 270
+    place K_RLY2     center (401.32mm, 314.96mm)
+
+    // Channel 3 (top-right of DOUT_Field)
+    place R_DO_GTOP3 center (436.88mm, 220.98mm)
+    place R_DO_GBOT3 center (436.88mm, 254.00mm)
+    place Q_RLY3     center (462.28mm, 241.30mm)
+    place D_FLY3     center (485.14mm, 241.30mm) orient: 270
+    place K_RLY3     center (508.00mm, 241.30mm)
+
+    // Channel 4 (bottom-right of DOUT_Field)
+    place R_DO_GTOP4 center (436.88mm, 294.64mm)
+    place R_DO_GBOT4 center (436.88mm, 327.66mm)
+    place Q_RLY4     center (462.28mm, 314.96mm)
+    place D_FLY4     center (485.14mm, 314.96mm) orient: 270
+    place K_RLY4     center (508.00mm, 314.96mm)
+
+    place J_RLY_12   center (551.18mm, 241.30mm)
+    place J_RLY_34   center (551.18mm, 314.96mm)
+  }
+
+  // ==========================================================================
+  // SCHEMATIC SHEET 4: 2-CH ANALOG FRONT-END + ISOLATED RS-485 & CAN BUS
+  // ==========================================================================
+  schematic Sheet4_Analog_Fieldbus {
+    sheet: A2 landscape
+    title: "Sheet 4: 2-Ch AFE & Isolated RS-485 / CAN"
+    routing { default: zone_local  power: label_stub  ground: label_stub }
+
+    // Vertical red dashed galvanic isolation barrier proved wire-crossing-free by E15!
+    divider { from: (304.80mm, 17.78mm) to: (304.80mm, 365.76mm) label: "ISOLATION BARRIER" color: red }
+
+    group AFE_AnalogIn {
+      title: "2-CH INDUSTRIAL ANALOG FRONT-END (0-10V / 4-20mA, +3.3VA)"
+      rect: (17.78mm, 17.78mm, 266.70mm, 223.52mm)
+      border: dashed
+      color: green
+      members: [
+        J_AIN1, R_AIN_TOP1, R_AIN_BOT1, D_CLAMP_HI1, D_CLAMP_LO1, R_AAF1, C_AAF1, U_OPA1, C_OPA1,
+        J_AIN2, R_AIN_TOP2, R_AIN_BOT2, D_CLAMP_HI2, D_CLAMP_LO2, R_AAF2, C_AAF2, U_OPA2, C_OPA2, FB_AGND
+      ]
+      note: "Ch1: 0-10V (24.9k/10k) | Ch2: 4-20mA (150R Burden) | BAT54 Clamps | LM321 Buffer"
+    }
+
+    group Fieldbus_Logic {
+      title: "FIELDBUS LOGIC INTERFACE (+3V3 / GND)"
+      rect: (17.78mm, 236.22mm, 266.70mm, 365.76mm)
+      border: dashed
+      color: blue
+      members: [C_ISO_L1, C_ISO_L2, R_RS485_DEL]
+      note: "Logic-Side Decoupling & RS-485 DE Opto Drive"
+    }
+
+    group Fieldbus_Barrier {
+      title: "BUS BARRIER"
+      rect: (279.40mm, 17.78mm, 330.20mm, 355.60mm)
+      border: dashed
+      color: red
+      members: [U_ISO_RS485, U_ISO_DE, U_ISO_CAN]
+      note: "ADuM1201 + PC817"
+    }
+
+    group RS485_Isolated {
+      title: "ISOLATED RS-485 TRANSCEIVER (LTC2850, ISO_BUS_5V / ISO_BUS_GND)"
+      rect: (345.44mm, 17.78mm, 563.88mm, 180.34mm)
+      border: dashed
+      color: red
+      members: [J_BUS_PWR, C_BUS_BULK, C_BUS_DEC1, C_BUS_DEC2, U_RS485, R_DE_PD, R_RS485_TERM, R_RS485_PU, R_RS485_PD, D_TVS_485A, D_TVS_485B, J_RS485]
+      note: "120R Term | 680R Fail-Safe Bias | SMBJ12A TVS | Isolated Domain 3"
+    }
+
+    group CAN_Isolated {
+      title: "ISOLATED CAN BUS TRANSCEIVER (TJA1051T, ISO_BUS_5V / ISO_BUS_GND)"
+      rect: (345.44mm, 195.58mm, 563.88mm, 355.60mm)
+      border: dashed
+      color: amber
+      members: [U_CAN, C_CAN_DEC, R_CAN_S, R_CAN_T1, R_CAN_T2, C_CAN_SPLIT, D_TVS_CANH, D_TVS_CANL, J_CAN]
+      note: "TJA1051T | 120R Split Term (60.4R + 60.4R + 4.7nF) | SMBJ12A TVS"
+    }
+
+    // Analog Front-End placements (Ch1 top row, Ch2 bottom row)
+    place J_AIN1      center (38.10mm, 73.66mm)  orient: 180
+    place R_AIN_TOP1  center (68.58mm, 66.04mm)  orient: 90
+    place R_AIN_BOT1  center (96.52mm, 93.98mm)
+    place D_CLAMP_HI1 center (119.38mm, 48.26mm) orient: 270
+    place D_CLAMP_LO1 center (119.38mm, 93.98mm) orient: 270
+    place R_AAF1      center (144.78mm, 66.04mm) orient: 90
+    place C_AAF1      center (167.64mm, 93.98mm)
+    place U_OPA1      center (208.28mm, 71.12mm)
+    place C_OPA1      center (243.84mm, 71.12mm)
+
+    place J_AIN2      center (38.10mm, 165.10mm) orient: 180
+    place R_AIN_TOP2  center (68.58mm, 157.48mm) orient: 90
+    place R_AIN_BOT2  center (96.52mm, 185.42mm)
+    place D_CLAMP_HI2 center (119.38mm, 139.70mm) orient: 270
+    place D_CLAMP_LO2 center (119.38mm, 185.42mm) orient: 270
+    place R_AAF2      center (144.78mm, 157.48mm) orient: 90
+    place C_AAF2      center (167.64mm, 185.42mm)
+    place U_OPA2      center (208.28mm, 162.56mm)
+    place C_OPA2      center (243.84mm, 162.56mm)
+    place FB_AGND     center (243.84mm, 200.66mm) orient: 90
+
+    // Fieldbus logic-side helpers
+    place C_ISO_L1    center (76.20mm, 292.10mm)
+    place C_ISO_L2    center (127.00mm, 292.10mm)
+    place R_RS485_DEL center (193.04mm, 292.10mm) orient: 90
+
+    // Isolators centered strictly on barrier x = 304.80mm
+    place U_ISO_RS485 center (304.80mm, 76.20mm)
+    place U_ISO_DE    center (304.80mm, 144.78mm)
+    place U_ISO_CAN   center (304.80mm, 269.24mm)
+
+    // Isolated RS-485 placements
+    place J_BUS_PWR    center (368.30mm, 55.88mm) orient: 180
+    place C_BUS_BULK   center (414.02mm, 55.88mm)
+    place C_BUS_DEC1   center (434.34mm, 55.88mm)
+    place C_BUS_DEC2   center (454.66mm, 55.88mm)
+    place R_DE_PD      center (365.76mm, 129.54mm)
+    place U_RS485      center (421.64mm, 114.30mm)
+    place R_RS485_PU   center (469.90mm, 78.74mm)
+    place R_RS485_TERM center (469.90mm, 114.30mm)
+    place R_RS485_PD   center (469.90mm, 149.86mm)
+    place D_TVS_485A   center (502.92mm, 93.98mm)  orient: 270
+    place D_TVS_485B   center (502.92mm, 134.62mm) orient: 270
+    place J_RS485      center (543.56mm, 114.30mm)
+
+    // Isolated CAN placements
+    place C_CAN_DEC    center (370.84mm, 241.30mm)
+    place R_CAN_S      center (370.84mm, 287.02mm)
+    place U_CAN        center (421.64mm, 269.24mm)
+    place R_CAN_T1     center (469.90mm, 248.92mm)
+    place R_CAN_T2     center (469.90mm, 289.56mm)
+    place C_CAN_SPLIT  center (495.30mm, 314.96mm)
+    place D_TVS_CANH   center (513.08mm, 248.92mm) orient: 270
+    place D_TVS_CANL   center (513.08mm, 289.56mm) orient: 270
+    place J_CAN        center (543.56mm, 269.24mm)
+  }
+
+  verify {
+    require all_required_pins_connected
+    require no_power_ground_short
+    require no_multiple_power_drivers
+    require voltage_compatibility
+    require no_single_pin_nets
+    require ic_decoupling
+    require bom_manufacturability
+    require i2c_pullups
+    require inductive_flyback
+    require galvanic_isolation(GND, ISO_IO_GND)
+    require galvanic_isolation(GND, ISO_BUS_GND)
+    require galvanic_isolation(ISO_IO_GND, ISO_BUS_GND)
+  }
+}

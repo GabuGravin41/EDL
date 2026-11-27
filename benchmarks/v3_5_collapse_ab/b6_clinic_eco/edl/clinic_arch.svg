@@ -1,0 +1,502 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280.0 972.0" width="1280" height="972">
+<!--EDL_VIEW ox=120.503927 oy=763.486771 kx=0.042581645 ky=-0.042581645-->
+  <defs>
+    <pattern id="dry-zone-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#ef4444" stroke-width="1.4" stroke-opacity="0.38"/>
+    </pattern>
+    <pattern id="db-clr-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+      <line x1="0" y1="0" x2="0" y2="7" stroke="#dc2626" stroke-width="1.2" stroke-opacity="0.35"/>
+    </pattern>
+    <style>
+      .bg { fill: #f8f9fb; }
+      .sheet { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; }
+      .room-fill { fill: #f1f5f9; stroke: #cbd5e1; stroke-width: 0.7; }
+      .room-fill-alt { fill: #eef6ff; stroke: #cbd5e1; stroke-width: 0.7; }
+      .room-fill-bath { fill: #ecfeff; stroke: #cbd5e1; stroke-width: 0.7; }
+      .room-fill-circ { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 0.7; }
+      .room-fill-outdoor { fill: #fefce8; stroke: #a16207; stroke-width: 1.0; stroke-dasharray: 5 3; }
+      .room-fill-err { fill: #fef2f2; stroke: #dc2626; stroke-width: 1.5; }
+      .grid-line { stroke: #94a3b8; stroke-width: 0.7; stroke-dasharray: 8 4 2 4; stroke-opacity: 0.55; }
+      .grid-bubble { fill: #ffffff; stroke: #475569; stroke-width: 1.2; }
+      .grid-bubble-txt { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+      .grid-bay-dim { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9px; fill: #64748b; text-anchor: middle; }
+      .col-concrete { fill: #0f172a; stroke: #334155; stroke-width: 0.7; }
+      .col-steel { fill: none; stroke: #0f172a; stroke-width: 2.0; stroke-linecap: square; }
+      .elev-box { fill: #ffffff; fill-opacity: 0.9; stroke: #475569; stroke-width: 0.8; }
+      .elev-txt { font-family: monospace; font-size: 8.5px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+      .stair-tread { stroke: #64748b; stroke-width: 0.85; }
+      .stair-arrow { stroke: #334155; stroke-width: 1.25; fill: none; }
+      .elev-x { stroke: #64748b; stroke-width: 1.2; }
+      .wall-ext { fill: #1e293b; stroke: #0f172a; stroke-width: 0.4; }
+      .wall-int { fill: #475569; stroke: #334155; stroke-width: 0.4; }
+      .door-leaf { stroke: #0f172a; stroke-width: 1.6; stroke-linecap: round; }
+      .door-arc { fill: #2563eb; fill-opacity: 0.06; stroke: #2563eb; stroke-width: 1.1; stroke-dasharray: 4 3; }
+      .door-arc-err { fill: #ef4444; fill-opacity: 0.22; stroke: #dc2626; stroke-width: 2.0; stroke-dasharray: 5 3; }
+      .win-frame { fill: #e0f2fe; stroke: #0284c7; stroke-width: 1.2; }
+      .win-glass { stroke: #0284c7; stroke-width: 1.0; }
+      .passage-line { stroke: #94a3b8; stroke-width: 1.0; stroke-dasharray: 4 3; }
+      .passage-jamb { stroke: #64748b; stroke-width: 1.5; }
+      .fx-body { fill: #e2e8f0; fill-opacity: 0.72; stroke: #475569; stroke-width: 1.0; }
+      .fx-detail { fill: none; stroke: #94a3b8; stroke-width: 0.8; }
+      .fx-body-err { fill: #fecaca; fill-opacity: 0.85; stroke: #dc2626; stroke-width: 1.8; }
+      .fx-clear { fill: #22c55e; fill-opacity: 0.06; stroke: #16a34a; stroke-width: 0.8; stroke-dasharray: 3 3; }
+      .fx-clear-err { fill: #ef4444; fill-opacity: 0.16; stroke: #dc2626; stroke-width: 1.4; stroke-dasharray: 3 3; }
+      .fx-label { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 8.2px; font-weight: 600; fill: #334155; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.4px; stroke-linejoin: round; }
+      .dim-line { stroke: #64748b; stroke-width: 0.9; }
+      .dim-text { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10.5px; fill: #475569; text-anchor: middle; }
+      .room-dim { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9px; fill: #64748b; text-anchor: middle; }
+      .room-title { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 12px; font-weight: 700; fill: #0f172a; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.5px; stroke-linejoin: round; }
+      .room-sub { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9.5px; fill: #64748b; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.0px; stroke-linejoin: round; }
+      .badge { font-family: monospace; font-size: 8.5px; font-weight: 600; fill: #1d4ed8; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.4px; stroke-linejoin: round; }
+      .badge-err { font-family: monospace; font-size: 9px; font-weight: 700; fill: #dc2626; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.5px; stroke-linejoin: round; }
+      .title-text { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 15px; font-weight: 700; fill: #0f172a; }
+      .meta-text { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 11px; fill: #475569; }
+      .status-ok { font-family: monospace; font-size: 11px; font-weight: 700; fill: #15803d; text-anchor: end; }
+      .status-err { font-family: monospace; font-size: 11px; font-weight: 700; fill: #dc2626; text-anchor: end; }
+      .status-err-sub { font-family: monospace; font-size: 10px; font-weight: 600; fill: #b91c1c; text-anchor: end; }
+      .mep-wire-light { fill: none; stroke: #0284c7; stroke-width: 1.45; stroke-opacity: 0.85; }
+      .mep-wire-power { fill: none; stroke: #ea580c; stroke-width: 1.55; stroke-opacity: 0.85; }
+      .mep-wire-swleg { fill: none; stroke: #9333ea; stroke-width: 1.15; stroke-dasharray: 4 3; stroke-opacity: 0.85; }
+      .mep-panel { fill: #dc2626; stroke: #7f1d1d; stroke-width: 1.4; }
+      .mep-light { fill: #fef08a; stroke: #ca8a04; stroke-width: 1.6; }
+      .mep-switch { fill: #ffffff; stroke: #7e22ce; stroke-width: 1.6; }
+      .mep-outlet { fill: #ffedd5; stroke: #c2410c; stroke-width: 1.5; }
+      .mep-err { fill: #fecaca; stroke: #dc2626; stroke-width: 2.2; }
+      .mep-lbl { font-family: monospace; font-size: 7.8px; font-weight: 700; fill: #0f172a; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.6px; stroke-linejoin: round; }
+    </style>
+  </defs>
+  <rect class="bg" x="0" y="0" width="1280.0" height="972.0"/>
+  <rect class="sheet" x="16" y="16" width="1248.0" height="940.0" rx="6"/>
+  <g id="rooms">
+    <rect id="room-Vestibule" class="room-fill-circ" x="126.89" y="671.94" width="195.02" height="85.16"/>
+    <rect id="room-Waiting" class="room-fill" x="327.88" y="414.74" width="195.02" height="342.36"/>
+    <rect id="room-PublicWC" class="room-fill-bath" x="222.27" y="570.59" width="99.64" height="95.38"/>
+    <rect id="room-Corridor" class="room-fill-circ" x="126.89" y="315.10" width="932.96" height="93.68"/>
+    <rect id="room-Procedure" class="room-fill" x="126.89" y="126.89" width="195.02" height="182.25"/>
+    <rect id="room-Exam1" class="room-fill" x="327.88" y="126.89" width="160.11" height="182.25"/>
+    <rect id="room-Exam2" class="room-fill" x="493.94" y="126.89" width="160.11" height="182.25"/>
+    <rect id="room-Exam3" class="room-fill" x="660.01" y="126.89" width="160.11" height="182.25"/>
+    <rect id="room-Exam4" class="room-fill" x="826.08" y="126.89" width="160.11" height="182.25"/>
+    <rect id="room-Exam5" class="room-fill" x="992.15" y="126.89" width="160.96" height="182.25"/>
+    <rect id="room-NurseStation" class="room-fill-alt" x="532.27" y="414.74" width="140.52" height="146.48"/>
+    <rect id="room-Lab" class="room-fill-alt" x="678.75" y="414.74" width="178.84" height="146.48"/>
+    <rect id="room-Pharmacy" class="room-fill-alt" x="863.55" y="414.74" width="113.27" height="146.48"/>
+    <rect id="room-Breakroom" class="room-fill" x="982.78" y="414.74" width="170.33" height="146.48"/>
+    <rect id="room-StaffWC" class="room-fill-bath" x="1065.82" y="315.10" width="87.29" height="93.68"/>
+    <rect id="room-ElecITRoom" class="room-fill-alt" x="222.27" y="414.74" width="99.64" height="149.89"/>
+    <rect id="room-MechRoom" class="room-fill-alt" x="126.89" y="414.74" width="89.42" height="251.23"/>
+  </g>
+  <g id="structural-grid">
+    <line class="grid-line" x1="120.50" y1="66.12" x2="120.50" y2="825.87"/>
+    <circle class="grid-bubble" cx="120.50" cy="837.37" r="11.5"/>
+    <text class="grid-bubble-txt" x="120.50" y="840.87">1</text>
+    <line class="grid-line" x1="324.90" y1="66.12" x2="324.90" y2="825.87"/>
+    <circle class="grid-bubble" cx="324.90" cy="837.37" r="11.5"/>
+    <text class="grid-bubble-txt" x="324.90" y="840.87">2</text>
+    <line class="grid-line" x1="529.29" y1="66.12" x2="529.29" y2="825.87"/>
+    <circle class="grid-bubble" cx="529.29" cy="837.37" r="11.5"/>
+    <text class="grid-bubble-txt" x="529.29" y="840.87">3</text>
+    <line class="grid-line" x1="767.74" y1="66.12" x2="767.74" y2="825.87"/>
+    <circle class="grid-bubble" cx="767.74" cy="837.37" r="11.5"/>
+    <text class="grid-bubble-txt" x="767.74" y="840.87">4</text>
+    <line class="grid-line" x1="963.62" y1="66.12" x2="963.62" y2="825.87"/>
+    <circle class="grid-bubble" cx="963.62" cy="837.37" r="11.5"/>
+    <text class="grid-bubble-txt" x="963.62" y="840.87">5</text>
+    <line class="grid-line" x1="1159.50" y1="66.12" x2="1159.50" y2="825.87"/>
+    <circle class="grid-bubble" cx="1159.50" cy="837.37" r="11.5"/>
+    <text class="grid-bubble-txt" x="1159.50" y="840.87">6</text>
+    <text class="grid-bay-dim" x="222.70" y="820.87">4800</text>
+    <text class="grid-bay-dim" x="427.09" y="820.87">4800</text>
+    <text class="grid-bay-dim" x="648.52" y="820.87">5600</text>
+    <text class="grid-bay-dim" x="865.68" y="820.87">4600</text>
+    <text class="grid-bay-dim" x="1061.56" y="820.87">4600</text>
+    <line class="grid-line" x1="58.12" y1="763.49" x2="1211.88" y2="763.49"/>
+    <circle class="grid-bubble" cx="46.62" cy="763.49" r="11.5"/>
+    <text class="grid-bubble-txt" x="46.62" y="766.99">A</text>
+    <line class="grid-line" x1="58.12" y1="567.61" x2="1211.88" y2="567.61"/>
+    <circle class="grid-bubble" cx="46.62" cy="567.61" r="11.5"/>
+    <text class="grid-bubble-txt" x="46.62" y="571.11">B</text>
+    <line class="grid-line" x1="58.12" y1="312.12" x2="1211.88" y2="312.12"/>
+    <circle class="grid-bubble" cx="46.62" cy="312.12" r="11.5"/>
+    <text class="grid-bubble-txt" x="46.62" y="315.62">C</text>
+    <line class="grid-line" x1="58.12" y1="120.50" x2="1211.88" y2="120.50"/>
+    <circle class="grid-bubble" cx="46.62" cy="120.50" r="11.5"/>
+    <text class="grid-bubble-txt" x="46.62" y="124.00">D</text>
+    <text class="grid-bay-dim" x="64.12" y="665.55" transform="rotate(-90 64.12 665.55)">4600</text>
+    <text class="grid-bay-dim" x="64.12" y="439.87" transform="rotate(-90 64.12 439.87)">6000</text>
+    <text class="grid-bay-dim" x="64.12" y="216.31" transform="rotate(-90 64.12 216.31)">4500</text>
+  </g>
+  <g id="fixtures">
+    <rect id="fx-clear-ReceptionCounter" class="fx-clear" x="456.90" y="454.77" width="34.07" height="102.20"/>
+    <rect id="fx-ReceptionCounter" class="fx-body" x="490.96" y="454.77" width="31.94" height="102.20" rx="2"/>
+    <text class="fx-label" x="506.93" y="508.87" transform="rotate(-90 506.93 505.87)">ReceptionCounter</text>
+    <rect id="fx-clear-WaitingSofa1" class="fx-clear" x="330.01" y="503.74" width="127.74" height="70.26"/>
+    <rect id="fx-WaitingSofa1" class="fx-body" x="347.04" y="520.77" width="93.68" height="36.19" rx="2"/>
+    <text class="fx-label" x="393.88" y="541.87">WaitingSofa1</text>
+    <rect id="fx-clear-WaitingSofa2" class="fx-clear" x="370.46" y="648.52" width="127.74" height="70.26"/>
+    <rect id="fx-WaitingSofa2" class="fx-body" x="387.49" y="665.55" width="93.68" height="36.19" rx="2"/>
+    <text class="fx-label" x="434.33" y="686.65">WaitingSofa2</text>
+    <rect id="fx-clear-PublicToilet" class="fx-clear" x="252.08" y="590.18" width="29.81" height="20.44"/>
+    <rect id="fx-PublicToilet" class="fx-body" x="222.27" y="590.18" width="29.81" height="20.44" rx="2"/>
+    <rect id="fx-clear-PublicBasin" class="fx-clear" x="269.11" y="589.75" width="25.55" height="25.55"/>
+    <rect id="fx-PublicBasin" class="fx-body" x="269.11" y="570.59" width="25.55" height="19.16" rx="2"/>
+    <rect id="fx-clear-StaffToilet" class="fx-clear" x="1098.60" y="381.10" width="25.55" height="19.16"/>
+    <rect id="fx-StaffToilet" class="fx-body" x="1124.15" y="381.10" width="28.96" height="19.16" rx="2"/>
+    <rect id="fx-clear-StaffBasin" class="fx-clear" x="1108.40" y="332.99" width="23.42" height="21.29"/>
+    <rect id="fx-StaffBasin" class="fx-body" x="1108.40" y="315.10" width="23.42" height="17.88" rx="2"/>
+    <rect id="fx-clear-KitchenCounter" class="fx-clear" x="1010.46" y="493.09" width="29.81" height="59.61"/>
+    <rect id="fx-KitchenCounter" class="fx-body" x="982.78" y="493.09" width="27.68" height="59.61" rx="2"/>
+    <rect id="fx-clear-KitchenSink" class="fx-clear" x="1006.20" y="463.29" width="25.55" height="25.55"/>
+    <rect id="fx-KitchenSink" class="fx-body" x="982.78" y="463.29" width="23.42" height="25.55" rx="2"/>
+    <rect id="fx-clear-BreakTable" class="fx-clear" x="1036.01" y="471.80" width="93.68" height="68.13"/>
+    <rect id="fx-BreakTable" class="fx-body" x="1053.04" y="488.84" width="59.61" height="34.07" rx="2"/>
+    <text class="fx-label" x="1082.85" y="508.87">BreakTable</text>
+    <rect id="fx-clear-ProcedureTable" class="fx-clear" x="158.83" y="172.88" width="119.23" height="78.78"/>
+    <rect id="fx-ProcedureTable" class="fx-body" x="180.12" y="194.17" width="76.65" height="36.19" rx="2"/>
+    <text class="fx-label" x="218.44" y="215.27">ProcedureTable</text>
+    <rect id="fx-clear-ScrubSink" class="fx-clear" x="150.31" y="262.30" width="21.29" height="34.07"/>
+    <rect id="fx-ScrubSink" class="fx-body" x="126.89" y="262.30" width="23.42" height="34.07" rx="2"/>
+    <rect id="fx-clear-ProcCounter" class="fx-clear" x="279.33" y="181.40" width="21.29" height="68.13"/>
+    <rect id="fx-ProcCounter" class="fx-body" x="300.62" y="181.40" width="21.29" height="68.13" rx="2"/>
+    <rect id="fx-clear-Exam1Table" class="fx-clear" x="359.81" y="143.07" width="74.52" height="123.49"/>
+    <rect id="fx-Exam1Table" class="fx-body" x="381.10" y="164.36" width="31.94" height="80.91" rx="2"/>
+    <text class="fx-label" x="397.07" y="207.82" transform="rotate(-90 397.07 204.82)">Exam1Table</text>
+    <rect id="fx-clear-Exam1Basin" class="fx-clear" x="347.04" y="192.04" width="21.29" height="23.42"/>
+    <rect id="fx-Exam1Basin" class="fx-body" x="327.88" y="192.04" width="19.16" height="23.42" rx="2"/>
+    <rect id="fx-clear-Exam1Desk" class="fx-clear" x="439.01" y="177.14" width="21.29" height="55.36"/>
+    <rect id="fx-Exam1Desk" class="fx-body" x="460.31" y="177.14" width="27.68" height="55.36" rx="2"/>
+    <rect id="fx-clear-Exam2Table" class="fx-clear" x="525.88" y="143.07" width="74.52" height="123.49"/>
+    <rect id="fx-Exam2Table" class="fx-body" x="547.17" y="164.36" width="31.94" height="80.91" rx="2"/>
+    <text class="fx-label" x="563.14" y="207.82" transform="rotate(-90 563.14 204.82)">Exam2Table</text>
+    <rect id="fx-clear-Exam2Basin" class="fx-clear" x="513.11" y="192.04" width="21.29" height="23.42"/>
+    <rect id="fx-Exam2Basin" class="fx-body" x="493.94" y="192.04" width="19.16" height="23.42" rx="2"/>
+    <rect id="fx-clear-Exam2Desk" class="fx-clear" x="605.08" y="177.14" width="21.29" height="55.36"/>
+    <rect id="fx-Exam2Desk" class="fx-body" x="626.37" y="177.14" width="27.68" height="55.36" rx="2"/>
+    <rect id="fx-clear-Exam3Table" class="fx-clear" x="691.95" y="143.07" width="74.52" height="123.49"/>
+    <rect id="fx-Exam3Table" class="fx-body" x="713.24" y="164.36" width="31.94" height="80.91" rx="2"/>
+    <text class="fx-label" x="729.21" y="207.82" transform="rotate(-90 729.21 204.82)">Exam3Table</text>
+    <rect id="fx-clear-Exam3Basin" class="fx-clear" x="679.18" y="192.04" width="21.29" height="23.42"/>
+    <rect id="fx-Exam3Basin" class="fx-body" x="660.01" y="192.04" width="19.16" height="23.42" rx="2"/>
+    <rect id="fx-clear-Exam3Desk" class="fx-clear" x="771.15" y="177.14" width="21.29" height="55.36"/>
+    <rect id="fx-Exam3Desk" class="fx-body" x="792.44" y="177.14" width="27.68" height="55.36" rx="2"/>
+    <rect id="fx-clear-Exam4Table" class="fx-clear" x="858.02" y="143.07" width="74.52" height="123.49"/>
+    <rect id="fx-Exam4Table" class="fx-body" x="879.31" y="164.36" width="31.94" height="80.91" rx="2"/>
+    <text class="fx-label" x="895.28" y="207.82" transform="rotate(-90 895.28 204.82)">Exam4Table</text>
+    <rect id="fx-clear-Exam4Basin" class="fx-clear" x="845.24" y="192.04" width="21.29" height="23.42"/>
+    <rect id="fx-Exam4Basin" class="fx-body" x="826.08" y="192.04" width="19.16" height="23.42" rx="2"/>
+    <rect id="fx-clear-Exam4Desk" class="fx-clear" x="937.22" y="177.14" width="21.29" height="55.36"/>
+    <rect id="fx-Exam4Desk" class="fx-body" x="958.51" y="177.14" width="27.68" height="55.36" rx="2"/>
+    <rect id="fx-clear-Exam5Table" class="fx-clear" x="1024.09" y="143.07" width="74.52" height="123.49"/>
+    <rect id="fx-Exam5Table" class="fx-body" x="1045.38" y="164.36" width="31.94" height="80.91" rx="2"/>
+    <text class="fx-label" x="1061.35" y="207.82" transform="rotate(-90 1061.35 204.82)">Exam5Table</text>
+    <rect id="fx-clear-Exam5Basin" class="fx-clear" x="1011.31" y="192.04" width="21.29" height="23.42"/>
+    <rect id="fx-Exam5Basin" class="fx-body" x="992.15" y="192.04" width="19.16" height="23.42" rx="2"/>
+    <rect id="fx-clear-Exam5Desk" class="fx-clear" x="1104.14" y="177.14" width="21.29" height="55.36"/>
+    <rect id="fx-Exam5Desk" class="fx-body" x="1125.43" y="177.14" width="27.68" height="55.36" rx="2"/>
+    <rect id="fx-clear-NurseCounter" class="fx-clear" x="551.43" y="499.48" width="102.20" height="29.81"/>
+    <rect id="fx-NurseCounter" class="fx-body" x="551.43" y="529.29" width="102.20" height="31.94" rx="2"/>
+    <text class="fx-label" x="602.53" y="548.26">NurseCounter</text>
+    <rect id="fx-clear-LabBench" class="fx-clear" x="691.52" y="501.61" width="119.23" height="29.81"/>
+    <rect id="fx-LabBench" class="fx-body" x="691.52" y="531.42" width="119.23" height="29.81" rx="2"/>
+    <text class="fx-label" x="751.14" y="549.32">LabBench</text>
+    <rect id="fx-clear-SteriSink" class="fx-clear" x="808.62" y="493.09" width="25.55" height="29.81"/>
+    <rect id="fx-SteriSink" class="fx-body" x="834.17" y="493.09" width="23.42" height="29.81" rx="2"/>
+    <rect id="fx-clear-PharmShelfW" class="fx-clear" x="884.84" y="471.80" width="25.55" height="76.65"/>
+    <rect id="fx-PharmShelfW" class="fx-body" x="863.55" y="471.80" width="21.29" height="76.65" rx="2"/>
+    <rect id="fx-clear-PharmShelfE" class="fx-clear" x="929.98" y="471.80" width="25.55" height="76.65"/>
+    <rect id="fx-PharmShelfE" class="fx-body" x="955.53" y="471.80" width="21.29" height="76.65" rx="2"/>
+    <rect id="fx-clear-ITServerRack" class="fx-clear" x="246.55" y="496.50" width="51.10" height="34.07"/>
+    <rect id="fx-ITServerRack" class="fx-body" x="246.55" y="530.57" width="51.10" height="34.07" rx="2"/>
+    <text class="fx-label" x="272.09" y="550.60">ITServerRack</text>
+    <rect id="fx-clear-MopSink" class="fx-clear" x="165.21" y="536.10" width="25.55" height="27.68"/>
+    <rect id="fx-MopSink" class="fx-body" x="190.76" y="536.10" width="25.55" height="27.68" rx="2"/>
+    <rect id="fx-clear-WaterHeater" class="fx-clear" x="163.09" y="612.75" width="25.55" height="36.19"/>
+    <rect id="fx-WaterHeater" class="fx-body" x="126.89" y="612.75" width="36.19" height="36.19" rx="2"/>
+    <line class="elev-x" x1="126.89" y1="612.75" x2="163.09" y2="648.94"/>
+  </g>
+  <g id="walls">
+    <rect class="wall-ext" x="114.12" y="757.10" width="80.48" height="12.77"/>
+    <rect class="wall-ext" x="254.21" y="757.10" width="111.56" height="12.77"/>
+    <rect class="wall-ext" x="485.00" y="757.10" width="50.67" height="12.77"/>
+    <rect class="wall-ext" x="114.12" y="387.49" width="12.77" height="369.61"/>
+    <rect class="wall-int" x="321.92" y="740.07" width="5.96" height="17.03"/>
+    <rect class="wall-ext" x="522.90" y="718.78" width="12.77" height="38.32"/>
+    <rect class="wall-int" x="321.92" y="671.94" width="5.96" height="17.03"/>
+    <rect class="wall-int" x="126.89" y="665.97" width="200.99" height="5.96"/>
+    <rect class="wall-int" x="216.31" y="570.59" width="5.96" height="95.38"/>
+    <rect class="wall-int" x="321.92" y="653.20" width="5.96" height="12.77"/>
+    <rect class="wall-ext" x="522.90" y="574.00" width="12.77" height="59.61"/>
+    <rect class="wall-int" x="321.92" y="570.59" width="5.96" height="42.16"/>
+    <rect class="wall-ext" x="522.90" y="564.63" width="498.21" height="9.37"/>
+    <rect class="wall-ext" x="1114.79" y="561.22" width="51.10" height="12.77"/>
+    <rect class="wall-int" x="216.31" y="564.63" width="111.56" height="5.96"/>
+    <rect class="wall-int" x="216.31" y="414.74" width="5.96" height="149.89"/>
+    <rect class="wall-int" x="321.92" y="414.74" width="5.96" height="149.89"/>
+    <rect class="wall-int" x="522.90" y="414.74" width="9.37" height="149.89"/>
+    <rect class="wall-ext" x="532.27" y="561.22" width="140.52" height="3.41"/>
+    <rect class="wall-int" x="672.79" y="414.74" width="5.96" height="149.89"/>
+    <rect class="wall-ext" x="678.75" y="561.22" width="178.84" height="3.41"/>
+    <rect class="wall-int" x="857.59" y="414.74" width="5.96" height="149.89"/>
+    <rect class="wall-ext" x="863.55" y="561.22" width="113.27" height="3.41"/>
+    <rect class="wall-int" x="976.82" y="414.74" width="5.96" height="149.89"/>
+    <rect class="wall-ext" x="982.78" y="561.22" width="38.32" height="3.41"/>
+    <rect class="wall-ext" x="1153.11" y="522.05" width="12.77" height="39.18"/>
+    <rect class="wall-ext" x="1153.11" y="126.89" width="12.77" height="327.03"/>
+    <rect class="wall-int" x="126.89" y="408.78" width="25.55" height="5.96"/>
+    <rect class="wall-int" x="190.76" y="408.78" width="62.17" height="5.96"/>
+    <rect class="wall-int" x="291.26" y="408.78" width="108.58" height="5.96"/>
+    <rect class="wall-int" x="450.94" y="408.78" width="130.30" height="5.96"/>
+    <rect class="wall-int" x="623.82" y="408.78" width="124.13" height="5.96"/>
+    <rect class="wall-int" x="788.40" y="408.78" width="111.56" height="5.96"/>
+    <rect class="wall-int" x="940.41" y="408.78" width="61.53" height="5.96"/>
+    <rect class="wall-int" x="1042.40" y="408.78" width="110.71" height="5.96"/>
+    <rect class="wall-int" x="1059.86" y="381.10" width="5.96" height="27.68"/>
+    <rect class="wall-int" x="1059.86" y="315.10" width="5.96" height="27.68"/>
+    <rect class="wall-ext" x="114.12" y="126.89" width="12.77" height="209.50"/>
+    <rect class="wall-int" x="126.89" y="309.14" width="71.96" height="5.96"/>
+    <rect class="wall-int" x="249.95" y="309.14" width="137.75" height="5.96"/>
+    <rect class="wall-int" x="428.16" y="309.14" width="121.14" height="5.96"/>
+    <rect class="wall-int" x="589.75" y="309.14" width="100.07" height="5.96"/>
+    <rect class="wall-int" x="730.27" y="309.14" width="138.39" height="5.96"/>
+    <rect class="wall-int" x="909.12" y="309.14" width="95.81" height="5.96"/>
+    <rect class="wall-int" x="1045.38" y="309.14" width="107.73" height="5.96"/>
+    <rect class="wall-int" x="321.92" y="126.89" width="5.96" height="182.25"/>
+    <rect class="wall-int" x="487.98" y="126.89" width="5.96" height="182.25"/>
+    <rect class="wall-int" x="654.05" y="126.89" width="5.96" height="182.25"/>
+    <rect class="wall-int" x="820.12" y="126.89" width="5.96" height="182.25"/>
+    <rect class="wall-int" x="986.19" y="126.89" width="5.96" height="182.25"/>
+    <rect class="wall-ext" x="114.12" y="114.12" width="63.45" height="12.77"/>
+    <rect class="wall-ext" x="271.24" y="114.12" width="98.36" height="12.77"/>
+    <rect class="wall-ext" x="446.25" y="114.12" width="103.05" height="12.77"/>
+    <rect class="wall-ext" x="625.95" y="114.12" width="46.84" height="12.77"/>
+    <rect class="wall-ext" x="749.43" y="114.12" width="102.20" height="12.77"/>
+    <rect class="wall-ext" x="928.28" y="114.12" width="106.03" height="12.77"/>
+    <rect class="wall-ext" x="1110.95" y="114.12" width="54.93" height="12.77"/>
+  </g>
+  <g id="structural-columns">
+    <rect id="col-Col_1_A" class="col-concrete" x="114.12" y="757.10" width="12.77" height="12.77"/>
+    <rect id="col-Col_1_B" class="col-concrete" x="114.12" y="561.22" width="12.77" height="12.77"/>
+    <rect id="col-Col_1_C" class="col-concrete" x="114.12" y="305.73" width="12.77" height="12.77"/>
+    <rect id="col-Col_1_D" class="col-concrete" x="114.12" y="114.12" width="12.77" height="12.77"/>
+    <rect id="col-Col_2_A" class="col-concrete" x="318.51" y="757.10" width="12.77" height="12.77"/>
+    <rect id="col-Col_2_B" class="col-concrete" x="318.51" y="561.22" width="12.77" height="12.77"/>
+    <rect id="col-Col_2_C" class="col-concrete" x="318.51" y="305.73" width="12.77" height="12.77"/>
+    <rect id="col-Col_2_D" class="col-concrete" x="318.51" y="114.12" width="12.77" height="12.77"/>
+    <rect id="col-Col_3_A" class="col-concrete" x="522.90" y="757.10" width="12.77" height="12.77"/>
+    <rect id="col-Col_3_B" class="col-concrete" x="522.90" y="561.22" width="12.77" height="12.77"/>
+    <rect id="col-Col_3_C" class="col-concrete" x="522.90" y="305.73" width="12.77" height="12.77"/>
+    <rect id="col-Col_3_D" class="col-concrete" x="522.90" y="114.12" width="12.77" height="12.77"/>
+    <rect id="col-Col_4_B" class="col-concrete" x="761.36" y="561.22" width="12.77" height="12.77"/>
+    <rect id="col-Col_4_C" class="col-concrete" x="761.36" y="305.73" width="12.77" height="12.77"/>
+    <rect id="col-Col_4_D" class="col-concrete" x="761.36" y="114.12" width="12.77" height="12.77"/>
+    <rect id="col-Col_5_B" class="col-concrete" x="957.23" y="561.22" width="12.77" height="12.77"/>
+    <rect id="col-Col_5_C" class="col-concrete" x="957.23" y="305.73" width="12.77" height="12.77"/>
+    <rect id="col-Col_5_D" class="col-concrete" x="957.23" y="114.12" width="12.77" height="12.77"/>
+    <rect id="col-Col_6_B" class="col-concrete" x="1153.11" y="561.22" width="12.77" height="12.77"/>
+    <rect id="col-Col_6_C" class="col-concrete" x="1153.11" y="305.73" width="12.77" height="12.77"/>
+    <rect id="col-Col_6_D" class="col-concrete" x="1153.11" y="114.12" width="12.77" height="12.77"/>
+  </g>
+  <g id="openings">
+    <path id="door-arc-MainEntry" class="door-arc" d="M 194.60 757.10 L 254.21 757.10 A 59.61 59.61 0 0 0 194.60 697.49 Z"/>
+    <line class="door-leaf" x1="194.60" y1="757.10" x2="194.60" y2="697.49"/>
+    <path id="door-arc-DoorVestibuleWaiting" class="door-arc" d="M 327.88 740.07 L 327.88 688.97 A 51.10 51.10 0 0 1 378.97 740.07 Z"/>
+    <line class="door-leaf" x1="327.88" y1="740.07" x2="378.97" y2="740.07"/>
+    <path id="door-arc-DoorPublicWC" class="door-arc" d="M 321.92 653.20 L 321.92 612.75 A 40.45 40.45 0 0 0 281.46 653.20 Z"/>
+    <line class="door-leaf" x1="321.92" y1="653.20" x2="281.46" y2="653.20"/>
+    <path id="door-arc-DoorWaitingCorridor" class="door-arc" d="M 399.84 414.74 L 450.94 414.74 A 51.10 51.10 0 0 1 399.84 465.84 Z"/>
+    <line class="door-leaf" x1="399.84" y1="414.74" x2="399.84" y2="465.84"/>
+    <path id="door-arc-DoorMech" class="door-arc" d="M 152.44 414.74 L 190.76 414.74 A 38.32 38.32 0 0 1 152.44 453.07 Z"/>
+    <line class="door-leaf" x1="152.44" y1="414.74" x2="152.44" y2="453.07"/>
+    <path id="door-arc-DoorElecIT" class="door-arc" d="M 252.93 414.74 L 291.26 414.74 A 38.32 38.32 0 0 1 252.93 453.07 Z"/>
+    <line class="door-leaf" x1="252.93" y1="414.74" x2="252.93" y2="453.07"/>
+    <path id="door-arc-DoorProcedure" class="door-arc" d="M 198.85 309.14 L 249.95 309.14 A 51.10 51.10 0 0 0 198.85 258.04 Z"/>
+    <line class="door-leaf" x1="198.85" y1="309.14" x2="198.85" y2="258.04"/>
+    <path id="door-arc-DoorExam1" class="door-arc" d="M 387.70 309.14 L 428.16 309.14 A 40.45 40.45 0 0 0 387.70 268.69 Z"/>
+    <line class="door-leaf" x1="387.70" y1="309.14" x2="387.70" y2="268.69"/>
+    <path id="door-arc-DoorExam2" class="door-arc" d="M 549.30 309.14 L 589.75 309.14 A 40.45 40.45 0 0 0 549.30 268.69 Z"/>
+    <line class="door-leaf" x1="549.30" y1="309.14" x2="549.30" y2="268.69"/>
+    <path id="door-arc-DoorExam3" class="door-arc" d="M 689.82 309.14 L 730.27 309.14 A 40.45 40.45 0 0 0 689.82 268.69 Z"/>
+    <line class="door-leaf" x1="689.82" y1="309.14" x2="689.82" y2="268.69"/>
+    <path id="door-arc-DoorExam4" class="door-arc" d="M 868.66 309.14 L 909.12 309.14 A 40.45 40.45 0 0 0 868.66 268.69 Z"/>
+    <line class="door-leaf" x1="868.66" y1="309.14" x2="868.66" y2="268.69"/>
+    <path id="door-arc-DoorExam5" class="door-arc" d="M 1004.92 309.14 L 1045.38 309.14 A 40.45 40.45 0 0 0 1004.92 268.69 Z"/>
+    <line class="door-leaf" x1="1004.92" y1="309.14" x2="1004.92" y2="268.69"/>
+    <path id="door-arc-DoorNurse" class="door-arc" d="M 581.24 414.74 L 623.82 414.74 A 42.58 42.58 0 0 1 581.24 457.32 Z"/>
+    <line class="door-leaf" x1="581.24" y1="414.74" x2="581.24" y2="457.32"/>
+    <path id="door-arc-DoorLab" class="door-arc" d="M 747.94 414.74 L 788.40 414.74 A 40.45 40.45 0 0 1 747.94 455.20 Z"/>
+    <line class="door-leaf" x1="747.94" y1="414.74" x2="747.94" y2="455.20"/>
+    <path id="door-arc-DoorPharmacy" class="door-arc" d="M 899.96 414.74 L 940.41 414.74 A 40.45 40.45 0 0 1 899.96 455.20 Z"/>
+    <line class="door-leaf" x1="899.96" y1="414.74" x2="899.96" y2="455.20"/>
+    <path id="door-arc-DoorBreakroom" class="door-arc" d="M 1001.94 414.74 L 1042.40 414.74 A 40.45 40.45 0 0 1 1001.94 455.20 Z"/>
+    <line class="door-leaf" x1="1001.94" y1="414.74" x2="1001.94" y2="455.20"/>
+    <path id="door-arc-DoorStaffWC" class="door-arc" d="M 1065.82 381.10 L 1065.82 342.78 A 38.32 38.32 0 0 1 1104.14 381.10 Z"/>
+    <line class="door-leaf" x1="1065.82" y1="381.10" x2="1104.14" y2="381.10"/>
+    <rect id="win-WinWaitingS" class="win-frame" x="365.77" y="757.10" width="119.23" height="12.77"/>
+    <line class="win-glass" x1="365.77" y1="763.49" x2="485.00" y2="763.49"/>
+    <rect id="win-WinWaitingE" class="win-frame" x="522.90" y="633.61" width="12.77" height="85.16"/>
+    <line class="win-glass" x1="529.29" y1="718.78" x2="529.29" y2="633.61"/>
+    <rect id="win-WinProcedureN" class="win-frame" x="177.56" y="114.12" width="93.68" height="12.77"/>
+    <line class="win-glass" x1="177.56" y1="120.50" x2="271.24" y2="120.50"/>
+    <rect id="win-WinExam1N" class="win-frame" x="369.61" y="114.12" width="76.65" height="12.77"/>
+    <line class="win-glass" x1="369.61" y1="120.50" x2="446.25" y2="120.50"/>
+    <rect id="win-WinExam2N" class="win-frame" x="549.30" y="114.12" width="76.65" height="12.77"/>
+    <line class="win-glass" x1="549.30" y1="120.50" x2="625.95" y2="120.50"/>
+    <rect id="win-WinExam3N" class="win-frame" x="672.79" y="114.12" width="76.65" height="12.77"/>
+    <line class="win-glass" x1="672.79" y1="120.50" x2="749.43" y2="120.50"/>
+    <rect id="win-WinExam4N" class="win-frame" x="851.63" y="114.12" width="76.65" height="12.77"/>
+    <line class="win-glass" x1="851.63" y1="120.50" x2="928.28" y2="120.50"/>
+    <rect id="win-WinExam5N" class="win-frame" x="1034.31" y="114.12" width="76.65" height="12.77"/>
+    <line class="win-glass" x1="1034.31" y1="120.50" x2="1110.95" y2="120.50"/>
+    <rect id="win-WinBreakroomS" class="win-frame" x="1021.11" y="561.22" width="93.68" height="12.77"/>
+    <line class="win-glass" x1="1021.11" y1="567.61" x2="1114.79" y2="567.61"/>
+    <rect id="win-WinBreakroomE" class="win-frame" x="1153.11" y="453.92" width="12.77" height="68.13"/>
+    <line class="win-glass" x1="1159.50" y1="522.05" x2="1159.50" y2="453.92"/>
+    <rect id="win-WinCorridorW" class="win-frame" x="114.12" y="336.39" width="12.77" height="51.10"/>
+    <line class="win-glass" x1="120.50" y1="387.49" x2="120.50" y2="336.39"/>
+  </g>
+  <g id="room-labels">
+    <text class="room-title" style="font-size:10.5px;" x="224.40" y="680.86">Vestibule</text>
+    <text class="room-sub" style="font-size:8.8px;" x="224.40" y="692.86">9.16 m²</text>
+    <text class="room-title" x="425.39" y="578.92">Waiting</text>
+    <text class="room-sub" x="425.39" y="593.92">4.58m × 8.04m</text>
+    <text class="room-sub" x="425.39" y="606.92">36.82 m²</text>
+    <rect class="elev-box" x="403.19" y="611.92" width="44.4" height="12" rx="1.5"/>
+    <text class="elev-txt" x="425.39" y="620.92">±0.000</text>
+    <text class="room-title" style="font-size:10.5px;" x="253.64" y="627.21">PublicWC</text>
+    <text class="room-sub" style="font-size:8.8px;" x="253.64" y="639.21">5.24 m²</text>
+    <text class="room-title" style="font-size:10.5px;" x="593.37" y="358.94">Corridor</text>
+    <text class="room-sub" style="font-size:8.8px;" x="593.37" y="370.94">48.20 m²</text>
+    <text class="room-title" x="224.40" y="237.42">Procedure</text>
+    <text class="room-sub" x="224.40" y="252.42">4.58m × 4.28m</text>
+    <text class="room-sub" x="224.40" y="265.42">19.60 m²</text>
+    <rect class="elev-box" x="202.20" y="270.42" width="44.4" height="12" rx="1.5"/>
+    <text class="elev-txt" x="224.40" y="279.42">±0.000</text>
+    <text class="room-title" x="446.54" y="237.42">Exam1</text>
+    <text class="room-sub" x="446.54" y="252.42">3.76m × 4.28m</text>
+    <text class="room-sub" x="446.54" y="265.42">16.09 m²</text>
+    <text class="room-title" x="612.61" y="237.42">Exam2</text>
+    <text class="room-sub" x="612.61" y="252.42">3.76m × 4.28m</text>
+    <text class="room-sub" x="612.61" y="265.42">16.09 m²</text>
+    <text class="room-title" x="778.67" y="237.42">Exam3</text>
+    <text class="room-sub" x="778.67" y="252.42">3.76m × 4.28m</text>
+    <text class="room-sub" x="778.67" y="265.42">16.09 m²</text>
+    <text class="room-title" x="944.74" y="237.42">Exam4</text>
+    <text class="room-sub" x="944.74" y="252.42">3.76m × 4.28m</text>
+    <text class="room-sub" x="944.74" y="265.42">16.09 m²</text>
+    <text class="room-title" x="1111.52" y="237.42">Exam5</text>
+    <text class="room-sub" x="1111.52" y="252.42">3.78m × 4.28m</text>
+    <text class="room-sub" x="1111.52" y="265.42">16.18 m²</text>
+    <text class="room-title" x="602.53" y="480.98">NurseStation</text>
+    <text class="room-sub" x="602.53" y="495.98">3.30m × 3.44m</text>
+    <text class="room-sub" x="602.53" y="508.98">11.35 m²</text>
+    <text class="room-title" x="768.17" y="480.98">Lab</text>
+    <text class="room-sub" x="768.17" y="495.98">4.20m × 3.44m</text>
+    <text class="room-sub" x="768.17" y="508.98">14.45 m²</text>
+    <text class="room-title" x="920.19" y="480.98">Pharmacy</text>
+    <text class="room-sub" x="920.19" y="495.98">2.66m × 3.44m</text>
+    <text class="room-sub" x="920.19" y="508.98">9.15 m²</text>
+    <text class="room-title" x="1067.95" y="460.54">Breakroom</text>
+    <text class="room-sub" x="1067.95" y="475.54">4.00m × 3.44m</text>
+    <text class="room-sub" x="1067.95" y="488.54">13.76 m²</text>
+    <text class="room-title" style="font-size:10.5px;" x="1130.97" y="358.94">StaffWC</text>
+    <text class="room-sub" style="font-size:8.8px;" x="1130.97" y="370.94">4.51 m²</text>
+    <text class="room-title" style="font-size:10.5px;" x="272.09" y="486.69">ElecITRoom</text>
+    <text class="room-sub" style="font-size:8.8px;" x="272.09" y="498.69">8.24 m²</text>
+    <text class="room-title" style="font-size:10.5px;" x="164.08" y="537.36">MechRoom</text>
+    <text class="room-sub" style="font-size:8.8px;" x="164.08" y="549.36">12.39 m²</text>
+  </g>
+  <g id="dimensions">
+    <line class="dim-line" x1="114.12" y1="78.12" x2="1165.88" y2="78.12"/>
+    <line class="dim-line" x1="114.12" y1="72.12" x2="114.12" y2="110.12"/>
+    <line class="dim-line" x1="1165.88" y1="72.12" x2="1165.88" y2="110.12"/>
+    <text class="dim-text" x="640.00" y="72.12">24700 mm (24.70 m)</text>
+    <line class="dim-line" x1="1201.88" y1="114.12" x2="1201.88" y2="769.87"/>
+    <line class="dim-line" x1="1169.88" y1="114.12" x2="1207.88" y2="114.12"/>
+    <line class="dim-line" x1="1169.88" y1="769.87" x2="1207.88" y2="769.87"/>
+    <text class="dim-text" x="1215.88" y="442.00" transform="rotate(90 1215.88 442.00)">15400 mm (15.40 m)</text>
+    <line class="dim-line" x1="126.89" y1="98.12" x2="321.92" y2="98.12"/>
+    <line class="dim-line" x1="126.89" y1="94.12" x2="126.89" y2="102.12"/>
+    <line class="dim-line" x1="321.92" y1="94.12" x2="321.92" y2="102.12"/>
+    <text class="dim-text" x="224.40" y="93.12">4.58 m</text>
+    <line class="dim-line" x1="327.88" y1="98.12" x2="487.98" y2="98.12"/>
+    <line class="dim-line" x1="327.88" y1="94.12" x2="327.88" y2="102.12"/>
+    <line class="dim-line" x1="487.98" y1="94.12" x2="487.98" y2="102.12"/>
+    <text class="dim-text" x="407.93" y="93.12">3.76 m</text>
+    <line class="dim-line" x1="493.94" y1="98.12" x2="654.05" y2="98.12"/>
+    <line class="dim-line" x1="493.94" y1="94.12" x2="493.94" y2="102.12"/>
+    <line class="dim-line" x1="654.05" y1="94.12" x2="654.05" y2="102.12"/>
+    <text class="dim-text" x="574.00" y="93.12">3.76 m</text>
+    <line class="dim-line" x1="660.01" y1="98.12" x2="820.12" y2="98.12"/>
+    <line class="dim-line" x1="660.01" y1="94.12" x2="660.01" y2="102.12"/>
+    <line class="dim-line" x1="820.12" y1="94.12" x2="820.12" y2="102.12"/>
+    <text class="dim-text" x="740.07" y="93.12">3.76 m</text>
+    <line class="dim-line" x1="826.08" y1="98.12" x2="986.19" y2="98.12"/>
+    <line class="dim-line" x1="826.08" y1="94.12" x2="826.08" y2="102.12"/>
+    <line class="dim-line" x1="986.19" y1="94.12" x2="986.19" y2="102.12"/>
+    <text class="dim-text" x="906.14" y="93.12">3.76 m</text>
+    <line class="dim-line" x1="992.15" y1="98.12" x2="1153.11" y2="98.12"/>
+    <line class="dim-line" x1="992.15" y1="94.12" x2="992.15" y2="102.12"/>
+    <line class="dim-line" x1="1153.11" y1="94.12" x2="1153.11" y2="102.12"/>
+    <text class="dim-text" x="1072.63" y="93.12">3.78 m</text>
+    <line class="dim-line" x1="126.89" y1="785.87" x2="321.92" y2="785.87"/>
+    <line class="dim-line" x1="126.89" y1="781.87" x2="126.89" y2="789.87"/>
+    <line class="dim-line" x1="321.92" y1="781.87" x2="321.92" y2="789.87"/>
+    <text class="dim-text" x="224.40" y="797.87">4.58 m</text>
+    <line class="dim-line" x1="327.88" y1="785.87" x2="522.90" y2="785.87"/>
+    <line class="dim-line" x1="327.88" y1="781.87" x2="327.88" y2="789.87"/>
+    <line class="dim-line" x1="522.90" y1="781.87" x2="522.90" y2="789.87"/>
+    <text class="dim-text" x="425.39" y="797.87">4.58 m</text>
+    <line class="dim-line" x1="532.27" y1="785.87" x2="672.79" y2="785.87"/>
+    <line class="dim-line" x1="532.27" y1="781.87" x2="532.27" y2="789.87"/>
+    <line class="dim-line" x1="672.79" y1="781.87" x2="672.79" y2="789.87"/>
+    <text class="dim-text" x="602.53" y="797.87">3.30 m</text>
+    <line class="dim-line" x1="678.75" y1="785.87" x2="857.59" y2="785.87"/>
+    <line class="dim-line" x1="678.75" y1="781.87" x2="678.75" y2="789.87"/>
+    <line class="dim-line" x1="857.59" y1="781.87" x2="857.59" y2="789.87"/>
+    <text class="dim-text" x="768.17" y="797.87">4.20 m</text>
+    <line class="dim-line" x1="863.55" y1="785.87" x2="976.82" y2="785.87"/>
+    <line class="dim-line" x1="863.55" y1="781.87" x2="863.55" y2="789.87"/>
+    <line class="dim-line" x1="976.82" y1="781.87" x2="976.82" y2="789.87"/>
+    <text class="dim-text" x="920.19" y="797.87">2.66 m</text>
+    <line class="dim-line" x1="982.78" y1="785.87" x2="1153.11" y2="785.87"/>
+    <line class="dim-line" x1="982.78" y1="781.87" x2="982.78" y2="789.87"/>
+    <line class="dim-line" x1="1153.11" y1="781.87" x2="1153.11" y2="789.87"/>
+    <text class="dim-text" x="1067.95" y="797.87">4.00 m</text>
+    <line class="dim-line" x1="1181.88" y1="757.10" x2="1181.88" y2="574.00"/>
+    <line class="dim-line" x1="1177.88" y1="757.10" x2="1185.88" y2="757.10"/>
+    <line class="dim-line" x1="1177.88" y1="574.00" x2="1185.88" y2="574.00"/>
+    <text class="dim-text" x="1192.88" y="665.55" transform="rotate(90 1192.88 665.55)">4.30 m</text>
+    <line class="dim-line" x1="1181.88" y1="561.22" x2="1181.88" y2="414.74"/>
+    <line class="dim-line" x1="1177.88" y1="561.22" x2="1185.88" y2="561.22"/>
+    <line class="dim-line" x1="1177.88" y1="414.74" x2="1185.88" y2="414.74"/>
+    <text class="dim-text" x="1192.88" y="487.98" transform="rotate(90 1192.88 487.98)">3.44 m</text>
+    <line class="dim-line" x1="1181.88" y1="408.78" x2="1181.88" y2="315.10"/>
+    <line class="dim-line" x1="1177.88" y1="408.78" x2="1185.88" y2="408.78"/>
+    <line class="dim-line" x1="1177.88" y1="315.10" x2="1185.88" y2="315.10"/>
+    <text class="dim-text" x="1192.88" y="361.94" transform="rotate(90 1192.88 361.94)">2.20 m</text>
+    <line class="dim-line" x1="1181.88" y1="309.14" x2="1181.88" y2="126.89"/>
+    <line class="dim-line" x1="1177.88" y1="309.14" x2="1185.88" y2="309.14"/>
+    <line class="dim-line" x1="1177.88" y1="126.89" x2="1185.88" y2="126.89"/>
+    <text class="dim-text" x="1192.88" y="218.02" transform="rotate(90 1192.88 218.02)">4.28 m</text>
+    <line class="dim-line" x1="98.12" y1="757.10" x2="98.12" y2="671.94"/>
+    <line class="dim-line" x1="94.12" y1="757.10" x2="102.12" y2="757.10"/>
+    <line class="dim-line" x1="94.12" y1="671.94" x2="102.12" y2="671.94"/>
+    <text class="dim-text" x="87.12" y="714.52" transform="rotate(-90 87.12 714.52)">2.00 m</text>
+    <line class="dim-line" x1="98.12" y1="665.97" x2="98.12" y2="414.74"/>
+    <line class="dim-line" x1="94.12" y1="665.97" x2="102.12" y2="665.97"/>
+    <line class="dim-line" x1="94.12" y1="414.74" x2="102.12" y2="414.74"/>
+    <text class="dim-text" x="87.12" y="540.36" transform="rotate(-90 87.12 540.36)">5.90 m</text>
+    <line class="dim-line" x1="98.12" y1="408.78" x2="98.12" y2="315.10"/>
+    <line class="dim-line" x1="94.12" y1="408.78" x2="102.12" y2="408.78"/>
+    <line class="dim-line" x1="94.12" y1="315.10" x2="102.12" y2="315.10"/>
+    <text class="dim-text" x="87.12" y="361.94" transform="rotate(-90 87.12 361.94)">2.20 m</text>
+    <line class="dim-line" x1="98.12" y1="309.14" x2="98.12" y2="126.89"/>
+    <line class="dim-line" x1="94.12" y1="309.14" x2="102.12" y2="309.14"/>
+    <line class="dim-line" x1="94.12" y1="126.89" x2="102.12" y2="126.89"/>
+    <text class="dim-text" x="87.12" y="218.02" transform="rotate(-90 87.12 218.02)">4.28 m</text>
+  </g>
+  <line x1="28" y1="888.0" x2="1252.0" y2="888.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text class="title-text" x="34" y="904.0">EDL Plan: Outpatient_Specialist_Medical_Clinic</text>
+  <text class="meta-text" x="34" y="922.0">A1 landscape | Scale 1:100 | Rooms: 17 | Clear Area: 273.43 m² | Openings: 28 | Fixtures: 36 | DOF: 0</text>
+  <text class="status-ok" x="1246.0" y="904.0">ALL CHECKS EXACTLY_CHECKED (8 rules)</text>
+</svg>

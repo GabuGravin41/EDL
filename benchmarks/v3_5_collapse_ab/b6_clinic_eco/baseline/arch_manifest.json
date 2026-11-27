@@ -1,0 +1,994 @@
+{
+  "revision": "B",
+  "building_width_mm": 28000.0,
+  "building_height_mm": 11000.0,
+  "grid_x": [
+    0.0,
+    5600.0,
+    11200.0,
+    16800.0,
+    22400.0,
+    28000.0
+  ],
+  "grid_y": [
+    0.0,
+    5000.0,
+    11000.0
+  ],
+  "rooms": [
+    {
+      "id": "Vestibule",
+      "min_x": 150.0,
+      "min_y": 150.0,
+      "max_x": 2000.0,
+      "max_y": 5000.0,
+      "area_m2": 8.97,
+      "habitable": false
+    },
+    {
+      "id": "Waiting",
+      "min_x": 2150.0,
+      "min_y": 150.0,
+      "max_x": 8000.0,
+      "max_y": 5000.0,
+      "area_m2": 28.37,
+      "habitable": true
+    },
+    {
+      "id": "Exam1",
+      "min_x": 8150.0,
+      "min_y": 150.0,
+      "max_x": 11550.0,
+      "max_y": 5000.0,
+      "area_m2": 16.49,
+      "habitable": true
+    },
+    {
+      "id": "Exam2",
+      "min_x": 11700.0,
+      "min_y": 150.0,
+      "max_x": 15150.0,
+      "max_y": 5000.0,
+      "area_m2": 16.73,
+      "habitable": true
+    },
+    {
+      "id": "Exam3",
+      "min_x": 15300.0,
+      "min_y": 150.0,
+      "max_x": 18750.0,
+      "max_y": 5000.0,
+      "area_m2": 16.73,
+      "habitable": true
+    },
+    {
+      "id": "Exam4",
+      "min_x": 18900.0,
+      "min_y": 150.0,
+      "max_x": 22325.0,
+      "max_y": 5000.0,
+      "area_m2": 16.61,
+      "habitable": true
+    },
+    {
+      "id": "Procedure",
+      "min_x": 22475.0,
+      "min_y": 150.0,
+      "max_x": 27850.0,
+      "max_y": 5000.0,
+      "area_m2": 26.07,
+      "habitable": true
+    },
+    {
+      "id": "Corridor",
+      "min_x": 150.0,
+      "min_y": 5150.0,
+      "max_x": 27850.0,
+      "max_y": 7350.0,
+      "area_m2": 60.94,
+      "habitable": false
+    },
+    {
+      "id": "PublicWC",
+      "min_x": 150.0,
+      "min_y": 7500.0,
+      "max_x": 2050.0,
+      "max_y": 10850.0,
+      "area_m2": 6.37,
+      "habitable": false
+    },
+    {
+      "id": "StaffWC",
+      "min_x": 2200.0,
+      "min_y": 7500.0,
+      "max_x": 3700.0,
+      "max_y": 10850.0,
+      "area_m2": 5.03,
+      "habitable": false
+    },
+    {
+      "id": "Breakroom",
+      "min_x": 3850.0,
+      "min_y": 7500.0,
+      "max_x": 7450.0,
+      "max_y": 10850.0,
+      "area_m2": 12.06,
+      "habitable": true
+    },
+    {
+      "id": "NurseStation",
+      "min_x": 7600.0,
+      "min_y": 7500.0,
+      "max_x": 10850.0,
+      "max_y": 10850.0,
+      "area_m2": 10.89,
+      "habitable": true
+    },
+    {
+      "id": "Exam5",
+      "min_x": 11000.0,
+      "min_y": 7500.0,
+      "max_x": 15350.0,
+      "max_y": 10850.0,
+      "area_m2": 14.57,
+      "habitable": true
+    },
+    {
+      "id": "Lab",
+      "min_x": 15500.0,
+      "min_y": 7500.0,
+      "max_x": 19800.0,
+      "max_y": 10850.0,
+      "area_m2": 14.4,
+      "habitable": true
+    },
+    {
+      "id": "Pharmacy",
+      "min_x": 19950.0,
+      "min_y": 7500.0,
+      "max_x": 22650.0,
+      "max_y": 10850.0,
+      "area_m2": 9.04,
+      "habitable": false
+    },
+    {
+      "id": "ElecITRoom",
+      "min_x": 22800.0,
+      "min_y": 7500.0,
+      "max_x": 25000.0,
+      "max_y": 10850.0,
+      "area_m2": 7.37,
+      "habitable": false
+    },
+    {
+      "id": "MechRoom",
+      "min_x": 25150.0,
+      "min_y": 7500.0,
+      "max_x": 27850.0,
+      "max_y": 10850.0,
+      "area_m2": 9.04,
+      "habitable": false
+    }
+  ],
+  "doors": [
+    {
+      "id": "D01",
+      "room_a": "Exterior",
+      "room_b": "Vestibule",
+      "width_mm": 1300.0,
+      "hinge_x": 425.0,
+      "hinge_y": 150.0,
+      "swing_bbox": [
+        425.0,
+        150.0,
+        1725.0,
+        1450.0
+      ]
+    },
+    {
+      "id": "D02",
+      "room_a": "Vestibule",
+      "room_b": "Waiting",
+      "width_mm": 1200.0,
+      "hinge_x": 2150.0,
+      "hinge_y": 1800.0,
+      "swing_bbox": [
+        2150.0,
+        1800.0,
+        3350.0,
+        3000.0
+      ]
+    },
+    {
+      "id": "D03",
+      "room_a": "Waiting",
+      "room_b": "Corridor",
+      "width_mm": 1200.0,
+      "hinge_x": 7600.0,
+      "hinge_y": 5000.0,
+      "swing_bbox": [
+        6400.0,
+        3800.0,
+        7600.0,
+        5000.0
+      ]
+    },
+    {
+      "id": "D04",
+      "room_a": "Corridor",
+      "room_b": "Exam1",
+      "width_mm": 950.0,
+      "hinge_x": 8450.0,
+      "hinge_y": 5000.0,
+      "swing_bbox": [
+        8450.0,
+        4050.0,
+        9400.0,
+        5000.0
+      ]
+    },
+    {
+      "id": "D05",
+      "room_a": "Corridor",
+      "room_b": "Exam2",
+      "width_mm": 950.0,
+      "hinge_x": 12000.0,
+      "hinge_y": 5000.0,
+      "swing_bbox": [
+        12000.0,
+        4050.0,
+        12950.0,
+        5000.0
+      ]
+    },
+    {
+      "id": "D06",
+      "room_a": "Corridor",
+      "room_b": "Exam3",
+      "width_mm": 950.0,
+      "hinge_x": 18400.0,
+      "hinge_y": 5000.0,
+      "swing_bbox": [
+        17450.0,
+        4050.0,
+        18400.0,
+        5000.0
+      ]
+    },
+    {
+      "id": "D12",
+      "room_a": "Corridor",
+      "room_b": "Exam4",
+      "width_mm": 950.0,
+      "hinge_x": 19200.0,
+      "hinge_y": 5000.0,
+      "swing_bbox": [
+        19200.0,
+        4050.0,
+        20150.0,
+        5000.0
+      ]
+    },
+    {
+      "id": "D07",
+      "room_a": "Corridor",
+      "room_b": "Procedure",
+      "width_mm": 1200.0,
+      "hinge_x": 23000.0,
+      "hinge_y": 5000.0,
+      "swing_bbox": [
+        23000.0,
+        3800.0,
+        24200.0,
+        5000.0
+      ]
+    },
+    {
+      "id": "D08",
+      "room_a": "Corridor",
+      "room_b": "PublicWC",
+      "width_mm": 950.0,
+      "hinge_x": 450.0,
+      "hinge_y": 7500.0,
+      "swing_bbox": [
+        450.0,
+        7500.0,
+        1400.0,
+        8450.0
+      ]
+    },
+    {
+      "id": "D09",
+      "room_a": "Corridor",
+      "room_b": "StaffWC",
+      "width_mm": 900.0,
+      "hinge_x": 2450.0,
+      "hinge_y": 7500.0,
+      "swing_bbox": [
+        2450.0,
+        7500.0,
+        3350.0,
+        8400.0
+      ]
+    },
+    {
+      "id": "D10",
+      "room_a": "Corridor",
+      "room_b": "Breakroom",
+      "width_mm": 950.0,
+      "hinge_x": 4150.0,
+      "hinge_y": 7500.0,
+      "swing_bbox": [
+        4150.0,
+        7500.0,
+        5100.0,
+        8450.0
+      ]
+    },
+    {
+      "id": "D11",
+      "room_a": "Corridor",
+      "room_b": "NurseStation",
+      "width_mm": 1100.0,
+      "hinge_x": 7850.0,
+      "hinge_y": 7500.0,
+      "swing_bbox": [
+        7850.0,
+        7500.0,
+        8950.0,
+        8600.0
+      ]
+    },
+    {
+      "id": "D17",
+      "room_a": "Corridor",
+      "room_b": "Exam5",
+      "width_mm": 950.0,
+      "hinge_x": 11300.0,
+      "hinge_y": 7500.0,
+      "swing_bbox": [
+        11300.0,
+        7500.0,
+        12250.0,
+        8450.0
+      ]
+    },
+    {
+      "id": "D13",
+      "room_a": "Corridor",
+      "room_b": "Lab",
+      "width_mm": 950.0,
+      "hinge_x": 15800.0,
+      "hinge_y": 7500.0,
+      "swing_bbox": [
+        15800.0,
+        7500.0,
+        16750.0,
+        8450.0
+      ]
+    },
+    {
+      "id": "D14",
+      "room_a": "Corridor",
+      "room_b": "Pharmacy",
+      "width_mm": 900.0,
+      "hinge_x": 20250.0,
+      "hinge_y": 7500.0,
+      "swing_bbox": [
+        20250.0,
+        7500.0,
+        21150.0,
+        8400.0
+      ]
+    },
+    {
+      "id": "D15",
+      "room_a": "Corridor",
+      "room_b": "ElecITRoom",
+      "width_mm": 900.0,
+      "hinge_x": 23100.0,
+      "hinge_y": 7500.0,
+      "swing_bbox": [
+        23100.0,
+        7500.0,
+        24000.0,
+        8400.0
+      ]
+    },
+    {
+      "id": "D16",
+      "room_a": "Corridor",
+      "room_b": "MechRoom",
+      "width_mm": 950.0,
+      "hinge_x": 25450.0,
+      "hinge_y": 7500.0,
+      "swing_bbox": [
+        25450.0,
+        7500.0,
+        26400.0,
+        8450.0
+      ]
+    }
+  ],
+  "windows": [
+    {
+      "id": "W01",
+      "room": "Waiting",
+      "width_mm": 2000.0,
+      "x": 3650.0,
+      "y": 0.0
+    },
+    {
+      "id": "W02",
+      "room": "Waiting",
+      "width_mm": 1600.0,
+      "x": 6850.0,
+      "y": 0.0
+    },
+    {
+      "id": "W03",
+      "room": "Exam1",
+      "width_mm": 1400.0,
+      "x": 9600.0,
+      "y": 0.0
+    },
+    {
+      "id": "W04",
+      "room": "Exam2",
+      "width_mm": 1600.0,
+      "x": 13425.0,
+      "y": 0.0
+    },
+    {
+      "id": "W05",
+      "room": "Exam3",
+      "width_mm": 1400.0,
+      "x": 17850.0,
+      "y": 0.0
+    },
+    {
+      "id": "W10",
+      "room": "Exam4",
+      "width_mm": 1600.0,
+      "x": 20600.0,
+      "y": 0.0
+    },
+    {
+      "id": "W06",
+      "room": "Procedure",
+      "width_mm": 2000.0,
+      "x": 25150.0,
+      "y": 0.0
+    },
+    {
+      "id": "W07",
+      "room": "Procedure",
+      "width_mm": 1800.0,
+      "x": 28000.0,
+      "y": 2500.0
+    },
+    {
+      "id": "W08",
+      "room": "Breakroom",
+      "width_mm": 1300.0,
+      "x": 6550.0,
+      "y": 11000.0
+    },
+    {
+      "id": "W09",
+      "room": "NurseStation",
+      "width_mm": 1500.0,
+      "x": 9225.0,
+      "y": 11000.0
+    },
+    {
+      "id": "W14",
+      "room": "Exam5",
+      "width_mm": 1600.0,
+      "x": 13400.0,
+      "y": 11000.0
+    },
+    {
+      "id": "W11",
+      "room": "Lab",
+      "width_mm": 1600.0,
+      "x": 18350.0,
+      "y": 11000.0
+    },
+    {
+      "id": "W12",
+      "room": "Corridor",
+      "width_mm": 1400.0,
+      "x": 0.0,
+      "y": 6250.0
+    },
+    {
+      "id": "W13",
+      "room": "Corridor",
+      "width_mm": 1400.0,
+      "x": 28000.0,
+      "y": 6250.0
+    }
+  ],
+  "columns": [
+    {
+      "id": "C-A1",
+      "min_x": -150.0,
+      "min_y": -150.0,
+      "max_x": 150.0,
+      "max_y": 150.0
+    },
+    {
+      "id": "C-B1",
+      "min_x": 5450.0,
+      "min_y": -150.0,
+      "max_x": 5750.0,
+      "max_y": 150.0
+    },
+    {
+      "id": "C-C1",
+      "min_x": 11050.0,
+      "min_y": -150.0,
+      "max_x": 11350.0,
+      "max_y": 150.0
+    },
+    {
+      "id": "C-D1",
+      "min_x": 16650.0,
+      "min_y": -150.0,
+      "max_x": 16950.0,
+      "max_y": 150.0
+    },
+    {
+      "id": "C-E1",
+      "min_x": 22250.0,
+      "min_y": -150.0,
+      "max_x": 22550.0,
+      "max_y": 150.0
+    },
+    {
+      "id": "C-F1",
+      "min_x": 27850.0,
+      "min_y": -150.0,
+      "max_x": 28150.0,
+      "max_y": 150.0
+    },
+    {
+      "id": "C-A2",
+      "min_x": -150.0,
+      "min_y": 4850.0,
+      "max_x": 150.0,
+      "max_y": 5150.0
+    },
+    {
+      "id": "C-B2",
+      "min_x": 5450.0,
+      "min_y": 4850.0,
+      "max_x": 5750.0,
+      "max_y": 5150.0
+    },
+    {
+      "id": "C-C2",
+      "min_x": 11050.0,
+      "min_y": 4850.0,
+      "max_x": 11350.0,
+      "max_y": 5150.0
+    },
+    {
+      "id": "C-D2",
+      "min_x": 16650.0,
+      "min_y": 4850.0,
+      "max_x": 16950.0,
+      "max_y": 5150.0
+    },
+    {
+      "id": "C-E2",
+      "min_x": 22250.0,
+      "min_y": 4850.0,
+      "max_x": 22550.0,
+      "max_y": 5150.0
+    },
+    {
+      "id": "C-F2",
+      "min_x": 27850.0,
+      "min_y": 4850.0,
+      "max_x": 28150.0,
+      "max_y": 5150.0
+    },
+    {
+      "id": "C-A3",
+      "min_x": -150.0,
+      "min_y": 10850.0,
+      "max_x": 150.0,
+      "max_y": 11150.0
+    },
+    {
+      "id": "C-B3",
+      "min_x": 5450.0,
+      "min_y": 10850.0,
+      "max_x": 5750.0,
+      "max_y": 11150.0
+    },
+    {
+      "id": "C-C3",
+      "min_x": 11050.0,
+      "min_y": 10850.0,
+      "max_x": 11350.0,
+      "max_y": 11150.0
+    },
+    {
+      "id": "C-D3",
+      "min_x": 16650.0,
+      "min_y": 10850.0,
+      "max_x": 16950.0,
+      "max_y": 11150.0
+    },
+    {
+      "id": "C-E3",
+      "min_x": 22250.0,
+      "min_y": 10850.0,
+      "max_x": 22550.0,
+      "max_y": 11150.0
+    },
+    {
+      "id": "C-F3",
+      "min_x": 27850.0,
+      "min_y": 10850.0,
+      "max_x": 28150.0,
+      "max_y": 11150.0
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "F-WAIT-REC",
+      "room": "Waiting",
+      "kind": "reception_counter",
+      "min_x": 2500,
+      "min_y": 3850,
+      "max_x": 5050,
+      "max_y": 4650
+    },
+    {
+      "id": "F-WAIT-SEAT1",
+      "room": "Waiting",
+      "kind": "waiting_seating",
+      "min_x": 3500,
+      "min_y": 450,
+      "max_x": 6100,
+      "max_y": 1100
+    },
+    {
+      "id": "F-WAIT-SEAT2",
+      "room": "Waiting",
+      "kind": "waiting_seating",
+      "min_x": 7200,
+      "min_y": 700,
+      "max_x": 7900,
+      "max_y": 3200
+    },
+    {
+      "id": "F-EX1-TBL",
+      "room": "Exam1",
+      "kind": "exam_table",
+      "min_x": 9650,
+      "min_y": 1750,
+      "max_x": 10450,
+      "max_y": 3650
+    },
+    {
+      "id": "F-EX1-SINK",
+      "room": "Exam1",
+      "kind": "handwash_basin",
+      "min_x": 10150,
+      "min_y": 4400,
+      "max_x": 10850,
+      "max_y": 4950
+    },
+    {
+      "id": "F-EX1-DESK",
+      "room": "Exam1",
+      "kind": "desk",
+      "min_x": 8300,
+      "min_y": 350,
+      "max_x": 9700,
+      "max_y": 950
+    },
+    {
+      "id": "F-EX2-TBL",
+      "room": "Exam2",
+      "kind": "exam_table",
+      "min_x": 13200,
+      "min_y": 1750,
+      "max_x": 14000,
+      "max_y": 3650
+    },
+    {
+      "id": "F-EX2-SINK",
+      "room": "Exam2",
+      "kind": "handwash_basin",
+      "min_x": 14100,
+      "min_y": 4400,
+      "max_x": 14800,
+      "max_y": 4950
+    },
+    {
+      "id": "F-EX2-DESK",
+      "room": "Exam2",
+      "kind": "desk",
+      "min_x": 11850,
+      "min_y": 350,
+      "max_x": 13250,
+      "max_y": 950
+    },
+    {
+      "id": "F-EX3-TBL",
+      "room": "Exam3",
+      "kind": "exam_table",
+      "min_x": 16400,
+      "min_y": 1750,
+      "max_x": 17200,
+      "max_y": 3650
+    },
+    {
+      "id": "F-EX3-SINK",
+      "room": "Exam3",
+      "kind": "handwash_basin",
+      "min_x": 15500,
+      "min_y": 4400,
+      "max_x": 16200,
+      "max_y": 4950
+    },
+    {
+      "id": "F-EX3-DESK",
+      "room": "Exam3",
+      "kind": "desk",
+      "min_x": 17200,
+      "min_y": 350,
+      "max_x": 18600,
+      "max_y": 950
+    },
+    {
+      "id": "F-EX4-TBL",
+      "room": "Exam4",
+      "kind": "exam_table",
+      "min_x": 20400,
+      "min_y": 1750,
+      "max_x": 21200,
+      "max_y": 3650
+    },
+    {
+      "id": "F-EX4-SINK",
+      "room": "Exam4",
+      "kind": "handwash_basin",
+      "min_x": 21150,
+      "min_y": 4400,
+      "max_x": 21850,
+      "max_y": 4950
+    },
+    {
+      "id": "F-EX4-DESK",
+      "room": "Exam4",
+      "kind": "desk",
+      "min_x": 19050,
+      "min_y": 350,
+      "max_x": 20450,
+      "max_y": 950
+    },
+    {
+      "id": "F-PROC-TBL",
+      "room": "Procedure",
+      "kind": "procedure_table",
+      "min_x": 24650,
+      "min_y": 1650,
+      "max_x": 25600,
+      "max_y": 3750
+    },
+    {
+      "id": "F-PROC-SINK",
+      "room": "Procedure",
+      "kind": "scrub_sink",
+      "min_x": 25500,
+      "min_y": 4300,
+      "max_x": 26900,
+      "max_y": 4950
+    },
+    {
+      "id": "F-PROC-CAB",
+      "room": "Procedure",
+      "kind": "instrument_cabinet",
+      "min_x": 22650,
+      "min_y": 550,
+      "max_x": 23300,
+      "max_y": 2650
+    },
+    {
+      "id": "F-PWC-WC",
+      "room": "PublicWC",
+      "kind": "wc_accessible",
+      "min_x": 1350,
+      "min_y": 10050,
+      "max_x": 1950,
+      "max_y": 10800
+    },
+    {
+      "id": "F-PWC-SINK",
+      "room": "PublicWC",
+      "kind": "handwash_basin",
+      "min_x": 200,
+      "min_y": 9600,
+      "max_x": 750,
+      "max_y": 10300
+    },
+    {
+      "id": "F-SWC-WC",
+      "room": "StaffWC",
+      "kind": "wc",
+      "min_x": 2950,
+      "min_y": 10050,
+      "max_x": 3550,
+      "max_y": 10800
+    },
+    {
+      "id": "F-SWC-SINK",
+      "room": "StaffWC",
+      "kind": "handwash_basin",
+      "min_x": 2250,
+      "min_y": 9600,
+      "max_x": 2750,
+      "max_y": 10250
+    },
+    {
+      "id": "F-BRK-CTR",
+      "room": "Breakroom",
+      "kind": "kitchen_counter",
+      "min_x": 3900,
+      "min_y": 8900,
+      "max_x": 4550,
+      "max_y": 10050
+    },
+    {
+      "id": "F-BRK-SINK",
+      "room": "Breakroom",
+      "kind": "kitchen_sink",
+      "min_x": 3900,
+      "min_y": 10060,
+      "max_x": 4550,
+      "max_y": 10800
+    },
+    {
+      "id": "F-BRK-TBL",
+      "room": "Breakroom",
+      "kind": "break_table",
+      "min_x": 5550,
+      "min_y": 8400,
+      "max_x": 7150,
+      "max_y": 9600
+    },
+    {
+      "id": "F-NUR-CTR",
+      "room": "NurseStation",
+      "kind": "nurse_counter",
+      "min_x": 7700,
+      "min_y": 8800,
+      "max_x": 9250,
+      "max_y": 9800
+    },
+    {
+      "id": "F-NUR-DESK",
+      "room": "NurseStation",
+      "kind": "workstation",
+      "min_x": 7750,
+      "min_y": 10050,
+      "max_x": 10200,
+      "max_y": 10700
+    },
+    {
+      "id": "F-EX5-TBL",
+      "room": "Exam5",
+      "kind": "exam_table",
+      "min_x": 12850,
+      "min_y": 8150,
+      "max_x": 14750,
+      "max_y": 8950
+    },
+    {
+      "id": "F-EX5-SINK",
+      "room": "Exam5",
+      "kind": "handwash_basin",
+      "min_x": 14750,
+      "min_y": 9750,
+      "max_x": 15300,
+      "max_y": 10450
+    },
+    {
+      "id": "F-EX5-DESK",
+      "room": "Exam5",
+      "kind": "desk",
+      "min_x": 11200,
+      "min_y": 9950,
+      "max_x": 12600,
+      "max_y": 10650
+    },
+    {
+      "id": "F-LAB-BNCH",
+      "room": "Lab",
+      "kind": "lab_bench",
+      "min_x": 17100,
+      "min_y": 7650,
+      "max_x": 19750,
+      "max_y": 8350
+    },
+    {
+      "id": "F-LAB-SINK",
+      "room": "Lab",
+      "kind": "sterilization_sink",
+      "min_x": 15550,
+      "min_y": 9800,
+      "max_x": 16650,
+      "max_y": 10650
+    },
+    {
+      "id": "F-LAB-BNCH2",
+      "room": "Lab",
+      "kind": "lab_bench",
+      "min_x": 16700,
+      "min_y": 9950,
+      "max_x": 19750,
+      "max_y": 10700
+    },
+    {
+      "id": "F-PHM-SHL1",
+      "room": "Pharmacy",
+      "kind": "pharmacy_shelving",
+      "min_x": 20000,
+      "min_y": 10150,
+      "max_x": 22600,
+      "max_y": 10800
+    },
+    {
+      "id": "F-PHM-SHL2",
+      "room": "Pharmacy",
+      "kind": "pharmacy_shelving",
+      "min_x": 21950,
+      "min_y": 7650,
+      "max_x": 22600,
+      "max_y": 9950
+    },
+    {
+      "id": "F-ELC-RACK",
+      "room": "ElecITRoom",
+      "kind": "it_server_rack",
+      "min_x": 22900,
+      "min_y": 9850,
+      "max_x": 23950,
+      "max_y": 10750
+    },
+    {
+      "id": "F-ELC-PNL",
+      "room": "ElecITRoom",
+      "kind": "elec_panel",
+      "min_x": 24450,
+      "min_y": 8600,
+      "max_x": 24950,
+      "max_y": 10500
+    },
+    {
+      "id": "F-MCH-MOP",
+      "room": "MechRoom",
+      "kind": "mop_sink",
+      "min_x": 25250,
+      "min_y": 9900,
+      "max_x": 26050,
+      "max_y": 10750
+    },
+    {
+      "id": "F-MCH-WH",
+      "room": "MechRoom",
+      "kind": "water_heater",
+      "min_x": 26650,
+      "min_y": 9650,
+      "max_x": 27650,
+      "max_y": 10650
+    }
+  ]
+}

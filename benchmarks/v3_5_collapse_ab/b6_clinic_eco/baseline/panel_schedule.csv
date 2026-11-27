@@ -1,0 +1,21 @@
+panel,circuit_id,kind,description,phase,devices_count,load_w,power_factor,ib_a,breaker_in_a,rcd_ma,cable_mm2,ampacity_iz_a,coordination_ok,route_len_m,total_wire_m,vdrop_pct,vdrop_limit_pct,vdrop_ok
+DB_MAIN,SUB1,submain,Sub-Main Feeder to Relocated DB_CLINIC (4C+E 16mm2 Cu),3P,0,16802,0.9,26.95,40,0,16.0,68.0,PASS,18.05,18.05,0.3,5.0,PASS
+DB_MAIN,M-L1,lighting,Lighting: East Wing (Lab/Pharm/ElecIT/Mech),L3,11,260,0.95,1.19,10,30,1.5,17.5,PASS,14.87,31.48,0.23,3.0,PASS
+DB_MAIN,M-L2,lighting,Lighting: Central Clinical Corridor (9x24W),L2,11,216,0.95,0.99,10,30,2.5,24.0,PASS,26.41,33.58,0.2,3.0,PASS
+DB_MAIN,M-EM1,lighting,Emergency & Exit Lighting (Maintained FP200),L3,9,76,0.95,0.35,10,30,2.5,24.0,PASS,32.2,46.62,0.09,3.0,PASS
+DB_MAIN,M-P1,power,Sockets: Expanded Lab Clinical Benches,L1,3,1200,0.9,5.8,16,30,2.5,24.0,PASS,13.01,14.88,0.59,5.0,PASS
+DB_MAIN,M-P2,power,Sockets: Pharmacy & MechRoom,L2,3,1100,0.9,5.31,16,30,2.5,24.0,PASS,11.11,16.62,0.46,5.0,PASS
+DB_MAIN,M-P3,power,Sockets: ElecITRoom & Corridor Cleaners,L3,4,1400,0.9,6.76,16,30,4.0,32.0,PASS,22.09,28.09,0.73,5.0,PASS
+DB_MAIN,M-D1,dedicated,Dedicated: MechRoom Electric Water Heater,L1,1,3600,0.9,17.39,25,30,6.0,41.0,PASS,7.38,7.38,0.42,5.0,PASS
+DB_MAIN,M-D2,dedicated,Dedicated: Lab Autoclave / Sterilizer,L2,1,3600,0.9,17.39,25,30,6.0,41.0,PASS,11.09,11.09,0.63,5.0,PASS
+DB_MAIN,M-D3,dedicated,Dedicated: ElecITRoom Server Rack (UPS),L3,1,3000,0.9,14.49,20,30,4.0,32.0,PASS,2.35,2.35,0.17,5.0,PASS
+DB_CLINIC,C-L1,lighting,Lighting: South Clinical Wing (Exam1-4 & Procedure),L1,17,448,0.95,2.05,10,30,2.5,24.0,PASS,23.32,47.47,0.37,3.0,PASS
+DB_CLINIC,C-L2,lighting,"Lighting: Vestibule, Waiting, PublicWC & StaffWC",L3,15,288,0.95,1.32,10,30,1.5,17.5,PASS,18.82,42.65,0.32,3.0,PASS
+DB_CLINIC,C-L3,lighting,"Lighting: Breakroom, NurseStation & NEW Exam5",L2,9,216,0.95,0.99,10,30,1.5,17.5,PASS,12.66,25.68,0.16,3.0,PASS
+DB_CLINIC,C-P1,power,Sockets: Waiting & Breakroom General,L3,6,2000,0.9,9.66,16,30,2.5,24.0,PASS,15.55,25.14,1.18,5.0,PASS
+DB_CLINIC,C-P2,power,Sockets: Exam1 & Exam2 Medical,L3,6,2100,0.9,10.14,16,30,2.5,24.0,PASS,11.95,26.14,0.95,5.0,PASS
+DB_CLINIC,C-P3,power,Sockets: Exam3 & Exam4 Medical,L2,6,2100,0.9,10.14,16,30,4.0,32.0,PASS,19.14,32.3,0.95,5.0,PASS
+DB_CLINIC,C-P4,power,Sockets: Procedure Medical (30mA Type A RCD),L3,4,1400,0.9,6.76,16,30,4.0,32.0,PASS,25.02,30.73,0.83,5.0,PASS
+DB_CLINIC,C-P5,power,Sockets: NurseStation & NEW Exam5 Medical (30mA RCD),L1,7,2450,0.9,11.84,16,30,2.5,24.0,PASS,10.46,22.81,0.97,5.0,PASS
+DB_CLINIC,C-D1,dedicated,Dedicated: Procedure Medical Equipment (30mA Type A RCD),L1,1,2800,0.9,13.53,20,30,4.0,32.0,PASS,22.57,22.57,1.49,5.0,PASS
+DB_CLINIC,C-D2,dedicated,Dedicated: Breakroom Kitchenette Appliances,L2,1,3000,0.9,14.49,20,30,4.0,32.0,PASS,11.54,11.54,0.82,5.0,PASS

@@ -1,0 +1,265 @@
+{
+  "benchmark": "b6_clinic_eco",
+  "arm": "baseline_no_edl",
+  "revision": "B",
+  "eco_changes": {
+    "ECO-1": {
+      "description": "Expand Lab by +1.0 m width (3300 -> 4300 mm; 11.05 -> 14.41 m2), shifting Pharmacy, ElecITRoom, MechRoom, and eastern exterior wall/Gridline F east by +1.0 m (27.0 -> 28.0 m overall); regularize structural grid to 5 x 5.6 m bays.",
+      "lab_width_rev_a_mm": 3300.0,
+      "lab_width_rev_b_mm": 4300.0,
+      "lab_area_rev_b_m2": 14.4,
+      "building_width_delta_mm": 1000.0
+    },
+    "ECO-2": {
+      "description": "Add 5th Examination Room (Exam5, 14.57 m2) on North Wing with north exterior window W14, corridor door D17, exam table, doctor desk, clinical wash basin (Exam5Basin, 1 DFU, CW/HW/SAN/VENT), 2 ceiling lights, strike-side latch switch SW-EX5, and 3 duplex sockets on balanced circuit C-P5; enclose SE bay for Exam4 (16.61 m2) & Procedure (26.07 m2).",
+      "exam5_area_m2": 14.57,
+      "room_count_rev_a": 16,
+      "room_count_rev_b": 17,
+      "exam5_basin_connected": true
+    },
+    "ECO-3": {
+      "description": "Relocate DB_CLINIC by 2.75 m East inside NurseStation (Rev A West wall x=7975, y=9250 -> Rev B East wall x=10725, y=9250) with 1100x1000 mm unobstructed front working clearance (>=900x900 mm), clear of door D11, columns, and fixtures.",
+      "db_clinic_rev_a_xy_mm": [
+        7975.0,
+        9250.0
+      ],
+      "db_clinic_rev_b_xy_mm": [
+        10725.0,
+        9250.0
+      ],
+      "db_clinic_shift_mm": 2750.0
+    }
+  },
+  "architecture": {
+    "room_count": 17,
+    "total_building_width_mm": 28000.0,
+    "total_building_height_mm": 11000.0,
+    "net_area_m2": 279.68,
+    "gross_area_m2": 319.79,
+    "structural_grid_x_mm": [
+      0.0,
+      5600.0,
+      11200.0,
+      16800.0,
+      22400.0,
+      28000.0
+    ],
+    "structural_grid_y_mm": [
+      0.0,
+      5000.0,
+      11000.0
+    ],
+    "structural_columns_count": 18,
+    "structural_columns": [
+      "C-A1",
+      "C-B1",
+      "C-C1",
+      "C-D1",
+      "C-E1",
+      "C-F1",
+      "C-A2",
+      "C-B2",
+      "C-C2",
+      "C-D2",
+      "C-E2",
+      "C-F2",
+      "C-A3",
+      "C-B3",
+      "C-C3",
+      "C-D3",
+      "C-E3",
+      "C-F3"
+    ],
+    "doors_count": 17,
+    "windows_count": 14,
+    "fixtures_count": 39,
+    "room_areas_m2": {
+      "Vestibule": 8.97,
+      "Waiting": 28.37,
+      "Exam1": 16.49,
+      "Exam2": 16.73,
+      "Exam3": 16.73,
+      "Exam4": 16.61,
+      "Procedure": 26.07,
+      "Corridor": 60.94,
+      "PublicWC": 6.37,
+      "StaffWC": 5.03,
+      "Breakroom": 12.06,
+      "NurseStation": 10.89,
+      "Exam5": 14.57,
+      "Lab": 14.4,
+      "Pharmacy": 9.04,
+      "ElecITRoom": 7.37,
+      "MechRoom": 9.04
+    },
+    "overlaps_or_collisions": 0
+  },
+  "plumbing": {
+    "total_wet_fixtures": 14,
+    "total_dfu": 24,
+    "max_san_trunk_dfu": 24,
+    "total_pipes": 188,
+    "total_valves": 31,
+    "total_cleanouts": 8,
+    "elec_it_room_dry_check": "PASS (0 pipes/equip)",
+    "min_elec_it_clearance_mm": 260.0,
+    "pipe_vs_column_clashes": 0,
+    "min_column_clearance_mm": 337.5
+  },
+  "electrical": {
+    "rooms_covered": 17,
+    "total_panels": 2,
+    "total_devices": 116,
+    "total_circuits": 20,
+    "total_wire_segments": 276,
+    "total_connected_load_kw": 31.25,
+    "phase_loads_w": {
+      "L1": 10498.0,
+      "L2": 10232.0,
+      "L3": 10524.0
+    },
+    "phase_imbalance_whole_clinic_pct": 2.8,
+    "phase_imbalance_db_main_pct": 3.74,
+    "phase_imbalance_db_clinic_pct": 8.43,
+    "max_vdrop_lighting_pct": 0.37,
+    "max_vdrop_power_pct": 1.49,
+    "submain_vdrop_pct": 0.3,
+    "rcd_30ma_all_final": true,
+    "iec_coordination_all_pass": true,
+    "db_clearances": {
+      "DB_MAIN": {
+        "room": "ElecITRoom",
+        "width_mm": 1100.0,
+        "depth_mm": 1000.0,
+        "ok": true
+      },
+      "DB_CLINIC": {
+        "room": "NurseStation",
+        "width_mm": 1100.0,
+        "depth_mm": 1000.0,
+        "ok": true
+      }
+    },
+    "db_clinic_relocation_shift_mm": 2750.0
+  },
+  "dxf_validation": {
+    "clinic_arch.dxf": {
+      "valid_r12_structure": true,
+      "bytes": 51971,
+      "entity_count": 346,
+      "entities_by_type": {
+        "LINE": 133,
+        "CIRCLE": 23,
+        "TEXT": 69,
+        "POLYLINE": 104,
+        "ARC": 17
+      },
+      "used_layers": [
+        "A-ANNO-DIMS",
+        "A-ANNO-TEXT",
+        "A-DOOR",
+        "A-FURN",
+        "A-GLAZ",
+        "A-WALL-EXT",
+        "A-WALL-INT",
+        "S-COLS",
+        "S-GRID"
+      ]
+    },
+    "clinic_plumbing.dxf": {
+      "valid_r12_structure": true,
+      "bytes": 82574,
+      "entity_count": 756,
+      "entities_by_type": {
+        "LINE": 461,
+        "CIRCLE": 51,
+        "TEXT": 123,
+        "POLYLINE": 104,
+        "ARC": 17
+      },
+      "used_layers": [
+        "A-ANNO-DIMS",
+        "A-ANNO-TEXT",
+        "A-DOOR",
+        "A-FURN",
+        "A-GLAZ",
+        "A-WALL-EXT",
+        "A-WALL-INT",
+        "P-CLEANOUTS",
+        "P-CW",
+        "P-EQUIP",
+        "P-HW",
+        "P-LABELS",
+        "P-SAN",
+        "P-VALVES",
+        "P-VENT",
+        "S-COLS",
+        "S-GRID"
+      ]
+    },
+    "clinic_electrical.dxf": {
+      "valid_r12_structure": true,
+      "bytes": 122906,
+      "entity_count": 1278,
+      "entities_by_type": {
+        "LINE": 901,
+        "CIRCLE": 47,
+        "TEXT": 170,
+        "POLYLINE": 104,
+        "ARC": 56
+      },
+      "used_layers": [
+        "A-ANNO-DIMS",
+        "A-ANNO-TEXT",
+        "A-DOOR",
+        "A-FURN",
+        "A-GLAZ",
+        "A-WALL-EXT",
+        "A-WALL-INT",
+        "E-CLEARANCE",
+        "E-DEDICATED",
+        "E-EMERG",
+        "E-LABEL",
+        "E-LIGHT",
+        "E-PANEL",
+        "E-SOCKET",
+        "E-SWITCH",
+        "E-WIRE-DED",
+        "E-WIRE-EMERG",
+        "E-WIRE-LTG",
+        "E-WIRE-PWR",
+        "E-WIRE-SUB",
+        "S-COLS",
+        "S-GRID"
+      ]
+    }
+  },
+  "code_diff_vs_rev_a": {
+    "generate_clinic.py": {
+      "rev_a_lines": 1245,
+      "rev_b_lines": 1252,
+      "lines_added": 301,
+      "lines_removed": 294,
+      "total_churn": 595
+    },
+    "generate_plumbing.py": {
+      "rev_a_lines": 1222,
+      "rev_b_lines": 1206,
+      "lines_added": 202,
+      "lines_removed": 218,
+      "total_churn": 420
+    },
+    "generate_electrical.py": {
+      "rev_a_lines": 1160,
+      "rev_b_lines": 1151,
+      "lines_added": 273,
+      "lines_removed": 282,
+      "total_churn": 555
+    },
+    "TOTAL": {
+      "lines_added": 776,
+      "lines_removed": 794,
+      "total_churn": 1570
+    }
+  }
+}

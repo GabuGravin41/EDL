@@ -1,0 +1,978 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1620.0 972.0" width="1620" height="972">
+<!--EDL_VIEW ox=120.503927 oy=763.486771 kx=0.042581645 ky=-0.042581645-->
+  <defs>
+    <pattern id="dry-zone-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#ef4444" stroke-width="1.4" stroke-opacity="0.38"/>
+    </pattern>
+    <pattern id="db-clr-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+      <line x1="0" y1="0" x2="0" y2="7" stroke="#dc2626" stroke-width="1.2" stroke-opacity="0.35"/>
+    </pattern>
+    <style>
+      .bg { fill: #f8f9fb; }
+      .sheet { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; }
+      .room-fill { fill: #fcfdfe; stroke: #cbd5e1; stroke-width: 0.7; }
+      .room-fill-alt { fill: #fbfcfe; stroke: #cbd5e1; stroke-width: 0.7; }
+      .room-fill-bath { fill: #f8fcfd; stroke: #cbd5e1; stroke-width: 0.7; }
+      .room-fill-circ { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 0.7; }
+      .room-fill-outdoor { fill: #fefce8; stroke: #a16207; stroke-width: 1.0; stroke-dasharray: 5 3; }
+      .room-fill-err { fill: #fef2f2; stroke: #dc2626; stroke-width: 1.5; }
+      .grid-line { stroke: #94a3b8; stroke-width: 0.7; stroke-dasharray: 8 4 2 4; stroke-opacity: 0.55; }
+      .grid-bubble { fill: #ffffff; stroke: #475569; stroke-width: 1.2; }
+      .grid-bubble-txt { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+      .grid-bay-dim { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9px; fill: #64748b; text-anchor: middle; }
+      .col-concrete { fill: #64748b; stroke: #334155; stroke-width: 0.7; }
+      .col-steel { fill: none; stroke: #64748b; stroke-width: 2.0; stroke-linecap: square; }
+      .elev-box { fill: #ffffff; fill-opacity: 0.9; stroke: #475569; stroke-width: 0.8; }
+      .elev-txt { font-family: monospace; font-size: 8.5px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+      .stair-tread { stroke: #64748b; stroke-width: 0.85; }
+      .stair-arrow { stroke: #334155; stroke-width: 1.25; fill: none; }
+      .elev-x { stroke: #64748b; stroke-width: 1.2; }
+      .wall-ext { fill: #94a3b8; stroke: #64748b; stroke-width: 0.4; }
+      .wall-int { fill: #cbd5e1; stroke: #94a3b8; stroke-width: 0.4; }
+      .door-leaf { stroke: #94a3b8; stroke-width: 1.6; stroke-linecap: round; }
+      .door-arc { fill: #cbd5e1; fill-opacity: 0.06; stroke: #cbd5e1; stroke-width: 1.1; stroke-dasharray: 4 3; }
+      .door-arc-err { fill: #ef4444; fill-opacity: 0.22; stroke: #dc2626; stroke-width: 2.0; stroke-dasharray: 5 3; }
+      .win-frame { fill: #f1f5f9; stroke: #94a3b8; stroke-width: 1.2; }
+      .win-glass { stroke: #94a3b8; stroke-width: 1.0; }
+      .passage-line { stroke: #94a3b8; stroke-width: 1.0; stroke-dasharray: 4 3; }
+      .passage-jamb { stroke: #64748b; stroke-width: 1.5; }
+      .fx-body { fill: #f1f5f9; fill-opacity: 0.72; stroke: #cbd5e1; stroke-width: 1.0; }
+      .fx-detail { fill: none; stroke: #94a3b8; stroke-width: 0.8; }
+      .fx-body-err { fill: #fecaca; fill-opacity: 0.85; stroke: #dc2626; stroke-width: 1.8; }
+      .fx-clear { fill: #22c55e; fill-opacity: 0.06; stroke: #16a34a; stroke-width: 0.8; stroke-dasharray: 3 3; }
+      .fx-clear-err { fill: #ef4444; fill-opacity: 0.16; stroke: #dc2626; stroke-width: 1.4; stroke-dasharray: 3 3; }
+      .fx-label { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 8.2px; font-weight: 600; fill: #334155; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.4px; stroke-linejoin: round; }
+      .dim-line { stroke: #64748b; stroke-width: 0.9; }
+      .dim-text { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10.5px; fill: #475569; text-anchor: middle; }
+      .room-dim { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9px; fill: #64748b; text-anchor: middle; }
+      .room-title { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 12px; font-weight: 700; fill: #64748b; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.5px; stroke-linejoin: round; }
+      .room-sub { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9.5px; fill: #64748b; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.0px; stroke-linejoin: round; }
+      .badge { font-family: monospace; font-size: 8.5px; font-weight: 600; fill: #1d4ed8; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.4px; stroke-linejoin: round; }
+      .badge-err { font-family: monospace; font-size: 9px; font-weight: 700; fill: #dc2626; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.5px; stroke-linejoin: round; }
+      .title-text { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 15px; font-weight: 700; fill: #0f172a; }
+      .meta-text { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 11px; fill: #475569; }
+      .status-ok { font-family: monospace; font-size: 11px; font-weight: 700; fill: #15803d; text-anchor: end; }
+      .status-err { font-family: monospace; font-size: 11px; font-weight: 700; fill: #dc2626; text-anchor: end; }
+      .status-err-sub { font-family: monospace; font-size: 10px; font-weight: 600; fill: #b91c1c; text-anchor: end; }
+      .mep-wire-light { fill: none; stroke: #0284c7; stroke-width: 1.45; stroke-opacity: 0.85; }
+      .mep-wire-power { fill: none; stroke: #ea580c; stroke-width: 1.55; stroke-opacity: 0.85; }
+      .mep-wire-swleg { fill: none; stroke: #9333ea; stroke-width: 1.15; stroke-dasharray: 4 3; stroke-opacity: 0.85; }
+      .mep-panel { fill: #dc2626; stroke: #7f1d1d; stroke-width: 1.4; }
+      .mep-light { fill: #fef08a; stroke: #ca8a04; stroke-width: 1.6; }
+      .mep-switch { fill: #ffffff; stroke: #7e22ce; stroke-width: 1.6; }
+      .mep-outlet { fill: #ffedd5; stroke: #c2410c; stroke-width: 1.5; }
+      .mep-err { fill: #fecaca; stroke: #dc2626; stroke-width: 2.2; }
+      .mep-lbl { font-family: monospace; font-size: 7.8px; font-weight: 700; fill: #0f172a; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.6px; stroke-linejoin: round; }
+    </style>
+  </defs>
+  <rect class="bg" x="0" y="0" width="1620.0" height="972.0"/>
+  <rect class="sheet" x="16" y="16" width="1588.0" height="940.0" rx="6"/>
+  <g id="rooms">
+    <rect id="room-Vestibule" class="room-fill-circ" x="126.89" y="671.94" width="195.02" height="85.16"/>
+    <rect id="room-Waiting" class="room-fill" x="327.88" y="414.74" width="195.02" height="342.36"/>
+    <rect id="room-PublicWC" class="room-fill-bath" x="222.27" y="570.59" width="99.64" height="95.38"/>
+    <rect id="room-Corridor" class="room-fill-circ" x="126.89" y="315.10" width="932.96" height="93.68"/>
+    <rect id="room-Procedure" class="room-fill" x="126.89" y="126.89" width="195.02" height="182.25"/>
+    <rect id="room-Exam1" class="room-fill" x="327.88" y="126.89" width="160.11" height="182.25"/>
+    <rect id="room-Exam2" class="room-fill" x="493.94" y="126.89" width="160.11" height="182.25"/>
+    <rect id="room-Exam3" class="room-fill" x="660.01" y="126.89" width="160.11" height="182.25"/>
+    <rect id="room-Exam4" class="room-fill" x="826.08" y="126.89" width="160.11" height="182.25"/>
+    <rect id="room-Exam5" class="room-fill" x="992.15" y="126.89" width="160.96" height="182.25"/>
+    <rect id="room-NurseStation" class="room-fill-alt" x="532.27" y="414.74" width="140.52" height="146.48"/>
+    <rect id="room-Lab" class="room-fill-alt" x="678.75" y="414.74" width="178.84" height="146.48"/>
+    <rect id="room-Pharmacy" class="room-fill-alt" x="863.55" y="414.74" width="113.27" height="146.48"/>
+    <rect id="room-Breakroom" class="room-fill" x="982.78" y="414.74" width="170.33" height="146.48"/>
+    <rect id="room-StaffWC" class="room-fill-bath" x="1065.82" y="315.10" width="87.29" height="93.68"/>
+    <rect id="room-ElecITRoom" class="room-fill-alt" x="222.27" y="414.74" width="99.64" height="149.89"/>
+    <rect id="room-MechRoom" class="room-fill-alt" x="126.89" y="414.74" width="89.42" height="251.23"/>
+  </g>
+  <g id="structural-grid">
+    <line class="grid-line" x1="120.50" y1="66.12" x2="120.50" y2="825.87"/>
+    <circle class="grid-bubble" cx="120.50" cy="837.37" r="11.5"/>
+    <text class="grid-bubble-txt" x="120.50" y="840.87">1</text>
+    <line class="grid-line" x1="324.90" y1="66.12" x2="324.90" y2="825.87"/>
+    <circle class="grid-bubble" cx="324.90" cy="837.37" r="11.5"/>
+    <text class="grid-bubble-txt" x="324.90" y="840.87">2</text>
+    <line class="grid-line" x1="529.29" y1="66.12" x2="529.29" y2="825.87"/>
+    <circle class="grid-bubble" cx="529.29" cy="837.37" r="11.5"/>
+    <text class="grid-bubble-txt" x="529.29" y="840.87">3</text>
+    <line class="grid-line" x1="767.74" y1="66.12" x2="767.74" y2="825.87"/>
+    <circle class="grid-bubble" cx="767.74" cy="837.37" r="11.5"/>
+    <text class="grid-bubble-txt" x="767.74" y="840.87">4</text>
+    <line class="grid-line" x1="963.62" y1="66.12" x2="963.62" y2="825.87"/>
+    <circle class="grid-bubble" cx="963.62" cy="837.37" r="11.5"/>
+    <text class="grid-bubble-txt" x="963.62" y="840.87">5</text>
+    <line class="grid-line" x1="1159.50" y1="66.12" x2="1159.50" y2="825.87"/>
+    <circle class="grid-bubble" cx="1159.50" cy="837.37" r="11.5"/>
+    <text class="grid-bubble-txt" x="1159.50" y="840.87">6</text>
+    <text class="grid-bay-dim" x="222.70" y="820.87">4800</text>
+    <text class="grid-bay-dim" x="427.09" y="820.87">4800</text>
+    <text class="grid-bay-dim" x="648.52" y="820.87">5600</text>
+    <text class="grid-bay-dim" x="865.68" y="820.87">4600</text>
+    <text class="grid-bay-dim" x="1061.56" y="820.87">4600</text>
+    <line class="grid-line" x1="58.12" y1="763.49" x2="1211.88" y2="763.49"/>
+    <circle class="grid-bubble" cx="46.62" cy="763.49" r="11.5"/>
+    <text class="grid-bubble-txt" x="46.62" y="766.99">A</text>
+    <line class="grid-line" x1="58.12" y1="567.61" x2="1211.88" y2="567.61"/>
+    <circle class="grid-bubble" cx="46.62" cy="567.61" r="11.5"/>
+    <text class="grid-bubble-txt" x="46.62" y="571.11">B</text>
+    <line class="grid-line" x1="58.12" y1="312.12" x2="1211.88" y2="312.12"/>
+    <circle class="grid-bubble" cx="46.62" cy="312.12" r="11.5"/>
+    <text class="grid-bubble-txt" x="46.62" y="315.62">C</text>
+    <line class="grid-line" x1="58.12" y1="120.50" x2="1211.88" y2="120.50"/>
+    <circle class="grid-bubble" cx="46.62" cy="120.50" r="11.5"/>
+    <text class="grid-bubble-txt" x="46.62" y="124.00">D</text>
+    <text class="grid-bay-dim" x="64.12" y="665.55" transform="rotate(-90 64.12 665.55)">4600</text>
+    <text class="grid-bay-dim" x="64.12" y="439.87" transform="rotate(-90 64.12 439.87)">6000</text>
+    <text class="grid-bay-dim" x="64.12" y="216.31" transform="rotate(-90 64.12 216.31)">4500</text>
+  </g>
+  <g id="fixtures">
+    <rect id="fx-ReceptionCounter" class="fx-body" x="490.96" y="454.77" width="31.94" height="102.20" rx="2"/>
+    <rect id="fx-WaitingSofa1" class="fx-body" x="347.04" y="520.77" width="93.68" height="36.19" rx="2"/>
+    <rect id="fx-WaitingSofa2" class="fx-body" x="387.49" y="665.55" width="93.68" height="36.19" rx="2"/>
+    <rect id="fx-PublicToilet" class="fx-body" x="222.27" y="590.18" width="29.81" height="20.44" rx="2"/>
+    <rect id="fx-PublicBasin" class="fx-body" x="269.11" y="570.59" width="25.55" height="19.16" rx="2"/>
+    <rect id="fx-StaffToilet" class="fx-body" x="1124.15" y="381.10" width="28.96" height="19.16" rx="2"/>
+    <rect id="fx-StaffBasin" class="fx-body" x="1108.40" y="315.10" width="23.42" height="17.88" rx="2"/>
+    <rect id="fx-KitchenCounter" class="fx-body" x="982.78" y="493.09" width="27.68" height="59.61" rx="2"/>
+    <rect id="fx-KitchenSink" class="fx-body" x="982.78" y="463.29" width="23.42" height="25.55" rx="2"/>
+    <rect id="fx-BreakTable" class="fx-body" x="1053.04" y="488.84" width="59.61" height="34.07" rx="2"/>
+    <rect id="fx-ProcedureTable" class="fx-body" x="180.12" y="194.17" width="76.65" height="36.19" rx="2"/>
+    <rect id="fx-ScrubSink" class="fx-body" x="126.89" y="262.30" width="23.42" height="34.07" rx="2"/>
+    <rect id="fx-ProcCounter" class="fx-body" x="300.62" y="181.40" width="21.29" height="68.13" rx="2"/>
+    <rect id="fx-Exam1Table" class="fx-body" x="381.10" y="164.36" width="31.94" height="80.91" rx="2"/>
+    <rect id="fx-Exam1Basin" class="fx-body" x="327.88" y="192.04" width="19.16" height="23.42" rx="2"/>
+    <rect id="fx-Exam1Desk" class="fx-body" x="460.31" y="177.14" width="27.68" height="55.36" rx="2"/>
+    <rect id="fx-Exam2Table" class="fx-body" x="547.17" y="164.36" width="31.94" height="80.91" rx="2"/>
+    <rect id="fx-Exam2Basin" class="fx-body" x="493.94" y="192.04" width="19.16" height="23.42" rx="2"/>
+    <rect id="fx-Exam2Desk" class="fx-body" x="626.37" y="177.14" width="27.68" height="55.36" rx="2"/>
+    <rect id="fx-Exam3Table" class="fx-body" x="713.24" y="164.36" width="31.94" height="80.91" rx="2"/>
+    <rect id="fx-Exam3Basin" class="fx-body" x="660.01" y="192.04" width="19.16" height="23.42" rx="2"/>
+    <rect id="fx-Exam3Desk" class="fx-body" x="792.44" y="177.14" width="27.68" height="55.36" rx="2"/>
+    <rect id="fx-Exam4Table" class="fx-body" x="879.31" y="164.36" width="31.94" height="80.91" rx="2"/>
+    <rect id="fx-Exam4Basin" class="fx-body" x="826.08" y="192.04" width="19.16" height="23.42" rx="2"/>
+    <rect id="fx-Exam4Desk" class="fx-body" x="958.51" y="177.14" width="27.68" height="55.36" rx="2"/>
+    <rect id="fx-Exam5Table" class="fx-body" x="1045.38" y="164.36" width="31.94" height="80.91" rx="2"/>
+    <rect id="fx-Exam5Basin" class="fx-body" x="992.15" y="192.04" width="19.16" height="23.42" rx="2"/>
+    <rect id="fx-Exam5Desk" class="fx-body" x="1125.43" y="177.14" width="27.68" height="55.36" rx="2"/>
+    <rect id="fx-NurseCounter" class="fx-body" x="551.43" y="529.29" width="102.20" height="31.94" rx="2"/>
+    <rect id="fx-LabBench" class="fx-body" x="691.52" y="531.42" width="119.23" height="29.81" rx="2"/>
+    <rect id="fx-SteriSink" class="fx-body" x="834.17" y="493.09" width="23.42" height="29.81" rx="2"/>
+    <rect id="fx-PharmShelfW" class="fx-body" x="863.55" y="471.80" width="21.29" height="76.65" rx="2"/>
+    <rect id="fx-PharmShelfE" class="fx-body" x="955.53" y="471.80" width="21.29" height="76.65" rx="2"/>
+    <rect id="fx-ITServerRack" class="fx-body" x="246.55" y="530.57" width="51.10" height="34.07" rx="2"/>
+    <rect id="fx-MopSink" class="fx-body" x="190.76" y="536.10" width="25.55" height="27.68" rx="2"/>
+    <rect id="fx-WaterHeater" class="fx-body" x="126.89" y="612.75" width="36.19" height="36.19" rx="2"/>
+    <line class="elev-x" x1="126.89" y1="612.75" x2="163.09" y2="648.94"/>
+  </g>
+  <g id="walls">
+    <rect class="wall-ext" x="114.12" y="757.10" width="80.48" height="12.77"/>
+    <rect class="wall-ext" x="254.21" y="757.10" width="111.56" height="12.77"/>
+    <rect class="wall-ext" x="485.00" y="757.10" width="50.67" height="12.77"/>
+    <rect class="wall-ext" x="114.12" y="387.49" width="12.77" height="369.61"/>
+    <rect class="wall-int" x="321.92" y="740.07" width="5.96" height="17.03"/>
+    <rect class="wall-ext" x="522.90" y="718.78" width="12.77" height="38.32"/>
+    <rect class="wall-int" x="321.92" y="671.94" width="5.96" height="17.03"/>
+    <rect class="wall-int" x="126.89" y="665.97" width="200.99" height="5.96"/>
+    <rect class="wall-int" x="216.31" y="570.59" width="5.96" height="95.38"/>
+    <rect class="wall-int" x="321.92" y="653.20" width="5.96" height="12.77"/>
+    <rect class="wall-ext" x="522.90" y="574.00" width="12.77" height="59.61"/>
+    <rect class="wall-int" x="321.92" y="570.59" width="5.96" height="42.16"/>
+    <rect class="wall-ext" x="522.90" y="564.63" width="498.21" height="9.37"/>
+    <rect class="wall-ext" x="1114.79" y="561.22" width="51.10" height="12.77"/>
+    <rect class="wall-int" x="216.31" y="564.63" width="111.56" height="5.96"/>
+    <rect class="wall-int" x="216.31" y="414.74" width="5.96" height="149.89"/>
+    <rect class="wall-int" x="321.92" y="414.74" width="5.96" height="149.89"/>
+    <rect class="wall-int" x="522.90" y="414.74" width="9.37" height="149.89"/>
+    <rect class="wall-ext" x="532.27" y="561.22" width="140.52" height="3.41"/>
+    <rect class="wall-int" x="672.79" y="414.74" width="5.96" height="149.89"/>
+    <rect class="wall-ext" x="678.75" y="561.22" width="178.84" height="3.41"/>
+    <rect class="wall-int" x="857.59" y="414.74" width="5.96" height="149.89"/>
+    <rect class="wall-ext" x="863.55" y="561.22" width="113.27" height="3.41"/>
+    <rect class="wall-int" x="976.82" y="414.74" width="5.96" height="149.89"/>
+    <rect class="wall-ext" x="982.78" y="561.22" width="38.32" height="3.41"/>
+    <rect class="wall-ext" x="1153.11" y="522.05" width="12.77" height="39.18"/>
+    <rect class="wall-ext" x="1153.11" y="126.89" width="12.77" height="327.03"/>
+    <rect class="wall-int" x="126.89" y="408.78" width="25.55" height="5.96"/>
+    <rect class="wall-int" x="190.76" y="408.78" width="62.17" height="5.96"/>
+    <rect class="wall-int" x="291.26" y="408.78" width="108.58" height="5.96"/>
+    <rect class="wall-int" x="450.94" y="408.78" width="130.30" height="5.96"/>
+    <rect class="wall-int" x="623.82" y="408.78" width="124.13" height="5.96"/>
+    <rect class="wall-int" x="788.40" y="408.78" width="111.56" height="5.96"/>
+    <rect class="wall-int" x="940.41" y="408.78" width="61.53" height="5.96"/>
+    <rect class="wall-int" x="1042.40" y="408.78" width="110.71" height="5.96"/>
+    <rect class="wall-int" x="1059.86" y="381.10" width="5.96" height="27.68"/>
+    <rect class="wall-int" x="1059.86" y="315.10" width="5.96" height="27.68"/>
+    <rect class="wall-ext" x="114.12" y="126.89" width="12.77" height="209.50"/>
+    <rect class="wall-int" x="126.89" y="309.14" width="71.96" height="5.96"/>
+    <rect class="wall-int" x="249.95" y="309.14" width="137.75" height="5.96"/>
+    <rect class="wall-int" x="428.16" y="309.14" width="121.14" height="5.96"/>
+    <rect class="wall-int" x="589.75" y="309.14" width="100.07" height="5.96"/>
+    <rect class="wall-int" x="730.27" y="309.14" width="138.39" height="5.96"/>
+    <rect class="wall-int" x="909.12" y="309.14" width="95.81" height="5.96"/>
+    <rect class="wall-int" x="1045.38" y="309.14" width="107.73" height="5.96"/>
+    <rect class="wall-int" x="321.92" y="126.89" width="5.96" height="182.25"/>
+    <rect class="wall-int" x="487.98" y="126.89" width="5.96" height="182.25"/>
+    <rect class="wall-int" x="654.05" y="126.89" width="5.96" height="182.25"/>
+    <rect class="wall-int" x="820.12" y="126.89" width="5.96" height="182.25"/>
+    <rect class="wall-int" x="986.19" y="126.89" width="5.96" height="182.25"/>
+    <rect class="wall-ext" x="114.12" y="114.12" width="63.45" height="12.77"/>
+    <rect class="wall-ext" x="271.24" y="114.12" width="98.36" height="12.77"/>
+    <rect class="wall-ext" x="446.25" y="114.12" width="103.05" height="12.77"/>
+    <rect class="wall-ext" x="625.95" y="114.12" width="46.84" height="12.77"/>
+    <rect class="wall-ext" x="749.43" y="114.12" width="102.20" height="12.77"/>
+    <rect class="wall-ext" x="928.28" y="114.12" width="106.03" height="12.77"/>
+    <rect class="wall-ext" x="1110.95" y="114.12" width="54.93" height="12.77"/>
+  </g>
+  <g id="structural-columns">
+    <rect id="col-Col_1_A" class="col-concrete" x="114.12" y="757.10" width="12.77" height="12.77"/>
+    <rect id="col-Col_1_B" class="col-concrete" x="114.12" y="561.22" width="12.77" height="12.77"/>
+    <rect id="col-Col_1_C" class="col-concrete" x="114.12" y="305.73" width="12.77" height="12.77"/>
+    <rect id="col-Col_1_D" class="col-concrete" x="114.12" y="114.12" width="12.77" height="12.77"/>
+    <rect id="col-Col_2_A" class="col-concrete" x="318.51" y="757.10" width="12.77" height="12.77"/>
+    <rect id="col-Col_2_B" class="col-concrete" x="318.51" y="561.22" width="12.77" height="12.77"/>
+    <rect id="col-Col_2_C" class="col-concrete" x="318.51" y="305.73" width="12.77" height="12.77"/>
+    <rect id="col-Col_2_D" class="col-concrete" x="318.51" y="114.12" width="12.77" height="12.77"/>
+    <rect id="col-Col_3_A" class="col-concrete" x="522.90" y="757.10" width="12.77" height="12.77"/>
+    <rect id="col-Col_3_B" class="col-concrete" x="522.90" y="561.22" width="12.77" height="12.77"/>
+    <rect id="col-Col_3_C" class="col-concrete" x="522.90" y="305.73" width="12.77" height="12.77"/>
+    <rect id="col-Col_3_D" class="col-concrete" x="522.90" y="114.12" width="12.77" height="12.77"/>
+    <rect id="col-Col_4_B" class="col-concrete" x="761.36" y="561.22" width="12.77" height="12.77"/>
+    <rect id="col-Col_4_C" class="col-concrete" x="761.36" y="305.73" width="12.77" height="12.77"/>
+    <rect id="col-Col_4_D" class="col-concrete" x="761.36" y="114.12" width="12.77" height="12.77"/>
+    <rect id="col-Col_5_B" class="col-concrete" x="957.23" y="561.22" width="12.77" height="12.77"/>
+    <rect id="col-Col_5_C" class="col-concrete" x="957.23" y="305.73" width="12.77" height="12.77"/>
+    <rect id="col-Col_5_D" class="col-concrete" x="957.23" y="114.12" width="12.77" height="12.77"/>
+    <rect id="col-Col_6_B" class="col-concrete" x="1153.11" y="561.22" width="12.77" height="12.77"/>
+    <rect id="col-Col_6_C" class="col-concrete" x="1153.11" y="305.73" width="12.77" height="12.77"/>
+    <rect id="col-Col_6_D" class="col-concrete" x="1153.11" y="114.12" width="12.77" height="12.77"/>
+  </g>
+  <g id="openings">
+    <path id="door-arc-MainEntry" class="door-arc" d="M 194.60 757.10 L 254.21 757.10 A 59.61 59.61 0 0 0 194.60 697.49 Z"/>
+    <line class="door-leaf" x1="194.60" y1="757.10" x2="194.60" y2="697.49"/>
+    <path id="door-arc-DoorVestibuleWaiting" class="door-arc" d="M 327.88 740.07 L 327.88 688.97 A 51.10 51.10 0 0 1 378.97 740.07 Z"/>
+    <line class="door-leaf" x1="327.88" y1="740.07" x2="378.97" y2="740.07"/>
+    <path id="door-arc-DoorPublicWC" class="door-arc" d="M 321.92 653.20 L 321.92 612.75 A 40.45 40.45 0 0 0 281.46 653.20 Z"/>
+    <line class="door-leaf" x1="321.92" y1="653.20" x2="281.46" y2="653.20"/>
+    <path id="door-arc-DoorWaitingCorridor" class="door-arc" d="M 399.84 414.74 L 450.94 414.74 A 51.10 51.10 0 0 1 399.84 465.84 Z"/>
+    <line class="door-leaf" x1="399.84" y1="414.74" x2="399.84" y2="465.84"/>
+    <path id="door-arc-DoorMech" class="door-arc" d="M 152.44 414.74 L 190.76 414.74 A 38.32 38.32 0 0 1 152.44 453.07 Z"/>
+    <line class="door-leaf" x1="152.44" y1="414.74" x2="152.44" y2="453.07"/>
+    <path id="door-arc-DoorElecIT" class="door-arc" d="M 252.93 414.74 L 291.26 414.74 A 38.32 38.32 0 0 1 252.93 453.07 Z"/>
+    <line class="door-leaf" x1="252.93" y1="414.74" x2="252.93" y2="453.07"/>
+    <path id="door-arc-DoorProcedure" class="door-arc" d="M 198.85 309.14 L 249.95 309.14 A 51.10 51.10 0 0 0 198.85 258.04 Z"/>
+    <line class="door-leaf" x1="198.85" y1="309.14" x2="198.85" y2="258.04"/>
+    <path id="door-arc-DoorExam1" class="door-arc" d="M 387.70 309.14 L 428.16 309.14 A 40.45 40.45 0 0 0 387.70 268.69 Z"/>
+    <line class="door-leaf" x1="387.70" y1="309.14" x2="387.70" y2="268.69"/>
+    <path id="door-arc-DoorExam2" class="door-arc" d="M 549.30 309.14 L 589.75 309.14 A 40.45 40.45 0 0 0 549.30 268.69 Z"/>
+    <line class="door-leaf" x1="549.30" y1="309.14" x2="549.30" y2="268.69"/>
+    <path id="door-arc-DoorExam3" class="door-arc" d="M 689.82 309.14 L 730.27 309.14 A 40.45 40.45 0 0 0 689.82 268.69 Z"/>
+    <line class="door-leaf" x1="689.82" y1="309.14" x2="689.82" y2="268.69"/>
+    <path id="door-arc-DoorExam4" class="door-arc" d="M 868.66 309.14 L 909.12 309.14 A 40.45 40.45 0 0 0 868.66 268.69 Z"/>
+    <line class="door-leaf" x1="868.66" y1="309.14" x2="868.66" y2="268.69"/>
+    <path id="door-arc-DoorExam5" class="door-arc" d="M 1004.92 309.14 L 1045.38 309.14 A 40.45 40.45 0 0 0 1004.92 268.69 Z"/>
+    <line class="door-leaf" x1="1004.92" y1="309.14" x2="1004.92" y2="268.69"/>
+    <path id="door-arc-DoorNurse" class="door-arc" d="M 581.24 414.74 L 623.82 414.74 A 42.58 42.58 0 0 1 581.24 457.32 Z"/>
+    <line class="door-leaf" x1="581.24" y1="414.74" x2="581.24" y2="457.32"/>
+    <path id="door-arc-DoorLab" class="door-arc" d="M 747.94 414.74 L 788.40 414.74 A 40.45 40.45 0 0 1 747.94 455.20 Z"/>
+    <line class="door-leaf" x1="747.94" y1="414.74" x2="747.94" y2="455.20"/>
+    <path id="door-arc-DoorPharmacy" class="door-arc" d="M 899.96 414.74 L 940.41 414.74 A 40.45 40.45 0 0 1 899.96 455.20 Z"/>
+    <line class="door-leaf" x1="899.96" y1="414.74" x2="899.96" y2="455.20"/>
+    <path id="door-arc-DoorBreakroom" class="door-arc" d="M 1001.94 414.74 L 1042.40 414.74 A 40.45 40.45 0 0 1 1001.94 455.20 Z"/>
+    <line class="door-leaf" x1="1001.94" y1="414.74" x2="1001.94" y2="455.20"/>
+    <path id="door-arc-DoorStaffWC" class="door-arc" d="M 1065.82 381.10 L 1065.82 342.78 A 38.32 38.32 0 0 1 1104.14 381.10 Z"/>
+    <line class="door-leaf" x1="1065.82" y1="381.10" x2="1104.14" y2="381.10"/>
+    <rect id="win-WinWaitingS" class="win-frame" x="365.77" y="757.10" width="119.23" height="12.77"/>
+    <line class="win-glass" x1="365.77" y1="763.49" x2="485.00" y2="763.49"/>
+    <rect id="win-WinWaitingE" class="win-frame" x="522.90" y="633.61" width="12.77" height="85.16"/>
+    <line class="win-glass" x1="529.29" y1="718.78" x2="529.29" y2="633.61"/>
+    <rect id="win-WinProcedureN" class="win-frame" x="177.56" y="114.12" width="93.68" height="12.77"/>
+    <line class="win-glass" x1="177.56" y1="120.50" x2="271.24" y2="120.50"/>
+    <rect id="win-WinExam1N" class="win-frame" x="369.61" y="114.12" width="76.65" height="12.77"/>
+    <line class="win-glass" x1="369.61" y1="120.50" x2="446.25" y2="120.50"/>
+    <rect id="win-WinExam2N" class="win-frame" x="549.30" y="114.12" width="76.65" height="12.77"/>
+    <line class="win-glass" x1="549.30" y1="120.50" x2="625.95" y2="120.50"/>
+    <rect id="win-WinExam3N" class="win-frame" x="672.79" y="114.12" width="76.65" height="12.77"/>
+    <line class="win-glass" x1="672.79" y1="120.50" x2="749.43" y2="120.50"/>
+    <rect id="win-WinExam4N" class="win-frame" x="851.63" y="114.12" width="76.65" height="12.77"/>
+    <line class="win-glass" x1="851.63" y1="120.50" x2="928.28" y2="120.50"/>
+    <rect id="win-WinExam5N" class="win-frame" x="1034.31" y="114.12" width="76.65" height="12.77"/>
+    <line class="win-glass" x1="1034.31" y1="120.50" x2="1110.95" y2="120.50"/>
+    <rect id="win-WinBreakroomS" class="win-frame" x="1021.11" y="561.22" width="93.68" height="12.77"/>
+    <line class="win-glass" x1="1021.11" y1="567.61" x2="1114.79" y2="567.61"/>
+    <rect id="win-WinBreakroomE" class="win-frame" x="1153.11" y="453.92" width="12.77" height="68.13"/>
+    <line class="win-glass" x1="1159.50" y1="522.05" x2="1159.50" y2="453.92"/>
+    <rect id="win-WinCorridorW" class="win-frame" x="114.12" y="336.39" width="12.77" height="51.10"/>
+    <line class="win-glass" x1="120.50" y1="387.49" x2="120.50" y2="336.39"/>
+  </g>
+  <g id="room-labels">
+    <text class="room-title" style="font-size:9.0px;fill:#64748b;" x="149.03" y="743.18">Vestibule</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="149.03" y="754.18">9.2 m²</text>
+    <text class="room-title" style="font-size:10.5px;fill:#64748b;" x="425.39" y="583.92">Waiting</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="425.39" y="594.92">36.8 m²</text>
+    <text class="room-title" style="font-size:9.0px;fill:#64748b;" x="244.42" y="580.51">PublicWC</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="244.42" y="591.51">5.2 m²</text>
+    <text class="room-title" style="font-size:9.0px;fill:#64748b;" x="297.15" y="359.94">Corridor</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="297.15" y="370.94">48.2 m²</text>
+    <text class="room-title" style="font-size:10.5px;fill:#64748b;" x="299.77" y="295.22">Procedure</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="299.77" y="306.22">19.6 m²</text>
+    <text class="room-title" style="font-size:10.5px;fill:#64748b;" x="465.84" y="242.42">Exam1</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="465.84" y="253.42">16.1 m²</text>
+    <text class="room-title" style="font-size:10.5px;fill:#64748b;" x="516.09" y="242.42">Exam2</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="516.09" y="253.42">16.1 m²</text>
+    <text class="room-title" style="font-size:10.5px;fill:#64748b;" x="682.16" y="242.42">Exam3</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="682.16" y="253.42">16.1 m²</text>
+    <text class="room-title" style="font-size:10.5px;fill:#64748b;" x="848.22" y="242.42">Exam4</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="848.22" y="253.42">16.1 m²</text>
+    <text class="room-title" style="font-size:10.5px;fill:#64748b;" x="1014.29" y="242.42">Exam5</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="1014.29" y="253.42">16.2 m²</text>
+    <text class="room-title" style="font-size:10.5px;fill:#64748b;" x="573.40" y="465.54">NurseStation</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="573.40" y="476.54">11.4 m²</text>
+    <text class="room-title" style="font-size:10.5px;fill:#64748b;" x="723.32" y="424.67">Lab</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="723.32" y="435.67">14.4 m²</text>
+    <text class="room-title" style="font-size:10.5px;fill:#64748b;" x="885.70" y="424.67">Pharmacy</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="885.70" y="435.67">9.2 m²</text>
+    <text class="room-title" style="font-size:10.5px;fill:#64748b;" x="1067.95" y="445.11">Breakroom</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="1067.95" y="456.11">13.8 m²</text>
+    <text class="room-title" style="font-size:9.0px;fill:#64748b;" x="1087.96" y="394.86">StaffWC</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="1087.96" y="405.86">4.5 m²</text>
+    <text class="room-title" style="font-size:9.0px;fill:#64748b;" x="244.42" y="508.69">ElecITRoom</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="244.42" y="519.69">8.2 m²</text>
+    <text class="room-title" style="font-size:9.0px;fill:#64748b;" x="164.08" y="538.36">MechRoom</text>
+    <text class="room-sub" style="font-size:8.2px;fill:#94a3b8;" x="164.08" y="549.36">12.4 m²</text>
+  </g>
+  <g id="mep-electrical">
+    <line class="mep-wire-light" x1="222.27" y1="480.32" x2="171.60" y2="480.32"/>
+    <line class="mep-wire-light" x1="171.60" y1="480.32" x2="171.60" y2="478.62"/>
+    <line class="mep-wire-light" x1="171.60" y1="478.62" x2="171.60" y2="589.33"/>
+    <line class="mep-wire-light" x1="171.60" y1="589.33" x2="272.09" y2="589.33"/>
+    <line class="mep-wire-light" x1="272.09" y1="589.33" x2="272.09" y2="618.28"/>
+    <line class="mep-wire-light" x1="272.09" y1="618.28" x2="271.67" y2="618.28"/>
+    <line class="mep-wire-light" x1="271.67" y1="618.28" x2="271.67" y2="714.52"/>
+    <line class="mep-wire-light" x1="271.67" y1="714.52" x2="177.99" y2="714.52"/>
+    <line class="mep-wire-light" x1="177.99" y1="714.52" x2="378.97" y2="714.52"/>
+    <line class="mep-wire-light" x1="378.97" y1="714.52" x2="378.97" y2="663.42"/>
+    <line class="mep-wire-light" x1="378.97" y1="663.42" x2="472.65" y2="663.42"/>
+    <line class="mep-wire-light" x1="472.65" y1="663.42" x2="472.65" y2="510.13"/>
+    <line class="mep-wire-light" x1="472.65" y1="510.13" x2="378.97" y2="510.13"/>
+    <line class="mep-wire-light" x1="378.97" y1="510.13" x2="272.09" y2="510.13"/>
+    <line class="mep-wire-light" x1="272.09" y1="510.13" x2="272.09" y2="513.53"/>
+    <line class="mep-wire-light" x1="272.09" y1="513.53" x2="272.09" y2="453.92"/>
+    <line class="mep-wire-light" x1="222.27" y1="480.32" x2="220.57" y2="480.32"/>
+    <line class="mep-wire-light" x1="220.57" y1="480.32" x2="220.57" y2="361.94"/>
+    <line class="mep-wire-light" x1="220.57" y1="361.94" x2="177.99" y2="361.94"/>
+    <line class="mep-wire-light" x1="177.99" y1="361.94" x2="177.99" y2="332.13"/>
+    <line class="mep-wire-light" x1="177.99" y1="332.13" x2="224.40" y2="332.13"/>
+    <line class="mep-wire-light" x1="224.40" y1="332.13" x2="224.40" y2="149.46"/>
+    <line class="mep-wire-light" x1="224.40" y1="149.46" x2="407.93" y2="149.46"/>
+    <line class="mep-wire-light" x1="407.93" y1="149.46" x2="407.93" y2="361.94"/>
+    <line class="mep-wire-light" x1="407.93" y1="361.94" x2="425.39" y2="361.94"/>
+    <line class="mep-wire-light" x1="425.39" y1="361.94" x2="425.39" y2="484.58"/>
+    <line class="mep-wire-light" x1="425.39" y1="484.58" x2="595.29" y2="484.58"/>
+    <line class="mep-wire-light" x1="595.29" y1="484.58" x2="595.29" y2="361.94"/>
+    <line class="mep-wire-light" x1="595.29" y1="361.94" x2="595.29" y2="332.13"/>
+    <line class="mep-wire-light" x1="595.29" y1="332.13" x2="782.65" y2="332.13"/>
+    <line class="mep-wire-light" x1="782.65" y1="332.13" x2="782.65" y2="361.94"/>
+    <line class="mep-wire-light" x1="782.65" y1="361.94" x2="961.49" y2="361.94"/>
+    <line class="mep-wire-light" x1="961.49" y1="361.94" x2="1012.59" y2="361.94"/>
+    <line class="mep-wire-light" x1="1012.59" y1="361.94" x2="1012.59" y2="332.13"/>
+    <line class="mep-wire-light" x1="1012.59" y1="332.13" x2="224.40" y2="332.13"/>
+    <line class="mep-wire-light" x1="224.40" y1="332.13" x2="224.40" y2="682.58"/>
+    <line class="mep-wire-power" x1="222.27" y1="480.32" x2="321.92" y2="480.32"/>
+    <line class="mep-wire-power" x1="321.92" y1="480.32" x2="321.92" y2="496.50"/>
+    <line class="mep-wire-power" x1="321.92" y1="496.50" x2="327.88" y2="496.50"/>
+    <line class="mep-wire-power" x1="327.88" y1="496.50" x2="327.88" y2="552.71"/>
+    <line class="mep-wire-power" x1="327.88" y1="552.71" x2="522.90" y2="552.71"/>
+    <line class="mep-wire-power" x1="522.90" y1="552.71" x2="522.90" y2="535.67"/>
+    <line class="mep-wire-power" x1="522.90" y1="535.67" x2="522.90" y2="480.32"/>
+    <line class="mep-wire-power" x1="522.90" y1="480.32" x2="349.17" y2="480.32"/>
+    <line class="mep-wire-power" x1="349.17" y1="480.32" x2="349.17" y2="757.10"/>
+    <line class="mep-wire-power" x1="349.17" y1="757.10" x2="152.44" y2="757.10"/>
+    <line class="mep-wire-power" x1="152.44" y1="757.10" x2="152.44" y2="126.89"/>
+    <line class="mep-wire-power" x1="222.27" y1="480.32" x2="272.09" y2="480.32"/>
+    <line class="mep-wire-power" x1="272.09" y1="480.32" x2="272.09" y2="564.63"/>
+    <line class="mep-wire-power" x1="222.27" y1="480.32" x2="126.89" y2="480.32"/>
+    <line class="mep-wire-power" x1="126.89" y1="480.32" x2="126.89" y2="630.84"/>
+    <line class="mep-wire-power" x1="222.27" y1="480.32" x2="321.92" y2="480.32"/>
+    <line class="mep-wire-power" x1="321.92" y1="480.32" x2="321.92" y2="232.49"/>
+    <line class="mep-wire-power" x1="321.92" y1="232.49" x2="321.92" y2="198.43"/>
+    <line class="mep-wire-power" x1="321.92" y1="198.43" x2="126.89" y2="198.43"/>
+    <line class="mep-wire-light" x1="672.79" y1="478.19" x2="740.07" y2="478.19"/>
+    <line class="mep-wire-light" x1="740.07" y1="478.19" x2="740.07" y2="262.30"/>
+    <line class="mep-wire-light" x1="740.07" y1="262.30" x2="740.07" y2="164.36"/>
+    <line class="mep-wire-light" x1="740.07" y1="164.36" x2="574.00" y2="164.36"/>
+    <line class="mep-wire-light" x1="574.00" y1="164.36" x2="574.00" y2="262.30"/>
+    <line class="mep-wire-light" x1="574.00" y1="262.30" x2="407.93" y2="262.30"/>
+    <line class="mep-wire-light" x1="407.93" y1="262.30" x2="407.93" y2="164.36"/>
+    <line class="mep-wire-light" x1="407.93" y1="164.36" x2="267.41" y2="164.36"/>
+    <line class="mep-wire-light" x1="267.41" y1="164.36" x2="267.41" y2="177.14"/>
+    <line class="mep-wire-light" x1="267.41" y1="177.14" x2="267.41" y2="253.78"/>
+    <line class="mep-wire-light" x1="267.41" y1="253.78" x2="182.25" y2="253.78"/>
+    <line class="mep-wire-light" x1="182.25" y1="253.78" x2="182.25" y2="177.14"/>
+    <line class="mep-wire-light" x1="182.25" y1="177.14" x2="906.14" y2="177.14"/>
+    <line class="mep-wire-light" x1="906.14" y1="177.14" x2="906.14" y2="164.36"/>
+    <line class="mep-wire-light" x1="906.14" y1="164.36" x2="906.14" y2="262.30"/>
+    <line class="mep-wire-light" x1="906.14" y1="262.30" x2="1072.63" y2="262.30"/>
+    <line class="mep-wire-light" x1="1072.63" y1="262.30" x2="1072.63" y2="164.36"/>
+    <line class="mep-wire-light" x1="672.79" y1="478.19" x2="729.85" y2="478.19"/>
+    <line class="mep-wire-light" x1="729.85" y1="478.19" x2="729.85" y2="484.58"/>
+    <line class="mep-wire-light" x1="729.85" y1="484.58" x2="806.49" y2="484.58"/>
+    <line class="mep-wire-light" x1="806.49" y1="484.58" x2="920.19" y2="484.58"/>
+    <line class="mep-wire-light" x1="920.19" y1="484.58" x2="920.19" y2="459.03"/>
+    <line class="mep-wire-light" x1="920.19" y1="459.03" x2="920.19" y2="514.38"/>
+    <line class="mep-wire-light" x1="920.19" y1="514.38" x2="1033.88" y2="514.38"/>
+    <line class="mep-wire-light" x1="1033.88" y1="514.38" x2="1033.88" y2="487.98"/>
+    <line class="mep-wire-light" x1="1033.88" y1="487.98" x2="1102.01" y2="487.98"/>
+    <line class="mep-wire-light" x1="1102.01" y1="487.98" x2="1109.46" y2="487.98"/>
+    <line class="mep-wire-light" x1="1109.46" y1="487.98" x2="1109.46" y2="361.94"/>
+    <line class="mep-wire-light" x1="1109.46" y1="361.94" x2="621.69" y2="361.94"/>
+    <line class="mep-wire-light" x1="621.69" y1="361.94" x2="621.69" y2="510.13"/>
+    <line class="mep-wire-light" x1="621.69" y1="510.13" x2="574.85" y2="510.13"/>
+    <line class="mep-wire-power" x1="672.79" y1="478.19" x2="654.05" y2="478.19"/>
+    <line class="mep-wire-power" x1="654.05" y1="478.19" x2="654.05" y2="270.82"/>
+    <line class="mep-wire-power" x1="654.05" y1="270.82" x2="654.05" y2="206.94"/>
+    <line class="mep-wire-power" x1="654.05" y1="206.94" x2="638.72" y2="206.94"/>
+    <line class="mep-wire-power" x1="638.72" y1="206.94" x2="638.72" y2="126.89"/>
+    <line class="mep-wire-power" x1="638.72" y1="126.89" x2="487.98" y2="126.89"/>
+    <line class="mep-wire-power" x1="487.98" y1="126.89" x2="487.98" y2="206.94"/>
+    <line class="mep-wire-power" x1="487.98" y1="206.94" x2="487.98" y2="270.82"/>
+    <line class="mep-wire-power" x1="487.98" y1="270.82" x2="349.17" y2="270.82"/>
+    <line class="mep-wire-power" x1="349.17" y1="270.82" x2="349.17" y2="126.89"/>
+    <line class="mep-wire-power" x1="672.79" y1="478.19" x2="820.12" y2="478.19"/>
+    <line class="mep-wire-power" x1="820.12" y1="478.19" x2="820.12" y2="270.82"/>
+    <line class="mep-wire-power" x1="820.12" y1="270.82" x2="820.12" y2="206.94"/>
+    <line class="mep-wire-power" x1="820.12" y1="206.94" x2="796.27" y2="206.94"/>
+    <line class="mep-wire-power" x1="796.27" y1="206.94" x2="796.27" y2="126.89"/>
+    <line class="mep-wire-power" x1="796.27" y1="126.89" x2="945.31" y2="126.89"/>
+    <line class="mep-wire-power" x1="945.31" y1="126.89" x2="986.19" y2="126.89"/>
+    <line class="mep-wire-power" x1="986.19" y1="126.89" x2="986.19" y2="206.94"/>
+    <line class="mep-wire-power" x1="986.19" y1="206.94" x2="986.19" y2="270.82"/>
+    <line class="mep-wire-power" x1="672.79" y1="478.19" x2="678.75" y2="478.19"/>
+    <line class="mep-wire-power" x1="678.75" y1="478.19" x2="678.75" y2="493.09"/>
+    <line class="mep-wire-power" x1="678.75" y1="493.09" x2="712.81" y2="493.09"/>
+    <line class="mep-wire-power" x1="712.81" y1="493.09" x2="712.81" y2="561.22"/>
+    <line class="mep-wire-power" x1="712.81" y1="561.22" x2="630.21" y2="561.22"/>
+    <line class="mep-wire-power" x1="630.21" y1="561.22" x2="574.85" y2="561.22"/>
+    <line class="mep-wire-power" x1="574.85" y1="561.22" x2="897.62" y2="561.22"/>
+    <line class="mep-wire-power" x1="897.62" y1="561.22" x2="944.46" y2="561.22"/>
+    <line class="mep-wire-power" x1="672.79" y1="478.19" x2="1008.33" y2="478.19"/>
+    <line class="mep-wire-power" x1="1008.33" y1="478.19" x2="1008.33" y2="561.22"/>
+    <line class="mep-wire-power" x1="1008.33" y1="561.22" x2="1153.11" y2="561.22"/>
+    <line class="mep-wire-power" x1="1153.11" y1="561.22" x2="1153.11" y2="535.67"/>
+    <line class="mep-wire-power" x1="1153.11" y1="535.67" x2="1102.01" y2="535.67"/>
+    <line class="mep-wire-power" x1="1102.01" y1="535.67" x2="1102.01" y2="414.74"/>
+    <line class="mep-wire-power" x1="672.79" y1="478.19" x2="1153.11" y2="478.19"/>
+    <line class="mep-wire-power" x1="1153.11" y1="478.19" x2="1153.11" y2="270.82"/>
+    <line class="mep-wire-power" x1="1153.11" y1="270.82" x2="1153.11" y2="206.94"/>
+    <line class="mep-wire-power" x1="1153.11" y1="206.94" x2="1013.44" y2="206.94"/>
+    <line class="mep-wire-power" x1="1013.44" y1="206.94" x2="1013.44" y2="126.89"/>
+    <line class="mep-wire-power" x1="672.79" y1="478.19" x2="768.17" y2="478.19"/>
+    <line class="mep-wire-power" x1="768.17" y1="478.19" x2="768.17" y2="561.22"/>
+    <line class="mep-wire-power" x1="672.79" y1="478.19" x2="982.78" y2="478.19"/>
+    <line class="mep-wire-power" x1="982.78" y1="478.19" x2="982.78" y2="531.42"/>
+    <path class="mep-wire-swleg" d="M 261.87 757.10 Q 225.04 725.74 177.99 714.52"/>
+    <path class="mep-wire-swleg" d="M 261.87 757.10 Q 271.88 736.98 271.67 714.52"/>
+    <path class="mep-wire-swleg" d="M 327.88 681.30 Q 355.57 678.49 378.97 663.42"/>
+    <path class="mep-wire-swleg" d="M 327.88 681.30 Q 402.41 689.74 472.65 663.42"/>
+    <path class="mep-wire-swleg" d="M 327.88 681.30 Q 373.97 601.85 378.97 510.13"/>
+    <path class="mep-wire-swleg" d="M 327.88 681.30 Q 420.81 613.09 472.65 510.13"/>
+    <path class="mep-wire-swleg" d="M 327.88 605.08 Q 298.40 604.99 272.09 618.28"/>
+    <path class="mep-wire-swleg" d="M 298.92 414.74 Q 273.65 460.92 272.09 513.53"/>
+    <path class="mep-wire-swleg" d="M 298.92 414.74 Q 280.81 431.11 272.09 453.92"/>
+    <path class="mep-wire-swleg" d="M 198.43 414.74 Q 164.06 498.82 171.60 589.33"/>
+    <path class="mep-wire-swleg" d="M 198.43 414.74 Q 177.35 443.46 171.60 478.62"/>
+    <path class="mep-wire-swleg" d="M 458.60 408.78 Q 345.21 356.80 220.57 361.94"/>
+    <path class="mep-wire-swleg" d="M 458.60 408.78 Q 438.89 379.28 407.93 361.94"/>
+    <path class="mep-wire-swleg" d="M 458.60 408.78 Q 532.57 401.76 595.29 361.94"/>
+    <path class="mep-wire-swleg" d="M 458.60 408.78 Q 626.25 424.25 782.65 361.94"/>
+    <path class="mep-wire-swleg" d="M 458.60 408.78 Q 713.76 425.19 961.49 361.94"/>
+    <path class="mep-wire-swleg" d="M 1050.06 408.78 Q 637.57 345.43 220.57 361.94"/>
+    <path class="mep-wire-swleg" d="M 1050.06 408.78 Q 731.91 345.47 407.93 361.94"/>
+    <path class="mep-wire-swleg" d="M 1050.06 408.78 Q 826.77 345.57 595.29 361.94"/>
+    <path class="mep-wire-swleg" d="M 1050.06 408.78 Q 921.98 353.27 782.65 361.94"/>
+    <path class="mep-wire-swleg" d="M 1050.06 408.78 Q 1011.40 374.73 961.49 361.94"/>
+    <path class="mep-wire-swleg" d="M 257.62 309.14 Q 226.57 272.42 182.25 253.78"/>
+    <path class="mep-wire-swleg" d="M 257.62 309.14 Q 269.16 282.64 267.41 253.78"/>
+    <path class="mep-wire-swleg" d="M 257.62 309.14 Q 235.77 234.09 182.25 177.14"/>
+    <path class="mep-wire-swleg" d="M 257.62 309.14 Q 278.35 244.31 267.41 177.14"/>
+    <path class="mep-wire-swleg" d="M 435.82 309.14 Q 427.50 282.37 407.93 262.30"/>
+    <path class="mep-wire-swleg" d="M 435.82 309.14 Q 439.25 233.40 407.93 164.36"/>
+    <path class="mep-wire-swleg" d="M 597.42 309.14 Q 591.33 282.91 574.00 262.30"/>
+    <path class="mep-wire-swleg" d="M 597.42 309.14 Q 603.08 233.94 574.00 164.36"/>
+    <path class="mep-wire-swleg" d="M 737.94 309.14 Q 744.62 285.98 740.07 262.30"/>
+    <path class="mep-wire-swleg" d="M 737.94 309.14 Q 756.38 237.01 740.07 164.36"/>
+    <path class="mep-wire-swleg" d="M 916.78 309.14 Q 917.08 284.44 906.14 262.30"/>
+    <path class="mep-wire-swleg" d="M 916.78 309.14 Q 928.83 235.47 906.14 164.36"/>
+    <path class="mep-wire-swleg" d="M 1053.04 309.14 Q 1068.46 288.07 1072.63 262.30"/>
+    <path class="mep-wire-swleg" d="M 1053.04 309.14 Q 1080.21 239.10 1072.63 164.36"/>
+    <path class="mep-wire-swleg" d="M 631.48 414.74 Q 591.72 455.64 574.85 510.13"/>
+    <path class="mep-wire-swleg" d="M 631.48 414.74 Q 615.14 461.26 621.69 510.13"/>
+    <path class="mep-wire-swleg" d="M 796.06 414.74 Q 754.57 441.71 729.85 484.58"/>
+    <path class="mep-wire-swleg" d="M 796.06 414.74 Q 792.90 450.91 806.49 484.58"/>
+    <path class="mep-wire-swleg" d="M 948.08 414.74 Q 922.18 461.22 920.19 514.38"/>
+    <path class="mep-wire-swleg" d="M 948.08 414.74 Q 928.82 433.54 920.19 459.03"/>
+    <path class="mep-wire-swleg" d="M 1050.06 414.74 Q 1033.18 449.42 1033.88 487.98"/>
+    <path class="mep-wire-swleg" d="M 1050.06 414.74 Q 1067.25 457.60 1102.01 487.98"/>
+    <path class="mep-wire-swleg" d="M 1059.86 335.12 Q 1081.44 354.48 1109.46 361.94"/>
+    <rect x="228.27" y="461.16" width="38.32" height="38.32" fill="url(#db-clr-hatch)" stroke="#dc2626" stroke-width="0.9" stroke-dasharray="4 2"/>
+    <rect id="mep-DB_MAIN" class="mep-panel" x="224.27" y="469.32" width="8.0" height="22.0" rx="1.5"/>
+    <text class="mep-lbl" style="fill:#991b1b;font-size:8.5px;" x="247.44" y="483.32">DB_MAIN</text>
+    <rect x="628.46" y="459.03" width="38.32" height="38.32" fill="url(#db-clr-hatch)" stroke="#dc2626" stroke-width="0.9" stroke-dasharray="4 2"/>
+    <rect id="mep-DB_CLINIC" class="mep-panel" x="662.79" y="467.19" width="8.0" height="22.0" rx="1.5"/>
+    <text class="mep-lbl" style="fill:#991b1b;font-size:8.5px;" x="647.63" y="481.19">DB_CLINIC</text>
+    <rect id="mep-L_Vest_1" x="166.99" y="711.02" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="177.99" y="708.52">L_Vest_1</text>
+    <rect id="mep-L_Vest_2" x="260.67" y="711.02" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="271.67" y="708.52">L_Vest_2</text>
+    <rect id="mep-L_Wait_1" x="367.97" y="659.92" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="378.97" y="657.42">L_Wait_1</text>
+    <rect id="mep-L_Wait_2" x="461.65" y="659.92" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="472.65" y="657.42">L_Wait_2</text>
+    <rect id="mep-L_Wait_3" x="367.97" y="506.63" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="378.97" y="504.13">L_Wait_3</text>
+    <rect id="mep-L_Wait_4" x="461.65" y="506.63" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="472.65" y="504.13">L_Wait_4</text>
+    <circle id="mep-L_PubWC" class="mep-light" cx="272.09" cy="618.28" r="7.5"/>
+    <line class="mep-light" x1="266.84" y1="613.03" x2="277.34" y2="623.53"/>
+    <line class="mep-light" x1="266.84" y1="623.53" x2="277.34" y2="613.03"/>
+    <text class="mep-lbl" x="272.09" y="607.78">L_PubWC</text>
+    <rect id="mep-L_ElecIT_1" x="261.09" y="510.03" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="272.09" y="507.53">L_ElecIT_1</text>
+    <rect id="mep-L_ElecIT_2" x="261.09" y="450.42" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="272.09" y="447.92">L_ElecIT_2</text>
+    <rect id="mep-L_Mech_1" x="160.60" y="585.83" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="171.60" y="583.33">L_Mech_1</text>
+    <rect id="mep-L_Mech_2" x="160.60" y="475.12" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="171.60" y="472.62">L_Mech_2</text>
+    <rect id="mep-L_Corr_1" x="209.57" y="358.44" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="220.57" y="355.94">L_Corr_1</text>
+    <rect id="mep-L_Corr_2" x="396.93" y="358.44" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="407.93" y="355.94">L_Corr_2</text>
+    <rect id="mep-L_Corr_3" x="584.29" y="358.44" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="595.29" y="355.94">L_Corr_3</text>
+    <rect id="mep-L_Corr_4" x="771.65" y="358.44" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="782.65" y="355.94">L_Corr_4</text>
+    <rect id="mep-L_Corr_5" x="950.49" y="358.44" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="961.49" y="355.94">L_Corr_5</text>
+    <rect id="mep-EM_Vest" x="211.40" y="676.58" width="26" height="12" rx="2" fill="#fee2e2" stroke="#dc2626" stroke-width="1.4"/>
+    <text x="224.40" y="685.58" font-family="monospace" font-size="7.8" font-weight="700" text-anchor="middle" fill="#b91c1c">EXIT</text>
+    <circle id="mep-EM_Wait" class="mep-light" cx="425.39" cy="484.58" r="7.5"/>
+    <line class="mep-light" x1="420.14" y1="479.33" x2="430.64" y2="489.83"/>
+    <line class="mep-light" x1="420.14" y1="489.83" x2="430.64" y2="479.33"/>
+    <text class="mep-lbl" x="425.39" y="474.08">EM_Wait</text>
+    <rect id="mep-EM_CorrW" x="164.99" y="326.13" width="26" height="12" rx="2" fill="#fee2e2" stroke="#dc2626" stroke-width="1.4"/>
+    <text x="177.99" y="335.13" font-family="monospace" font-size="7.8" font-weight="700" text-anchor="middle" fill="#b91c1c">EXIT</text>
+    <circle id="mep-EM_CorrMid" class="mep-light" cx="595.29" cy="332.13" r="7.5"/>
+    <line class="mep-light" x1="590.04" y1="326.88" x2="600.54" y2="337.38"/>
+    <line class="mep-light" x1="590.04" y1="337.38" x2="600.54" y2="326.88"/>
+    <text class="mep-lbl" x="595.29" y="321.63">EM_CorrMid</text>
+    <rect id="mep-EM_CorrE" x="999.59" y="326.13" width="26" height="12" rx="2" fill="#fee2e2" stroke="#dc2626" stroke-width="1.4"/>
+    <text x="1012.59" y="335.13" font-family="monospace" font-size="7.8" font-weight="700" text-anchor="middle" fill="#b91c1c">EXIT</text>
+    <circle id="mep-EM_Proc" class="mep-light" cx="224.40" cy="149.46" r="7.5"/>
+    <line class="mep-light" x1="219.15" y1="144.21" x2="229.65" y2="154.71"/>
+    <line class="mep-light" x1="219.15" y1="154.71" x2="229.65" y2="144.21"/>
+    <text class="mep-lbl" x="224.40" y="138.96">EM_Proc</text>
+    <rect id="mep-L_Proc_1" x="171.25" y="250.28" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="182.25" y="247.78">L_Proc_1</text>
+    <rect id="mep-L_Proc_2" x="256.41" y="250.28" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="267.41" y="247.78">L_Proc_2</text>
+    <rect id="mep-L_Proc_3" x="171.25" y="173.64" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="182.25" y="171.14">L_Proc_3</text>
+    <rect id="mep-L_Proc_4" x="256.41" y="173.64" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="267.41" y="171.14">L_Proc_4</text>
+    <rect id="mep-L_Exam1_1" x="396.93" y="258.80" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="407.93" y="256.30">L_Exam1_1</text>
+    <rect id="mep-L_Exam1_2" x="396.93" y="160.86" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="407.93" y="158.36">L_Exam1_2</text>
+    <rect id="mep-L_Exam2_1" x="563.00" y="258.80" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="574.00" y="256.30">L_Exam2_1</text>
+    <rect id="mep-L_Exam2_2" x="563.00" y="160.86" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="574.00" y="158.36">L_Exam2_2</text>
+    <rect id="mep-L_Exam3_1" x="729.07" y="258.80" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="740.07" y="256.30">L_Exam3_1</text>
+    <rect id="mep-L_Exam3_2" x="729.07" y="160.86" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="740.07" y="158.36">L_Exam3_2</text>
+    <rect id="mep-L_Exam4_1" x="895.14" y="258.80" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="906.14" y="256.30">L_Exam4_1</text>
+    <rect id="mep-L_Exam4_2" x="895.14" y="160.86" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="906.14" y="158.36">L_Exam4_2</text>
+    <rect id="mep-L_Exam5_1" x="1061.63" y="258.80" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="1072.63" y="256.30">L_Exam5_1</text>
+    <rect id="mep-L_Exam5_2" x="1061.63" y="160.86" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="1072.63" y="158.36">L_Exam5_2</text>
+    <rect id="mep-L_Nurse_1" x="563.85" y="506.63" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="574.85" y="504.13">L_Nurse_1</text>
+    <rect id="mep-L_Nurse_2" x="610.69" y="506.63" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="621.69" y="504.13">L_Nurse_2</text>
+    <rect id="mep-L_Lab_1" x="718.85" y="481.08" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="729.85" y="478.58">L_Lab_1</text>
+    <rect id="mep-L_Lab_2" x="795.49" y="481.08" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="806.49" y="478.58">L_Lab_2</text>
+    <rect id="mep-L_Pharm_1" x="909.19" y="510.88" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="920.19" y="508.38">L_Pharm_1</text>
+    <rect id="mep-L_Pharm_2" x="909.19" y="455.53" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="920.19" y="453.03">L_Pharm_2</text>
+    <rect id="mep-L_Break_1" x="1022.88" y="484.48" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="1033.88" y="481.98">L_Break_1</text>
+    <rect id="mep-L_Break_2" x="1091.01" y="484.48" width="22" height="7" rx="1.2" fill="#f5d0fe" stroke="#c026d3" stroke-width="1.3"/>
+    <text class="mep-lbl" style="font-size:7.2px;" x="1102.01" y="481.98">L_Break_2</text>
+    <circle id="mep-L_StaffWC" class="mep-light" cx="1109.46" cy="361.94" r="7.5"/>
+    <line class="mep-light" x1="1104.21" y1="356.69" x2="1114.71" y2="367.19"/>
+    <line class="mep-light" x1="1104.21" y1="367.19" x2="1114.71" y2="356.69"/>
+    <text class="mep-lbl" x="1109.46" y="351.44">L_StaffWC</text>
+    <circle id="mep-SW_Vest" class="mep-switch" cx="261.87" cy="752.10" r="4.0"/>
+    <line class="mep-switch" x1="261.87" y1="752.10" x2="268.37" y2="745.60"/>
+    <line class="mep-switch" x1="268.37" y1="745.60" x2="270.87" y2="748.10"/>
+    <circle id="mep-SW_Wait" class="mep-switch" cx="332.88" cy="681.30" r="4.0"/>
+    <line class="mep-switch" x1="332.88" y1="681.30" x2="339.38" y2="674.80"/>
+    <line class="mep-switch" x1="339.38" y1="674.80" x2="341.88" y2="677.30"/>
+    <circle id="mep-SW_PubWC" class="mep-switch" cx="332.88" cy="605.08" r="4.0"/>
+    <line class="mep-switch" x1="332.88" y1="605.08" x2="339.38" y2="598.58"/>
+    <line class="mep-switch" x1="339.38" y1="598.58" x2="341.88" y2="601.08"/>
+    <circle id="mep-SW_ElecIT" class="mep-switch" cx="298.92" cy="419.74" r="4.0"/>
+    <line class="mep-switch" x1="298.92" y1="419.74" x2="305.42" y2="413.24"/>
+    <line class="mep-switch" x1="305.42" y1="413.24" x2="307.92" y2="415.74"/>
+    <circle id="mep-SW_Mech" class="mep-switch" cx="198.43" cy="419.74" r="4.0"/>
+    <line class="mep-switch" x1="198.43" y1="419.74" x2="204.93" y2="413.24"/>
+    <line class="mep-switch" x1="204.93" y1="413.24" x2="207.43" y2="415.74"/>
+    <circle id="mep-SW_CorrW" class="mep-switch" cx="458.60" cy="403.78" r="4.0"/>
+    <line class="mep-switch" x1="458.60" y1="403.78" x2="465.10" y2="397.28"/>
+    <line class="mep-switch" x1="465.10" y1="397.28" x2="467.60" y2="399.78"/>
+    <line class="mep-switch" x1="458.60" y1="403.78" x2="453.10" y2="409.28"/>
+    <circle id="mep-SW_CorrE" class="mep-switch" cx="1050.06" cy="403.78" r="4.0"/>
+    <line class="mep-switch" x1="1050.06" y1="403.78" x2="1056.56" y2="397.28"/>
+    <line class="mep-switch" x1="1056.56" y1="397.28" x2="1059.06" y2="399.78"/>
+    <line class="mep-switch" x1="1050.06" y1="403.78" x2="1044.56" y2="409.28"/>
+    <circle id="mep-SW_Proc" class="mep-switch" cx="257.62" cy="304.14" r="4.0"/>
+    <line class="mep-switch" x1="257.62" y1="304.14" x2="264.12" y2="297.64"/>
+    <line class="mep-switch" x1="264.12" y1="297.64" x2="266.62" y2="300.14"/>
+    <circle id="mep-SW_Exam1" class="mep-switch" cx="435.82" cy="304.14" r="4.0"/>
+    <line class="mep-switch" x1="435.82" y1="304.14" x2="442.32" y2="297.64"/>
+    <line class="mep-switch" x1="442.32" y1="297.64" x2="444.82" y2="300.14"/>
+    <circle id="mep-SW_Exam2" class="mep-switch" cx="597.42" cy="304.14" r="4.0"/>
+    <line class="mep-switch" x1="597.42" y1="304.14" x2="603.92" y2="297.64"/>
+    <line class="mep-switch" x1="603.92" y1="297.64" x2="606.42" y2="300.14"/>
+    <circle id="mep-SW_Exam3" class="mep-switch" cx="737.94" cy="304.14" r="4.0"/>
+    <line class="mep-switch" x1="737.94" y1="304.14" x2="744.44" y2="297.64"/>
+    <line class="mep-switch" x1="744.44" y1="297.64" x2="746.94" y2="300.14"/>
+    <circle id="mep-SW_Exam4" class="mep-switch" cx="916.78" cy="304.14" r="4.0"/>
+    <line class="mep-switch" x1="916.78" y1="304.14" x2="923.28" y2="297.64"/>
+    <line class="mep-switch" x1="923.28" y1="297.64" x2="925.78" y2="300.14"/>
+    <circle id="mep-SW_Exam5" class="mep-switch" cx="1053.04" cy="304.14" r="4.0"/>
+    <line class="mep-switch" x1="1053.04" y1="304.14" x2="1059.54" y2="297.64"/>
+    <line class="mep-switch" x1="1059.54" y1="297.64" x2="1062.04" y2="300.14"/>
+    <circle id="mep-SW_Nurse" class="mep-switch" cx="631.48" cy="419.74" r="4.0"/>
+    <line class="mep-switch" x1="631.48" y1="419.74" x2="637.98" y2="413.24"/>
+    <line class="mep-switch" x1="637.98" y1="413.24" x2="640.48" y2="415.74"/>
+    <circle id="mep-SW_Lab" class="mep-switch" cx="796.06" cy="419.74" r="4.0"/>
+    <line class="mep-switch" x1="796.06" y1="419.74" x2="802.56" y2="413.24"/>
+    <line class="mep-switch" x1="802.56" y1="413.24" x2="805.06" y2="415.74"/>
+    <circle id="mep-SW_Pharm" class="mep-switch" cx="948.08" cy="419.74" r="4.0"/>
+    <line class="mep-switch" x1="948.08" y1="419.74" x2="954.58" y2="413.24"/>
+    <line class="mep-switch" x1="954.58" y1="413.24" x2="957.08" y2="415.74"/>
+    <circle id="mep-SW_Break" class="mep-switch" cx="1050.06" cy="419.74" r="4.0"/>
+    <line class="mep-switch" x1="1050.06" y1="419.74" x2="1056.56" y2="413.24"/>
+    <line class="mep-switch" x1="1056.56" y1="413.24" x2="1059.06" y2="415.74"/>
+    <circle id="mep-SW_StaffWC" class="mep-switch" cx="1054.86" cy="335.12" r="4.0"/>
+    <line class="mep-switch" x1="1054.86" y1="335.12" x2="1061.36" y2="328.62"/>
+    <line class="mep-switch" x1="1061.36" y1="328.62" x2="1063.86" y2="331.12"/>
+    <circle id="mep-S_Wait_Rec1" class="mep-outlet" cx="517.40" cy="535.67" r="4.8"/>
+    <line class="mep-outlet" x1="517.40" y1="537.67" x2="512.40" y2="537.67"/>
+    <line class="mep-outlet" x1="517.40" y1="533.67" x2="512.40" y2="533.67"/>
+    <circle id="mep-S_Wait_Rec2" class="mep-outlet" cx="517.40" cy="480.32" r="4.8"/>
+    <line class="mep-outlet" x1="517.40" y1="482.32" x2="512.40" y2="482.32"/>
+    <line class="mep-outlet" x1="517.40" y1="478.32" x2="512.40" y2="478.32"/>
+    <circle id="mep-S_Wait_W1" class="mep-outlet" cx="333.38" cy="552.71" r="4.8"/>
+    <line class="mep-outlet" x1="333.38" y1="550.71" x2="338.38" y2="550.71"/>
+    <line class="mep-outlet" x1="333.38" y1="554.71" x2="338.38" y2="554.71"/>
+    <circle id="mep-S_Wait_S1" class="mep-outlet" cx="349.17" cy="751.60" r="4.8"/>
+    <line class="mep-outlet" x1="347.17" y1="751.60" x2="347.17" y2="746.60"/>
+    <line class="mep-outlet" x1="351.17" y1="751.60" x2="351.17" y2="746.60"/>
+    <circle id="mep-S_ElecIT_Svc" class="mep-outlet" cx="316.42" cy="496.50" r="4.8"/>
+    <line class="mep-outlet" x1="316.42" y1="498.50" x2="311.42" y2="498.50"/>
+    <line class="mep-outlet" x1="316.42" y1="494.50" x2="311.42" y2="494.50"/>
+    <circle id="mep-S_Proc_Gen" class="mep-outlet" cx="152.44" cy="132.39" r="4.8"/>
+    <line class="mep-outlet" x1="154.44" y1="132.39" x2="154.44" y2="137.39"/>
+    <line class="mep-outlet" x1="150.44" y1="132.39" x2="150.44" y2="137.39"/>
+    <circle id="mep-S_Exam1_Desk" class="mep-outlet" cx="482.48" cy="206.94" r="4.8"/>
+    <line class="mep-outlet" x1="482.48" y1="208.94" x2="477.48" y2="208.94"/>
+    <line class="mep-outlet" x1="482.48" y1="204.94" x2="477.48" y2="204.94"/>
+    <circle id="mep-S_Exam1_E2" class="mep-outlet" cx="482.48" cy="270.82" r="4.8"/>
+    <line class="mep-outlet" x1="482.48" y1="272.82" x2="477.48" y2="272.82"/>
+    <line class="mep-outlet" x1="482.48" y1="268.82" x2="477.48" y2="268.82"/>
+    <circle id="mep-S_Exam1_N" class="mep-outlet" cx="349.17" cy="132.39" r="4.8"/>
+    <line class="mep-outlet" x1="351.17" y1="132.39" x2="351.17" y2="137.39"/>
+    <line class="mep-outlet" x1="347.17" y1="132.39" x2="347.17" y2="137.39"/>
+    <circle id="mep-S_Exam2_Desk" class="mep-outlet" cx="648.55" cy="206.94" r="4.8"/>
+    <line class="mep-outlet" x1="648.55" y1="208.94" x2="643.55" y2="208.94"/>
+    <line class="mep-outlet" x1="648.55" y1="204.94" x2="643.55" y2="204.94"/>
+    <circle id="mep-S_Exam2_E2" class="mep-outlet" cx="648.55" cy="270.82" r="4.8"/>
+    <line class="mep-outlet" x1="648.55" y1="272.82" x2="643.55" y2="272.82"/>
+    <line class="mep-outlet" x1="648.55" y1="268.82" x2="643.55" y2="268.82"/>
+    <circle id="mep-S_Exam2_N" class="mep-outlet" cx="638.72" cy="132.39" r="4.8"/>
+    <line class="mep-outlet" x1="640.72" y1="132.39" x2="640.72" y2="137.39"/>
+    <line class="mep-outlet" x1="636.72" y1="132.39" x2="636.72" y2="137.39"/>
+    <circle id="mep-S_Exam3_Desk" class="mep-outlet" cx="814.62" cy="206.94" r="4.8"/>
+    <line class="mep-outlet" x1="814.62" y1="208.94" x2="809.62" y2="208.94"/>
+    <line class="mep-outlet" x1="814.62" y1="204.94" x2="809.62" y2="204.94"/>
+    <circle id="mep-S_Exam3_E2" class="mep-outlet" cx="814.62" cy="270.82" r="4.8"/>
+    <line class="mep-outlet" x1="814.62" y1="272.82" x2="809.62" y2="272.82"/>
+    <line class="mep-outlet" x1="814.62" y1="268.82" x2="809.62" y2="268.82"/>
+    <circle id="mep-S_Exam3_N" class="mep-outlet" cx="796.27" cy="132.39" r="4.8"/>
+    <line class="mep-outlet" x1="798.27" y1="132.39" x2="798.27" y2="137.39"/>
+    <line class="mep-outlet" x1="794.27" y1="132.39" x2="794.27" y2="137.39"/>
+    <circle id="mep-S_Exam4_Desk" class="mep-outlet" cx="980.69" cy="206.94" r="4.8"/>
+    <line class="mep-outlet" x1="980.69" y1="208.94" x2="975.69" y2="208.94"/>
+    <line class="mep-outlet" x1="980.69" y1="204.94" x2="975.69" y2="204.94"/>
+    <circle id="mep-S_Exam4_E2" class="mep-outlet" cx="980.69" cy="270.82" r="4.8"/>
+    <line class="mep-outlet" x1="980.69" y1="272.82" x2="975.69" y2="272.82"/>
+    <line class="mep-outlet" x1="980.69" y1="268.82" x2="975.69" y2="268.82"/>
+    <circle id="mep-S_Exam4_N" class="mep-outlet" cx="945.31" cy="132.39" r="4.8"/>
+    <line class="mep-outlet" x1="947.31" y1="132.39" x2="947.31" y2="137.39"/>
+    <line class="mep-outlet" x1="943.31" y1="132.39" x2="943.31" y2="137.39"/>
+    <circle id="mep-S_Exam5_Desk" class="mep-outlet" cx="1147.61" cy="206.94" r="4.8"/>
+    <line class="mep-outlet" x1="1147.61" y1="208.94" x2="1142.61" y2="208.94"/>
+    <line class="mep-outlet" x1="1147.61" y1="204.94" x2="1142.61" y2="204.94"/>
+    <circle id="mep-S_Exam5_E2" class="mep-outlet" cx="1147.61" cy="270.82" r="4.8"/>
+    <line class="mep-outlet" x1="1147.61" y1="272.82" x2="1142.61" y2="272.82"/>
+    <line class="mep-outlet" x1="1147.61" y1="268.82" x2="1142.61" y2="268.82"/>
+    <circle id="mep-S_Exam5_N" class="mep-outlet" cx="1013.44" cy="132.39" r="4.8"/>
+    <line class="mep-outlet" x1="1015.44" y1="132.39" x2="1015.44" y2="137.39"/>
+    <line class="mep-outlet" x1="1011.44" y1="132.39" x2="1011.44" y2="137.39"/>
+    <circle id="mep-S_Nurse_1" class="mep-outlet" cx="574.85" cy="555.72" r="4.8"/>
+    <line class="mep-outlet" x1="572.85" y1="555.72" x2="572.85" y2="550.72"/>
+    <line class="mep-outlet" x1="576.85" y1="555.72" x2="576.85" y2="550.72"/>
+    <circle id="mep-S_Nurse_2" class="mep-outlet" cx="630.21" cy="555.72" r="4.8"/>
+    <line class="mep-outlet" x1="628.21" y1="555.72" x2="628.21" y2="550.72"/>
+    <line class="mep-outlet" x1="632.21" y1="555.72" x2="632.21" y2="550.72"/>
+    <circle id="mep-S_Lab_1" class="mep-outlet" cx="712.81" cy="555.72" r="4.8"/>
+    <line class="mep-outlet" x1="710.81" y1="555.72" x2="710.81" y2="550.72"/>
+    <line class="mep-outlet" x1="714.81" y1="555.72" x2="714.81" y2="550.72"/>
+    <circle id="mep-S_Lab_2" class="mep-outlet" cx="684.25" cy="493.09" r="4.8"/>
+    <line class="mep-outlet" x1="684.25" y1="491.09" x2="689.25" y2="491.09"/>
+    <line class="mep-outlet" x1="684.25" y1="495.09" x2="689.25" y2="495.09"/>
+    <circle id="mep-S_Pharm_1" class="mep-outlet" cx="897.62" cy="555.72" r="4.8"/>
+    <line class="mep-outlet" x1="895.62" y1="555.72" x2="895.62" y2="550.72"/>
+    <line class="mep-outlet" x1="899.62" y1="555.72" x2="899.62" y2="550.72"/>
+    <circle id="mep-S_Pharm_2" class="mep-outlet" cx="944.46" cy="555.72" r="4.8"/>
+    <line class="mep-outlet" x1="942.46" y1="555.72" x2="942.46" y2="550.72"/>
+    <line class="mep-outlet" x1="946.46" y1="555.72" x2="946.46" y2="550.72"/>
+    <circle id="mep-S_Break_1" class="mep-outlet" cx="1008.33" cy="555.72" r="4.8"/>
+    <line class="mep-outlet" x1="1006.33" y1="555.72" x2="1006.33" y2="550.72"/>
+    <line class="mep-outlet" x1="1010.33" y1="555.72" x2="1010.33" y2="550.72"/>
+    <circle id="mep-S_Break_2" class="mep-outlet" cx="1147.61" cy="535.67" r="4.8"/>
+    <line class="mep-outlet" x1="1147.61" y1="537.67" x2="1142.61" y2="537.67"/>
+    <line class="mep-outlet" x1="1147.61" y1="533.67" x2="1142.61" y2="533.67"/>
+    <circle id="mep-S_Break_3" class="mep-outlet" cx="1102.01" cy="420.24" r="4.8"/>
+    <line class="mep-outlet" x1="1104.01" y1="420.24" x2="1104.01" y2="425.24"/>
+    <line class="mep-outlet" x1="1100.01" y1="420.24" x2="1100.01" y2="425.24"/>
+    <circle id="mep-LD_IT_UPS" class="mep-outlet" cx="272.09" cy="559.13" r="4.8"/>
+    <line class="mep-outlet" x1="270.09" y1="559.13" x2="270.09" y2="554.13"/>
+    <line class="mep-outlet" x1="274.09" y1="559.13" x2="274.09" y2="554.13"/>
+    <circle id="mep-LD_WaterHeater" class="mep-outlet" cx="132.39" cy="630.84" r="4.8"/>
+    <line class="mep-outlet" x1="132.39" y1="628.84" x2="137.39" y2="628.84"/>
+    <line class="mep-outlet" x1="132.39" y1="632.84" x2="137.39" y2="632.84"/>
+    <circle id="mep-MED_Proc_1" class="mep-outlet" cx="316.42" cy="232.49" r="4.8"/>
+    <line class="mep-outlet" x1="316.42" y1="234.49" x2="311.42" y2="234.49"/>
+    <line class="mep-outlet" x1="316.42" y1="230.49" x2="311.42" y2="230.49"/>
+    <circle id="mep-MED_Proc_2" class="mep-outlet" cx="316.42" cy="198.43" r="4.8"/>
+    <line class="mep-outlet" x1="316.42" y1="200.43" x2="311.42" y2="200.43"/>
+    <line class="mep-outlet" x1="316.42" y1="196.43" x2="311.42" y2="196.43"/>
+    <circle id="mep-MED_Proc_3" class="mep-outlet" cx="132.39" cy="198.43" r="4.8"/>
+    <line class="mep-outlet" x1="132.39" y1="196.43" x2="137.39" y2="196.43"/>
+    <line class="mep-outlet" x1="132.39" y1="200.43" x2="137.39" y2="200.43"/>
+    <circle id="mep-LD_Autoclave" class="mep-outlet" cx="768.17" cy="555.72" r="4.8"/>
+    <line class="mep-outlet" x1="766.17" y1="555.72" x2="766.17" y2="550.72"/>
+    <line class="mep-outlet" x1="770.17" y1="555.72" x2="770.17" y2="550.72"/>
+    <circle id="mep-LD_Kitchen_App" class="mep-outlet" cx="988.28" cy="531.42" r="4.8"/>
+    <line class="mep-outlet" x1="988.28" y1="529.42" x2="993.28" y2="529.42"/>
+    <line class="mep-outlet" x1="988.28" y1="533.42" x2="993.28" y2="533.42"/>
+  </g>
+  <g id="electrical-legend">
+    <rect x="888.0" y="20.0" width="368" height="22" rx="4" fill="#ffffff" fill-opacity="0.93" stroke="#cbd5e1" stroke-width="1"/>
+    <line class="mep-wire-light" x1="896.0" y1="31.0" x2="912.0" y2="31.0"/>
+    <text class="meta-text" style="font-size:8.5px;font-weight:600;" x="916.0" y="34.0">Lighting</text>
+    <line class="mep-wire-power" x1="962.0" y1="31.0" x2="978.0" y2="31.0"/>
+    <text class="meta-text" style="font-size:8.5px;font-weight:600;" x="982.0" y="34.0">Power</text>
+    <line class="mep-wire-swleg" x1="1020.0" y1="31.0" x2="1036.0" y2="31.0"/>
+    <text class="meta-text" style="font-size:8.5px;font-weight:600;" x="1040.0" y="34.0">Switch Leg</text>
+    <rect class="mep-panel" x="1098.0" y="27.5" width="10" height="7" rx="1"/>
+    <text class="meta-text" style="font-size:8.5px;font-weight:600;" x="1112.0" y="34.0">DB</text>
+    <circle class="mep-light" cx="1140.0" cy="31.0" r="4.5"/>
+    <text class="meta-text" style="font-size:8.5px;font-weight:600;" x="1148.0" y="34.0">Light</text>
+    <circle class="mep-outlet" cx="1186.0" cy="31.0" r="4.0"/>
+    <text class="meta-text" style="font-size:8.5px;font-weight:600;" x="1194.0" y="34.0">Socket</text>
+  </g>
+  <g id="panel-schedule-sidebar">
+    <rect x="1284.0" y="32.0" width="312.0" height="194.0" rx="4" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.1"/>
+    <rect x="1284.0" y="32.0" width="312.0" height="20" rx="3" fill="#1e293b"/>
+    <text x="1292.0" y="45.5" font-family="monospace" font-size="9.5" font-weight="700" fill="#ffffff">PANEL SCHEDULE — DB_CLINIC</text>
+    <text x="1290.0" y="64.0" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">CIRCUIT</text>
+    <text x="1438.0" y="64.0" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">LOAD</text>
+    <text x="1490.0" y="64.0" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">MCB</text>
+    <text x="1538.0" y="64.0" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">dU%</text>
+    <line x1="1288.0" y1="68.0" x2="1592.0" y2="68.0" stroke="#cbd5e1" stroke-width="0.9"/>
+    <text x="1290.0" y="80.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">L3_N_Clinic</text>
+    <text x="1438.0" y="80.0" font-family="monospace" font-size="7.6" fill="#334155">520W</text>
+    <text x="1490.0" y="80.0" font-family="monospace" font-size="7.6" fill="#334155">10A</text>
+    <text x="1538.0" y="80.0" font-family="monospace" font-size="7.6" fill="#0369a1">0.80%</text>
+    <text x="1290.0" y="96.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">L4_S_Support</text>
+    <text x="1438.0" y="96.0" font-family="monospace" font-size="7.6" fill="#334155">306W</text>
+    <text x="1490.0" y="96.0" font-family="monospace" font-size="7.6" fill="#334155">10A</text>
+    <text x="1538.0" y="96.0" font-family="monospace" font-size="7.6" fill="#0369a1">0.27%</text>
+    <text x="1290.0" y="112.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">P2_Exam1_2</text>
+    <text x="1438.0" y="112.0" font-family="monospace" font-size="7.6" fill="#334155">2400W</text>
+    <text x="1490.0" y="112.0" font-family="monospace" font-size="7.6" fill="#334155">16A</text>
+    <text x="1538.0" y="112.0" font-family="monospace" font-size="7.6" fill="#0369a1">1.60%</text>
+    <text x="1290.0" y="128.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">P3_Exam3_4</text>
+    <text x="1438.0" y="128.0" font-family="monospace" font-size="7.6" fill="#334155">2400W</text>
+    <text x="1490.0" y="128.0" font-family="monospace" font-size="7.6" fill="#334155">16A</text>
+    <text x="1538.0" y="128.0" font-family="monospace" font-size="7.6" fill="#0369a1">1.50%</text>
+    <text x="1290.0" y="144.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">P4_Nurse_Lab</text>
+    <text x="1438.0" y="144.0" font-family="monospace" font-size="7.6" fill="#334155">2700W</text>
+    <text x="1490.0" y="144.0" font-family="monospace" font-size="7.6" fill="#334155">16A</text>
+    <text x="1538.0" y="144.0" font-family="monospace" font-size="7.6" fill="#0369a1">1.32%</text>
+    <text x="1290.0" y="160.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">P5_Breakroom</text>
+    <text x="1438.0" y="160.0" font-family="monospace" font-size="7.6" fill="#334155">1350W</text>
+    <text x="1490.0" y="160.0" font-family="monospace" font-size="7.6" fill="#334155">16A</text>
+    <text x="1538.0" y="160.0" font-family="monospace" font-size="7.6" fill="#0369a1">0.61%</text>
+    <text x="1290.0" y="176.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">P6_Exam5</text>
+    <text x="1438.0" y="176.0" font-family="monospace" font-size="7.6" fill="#334155">1200W</text>
+    <text x="1490.0" y="176.0" font-family="monospace" font-size="7.6" fill="#334155">16A</text>
+    <text x="1538.0" y="176.0" font-family="monospace" font-size="7.6" fill="#0369a1">0.64%</text>
+    <text x="1290.0" y="192.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">D4_Autoclave</text>
+    <text x="1438.0" y="192.0" font-family="monospace" font-size="7.6" fill="#334155">4200W</text>
+    <text x="1490.0" y="192.0" font-family="monospace" font-size="7.6" fill="#334155">25A</text>
+    <text x="1538.0" y="192.0" font-family="monospace" font-size="7.6" fill="#0369a1">0.35%</text>
+    <text x="1290.0" y="208.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">D5_Kitchen</text>
+    <text x="1438.0" y="208.0" font-family="monospace" font-size="7.6" fill="#334155">3400W</text>
+    <text x="1490.0" y="208.0" font-family="monospace" font-size="7.6" fill="#334155">20A</text>
+    <text x="1538.0" y="208.0" font-family="monospace" font-size="7.6" fill="#0369a1">0.67%</text>
+    <rect x="1284.0" y="240.0" width="312.0" height="146.0" rx="4" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.1"/>
+    <rect x="1284.0" y="240.0" width="312.0" height="20" rx="3" fill="#1e293b"/>
+    <text x="1292.0" y="253.5" font-family="monospace" font-size="9.5" font-weight="700" fill="#ffffff">PANEL SCHEDULE — DB_MAIN</text>
+    <text x="1290.0" y="272.0" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">CIRCUIT</text>
+    <text x="1438.0" y="272.0" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">LOAD</text>
+    <text x="1490.0" y="272.0" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">MCB</text>
+    <text x="1538.0" y="272.0" font-family="monospace" font-size="7.5" font-weight="700" fill="#475569">dU%</text>
+    <line x1="1288.0" y1="276.0" x2="1592.0" y2="276.0" stroke="#cbd5e1" stroke-width="0.9"/>
+    <text x="1290.0" y="288.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">L1_Pub_Core</text>
+    <text x="1438.0" y="288.0" font-family="monospace" font-size="7.6" fill="#334155">354W</text>
+    <text x="1490.0" y="288.0" font-family="monospace" font-size="7.6" fill="#334155">10A</text>
+    <text x="1538.0" y="288.0" font-family="monospace" font-size="7.6" fill="#0369a1">0.29%</text>
+    <text x="1290.0" y="304.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">L2_Corr_Em</text>
+    <text x="1438.0" y="304.0" font-family="monospace" font-size="7.6" fill="#334155">246W</text>
+    <text x="1490.0" y="304.0" font-family="monospace" font-size="7.6" fill="#334155">10A</text>
+    <text x="1538.0" y="304.0" font-family="monospace" font-size="7.6" fill="#0369a1">0.45%</text>
+    <text x="1290.0" y="320.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">P1_Wait_Pub</text>
+    <text x="1438.0" y="320.0" font-family="monospace" font-size="7.6" fill="#334155">1900W</text>
+    <text x="1490.0" y="320.0" font-family="monospace" font-size="7.6" fill="#334155">16A</text>
+    <text x="1538.0" y="320.0" font-family="monospace" font-size="7.6" fill="#0369a1">1.78%</text>
+    <text x="1290.0" y="336.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">D1_IT_UPS</text>
+    <text x="1438.0" y="336.0" font-family="monospace" font-size="7.6" fill="#334155">3600W</text>
+    <text x="1490.0" y="336.0" font-family="monospace" font-size="7.6" fill="#334155">20A</text>
+    <text x="1538.0" y="336.0" font-family="monospace" font-size="7.6" fill="#0369a1">0.43%</text>
+    <text x="1290.0" y="352.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">D2_WtrHeater</text>
+    <text x="1438.0" y="352.0" font-family="monospace" font-size="7.6" fill="#334155">4000W</text>
+    <text x="1490.0" y="352.0" font-family="monospace" font-size="7.6" fill="#334155">25A</text>
+    <text x="1538.0" y="352.0" font-family="monospace" font-size="7.6" fill="#0369a1">0.40%</text>
+    <text x="1290.0" y="368.0" font-family="monospace" font-size="7.6" font-weight="600" fill="#0f172a">D3_Proc_Med</text>
+    <text x="1438.0" y="368.0" font-family="monospace" font-size="7.6" fill="#334155">3000W</text>
+    <text x="1490.0" y="368.0" font-family="monospace" font-size="7.6" fill="#334155">20A</text>
+    <text x="1538.0" y="368.0" font-family="monospace" font-size="7.6" fill="#0369a1">1.03%</text>
+  </g>
+  <g id="dimensions">
+    <line class="dim-line" x1="114.12" y1="78.12" x2="1165.88" y2="78.12"/>
+    <line class="dim-line" x1="114.12" y1="72.12" x2="114.12" y2="110.12"/>
+    <line class="dim-line" x1="1165.88" y1="72.12" x2="1165.88" y2="110.12"/>
+    <text class="dim-text" x="640.00" y="72.12">24700 mm (24.70 m)</text>
+    <line class="dim-line" x1="1201.88" y1="114.12" x2="1201.88" y2="769.87"/>
+    <line class="dim-line" x1="1169.88" y1="114.12" x2="1207.88" y2="114.12"/>
+    <line class="dim-line" x1="1169.88" y1="769.87" x2="1207.88" y2="769.87"/>
+    <text class="dim-text" x="1215.88" y="442.00" transform="rotate(90 1215.88 442.00)">15400 mm (15.40 m)</text>
+    <line class="dim-line" x1="126.89" y1="98.12" x2="321.92" y2="98.12"/>
+    <line class="dim-line" x1="126.89" y1="94.12" x2="126.89" y2="102.12"/>
+    <line class="dim-line" x1="321.92" y1="94.12" x2="321.92" y2="102.12"/>
+    <text class="dim-text" x="224.40" y="93.12">4.58 m</text>
+    <line class="dim-line" x1="327.88" y1="98.12" x2="487.98" y2="98.12"/>
+    <line class="dim-line" x1="327.88" y1="94.12" x2="327.88" y2="102.12"/>
+    <line class="dim-line" x1="487.98" y1="94.12" x2="487.98" y2="102.12"/>
+    <text class="dim-text" x="407.93" y="93.12">3.76 m</text>
+    <line class="dim-line" x1="493.94" y1="98.12" x2="654.05" y2="98.12"/>
+    <line class="dim-line" x1="493.94" y1="94.12" x2="493.94" y2="102.12"/>
+    <line class="dim-line" x1="654.05" y1="94.12" x2="654.05" y2="102.12"/>
+    <text class="dim-text" x="574.00" y="93.12">3.76 m</text>
+    <line class="dim-line" x1="660.01" y1="98.12" x2="820.12" y2="98.12"/>
+    <line class="dim-line" x1="660.01" y1="94.12" x2="660.01" y2="102.12"/>
+    <line class="dim-line" x1="820.12" y1="94.12" x2="820.12" y2="102.12"/>
+    <text class="dim-text" x="740.07" y="93.12">3.76 m</text>
+    <line class="dim-line" x1="826.08" y1="98.12" x2="986.19" y2="98.12"/>
+    <line class="dim-line" x1="826.08" y1="94.12" x2="826.08" y2="102.12"/>
+    <line class="dim-line" x1="986.19" y1="94.12" x2="986.19" y2="102.12"/>
+    <text class="dim-text" x="906.14" y="93.12">3.76 m</text>
+    <line class="dim-line" x1="992.15" y1="98.12" x2="1153.11" y2="98.12"/>
+    <line class="dim-line" x1="992.15" y1="94.12" x2="992.15" y2="102.12"/>
+    <line class="dim-line" x1="1153.11" y1="94.12" x2="1153.11" y2="102.12"/>
+    <text class="dim-text" x="1072.63" y="93.12">3.78 m</text>
+    <line class="dim-line" x1="126.89" y1="785.87" x2="321.92" y2="785.87"/>
+    <line class="dim-line" x1="126.89" y1="781.87" x2="126.89" y2="789.87"/>
+    <line class="dim-line" x1="321.92" y1="781.87" x2="321.92" y2="789.87"/>
+    <text class="dim-text" x="224.40" y="797.87">4.58 m</text>
+    <line class="dim-line" x1="327.88" y1="785.87" x2="522.90" y2="785.87"/>
+    <line class="dim-line" x1="327.88" y1="781.87" x2="327.88" y2="789.87"/>
+    <line class="dim-line" x1="522.90" y1="781.87" x2="522.90" y2="789.87"/>
+    <text class="dim-text" x="425.39" y="797.87">4.58 m</text>
+    <line class="dim-line" x1="532.27" y1="785.87" x2="672.79" y2="785.87"/>
+    <line class="dim-line" x1="532.27" y1="781.87" x2="532.27" y2="789.87"/>
+    <line class="dim-line" x1="672.79" y1="781.87" x2="672.79" y2="789.87"/>
+    <text class="dim-text" x="602.53" y="797.87">3.30 m</text>
+    <line class="dim-line" x1="678.75" y1="785.87" x2="857.59" y2="785.87"/>
+    <line class="dim-line" x1="678.75" y1="781.87" x2="678.75" y2="789.87"/>
+    <line class="dim-line" x1="857.59" y1="781.87" x2="857.59" y2="789.87"/>
+    <text class="dim-text" x="768.17" y="797.87">4.20 m</text>
+    <line class="dim-line" x1="863.55" y1="785.87" x2="976.82" y2="785.87"/>
+    <line class="dim-line" x1="863.55" y1="781.87" x2="863.55" y2="789.87"/>
+    <line class="dim-line" x1="976.82" y1="781.87" x2="976.82" y2="789.87"/>
+    <text class="dim-text" x="920.19" y="797.87">2.66 m</text>
+    <line class="dim-line" x1="982.78" y1="785.87" x2="1153.11" y2="785.87"/>
+    <line class="dim-line" x1="982.78" y1="781.87" x2="982.78" y2="789.87"/>
+    <line class="dim-line" x1="1153.11" y1="781.87" x2="1153.11" y2="789.87"/>
+    <text class="dim-text" x="1067.95" y="797.87">4.00 m</text>
+    <line class="dim-line" x1="1181.88" y1="757.10" x2="1181.88" y2="574.00"/>
+    <line class="dim-line" x1="1177.88" y1="757.10" x2="1185.88" y2="757.10"/>
+    <line class="dim-line" x1="1177.88" y1="574.00" x2="1185.88" y2="574.00"/>
+    <text class="dim-text" x="1192.88" y="665.55" transform="rotate(90 1192.88 665.55)">4.30 m</text>
+    <line class="dim-line" x1="1181.88" y1="561.22" x2="1181.88" y2="414.74"/>
+    <line class="dim-line" x1="1177.88" y1="561.22" x2="1185.88" y2="561.22"/>
+    <line class="dim-line" x1="1177.88" y1="414.74" x2="1185.88" y2="414.74"/>
+    <text class="dim-text" x="1192.88" y="487.98" transform="rotate(90 1192.88 487.98)">3.44 m</text>
+    <line class="dim-line" x1="1181.88" y1="408.78" x2="1181.88" y2="315.10"/>
+    <line class="dim-line" x1="1177.88" y1="408.78" x2="1185.88" y2="408.78"/>
+    <line class="dim-line" x1="1177.88" y1="315.10" x2="1185.88" y2="315.10"/>
+    <text class="dim-text" x="1192.88" y="361.94" transform="rotate(90 1192.88 361.94)">2.20 m</text>
+    <line class="dim-line" x1="1181.88" y1="309.14" x2="1181.88" y2="126.89"/>
+    <line class="dim-line" x1="1177.88" y1="309.14" x2="1185.88" y2="309.14"/>
+    <line class="dim-line" x1="1177.88" y1="126.89" x2="1185.88" y2="126.89"/>
+    <text class="dim-text" x="1192.88" y="218.02" transform="rotate(90 1192.88 218.02)">4.28 m</text>
+    <line class="dim-line" x1="98.12" y1="757.10" x2="98.12" y2="671.94"/>
+    <line class="dim-line" x1="94.12" y1="757.10" x2="102.12" y2="757.10"/>
+    <line class="dim-line" x1="94.12" y1="671.94" x2="102.12" y2="671.94"/>
+    <text class="dim-text" x="87.12" y="714.52" transform="rotate(-90 87.12 714.52)">2.00 m</text>
+    <line class="dim-line" x1="98.12" y1="665.97" x2="98.12" y2="414.74"/>
+    <line class="dim-line" x1="94.12" y1="665.97" x2="102.12" y2="665.97"/>
+    <line class="dim-line" x1="94.12" y1="414.74" x2="102.12" y2="414.74"/>
+    <text class="dim-text" x="87.12" y="540.36" transform="rotate(-90 87.12 540.36)">5.90 m</text>
+    <line class="dim-line" x1="98.12" y1="408.78" x2="98.12" y2="315.10"/>
+    <line class="dim-line" x1="94.12" y1="408.78" x2="102.12" y2="408.78"/>
+    <line class="dim-line" x1="94.12" y1="315.10" x2="102.12" y2="315.10"/>
+    <text class="dim-text" x="87.12" y="361.94" transform="rotate(-90 87.12 361.94)">2.20 m</text>
+    <line class="dim-line" x1="98.12" y1="309.14" x2="98.12" y2="126.89"/>
+    <line class="dim-line" x1="94.12" y1="309.14" x2="102.12" y2="309.14"/>
+    <line class="dim-line" x1="94.12" y1="126.89" x2="102.12" y2="126.89"/>
+    <text class="dim-text" x="87.12" y="218.02" transform="rotate(-90 87.12 218.02)">4.28 m</text>
+  </g>
+  <line x1="28" y1="888.0" x2="1592.0" y2="888.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text class="title-text" x="34" y="904.0">EDL Plan: Outpatient_Specialist_Medical_Clinic_Electrical</text>
+  <text class="meta-text" x="34" y="922.0">A1 landscape | Scale 1:100 | Rooms: 17 | Clear Area: 273.43 m² | Openings: 28 | Fixtures: 36 | DOF: 0</text>
+  <text class="status-ok" x="1586.0" y="904.0">ALL CHECKS EXACTLY_CHECKED (16 rules)</text>
+</svg>

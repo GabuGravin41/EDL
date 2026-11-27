@@ -1,0 +1,63 @@
+Semantic Diff: Outpatient_Specialist_Medical_Clinic -> Outpatient_Specialist_Medical_Clinic
+  Footprint : 23700×15400 mm -> 24700×15400 mm
+  Clear area: 264.11 m² -> 273.43 m²
+  Unchanged : Col_1_A, Col_1_B, Col_1_C, Col_1_D, Col_2_A, Col_2_B, Col_2_C, Col_2_D, Col_3_A, Col_3_B, Col_3_C, Col_3_D, DoorElecIT, DoorMech, DoorNurse, DoorProcedure, DoorPublicWC, DoorVestibuleWaiting, DoorWaitingCorridor, ElecITRoom, Exam1Basin, ITServerRack, MainEntry, MechRoom, MopSink, NurseCounter, NurseStation, ProcCounter, Procedure, ProcedureTable, PublicBasin, PublicToilet, PublicWC, ReceptionCounter, ScrubSink, Vestibule, Waiting, WaitingSofa1, WaitingSofa2, WaterHeater, WinCorridorW, WinProcedureN, WinWaitingE, WinWaitingS
+  [modified] BreakTable (arch.fixture) — shifted (+1000mm, +0mm)
+  [modified] Breakroom (arch.room) — shifted (+1000mm, +0mm)
+  [modified] ClinicGrid (arch.structural_grid) — geometry updated
+  [modified] Col_4_B (arch.column) — geometry updated
+  [modified] Col_4_C (arch.column) — geometry updated
+  [modified] Col_4_D (arch.column) — geometry updated
+  [modified] Col_5_B (arch.column) — geometry updated
+  [modified] Col_5_C (arch.column) — geometry updated
+  [modified] Col_5_D (arch.column) — geometry updated
+  [modified] Col_6_B (arch.column) — geometry updated
+  [modified] Col_6_C (arch.column) — geometry updated
+  [modified] Col_6_D (arch.column) — geometry updated
+  [modified] Corridor (arch.room) — size 20910x2200mm -> 21910x2200mm
+  [modified] DoorBreakroom (arch.door) — hinge shifted (+1000mm, +0mm)
+  [modified] DoorExam1 (arch.door) — hinge shifted (-450mm, +0mm)
+  [modified] DoorExam2 (arch.door) — hinge shifted (-1355mm, +0mm)
+  [modified] DoorExam3 (arch.door) — hinge shifted (-2655mm, +0mm)
+  [modified] DoorExam4 (arch.door) — hinge shifted (-1800mm, +0mm)
+  [modified] DoorLab (arch.door) — hinge shifted (+500mm, +0mm)
+  [modified] DoorPharmacy (arch.door) — hinge shifted (+1000mm, +0mm)
+  [modified] DoorStaffWC (arch.door) — hinge shifted (+1000mm, +0mm)
+  [modified] Exam1 (arch.room) — size 4660x4280mm -> 3760x4280mm
+  [modified] Exam1Desk (arch.fixture) — shifted (-900mm, -200mm)
+  [modified] Exam1Table (arch.fixture) — shifted (-150mm, -400mm); size 1900x750mm -> 750x1900mm
+  [modified] Exam2 (arch.room) — shifted (-900mm, +0mm); size 4460x4280mm -> 3760x4280mm
+  [modified] Exam2Basin (arch.fixture) — shifted (-900mm, +0mm)
+  [modified] Exam2Desk (arch.fixture) — shifted (-1600mm, -200mm)
+  [modified] Exam2Table (arch.fixture) — shifted (-950mm, -400mm); size 1900x750mm -> 750x1900mm
+  [modified] Exam3 (arch.room) — shifted (-1600mm, +0mm); size 4460x4280mm -> 3760x4280mm
+  [modified] Exam3Basin (arch.fixture) — shifted (-1600mm, +0mm)
+  [modified] Exam3Desk (arch.fixture) — shifted (-2300mm, -200mm)
+  [modified] Exam3Table (arch.fixture) — shifted (-1650mm, -400mm); size 1900x750mm -> 750x1900mm
+  [modified] Exam4 (arch.room) — shifted (-2300mm, +0mm); size 4380x4280mm -> 3760x4280mm
+  [modified] Exam4Basin (arch.fixture) — shifted (-2300mm, +0mm)
+  [modified] Exam4Desk (arch.fixture) — shifted (-2920mm, -200mm)
+  [modified] Exam4Table (arch.fixture) — shifted (-2350mm, -400mm); size 1900x750mm -> 750x1900mm
+  [modified] KitchenCounter (arch.fixture) — shifted (+1000mm, +0mm)
+  [modified] KitchenSink (arch.fixture) — shifted (+1000mm, +0mm)
+  [modified] Lab (arch.room) — size 3200x3440mm -> 4200x3440mm
+  [modified] LabBench (arch.fixture) — size 2200x700mm -> 2800x700mm
+  [modified] PharmShelfE (arch.fixture) — shifted (+1000mm, +0mm)
+  [modified] PharmShelfW (arch.fixture) — shifted (+1000mm, +0mm)
+  [modified] Pharmacy (arch.room) — shifted (+1000mm, +0mm)
+  [modified] StaffBasin (arch.fixture) — shifted (+1000mm, +0mm)
+  [modified] StaffToilet (arch.fixture) — shifted (+1000mm, +0mm)
+  [modified] StaffWC (arch.room) — shifted (+1000mm, +0mm)
+  [modified] SteriSink (arch.fixture) — shifted (+1000mm, +0mm)
+  [modified] WinBreakroomE (arch.window) — shifted (+1000mm, +0mm)
+  [modified] WinBreakroomS (arch.window) — shifted (+1000mm, +0mm)
+  [modified] WinExam1N (arch.window) — width 2000mm -> 1800mm; shifted (-350mm, +0mm)
+  [modified] WinExam2N (arch.window) — width 2000mm -> 1800mm; shifted (-830mm, +0mm)
+  [modified] WinExam3N (arch.window) — width 2000mm -> 1800mm; shifted (-2530mm, +0mm)
+  [modified] WinExam4N (arch.window) — width 2000mm -> 1800mm; shifted (-2890mm, +0mm)
+  [added] DoorExam5 (arch.door) — Added entity 'DoorExam5'
+  [added] Exam5 (arch.room) — Added entity 'Exam5'
+  [added] Exam5Basin (arch.fixture) — Added entity 'Exam5Basin'
+  [added] Exam5Desk (arch.fixture) — Added entity 'Exam5Desk'
+  [added] Exam5Table (arch.fixture) — Added entity 'Exam5Table'
+  [added] WinExam5N (arch.window) — Added entity 'WinExam5N'
