@@ -1,0 +1,364 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280.0 1240.0" width="1280" height="1240">
+<!--EDL_VIEW ox=120.166898 oy=1029.874826 kx=0.089012517 ky=-0.089012517-->
+  <defs>
+    <pattern id="dry-zone-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#ef4444" stroke-width="1.4" stroke-opacity="0.38"/>
+    </pattern>
+    <pattern id="db-clr-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+      <line x1="0" y1="0" x2="0" y2="7" stroke="#dc2626" stroke-width="1.2" stroke-opacity="0.35"/>
+    </pattern>
+    <style>
+      .bg { fill: #f8f9fb; }
+      .sheet { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; }
+      .room-fill { fill: #f1f5f9; stroke: #cbd5e1; stroke-width: 0.7; }
+      .room-fill-alt { fill: #eef6ff; stroke: #cbd5e1; stroke-width: 0.7; }
+      .room-fill-bath { fill: #ecfeff; stroke: #cbd5e1; stroke-width: 0.7; }
+      .room-fill-circ { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 0.7; }
+      .room-fill-outdoor { fill: #fefce8; stroke: #a16207; stroke-width: 1.0; stroke-dasharray: 5 3; }
+      .room-fill-err { fill: #fef2f2; stroke: #dc2626; stroke-width: 1.5; }
+      .grid-line { stroke: #94a3b8; stroke-width: 0.7; stroke-dasharray: 8 4 2 4; stroke-opacity: 0.55; }
+      .grid-bubble { fill: #ffffff; stroke: #475569; stroke-width: 1.2; }
+      .grid-bubble-txt { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+      .grid-bay-dim { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9px; fill: #64748b; text-anchor: middle; }
+      .col-concrete { fill: #0f172a; stroke: #334155; stroke-width: 0.7; }
+      .col-steel { fill: none; stroke: #0f172a; stroke-width: 2.0; stroke-linecap: square; }
+      .elev-box { fill: #ffffff; fill-opacity: 0.9; stroke: #475569; stroke-width: 0.8; }
+      .elev-txt { font-family: monospace; font-size: 8.5px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+      .stair-tread { stroke: #64748b; stroke-width: 0.85; }
+      .stair-arrow { stroke: #334155; stroke-width: 1.25; fill: none; }
+      .elev-x { stroke: #64748b; stroke-width: 1.2; }
+      .wall-ext { fill: #1e293b; stroke: #0f172a; stroke-width: 0.4; }
+      .wall-int { fill: #475569; stroke: #334155; stroke-width: 0.4; }
+      .door-leaf { stroke: #0f172a; stroke-width: 1.6; stroke-linecap: round; }
+      .door-arc { fill: #2563eb; fill-opacity: 0.06; stroke: #2563eb; stroke-width: 1.1; stroke-dasharray: 4 3; }
+      .door-arc-err { fill: #ef4444; fill-opacity: 0.22; stroke: #dc2626; stroke-width: 2.0; stroke-dasharray: 5 3; }
+      .win-frame { fill: #e0f2fe; stroke: #0284c7; stroke-width: 1.2; }
+      .win-glass { stroke: #0284c7; stroke-width: 1.0; }
+      .passage-line { stroke: #94a3b8; stroke-width: 1.0; stroke-dasharray: 4 3; }
+      .passage-jamb { stroke: #64748b; stroke-width: 1.5; }
+      .fx-body { fill: #e2e8f0; fill-opacity: 0.72; stroke: #475569; stroke-width: 1.0; }
+      .fx-detail { fill: none; stroke: #94a3b8; stroke-width: 0.8; }
+      .fx-body-err { fill: #fecaca; fill-opacity: 0.85; stroke: #dc2626; stroke-width: 1.8; }
+      .fx-clear { fill: #22c55e; fill-opacity: 0.06; stroke: #16a34a; stroke-width: 0.8; stroke-dasharray: 3 3; }
+      .fx-clear-err { fill: #ef4444; fill-opacity: 0.16; stroke: #dc2626; stroke-width: 1.4; stroke-dasharray: 3 3; }
+      .fx-label { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 8.2px; font-weight: 600; fill: #334155; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.4px; stroke-linejoin: round; }
+      .dim-line { stroke: #64748b; stroke-width: 0.9; }
+      .dim-tick { stroke: #334155; stroke-width: 1.5; stroke-linecap: round; }
+      .dim-text { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10px; font-weight: 600; fill: #334155; text-anchor: middle; }
+      .tag-door-bg { fill: #f0fdf4; stroke: #16a34a; stroke-width: 0.85; }
+      .tag-door-txt { font-family: monospace; font-size: 7.4px; font-weight: 700; fill: #15803d; text-anchor: middle; }
+      .tag-win-bg { fill: #eff6ff; stroke: #2563eb; stroke-width: 0.85; }
+      .tag-win-txt { font-family: monospace; font-size: 7.4px; font-weight: 700; fill: #1d4ed8; text-anchor: middle; }
+      .ckt-tag-bg { fill: #ffffff; fill-opacity: 0.92; stroke: #94a3b8; stroke-width: 0.7; }
+      .ckt-tag-l { font-family: monospace; font-size: 7.2px; font-weight: 700; fill: #0369a1; text-anchor: middle; }
+      .ckt-tag-p { font-family: monospace; font-size: 7.2px; font-weight: 700; fill: #c2410c; text-anchor: middle; }
+      .room-dim { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9px; fill: #64748b; text-anchor: middle; }
+      .room-title { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 12px; font-weight: 700; fill: #0f172a; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.5px; stroke-linejoin: round; }
+      .room-sub { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9.5px; fill: #64748b; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.0px; stroke-linejoin: round; }
+      .badge { font-family: monospace; font-size: 8.5px; font-weight: 600; fill: #1d4ed8; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.4px; stroke-linejoin: round; }
+      .badge-err { font-family: monospace; font-size: 9px; font-weight: 700; fill: #dc2626; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.5px; stroke-linejoin: round; }
+      .title-text { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 15px; font-weight: 700; fill: #0f172a; }
+      .meta-text { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 11px; fill: #475569; }
+      .status-ok { font-family: monospace; font-size: 11px; font-weight: 700; fill: #15803d; text-anchor: end; }
+      .status-err { font-family: monospace; font-size: 11px; font-weight: 700; fill: #dc2626; text-anchor: end; }
+      .status-err-sub { font-family: monospace; font-size: 10px; font-weight: 600; fill: #b91c1c; text-anchor: end; }
+      .mep-wire-light { fill: none; stroke: #0284c7; stroke-width: 1.45; stroke-opacity: 0.85; }
+      .mep-wire-power { fill: none; stroke: #ea580c; stroke-width: 1.55; stroke-opacity: 0.85; }
+      .mep-wire-swleg { fill: none; stroke: #9333ea; stroke-width: 1.15; stroke-dasharray: 4 3; stroke-opacity: 0.85; }
+      .mep-panel { fill: #dc2626; stroke: #7f1d1d; stroke-width: 1.4; }
+      .mep-light { fill: #fef08a; stroke: #ca8a04; stroke-width: 1.6; }
+      .mep-switch { fill: #ffffff; stroke: #7e22ce; stroke-width: 1.6; }
+      .mep-outlet { fill: #ffedd5; stroke: #c2410c; stroke-width: 1.5; }
+      .mep-err { fill: #fecaca; stroke: #dc2626; stroke-width: 2.2; }
+      .mep-lbl { font-family: monospace; font-size: 7.8px; font-weight: 700; fill: #0f172a; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.6px; stroke-linejoin: round; }
+    </style>
+  </defs>
+  <rect class="bg" x="0" y="0" width="1280.0" height="1240.0"/>
+  <rect class="sheet" x="16" y="16" width="1248.0" height="1208.0" rx="6"/>
+  <g id="rooms">
+    <rect id="room-Bed0" class="room-fill" x="120.17" y="743.25" width="284.84" height="286.62"/>
+    <rect id="room-Bath1" class="room-fill-bath" x="415.69" y="743.25" width="160.22" height="167.34"/>
+    <rect id="room-Kitchen" class="room-fill-alt" x="586.59" y="743.25" width="204.73" height="243.89"/>
+    <rect id="room-Balcony0" class="room-fill-outdoor" x="802.00" y="743.25" width="338.25" height="146.87"/>
+    <rect id="room-Living" class="room-fill" x="120.17" y="454.85" width="1020.08" height="277.72"/>
+    <rect id="room-Bed2" class="room-fill" x="120.17" y="161.11" width="265.26" height="283.06"/>
+    <rect id="room-Bath0" class="room-fill-bath" x="396.11" y="282.17" width="142.42" height="162.00"/>
+    <rect id="room-Bath2" class="room-fill-bath" x="549.21" y="282.17" width="135.30" height="162.00"/>
+    <rect id="room-Bed1" class="room-fill" x="695.19" y="120.17" width="324.01" height="324.01"/>
+    <rect id="room-Balcony1" class="room-fill-outdoor" x="1029.87" y="120.17" width="129.96" height="324.01"/>
+  </g>
+  <g id="fixtures">
+    <rect id="fx-clear-LivingSofa" class="fx-clear" x="547.43" y="534.97" width="213.63" height="62.31"/>
+    <rect id="fx-LivingSofa" class="fx-body" x="547.43" y="454.85" width="213.63" height="80.11" rx="2"/>
+    <text class="fx-label" x="654.24" y="497.91">LivingSofa</text>
+    <rect id="fx-clear-DiningTable" class="fx-clear" x="939.08" y="534.97" width="160.22" height="53.41"/>
+    <rect id="fx-DiningTable" class="fx-body" x="939.08" y="454.85" width="160.22" height="80.11" rx="2"/>
+    <text class="fx-label" x="1019.19" y="497.91">DiningTable</text>
+    <rect id="fx-clear-KitchenCounter" class="fx-clear" x="640.00" y="782.42" width="62.31" height="169.12"/>
+    <rect id="fx-KitchenCounter" class="fx-body" x="586.59" y="782.42" width="53.41" height="169.12" rx="2"/>
+    <text class="fx-label" x="613.30" y="869.98" transform="rotate(-90 613.30 866.98)">KitchenCounter</text>
+    <rect id="fx-clear-Bath1_WC" class="fx-clear" x="470.88" y="850.96" width="44.51" height="37.39"/>
+    <rect id="fx-Bath1_WC" class="fx-body" x="515.38" y="850.96" width="60.53" height="37.39" rx="2"/>
+    <text class="fx-label" x="545.65" y="872.65">Bath1_WC</text>
+    <rect id="fx-clear-Bath1_Sink" class="fx-clear" x="453.07" y="837.61" width="44.51" height="46.29"/>
+    <rect id="fx-Bath1_Sink" class="fx-body" x="415.69" y="837.61" width="37.39" height="46.29" rx="2"/>
+    <rect id="fx-clear-Bath0_WC" class="fx-clear" x="433.49" y="308.87" width="44.51" height="37.39"/>
+    <rect id="fx-Bath0_WC" class="fx-body" x="478.00" y="308.87" width="60.53" height="37.39" rx="2"/>
+    <text class="fx-label" x="508.26" y="330.57">Bath0_WC</text>
+    <rect id="fx-clear-Bath2_WC" class="fx-clear" x="609.74" y="384.53" width="44.51" height="37.39"/>
+    <rect id="fx-Bath2_WC" class="fx-body" x="549.21" y="384.53" width="60.53" height="37.39" rx="2"/>
+    <text class="fx-label" x="579.47" y="406.23">Bath2_WC</text>
+    <rect id="fx-clear-Bed0_Bed" class="fx-clear" x="298.19" y="865.20" width="53.41" height="133.52"/>
+    <rect id="fx-Bed0_Bed" class="fx-body" x="120.17" y="865.20" width="178.03" height="133.52" rx="2"/>
+    <rect class="fx-detail" x="124.17" y="869.20" width="24.00" height="125.52" rx="2"/>
+    <text class="fx-label" x="209.18" y="934.96">Bed0_Bed</text>
+    <rect id="fx-clear-Bed2_Bed" class="fx-clear" x="298.19" y="230.54" width="53.41" height="124.62"/>
+    <rect id="fx-Bed2_Bed" class="fx-body" x="120.17" y="230.54" width="178.03" height="124.62" rx="2"/>
+    <rect class="fx-detail" x="124.17" y="234.54" width="24.00" height="116.62" rx="2"/>
+    <text class="fx-label" x="209.18" y="295.85">Bed2_Bed</text>
+    <rect id="fx-clear-Bed1_Bed" class="fx-clear" x="777.08" y="307.09" width="160.22" height="57.86"/>
+    <rect id="fx-Bed1_Bed" class="fx-body" x="777.08" y="120.17" width="160.22" height="186.93" rx="2"/>
+    <rect class="fx-detail" x="781.08" y="124.17" width="152.22" height="24.00" rx="2"/>
+    <text class="fx-label" x="857.19" y="216.63">Bed1_Bed</text>
+  </g>
+  <g id="walls">
+    <rect class="wall-ext" x="102.36" y="1029.87" width="97.91" height="17.80"/>
+    <rect class="wall-ext" x="324.90" y="1029.87" width="97.91" height="17.80"/>
+    <rect class="wall-ext" x="102.36" y="639.11" width="17.80" height="390.76"/>
+    <rect class="wall-ext" x="405.01" y="928.40" width="17.80" height="101.47"/>
+    <rect class="wall-ext" x="568.79" y="987.15" width="71.21" height="17.80"/>
+    <rect class="wall-ext" x="737.91" y="987.15" width="71.21" height="17.80"/>
+    <rect class="wall-ext" x="568.79" y="928.40" width="17.80" height="58.75"/>
+    <rect class="wall-ext" x="791.32" y="907.93" width="17.80" height="79.22"/>
+    <rect class="wall-int" x="405.01" y="743.25" width="10.68" height="185.15"/>
+    <rect class="wall-ext" x="415.69" y="910.60" width="160.22" height="17.80"/>
+    <rect class="wall-int" x="575.91" y="743.25" width="10.68" height="185.15"/>
+    <rect class="wall-int" x="791.32" y="743.25" width="10.68" height="164.67"/>
+    <rect class="wall-ext" x="802.00" y="890.13" width="356.05" height="17.80"/>
+    <rect class="wall-ext" x="1140.25" y="661.36" width="17.80" height="228.76"/>
+    <rect class="wall-int" x="120.17" y="732.57" width="97.91" height="10.68"/>
+    <rect class="wall-int" x="293.74" y="732.57" width="166.45" height="10.68"/>
+    <rect class="wall-int" x="526.95" y="732.57" width="121.95" height="10.68"/>
+    <rect class="wall-int" x="724.56" y="732.57" width="202.06" height="10.68"/>
+    <rect class="wall-int" x="1006.73" y="732.57" width="133.52" height="10.68"/>
+    <rect class="wall-ext" x="102.36" y="161.11" width="17.80" height="388.98"/>
+    <rect class="wall-ext" x="1140.25" y="461.97" width="17.80" height="65.87"/>
+    <rect class="wall-ext" x="1140.25" y="454.85" width="37.39" height="7.12"/>
+    <rect class="wall-int" x="120.17" y="444.17" width="93.46" height="10.68"/>
+    <rect class="wall-int" x="289.29" y="444.17" width="144.20" height="10.68"/>
+    <rect class="wall-int" x="500.25" y="444.17" width="310.65" height="10.68"/>
+    <rect class="wall-int" x="891.02" y="444.17" width="267.04" height="10.68"/>
+    <rect class="wall-ext" x="1158.05" y="444.17" width="19.58" height="10.68"/>
+    <rect class="wall-int" x="385.42" y="264.37" width="10.68" height="179.81"/>
+    <rect class="wall-int" x="538.53" y="282.17" width="10.68" height="162.00"/>
+    <rect class="wall-int" x="684.51" y="399.67" width="10.68" height="44.51"/>
+    <rect class="wall-int" x="1019.19" y="324.01" width="10.68" height="120.17"/>
+    <rect class="wall-ext" x="1159.83" y="120.17" width="17.80" height="324.01"/>
+    <rect class="wall-int" x="684.51" y="264.37" width="10.68" height="68.54"/>
+    <rect class="wall-ext" x="396.11" y="264.37" width="288.40" height="17.80"/>
+    <rect class="wall-ext" x="385.42" y="161.11" width="17.80" height="103.25"/>
+    <rect class="wall-ext" x="677.39" y="120.17" width="17.80" height="144.20"/>
+    <rect class="wall-int" x="1019.19" y="120.17" width="10.68" height="123.73"/>
+    <rect class="wall-ext" x="102.36" y="143.31" width="88.12" height="17.80"/>
+    <rect class="wall-ext" x="315.10" y="143.31" width="88.12" height="17.80"/>
+    <rect class="wall-ext" x="677.39" y="102.36" width="108.60" height="17.80"/>
+    <rect class="wall-ext" x="928.40" y="102.36" width="249.24" height="17.80"/>
+  </g>
+  <g id="openings">
+    <path id="door-arc-FrontDoor" class="door-arc" d="M 120.17 639.11 L 120.17 550.10 A 89.01 89.01 0 0 1 209.18 639.11 Z"/>
+    <line class="door-leaf" x1="120.17" y1="639.11" x2="209.18" y2="639.11"/>
+    <rect class="tag-door-bg" x="144.9" y="599.5" width="19.8" height="10" rx="4.5"/>
+    <text class="tag-door-txt" x="154.78" y="606.99">D01</text>
+    <path id="door-arc-D_Bed0" class="door-arc" d="M 218.08 743.25 L 293.74 743.25 A 75.66 75.66 0 0 1 218.08 818.92 Z"/>
+    <line class="door-leaf" x1="218.08" y1="743.25" x2="218.08" y2="818.92"/>
+    <rect class="tag-door-bg" x="237.6" y="767.7" width="19.8" height="10" rx="4.5"/>
+    <text class="tag-door-txt" x="247.51" y="775.18">D02</text>
+    <path id="door-arc-D_Bath1" class="door-arc" d="M 460.19 743.25 L 526.95 743.25 A 66.76 66.76 0 0 1 460.19 810.01 Z"/>
+    <line class="door-leaf" x1="460.19" y1="743.25" x2="460.19" y2="810.01"/>
+    <rect class="tag-door-bg" x="476.3" y="764.2" width="19.8" height="10" rx="4.5"/>
+    <text class="tag-door-txt" x="486.16" y="771.72">D03</text>
+    <path id="door-arc-D_Kitchen" class="door-arc" d="M 648.90 743.25 L 724.56 743.25 A 75.66 75.66 0 0 1 648.90 818.92 Z"/>
+    <line class="door-leaf" x1="648.90" y1="743.25" x2="648.90" y2="818.92"/>
+    <rect class="tag-door-bg" x="668.4" y="767.7" width="19.8" height="10" rx="4.5"/>
+    <text class="tag-door-txt" x="678.33" y="775.18">D04</text>
+    <path id="door-arc-D_Balcony0" class="door-arc" d="M 926.62 732.57 L 1006.73 732.57 A 80.11 80.11 0 0 0 926.62 652.46 Z"/>
+    <line class="door-leaf" x1="926.62" y1="732.57" x2="926.62" y2="652.46"/>
+    <rect class="tag-door-bg" x="947.9" y="696.4" width="19.8" height="10" rx="4.5"/>
+    <text class="tag-door-txt" x="957.78" y="703.92">D05</text>
+    <path id="door-arc-D_Bed2" class="door-arc" d="M 213.63 444.17 L 289.29 444.17 A 75.66 75.66 0 0 0 213.63 368.51 Z"/>
+    <line class="door-leaf" x1="213.63" y1="444.17" x2="213.63" y2="368.51"/>
+    <rect class="tag-door-bg" x="233.2" y="409.7" width="19.8" height="10" rx="4.5"/>
+    <text class="tag-door-txt" x="243.06" y="417.25">D06</text>
+    <path id="door-arc-D_Bath0" class="door-arc" d="M 433.49 444.17 L 500.25 444.17 A 66.76 66.76 0 0 0 433.49 377.41 Z"/>
+    <line class="door-leaf" x1="433.49" y1="444.17" x2="433.49" y2="377.41"/>
+    <rect class="tag-door-bg" x="449.6" y="413.2" width="19.8" height="10" rx="4.5"/>
+    <text class="tag-door-txt" x="459.45" y="420.71">D07</text>
+    <path id="door-arc-D_Bed1" class="door-arc" d="M 810.90 444.17 L 891.02 444.17 A 80.11 80.11 0 0 0 810.90 364.06 Z"/>
+    <line class="door-leaf" x1="810.90" y1="444.17" x2="810.90" y2="364.06"/>
+    <rect class="tag-door-bg" x="832.2" y="408.0" width="19.8" height="10" rx="4.5"/>
+    <text class="tag-door-txt" x="842.06" y="415.52">D08</text>
+    <path id="door-arc-D_Ensuite" class="door-arc" d="M 684.51 399.67 L 684.51 332.91 A 66.76 66.76 0 0 0 617.75 399.67 Z"/>
+    <line class="door-leaf" x1="684.51" y1="399.67" x2="617.75" y2="399.67"/>
+    <rect class="tag-door-bg" x="648.6" y="368.7" width="19.8" height="10" rx="4.5"/>
+    <text class="tag-door-txt" x="658.54" y="376.20">D09</text>
+    <path id="door-arc-D_Balcony1" class="door-arc" d="M 1019.19 324.01 L 1019.19 243.89 A 80.11 80.11 0 0 0 939.08 324.01 Z"/>
+    <line class="door-leaf" x1="1019.19" y1="324.01" x2="939.08" y2="324.01"/>
+    <rect class="tag-door-bg" x="978.1" y="287.8" width="19.8" height="10" rx="4.5"/>
+    <text class="tag-door-txt" x="988.04" y="295.35">D10</text>
+    <rect id="win-W_Bed0" class="win-frame" x="200.28" y="1029.87" width="124.62" height="17.80"/>
+    <line class="win-glass" x1="200.28" y1="1038.78" x2="324.90" y2="1038.78"/>
+    <polygon class="tag-win-bg" points="251.9,1056.2 254.9,1051.2 270.3,1051.2 273.3,1056.2 270.3,1061.2 254.9,1061.2"/>
+    <text class="tag-win-txt" x="262.59" y="1058.68">W01</text>
+    <rect id="win-W_Kitchen" class="win-frame" x="640.00" y="987.15" width="97.91" height="17.80"/>
+    <line class="win-glass" x1="640.00" y1="996.05" x2="737.91" y2="996.05"/>
+    <polygon class="tag-win-bg" points="678.3,1013.5 681.3,1008.5 696.7,1008.5 699.7,1013.5 696.7,1018.5 681.3,1018.5"/>
+    <text class="tag-win-txt" x="688.96" y="1015.95">W02</text>
+    <rect id="win-W_Living_E" class="win-frame" x="1140.25" y="527.84" width="17.80" height="133.52"/>
+    <line class="win-glass" x1="1149.15" y1="661.36" x2="1149.15" y2="527.84"/>
+    <polygon class="tag-win-bg" points="1161.4,594.6 1164.4,589.6 1179.8,589.6 1182.8,594.6 1179.8,599.6 1164.4,599.6"/>
+    <text class="tag-win-txt" x="1172.05" y="597.10">W03</text>
+    <rect id="win-W_Bed2" class="win-frame" x="190.49" y="143.31" width="124.62" height="17.80"/>
+    <line class="win-glass" x1="190.49" y1="152.21" x2="315.10" y2="152.21"/>
+    <polygon class="tag-win-bg" points="242.1,131.8 245.1,126.8 260.5,126.8 263.5,131.8 260.5,136.8 245.1,136.8"/>
+    <text class="tag-win-txt" x="252.80" y="134.31">W04</text>
+    <rect id="win-W_Bed1" class="win-frame" x="785.98" y="102.36" width="142.42" height="17.80"/>
+    <line class="win-glass" x1="785.98" y1="111.27" x2="928.40" y2="111.27"/>
+    <polygon class="tag-win-bg" points="846.5,90.9 849.5,85.9 864.9,85.9 867.9,90.9 864.9,95.9 849.5,95.9"/>
+    <text class="tag-win-txt" x="857.19" y="93.36">W05</text>
+  </g>
+  <g id="room-labels">
+    <text class="room-title" x="358.72" y="879.56">Bed0</text>
+    <text class="room-sub" x="358.72" y="894.56">3.20m × 3.22m</text>
+    <text class="room-sub" x="358.72" y="907.56">10.30 m²</text>
+    <text class="room-title" style="font-size:10.5px;" x="529.62" y="823.93">Bath1</text>
+    <text class="room-sub" style="font-size:8.8px;" x="529.62" y="835.93">3.38 m²</text>
+    <text class="room-title" style="font-size:10.5px;" x="688.96" y="862.20">Kitchen</text>
+    <text class="room-sub" style="font-size:8.8px;" x="688.96" y="874.20">6.30 m²</text>
+    <text class="room-title" style="font-size:10.5px;" x="971.13" y="813.69">Balcony0</text>
+    <text class="room-sub" style="font-size:8.8px;" x="971.13" y="825.69">6.27 m²</text>
+    <text class="room-title" x="630.21" y="586.71">Living</text>
+    <text class="room-sub" x="630.21" y="601.71">11.46m × 3.12m</text>
+    <text class="room-sub" x="630.21" y="614.71">35.76 m²</text>
+    <text class="room-title" x="166.45" y="373.38">Bed2</text>
+    <text class="room-sub" x="166.45" y="388.38">2.98m × 3.18m</text>
+    <text class="room-sub" x="166.45" y="401.38">9.48 m²</text>
+    <text class="room-title" style="font-size:10.5px;" x="442.39" y="304.09">Bath0</text>
+    <text class="room-sub" style="font-size:8.8px;" x="442.39" y="316.09">2.91 m²</text>
+    <text class="room-title" style="font-size:10.5px;" x="616.86" y="304.09">Bath2</text>
+    <text class="room-sub" style="font-size:8.8px;" x="616.86" y="316.09">2.77 m²</text>
+    <text class="room-title" x="741.47" y="366.56">Bed1</text>
+    <text class="room-sub" x="741.47" y="381.56">3.64m × 3.64m</text>
+    <text class="room-sub" x="741.47" y="394.56">13.25 m²</text>
+    <text class="room-title" style="font-size:10.5px;" x="1094.85" y="279.17">Balcony1</text>
+    <text class="room-sub" style="font-size:8.8px;" x="1094.85" y="291.17">5.31 m²</text>
+  </g>
+  <g id="dimensions">
+    <line class="dim-line" x1="102.36" y1="52.52" x2="1177.64" y2="52.52"/>
+    <line class="dim-line" x1="102.36" y1="46.52" x2="102.36" y2="98.36"/>
+    <line class="dim-line" x1="1177.64" y1="46.52" x2="1177.64" y2="98.36"/>
+    <line class="dim-tick" x1="98.86" y1="56.02" x2="105.86" y2="49.02"/>
+    <line class="dim-tick" x1="1174.14" y1="56.02" x2="1181.14" y2="49.02"/>
+    <text class="dim-text" x="640.00" y="46.52">12080 mm (12.08 m)</text>
+    <line class="dim-line" x1="1227.48" y1="102.36" x2="1227.48" y2="1047.68"/>
+    <line class="dim-line" x1="1181.64" y1="102.36" x2="1233.48" y2="102.36"/>
+    <line class="dim-line" x1="1181.64" y1="1047.68" x2="1233.48" y2="1047.68"/>
+    <line class="dim-tick" x1="1223.98" y1="105.86" x2="1230.98" y2="98.86"/>
+    <line class="dim-tick" x1="1223.98" y1="1051.18" x2="1230.98" y2="1044.18"/>
+    <text class="dim-text" x="1241.48" y="575.02" transform="rotate(90 1241.48 575.02)">10620 mm (10.62 m)</text>
+    <line class="dim-line" x1="120.17" y1="80.11" x2="385.42" y2="80.11"/>
+    <line class="dim-tick" x1="116.67" y1="83.61" x2="123.67" y2="76.61"/>
+    <line class="dim-tick" x1="381.92" y1="83.61" x2="388.92" y2="76.61"/>
+    <text class="dim-text" x="252.80" y="75.11">2980</text>
+    <line class="dim-line" x1="396.11" y1="80.11" x2="538.53" y2="80.11"/>
+    <line class="dim-tick" x1="392.61" y1="83.61" x2="399.61" y2="76.61"/>
+    <line class="dim-tick" x1="535.03" y1="83.61" x2="542.03" y2="76.61"/>
+    <text class="dim-text" x="467.32" y="75.11">1600</text>
+    <line class="dim-line" x1="549.21" y1="80.11" x2="684.51" y2="80.11"/>
+    <line class="dim-tick" x1="545.71" y1="83.61" x2="552.71" y2="76.61"/>
+    <line class="dim-tick" x1="681.01" y1="83.61" x2="688.01" y2="76.61"/>
+    <text class="dim-text" x="616.86" y="75.11">1520</text>
+    <line class="dim-line" x1="695.19" y1="80.11" x2="1019.19" y2="80.11"/>
+    <line class="dim-tick" x1="691.69" y1="83.61" x2="698.69" y2="76.61"/>
+    <line class="dim-tick" x1="1015.69" y1="83.61" x2="1022.69" y2="76.61"/>
+    <text class="dim-text" x="857.19" y="75.11">3640</text>
+    <line class="dim-line" x1="1029.87" y1="80.11" x2="1159.83" y2="80.11"/>
+    <line class="dim-tick" x1="1026.37" y1="83.61" x2="1033.37" y2="76.61"/>
+    <line class="dim-tick" x1="1156.33" y1="83.61" x2="1163.33" y2="76.61"/>
+    <text class="dim-text" x="1094.85" y="75.11">1460</text>
+    <line class="dim-line" x1="120.17" y1="1069.93" x2="405.01" y2="1069.93"/>
+    <line class="dim-tick" x1="116.67" y1="1073.43" x2="123.67" y2="1066.43"/>
+    <line class="dim-tick" x1="401.51" y1="1073.43" x2="408.51" y2="1066.43"/>
+    <text class="dim-text" x="262.59" y="1081.93">3200</text>
+    <line class="dim-line" x1="415.69" y1="1069.93" x2="575.91" y2="1069.93"/>
+    <line class="dim-tick" x1="412.19" y1="1073.43" x2="419.19" y2="1066.43"/>
+    <line class="dim-tick" x1="572.41" y1="1073.43" x2="579.41" y2="1066.43"/>
+    <text class="dim-text" x="495.80" y="1081.93">1800</text>
+    <line class="dim-line" x1="586.59" y1="1069.93" x2="791.32" y2="1069.93"/>
+    <line class="dim-tick" x1="583.09" y1="1073.43" x2="590.09" y2="1066.43"/>
+    <line class="dim-tick" x1="787.82" y1="1073.43" x2="794.82" y2="1066.43"/>
+    <text class="dim-text" x="688.96" y="1081.93">2300</text>
+    <line class="dim-line" x1="802.00" y1="1069.93" x2="1140.25" y2="1069.93"/>
+    <line class="dim-tick" x1="798.50" y1="1073.43" x2="805.50" y2="1066.43"/>
+    <line class="dim-tick" x1="1136.75" y1="1073.43" x2="1143.75" y2="1066.43"/>
+    <text class="dim-text" x="971.13" y="1081.93">3800</text>
+    <line class="dim-line" x1="1199.89" y1="1029.87" x2="1199.89" y2="987.15"/>
+    <line class="dim-tick" x1="1196.39" y1="1033.37" x2="1203.39" y2="1026.37"/>
+    <line class="dim-tick" x1="1196.39" y1="990.65" x2="1203.39" y2="983.65"/>
+    <text class="dim-text" x="1210.89" y="1008.51" transform="rotate(90 1210.89 1008.51)">480</text>
+    <line class="dim-line" x1="1199.89" y1="987.15" x2="1199.89" y2="907.93"/>
+    <line class="dim-tick" x1="1196.39" y1="990.65" x2="1203.39" y2="983.65"/>
+    <line class="dim-tick" x1="1196.39" y1="911.43" x2="1203.39" y2="904.43"/>
+    <text class="dim-text" x="1210.89" y="947.54" transform="rotate(90 1210.89 947.54)">890</text>
+    <line class="dim-line" x1="1199.89" y1="890.13" x2="1199.89" y2="743.25"/>
+    <line class="dim-tick" x1="1196.39" y1="893.63" x2="1203.39" y2="886.63"/>
+    <line class="dim-tick" x1="1196.39" y1="746.75" x2="1203.39" y2="739.75"/>
+    <text class="dim-text" x="1210.89" y="816.69" transform="rotate(90 1210.89 816.69)">1650</text>
+    <line class="dim-line" x1="1199.89" y1="732.57" x2="1199.89" y2="454.85"/>
+    <line class="dim-tick" x1="1196.39" y1="736.07" x2="1203.39" y2="729.07"/>
+    <line class="dim-tick" x1="1196.39" y1="458.35" x2="1203.39" y2="451.35"/>
+    <text class="dim-text" x="1210.89" y="593.71" transform="rotate(90 1210.89 593.71)">3120</text>
+    <line class="dim-line" x1="1199.89" y1="444.17" x2="1199.89" y2="120.17"/>
+    <line class="dim-tick" x1="1196.39" y1="447.67" x2="1203.39" y2="440.67"/>
+    <line class="dim-tick" x1="1196.39" y1="123.67" x2="1203.39" y2="116.67"/>
+    <text class="dim-text" x="1210.89" y="282.17" transform="rotate(90 1210.89 282.17)">3640</text>
+    <line class="dim-line" x1="80.11" y1="1029.87" x2="80.11" y2="743.25"/>
+    <line class="dim-tick" x1="76.61" y1="1033.37" x2="83.61" y2="1026.37"/>
+    <line class="dim-tick" x1="76.61" y1="746.75" x2="83.61" y2="739.75"/>
+    <text class="dim-text" x="69.11" y="886.56" transform="rotate(-90 69.11 886.56)">3220</text>
+    <line class="dim-line" x1="80.11" y1="732.57" x2="80.11" y2="454.85"/>
+    <line class="dim-tick" x1="76.61" y1="736.07" x2="83.61" y2="729.07"/>
+    <line class="dim-tick" x1="76.61" y1="458.35" x2="83.61" y2="451.35"/>
+    <text class="dim-text" x="69.11" y="593.71" transform="rotate(-90 69.11 593.71)">3120</text>
+    <line class="dim-line" x1="80.11" y1="444.17" x2="80.11" y2="161.11"/>
+    <line class="dim-tick" x1="76.61" y1="447.67" x2="83.61" y2="440.67"/>
+    <line class="dim-tick" x1="76.61" y1="164.61" x2="83.61" y2="157.61"/>
+    <text class="dim-text" x="69.11" y="302.64" transform="rotate(-90 69.11 302.64)">3180</text>
+    <line class="dim-line" x1="80.11" y1="161.11" x2="80.11" y2="120.17"/>
+    <line class="dim-tick" x1="76.61" y1="164.61" x2="83.61" y2="157.61"/>
+    <line class="dim-tick" x1="76.61" y1="123.67" x2="83.61" y2="116.67"/>
+    <text class="dim-text" x="69.11" y="140.64" transform="rotate(-90 69.11 140.64)">460</text>
+  </g>
+  <g id="cd-title-block">
+    <rect x="26" y="1158.0" width="1228.0" height="56.0" rx="3" fill="#f8fafc" stroke="#334155" stroke-width="1.2"/>
+    <text x="40.0" y="1176.0" font-family="sans-serif" font-size="8.0" font-weight="700" fill="#475569">GRAPHIC SCALE (m)</text>
+    <rect x="40.0" y="1184.0" width="42.0" height="6" fill="#0f172a" stroke="#0f172a" stroke-width="0.9"/>
+    <rect x="82.0" y="1184.0" width="42.0" height="6" fill="#ffffff" stroke="#0f172a" stroke-width="0.9"/>
+    <rect x="124.0" y="1184.0" width="42.0" height="6" fill="#0f172a" stroke="#0f172a" stroke-width="0.9"/>
+    <rect x="166.0" y="1184.0" width="42.0" height="6" fill="#ffffff" stroke="#0f172a" stroke-width="0.9"/>
+    <text x="40.0" y="1200.0" font-family="monospace" font-size="7.5" font-weight="600" fill="#334155" text-anchor="middle">0m</text>
+    <text x="82.0" y="1200.0" font-family="monospace" font-size="7.5" font-weight="600" fill="#334155" text-anchor="middle">1m</text>
+    <text x="124.0" y="1200.0" font-family="monospace" font-size="7.5" font-weight="600" fill="#334155" text-anchor="middle">2m</text>
+    <text x="208.0" y="1200.0" font-family="monospace" font-size="7.5" font-weight="600" fill="#334155" text-anchor="middle">4m</text>
+    <circle cx="238.0" cy="1189.0" r="14" fill="#ffffff" stroke="#334155" stroke-width="1.0"/>
+    <polygon points="238.0,1178.0 232.5,1198.0 238.0,1193.5" fill="#0f172a"/>
+    <polygon points="238.0,1178.0 243.5,1198.0 238.0,1193.5" fill="#ffffff" stroke="#0f172a" stroke-width="0.8"/>
+    <text x="238.0" y="1172.5" font-family="sans-serif" font-size="8.5" font-weight="800" fill="#0f172a" text-anchor="middle">N</text>
+    <line x1="256.0" y1="1158.0" x2="256.0" y2="1214.0" stroke="#94a3b8" stroke-width="1.0"/>
+    <text class="title-text" x="266.0" y="1178.0">ResPlan_14433_3BR_Ref</text>
+    <text x="266.0" y="1192.0" font-family="sans-serif" font-size="9.2" font-weight="700" fill="#1d4ed8">ARCHITECTURAL &amp; STRUCTURAL FLOOR PLAN</text>
+    <text class="meta-text" style="font-size:9.5px;" x="266.0" y="1206.0">A3 landscape | Scale 1:100 | Rooms: 10 | Clear Area: 95.73 m² | Openings: 15 | Fixtures: 10 | DOF: 0</text>
+    <line x1="960.0" y1="1158.0" x2="960.0" y2="1214.0" stroke="#94a3b8" stroke-width="1.0"/>
+    <text class="status-ok" x="1242.0" y="1182.0">ALL CHECKS EXACTLY_CHECKED (7 rules)</text>
+    <text x="1242.0" y="1200.0" font-family="monospace" font-size="8.5" fill="#475569" text-anchor="end">EDL v3.6.0 | Units: mm | All Dims Verified</text>
+  </g>
+</svg>

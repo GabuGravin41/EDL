@@ -117,6 +117,7 @@ pub fn export_kicad_project(ir: &CanonicalIr) -> BTreeMap<String, String> {
 
     let mut custom_power_syms: BTreeMap<String, (String, bool)> = BTreeMap::new();
     let empty_hier: BTreeSet<String> = BTreeSet::new();
+    let project_extra_libs = collect_extra_symbol_libs(ir);
     if ir.views.len() <= 1 {
         let sch = export_kicad_sheet_inner(
             ir,
@@ -127,7 +128,7 @@ pub fn export_kicad_project(ir: &CanonicalIr) -> BTreeMap<String, String> {
             Some(&mut custom_power_syms),
         );
         files.insert(root_file, sch);
-        attach_custom_power_project_files(&proj_slug, &custom_power_syms, &mut files);
+        attach_custom_power_project_files(&proj_slug, &custom_power_syms, &project_extra_libs, &mut files);
         return files;
     }
 
@@ -556,16 +557,34 @@ pub fn export_kicad_project(ir: &CanonicalIr) -> BTreeMap<String, String> {
     let _ = writeln!(root, "  )");
     let _ = writeln!(root, ")");
     files.insert(root_file, root);
-    attach_custom_power_project_files(&proj_slug, &custom_power_syms, &mut files);
+    attach_custom_power_project_files(&proj_slug, &custom_power_syms, &project_extra_libs, &mut files);
     files
+}
+
+fn collect_extra_symbol_libs(ir: &CanonicalIr) -> Vec<std::path::PathBuf> {
+    let mut seen: BTreeSet<String> = BTreeSet::new();
+    let mut out = Vec::new();
+    for ent in &ir.entities {
+        if let Some(arr) = ent.props.get("symbol_libs").and_then(|v| v.as_array()) {
+            for v in arr {
+                if let Some(s) = v.as_str() {
+                    if seen.insert(s.to_string()) {
+                        out.push(std::path::PathBuf::from(s));
+                    }
+                }
+            }
+        }
+    }
+    out
 }
 
 fn attach_custom_power_project_files(
     proj_slug: &str,
     custom_power_syms: &BTreeMap<String, (String, bool)>,
+    extra_libs: &[std::path::PathBuf],
     files: &mut BTreeMap<String, String>,
 ) {
-    if custom_power_syms.is_empty() {
+    if custom_power_syms.is_empty() && extra_libs.is_empty() {
         return;
     }
     // Emit minimal KiCad 9 `.kicad_pro` so `${KIPRJMOD}` resolves cleanly in kicad-cli & KiCad GUI
@@ -574,19 +593,40 @@ fn attach_custom_power_project_files(
         "{{\n  \"meta\": {{\n    \"filename\": \"{pro_name}\",\n    \"version\": 1\n  }},\n  \"schematic\": {{\n    \"drawing\": {{\n      \"default_line_thickness\": 6.0\n    }}\n  }}\n}}\n"
     );
     files.insert(pro_name, pro_content);
-    let mut lib = String::new();
-    let _ = writeln!(lib, "(kicad_symbol_lib");
-    let _ = writeln!(lib, "  (version 20231120)");
-    let _ = writeln!(lib, "  (generator \"edl\")");
-    let _ = writeln!(lib, "  (generator_version \"3.6.0\")");
-    for (sym_id, (net_label, is_gnd)) in custom_power_syms {
-        lib.push_str(&format_custom_power_symbol(None, sym_id, net_label, *is_gnd, "  "));
-    }
-    let _ = writeln!(lib, ")");
-    files.insert("edl_power.kicad_sym".to_string(), lib);
 
-    let sym_table = "(sym_lib_table\n  (version 7)\n  (lib (name \"edl_power\")(type \"KiCad\")(uri \"${KIPRJMOD}/edl_power.kicad_sym\")(options \"\")(descr \"EDL custom and isolated power symbols\"))\n)\n";
-    files.insert("sym-lib-table".to_string(), sym_table.to_string());
+    let mut sym_table = String::from("(sym_lib_table\n  (version 7)\n");
+    if !custom_power_syms.is_empty() {
+        let mut lib = String::new();
+        let _ = writeln!(lib, "(kicad_symbol_lib");
+        let _ = writeln!(lib, "  (version 20231120)");
+        let _ = writeln!(lib, "  (generator \"edl\")");
+        let _ = writeln!(lib, "  (generator_version \"3.6.0\")");
+        for (sym_id, (net_label, is_gnd)) in custom_power_syms {
+            lib.push_str(&format_custom_power_symbol(None, sym_id, net_label, *is_gnd, "  "));
+        }
+        let _ = writeln!(lib, ")");
+        files.insert("edl_power.kicad_sym".to_string(), lib);
+        let _ = writeln!(
+            sym_table,
+            "  (lib (name \"edl_power\")(type \"KiCad\")(uri \"${{KIPRJMOD}}/edl_power.kicad_sym\")(options \"\")(descr \"EDL custom and isolated power symbols\"))"
+        );
+    }
+    let mut reg_names: BTreeSet<String> = BTreeSet::new();
+    for p in extra_libs {
+        if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
+            if reg_names.insert(stem.to_string()) {
+                let uri = p.to_string_lossy().replace('\\', "/");
+                let _ = writeln!(
+                    sym_table,
+                    "  (lib (name \"{}\")(type \"KiCad\")(uri \"{}\")(options \"\")(descr \"EDL project symbol library\"))",
+                    escape_sexpr(stem),
+                    escape_sexpr(&uri)
+                );
+            }
+        }
+    }
+    sym_table.push_str(")\n");
+    files.insert("sym-lib-table".to_string(), sym_table);
 }
 
 fn format_custom_power_symbol(
@@ -953,9 +993,10 @@ fn export_kicad_sheet_inner(
         }
     }
 
-    // Pre-scan which sheet entities match verbatim KiCad 9 system library symbols (exact pin-tip & pin-code parity!)
+    // Pre-scan which sheet entities match verbatim KiCad 9 system or project library symbols (exact pin-tip & pin-code parity!)
     // and collect which nets already have a real KiCad `power_out` driver pin (so we only add `power:PWR_FLAG`
     // to power/ground rails that genuinely need one in KiCad 9 ERC!).
+    let sheet_extra_libs = collect_extra_symbol_libs(ir);
     let mut verbatim_entities: BTreeMap<String, String> = BTreeMap::new();
     let mut verbatim_raw_cache: BTreeMap<String, String> = BTreeMap::new();
     let mut kicad_power_out_pins: std::collections::BTreeSet<(String, String)> =
@@ -976,7 +1017,7 @@ fn export_kicad_sheet_inner(
             continue;
         };
         if let (Some(lid), Some(orig)) = (lib_id, symbol_origin) {
-            if let Ok(ksym) = crate::domains::elec::kicad_sym::load_symbol(lid, &[]) {
+            if let Ok(ksym) = crate::domains::elec::kicad_sym::load_symbol(lid, &sheet_extra_libs) {
                 let u = unit.unwrap_or(1);
                 // Only use verbatim system symbol when single-unit (avoids KiCad `missing_power_pin`
                 // on multi-unit op-amps like LM358 when only unit A is placed without power unit C!)
@@ -1008,7 +1049,7 @@ fn export_kicad_sheet_inner(
                     });
                 if pins_match {
                     if let Some(raw) = verbatim_raw_cache.get(lid).cloned().or_else(|| {
-                        let r = crate::domains::elec::kicad_sym::load_raw_symbol_sexpr(lid, &[])?;
+                        let r = crate::domains::elec::kicad_sym::load_raw_symbol_sexpr(lid, &sheet_extra_libs)?;
                         verbatim_raw_cache.insert(lid.clone(), r.clone());
                         Some(r)
                     }) {
@@ -1066,7 +1107,7 @@ fn export_kicad_sheet_inner(
                 if !sheet_entities.iter().any(|se| se.id == ent.id) {
                     if is_verb {
                         if let Some(lid) = lib_id {
-                            if let Ok(ksym) = crate::domains::elec::kicad_sym::load_symbol(lid, &[]) {
+                            if let Ok(ksym) = crate::domains::elec::kicad_sym::load_symbol(lid, &sheet_extra_libs) {
                                 let u = unit.unwrap_or(1);
                                 for sp in ksym.pins.iter().filter(|p| (p.unit == 0 || p.unit == u) && !p.hide) {
                                     if sp.etype == "power_out" {

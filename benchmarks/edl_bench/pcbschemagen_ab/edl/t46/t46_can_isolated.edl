@@ -1,0 +1,291 @@
+// Task 46: CAN_ISOLATED_FULL
+// Fully isolated CAN interface using ISO7741, SN65HVD230, and NXE1S0303MC
+// InputNodes:  VDD (3.3V), GND, TXD, RXD
+// OutputNodes: CANH, CANL
+
+project "T46_CAN_ISOLATED_FULL" {
+  units: mm
+  frame Sheet: Frame2
+  symbol_lib "/home/lindah/projects/EDL/benchmarks/external/PCBSchemaGen_v2/library/test.kicad_sym"
+
+  circuit Main {
+    // =========================================================================
+    // PRIMARY (MCU) SIDE — 3.3V Domain (VDD / GND)
+    // =========================================================================
+    component J1: "Connector_Generic:Conn_01x04" {
+      value: "MCU_IF"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
+      pin 1: power_out(3.3V)
+      pin 2: ground
+    }
+
+    component C1: "Device:C" {
+      value: 4.7uF
+      voltage_rating: 16V
+      footprint: "Capacitor_SMD:C_0603_1608Metric"
+    }
+
+    component C2: "Device:C" {
+      value: 100nF
+      voltage_rating: 16V
+      footprint: "Capacitor_SMD:C_0603_1608Metric"
+    }
+
+    // =========================================================================
+    // ISOLATION BARRIER — Digital Isolator & Isolated DC-DC Converter
+    // =========================================================================
+    component U1: "test:ISO7741" {
+      value: "ISO7741"
+      isolated: true
+      footprint: "Package_SO:SOIC-16W_7.5x10.3mm_P1.27mm"
+      pin Vcc1: power_in(3.3V)
+      pin GND1: ground
+      pin Vcc2: power_in(3.3V)
+      pin GND2: ground
+      pin INA: input
+      pin INB: input
+      pin INC: input
+      pin IND: output
+      pin INE: input
+      pin INF: input
+      pin OUTA: output
+      pin OUTB: nc
+      pin OUTC: nc
+      pin OUTD: input
+      pin OUTE: nc
+      pin OUTF: nc
+    }
+
+    component U3: "test:NXE1S0303MC" {
+      value: "NXE1S0303MC"
+      isolated: true
+      footprint: "Converter_DCDC:Converter_DCDC_Murata_NXExSxxxxMC_SMD"
+      pin "+VIN": power_in(3.3V)
+      pin "-VIN": ground
+      pin "+VOUT": power_out(3.3V)
+      pin "-VOUT": ground
+      pin NC: nc
+    }
+
+    // =========================================================================
+    // SECONDARY (ISOLATED CAN BUS) SIDE — 3.3V Isolated Domain (VDD_ISO / GND_ISO)
+    // =========================================================================
+    component C3: "Device:C" {
+      value: 4.7uF
+      voltage_rating: 16V
+      footprint: "Capacitor_SMD:C_0603_1608Metric"
+    }
+
+    component C4: "Device:C" {
+      value: 100nF
+      voltage_rating: 16V
+      footprint: "Capacitor_SMD:C_0603_1608Metric"
+    }
+
+    component C5: "Device:C" {
+      value: 100nF
+      voltage_rating: 16V
+      footprint: "Capacitor_SMD:C_0603_1608Metric"
+    }
+
+    // Minimum preload for unregulated isolated DC-DC stability
+    component R_LOAD: "Device:R" {
+      value: 2.2k
+      power_rating: 0.1W
+      footprint: "Resistor_SMD:R_0603_1608Metric"
+    }
+
+    component U2: "test:SN65HVD230" {
+      value: "SN65HVD230"
+      footprint: "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+      pin VCC: power_in(3.3V)
+      pin GND: ground
+      pin D: input
+      pin R: output
+      pin RS: input
+      pin VREF: output
+    }
+
+    // Slope-control resistor on RS (10k to GND_ISO for controlled slew rate)
+    component R_RS: "Device:R" {
+      value: 10k
+      power_rating: 0.1W
+      footprint: "Resistor_SMD:R_0603_1608Metric"
+    }
+
+    // ISO 11898-2 Split 120-ohm termination (60.4R + 60.4R + 4.7nF to GND_ISO, biased by VREF)
+    component R_T1: "Device:R" {
+      value: 60.4R
+      power_rating: 0.25W
+      footprint: "Resistor_SMD:R_0805_2012Metric"
+    }
+
+    component R_T2: "Device:R" {
+      value: 60.4R
+      power_rating: 0.25W
+      footprint: "Resistor_SMD:R_0805_2012Metric"
+    }
+
+    component C_SPLIT: "Device:C" {
+      value: 4.7nF
+      voltage_rating: 50V
+      footprint: "Capacitor_SMD:C_0603_1608Metric"
+    }
+
+    // Bidirectional CAN bus ESD / TVS protection diodes
+    component D1: "Device:D_TVS" {
+      value: "PESD1CAN"
+      footprint: "Diode_SMD:D_SOD-323"
+    }
+
+    component D2: "Device:D_TVS" {
+      value: "PESD1CAN"
+      footprint: "Diode_SMD:D_SOD-323"
+    }
+
+    component J2: "Connector_Generic:Conn_01x03" {
+      value: "CAN_BUS"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+    }
+
+    // =========================================================================
+    // NETS — Primary Side
+    // =========================================================================
+    net VDD {
+      connect: [J1.1, C1.1, C2.1, U3."+VIN", U1.Vcc1]
+      power_flag: true
+    }
+
+    net GND {
+      connect: [J1.2, C1.2, C2.2, U3."-VIN", U1.GND1, U1.INB, U1.INC, U1.INE, U1.INF]
+      power_flag: true
+    }
+
+    net TXD {
+      connect: [J1.3, U1.INA]
+    }
+
+    net RXD {
+      connect: [J1.4, U1.IND]
+    }
+
+    // =========================================================================
+    // NETS — Isolated Secondary Side
+    // =========================================================================
+    net VDD_ISO {
+      connect: [U3."+VOUT", C3.1, C4.1, C5.1, R_LOAD.1, U1.Vcc2, U2.VCC]
+      power_flag: true
+    }
+
+    net GND_ISO {
+      connect: [U3."-VOUT", C3.2, C4.2, C5.2, R_LOAD.2, U1.GND2, U2.GND, R_RS.2, C_SPLIT.2, D1.2, D2.2, J2.3]
+      power_flag: true
+    }
+
+    net CAN_TXD_ISO {
+      connect: [U1.OUTA, U2.D]
+    }
+
+    net CAN_RXD_ISO {
+      connect: [U1.OUTD, U2.R]
+    }
+
+    net CAN_RS {
+      connect: [U2.RS, R_RS.1]
+    }
+
+    net CAN_SPLIT {
+      connect: [U2.VREF, R_T1.2, R_T2.1, C_SPLIT.1]
+    }
+
+    net CANH {
+      connect: [U2.CANH, R_T1.1, D1.1, J2.1]
+    }
+
+    net CANL {
+      connect: [U2.CANL, R_T2.2, D2.1, J2.2]
+    }
+  }
+
+  schematic MainSheet {
+    sheet: A3 landscape
+    title: "T46: Fully Isolated CAN Interface (ISO7741 + SN65HVD230 + NXE1S0303MC)"
+
+    routing {
+      default: zone_local
+      power: symbol
+      ground: symbol
+    }
+
+    group PrimarySide {
+      title: "PRIMARY (MCU) 3.3V DOMAIN"
+      rect: (25.40mm, 25.40mm, 127.00mm, 215.90mm)
+      border: dashed
+      color: blue
+      members: [J1, C1, C2]
+      note: "Input: VDD=3.3V, GND, TXD, RXD"
+    }
+
+    group IsolationStage {
+      title: "5kV GALVANIC ISOLATION BARRIER"
+      rect: (139.70mm, 25.40mm, 215.90mm, 215.90mm)
+      border: dashed
+      color: red
+      members: [U1, U3]
+      note: "ISO7741 Digital Isolator + NXE1S0303MC 1W 3.3V/3.3V DC-DC"
+    }
+
+    group SecondarySide {
+      title: "ISOLATED CAN BUS 3.3V DOMAIN"
+      rect: (228.60mm, 25.40mm, 381.00mm, 215.90mm)
+      border: dashed
+      color: green
+      members: [C3, C4, C5, R_LOAD, U2, R_RS, R_T1, R_T2, C_SPLIT, D1, D2, J2]
+      note: "SN65HVD230 + Split 120R Termination + ESD TVS Protection"
+    }
+
+    divider {
+      from: (177.80mm, 20.32mm)
+      to: (177.80mm, 223.52mm)
+      label: "GALVANIC ISOLATION BARRIER (VDD/GND | VDD_ISO/GND_ISO)"
+      color: red
+    }
+
+    // Primary side placement (2.54mm grid)
+    place J1     center (50.80mm, 101.60mm) orient: 180
+    place C1     center (81.28mm, 157.48mm)
+    place C2     center (101.60mm, 81.28mm)
+
+    // Isolation devices straddling x = 177.80mm
+    place U1     center (177.80mm, 91.44mm)
+    place U3     center (177.80mm, 162.56mm)
+
+    // Isolated power decoupling & preload
+    place C3     center (246.38mm, 162.56mm)
+    place C4     center (264.16mm, 162.56mm)
+    place C5     center (281.94mm, 162.56mm)
+    place R_LOAD center (299.72mm, 162.56mm)
+
+    // CAN transceiver & bus termination/ESD (U2 pins on 1.27mm offset -> place at +1.27mm Y)
+    place U2     center (269.24mm, 92.71mm)
+    place R_RS   center (304.80mm, 68.58mm)
+    place R_T1   center (327.66mm, 83.82mm)
+    place R_T2   center (327.66mm, 104.14mm)
+    place C_SPLIT center (327.66mm, 127.00mm)
+    place D1     center (342.90mm, 83.82mm)
+    place D2     center (342.90mm, 109.22mm)
+    place J2     center (365.76mm, 93.98mm)
+  }
+
+  verify {
+    require all_required_pins_connected
+    require no_power_ground_short
+    require no_multiple_power_drivers
+    require voltage_compatibility
+    require no_single_pin_nets
+    require ic_decoupling
+    require bom_manufacturability
+    require galvanic_isolation(GND, GND_ISO)
+    require galvanic_isolation(VDD, VDD_ISO)
+  }
+}

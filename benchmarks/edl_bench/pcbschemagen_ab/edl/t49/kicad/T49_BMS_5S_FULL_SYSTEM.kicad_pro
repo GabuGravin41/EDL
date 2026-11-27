@@ -1,0 +1,11 @@
+{
+  "meta": {
+    "filename": "T49_BMS_5S_FULL_SYSTEM.kicad_pro",
+    "version": 1
+  },
+  "schematic": {
+    "drawing": {
+      "default_line_thickness": 6.0
+    }
+  }
+}

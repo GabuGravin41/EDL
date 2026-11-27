@@ -1,0 +1,80 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-11-28T00:02:39+0300",
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "9.0.9",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/820f7fcc-f35c-432b-b44e-9da5c323d5f7",
+            "violations": [
+                {
+                    "description": "Symbol 'TPS54302' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U1 [TPS54302]",
+                            "pos": {
+                                "x": 1.7272,
+                                "y": 0.7874
+                            },
+                            "uuid": "627ca1d0-3c15-4ab2-9976-8e0ceaa75225"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'STM32F103C8T6' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U3 [STM32F103C8T6]",
+                            "pos": {
+                                "x": 1.9812,
+                                "y": 2.3876
+                            },
+                            "uuid": "e73b0755-aff8-45a4-83a4-f60fefe02114"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'TLV1117-33' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U2 [TLV1117-33]",
+                            "pos": {
+                                "x": 4.191,
+                                "y": 0.7874
+                            },
+                            "uuid": "5c9765f4-f96a-45fe-be59-739dec3d56af"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'SN65HVD230' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U4 [SN65HVD230]",
+                            "pos": {
+                                "x": 4.3688,
+                                "y": 2.9464
+                            },
+                            "uuid": "c004e980-4cf7-4ca3-b373-47f0362d5dc6"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                }
+            ]
+        }
+    ],
+    "source": "t52_iot_node.kicad_sch"
+}

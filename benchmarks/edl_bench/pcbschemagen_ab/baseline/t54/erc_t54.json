@@ -1,0 +1,65 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-11-28T00:01:51+0300",
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "9.0.9",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/5498e79d-9e1b-41f6-ace8-cb5659263aea",
+            "violations": [
+                {
+                    "description": "Symbol 'TPD4E05U06' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U3 [TPD4E05U06]",
+                            "pos": {
+                                "x": 0.9652,
+                                "y": 1.4478
+                            },
+                            "uuid": "a19922d3-3fb4-456d-b996-77b120544f1b"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'BQ25895' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U1 [BQ25895]",
+                            "pos": {
+                                "x": 2.0574,
+                                "y": 1.3462
+                            },
+                            "uuid": "cdb5265f-1632-4324-af07-77ef863859c5"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'INA226' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U2 [INA226]",
+                            "pos": {
+                                "x": 3.429,
+                                "y": 1.4478
+                            },
+                            "uuid": "dd2aca0e-0deb-4aca-b53d-989c63113723"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                }
+            ]
+        }
+    ],
+    "source": "t54_charger.kicad_sch"
+}

@@ -2059,6 +2059,18 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             if let Some(ref lid) = lib_id_opt {
                 props.insert("lib_id".to_string(), json!(lid));
             }
+            if !extra_libs.is_empty() {
+                let lib_strs: Vec<String> = extra_libs
+                    .iter()
+                    .map(|p| {
+                        std::fs::canonicalize(p)
+                            .unwrap_or_else(|_| p.clone())
+                            .to_string_lossy()
+                            .to_string()
+                    })
+                    .collect();
+                props.insert("symbol_libs".to_string(), json!(lib_strs));
+            }
             if let Some(ref st) = sheet_tag {
                 props.insert("sheet".to_string(), json!(st));
             }

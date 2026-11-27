@@ -1,0 +1,125 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-11-28T00:02:46+0300",
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "9.0.9",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/00609510-dfe0-40f9-b4c3-b1bdc5f39b71",
+            "violations": [
+                {
+                    "description": "Symbol 'STM32F103C8T6' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U1 [STM32F103C8T6]",
+                            "pos": {
+                                "x": 1.3716,
+                                "y": 1.3462
+                            },
+                            "uuid": "4352f180-be63-4ac6-9e56-669ce7cb0afb"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'UCC5390E' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U2 [UCC5390E]",
+                            "pos": {
+                                "x": 2.6416,
+                                "y": 0.8636
+                            },
+                            "uuid": "dea32bb2-85e3-44a9-a68f-dc9419b2111f"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'SN65HVD230' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U5 [SN65HVD230]",
+                            "pos": {
+                                "x": 0.8636,
+                                "y": 3.048
+                            },
+                            "uuid": "ae622e1a-1350-418e-88ae-98667e745071"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'UCC5390E' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U3 [UCC5390E]",
+                            "pos": {
+                                "x": 2.6416,
+                                "y": 1.778
+                            },
+                            "uuid": "dd4791d5-43df-45e7-ab28-cc5a6059eaf6"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'INA240A1' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U4 [INA240A1]",
+                            "pos": {
+                                "x": 2.9972,
+                                "y": 3.048
+                            },
+                            "uuid": "cc1c73f2-ed18-4a3a-92b0-c3fef25f3e18"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'IMZA65R015M2H' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol Q1 [IMZA65R015M2H]",
+                            "pos": {
+                                "x": 4.699,
+                                "y": 0.9652
+                            },
+                            "uuid": "84d33041-618d-409e-b8e9-b76618edc917"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'IMZA65R015M2H' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol Q2 [IMZA65R015M2H]",
+                            "pos": {
+                                "x": 4.699,
+                                "y": 1.7526
+                            },
+                            "uuid": "43434f99-4398-45e6-ac8e-4d800e70747a"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                }
+            ]
+        }
+    ],
+    "source": "t62_mcu_sync_buck.kicad_sch"
+}

@@ -1,0 +1,11 @@
+{
+  "meta": {
+    "filename": "T62_MCU_SYNC_BUCK_SYSTEM.kicad_pro",
+    "version": 1
+  },
+  "schematic": {
+    "drawing": {
+      "default_line_thickness": 6.0
+    }
+  }
+}

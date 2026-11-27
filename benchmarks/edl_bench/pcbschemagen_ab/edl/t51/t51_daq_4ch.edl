@@ -1,0 +1,377 @@
+// Task 51: ISOLATED_DAQ_4CH
+// 4-Channel Isolated Data Acquisition System:
+// 4x ADS7042 (12-bit 1-MSPS SAR ADC), ISO7741 SPI Isolator, NXE1S0303MC 3.3V Isolated DC-DC, REF3033 3.3V Reference
+// InputNodes:  AIN1, AIN2, AIN3, AIN4, VDD (3.3V), GND, SCLK, MOSI, CS
+// OutputNodes: MISO
+
+project "T51_ISOLATED_DAQ_4CH" {
+  units: mm
+  frame Sheet: Frame2
+  symbol_lib "/home/lindah/projects/EDL/benchmarks/external/PCBSchemaGen_v2/library/test.kicad_sym"
+
+  circuit Main {
+    // =========================================================================
+    // 1. PRIMARY (HOST MCU) SIDE — 3.3V Domain (VDD / GND)
+    // =========================================================================
+    component J_HOST: "Connector_Generic:Conn_01x06" {
+      value: "HOST_SPI"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical"
+      pin 1: power_out(3.3V)
+      pin 2: ground
+    }
+
+    component C_IN1: "Device:C" { value: 4.7uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_IN2: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // =========================================================================
+    // 2. GALVANIC ISOLATION BARRIER (ISO7741 + NXE1S0303MC)
+    // =========================================================================
+    component U_ISO: "test:ISO7741" {
+      value: "ISO7741"
+      isolated: true
+      footprint: "Package_SO:SOIC-16W_7.5x10.3mm_P1.27mm"
+      pin Vcc1: power_in(3.3V)
+      pin GND1: ground
+      pin Vcc2: power_in(3.3V)
+      pin GND2: ground
+      pin INA: input
+      pin INB: input
+      pin INC: input
+      pin IND: output
+      pin INE: input
+      pin INF: input
+      pin OUTA: output
+      pin OUTB: output
+      pin OUTC: output
+      pin OUTD: input
+      pin OUTE: nc
+      pin OUTF: nc
+    }
+
+    component U_PWR: "test:NXE1S0303MC" {
+      value: "NXE1S0303MC"
+      isolated: true
+      footprint: "Converter_DCDC:Converter_DCDC_Murata_NXExSxxxxMC_SMD"
+      pin "+VIN": power_in(3.3V)
+      pin "-VIN": ground
+      pin "+VOUT": power_out(3.3V)
+      pin "-VOUT": ground
+      pin NC: nc
+    }
+
+    // =========================================================================
+    // 3. ISOLATED POWER & REF3033 PRECISION 3.3V REFERENCE
+    // =========================================================================
+    component C_ISO1: "Device:C" { value: 10uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_ISO2: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_PRELOAD: "Device:R" { value: 2.2k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+
+    component FB1: "Device:FerriteBead" {
+      value: "600R@100MHz"
+      footprint: "Inductor_SMD:L_0603_1608Metric"
+    }
+    component C_REF_IN: "Device:C" { value: 1uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    component U_REF: "test:REF3033" {
+      value: "REF3033"
+      footprint: "Package_TO_SOT_SMD:SOT-23"
+      pin IN: power_in(3.3V)
+      pin OUT: power_out(3.3V)
+      pin GND: ground
+    }
+
+    component C_REF_OUT: "Device:C" { value: 10uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_REF_HF: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // Isolated SPI bus conditioning (CS pull-up, MOSI termination/expansion, SCLK/SDO damping)
+    component R_CS_PU: "Device:R" { value: 10k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_MOSI_PD: "Device:R" { value: 10k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_SCLK_D: "Device:R" { value: 33R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_SDO1: "Device:R" { value: 33R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_SDO2: "Device:R" { value: 33R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_SDO3: "Device:R" { value: 33R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_SDO4: "Device:R" { value: 33R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+
+    // =========================================================================
+    // 4. FOUR ADS7042 12-BIT SAR ADCs & RC ANTI-ALIASING INPUT FILTERS
+    // =========================================================================
+    component J_AIN: "Connector_Generic:Conn_01x05" {
+      value: "AIN_4CH"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical"
+    }
+
+    // Channel 1
+    component R_AIN1: "Device:R" { value: 100R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_AIN1: "Device:C" { value: 1nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_AVDD1: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_DVDD1: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component U_ADC1: "test:ADS7042" {
+      value: "ADS7042"
+      footprint: "Package_SO:VSSOP-8_2.3x2mm_P0.5mm"
+      pin AVDD: power_in(1.65V..3.6V)
+      pin DVDD: power_in(1.65V..3.6V)
+      pin GND: ground
+      pin SCLK: input
+      pin CS: input
+      pin SDO: output
+    }
+
+    // Channel 2
+    component R_AIN2: "Device:R" { value: 100R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_AIN2: "Device:C" { value: 1nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_AVDD2: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_DVDD2: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component U_ADC2: "test:ADS7042" {
+      value: "ADS7042"
+      footprint: "Package_SO:VSSOP-8_2.3x2mm_P0.5mm"
+      pin AVDD: power_in(1.65V..3.6V)
+      pin DVDD: power_in(1.65V..3.6V)
+      pin GND: ground
+      pin SCLK: input
+      pin CS: input
+      pin SDO: output
+    }
+
+    // Channel 3
+    component R_AIN3: "Device:R" { value: 100R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_AIN3: "Device:C" { value: 1nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_AVDD3: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_DVDD3: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component U_ADC3: "test:ADS7042" {
+      value: "ADS7042"
+      footprint: "Package_SO:VSSOP-8_2.3x2mm_P0.5mm"
+      pin AVDD: power_in(1.65V..3.6V)
+      pin DVDD: power_in(1.65V..3.6V)
+      pin GND: ground
+      pin SCLK: input
+      pin CS: input
+      pin SDO: output
+    }
+
+    // Channel 4
+    component R_AIN4: "Device:R" { value: 100R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_AIN4: "Device:C" { value: 1nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_AVDD4: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_DVDD4: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component U_ADC4: "test:ADS7042" {
+      value: "ADS7042"
+      footprint: "Package_SO:VSSOP-8_2.3x2mm_P0.5mm"
+      pin AVDD: power_in(1.65V..3.6V)
+      pin DVDD: power_in(1.65V..3.6V)
+      pin GND: ground
+      pin SCLK: input
+      pin CS: input
+      pin SDO: output
+    }
+
+    // =========================================================================
+    // NETS — Primary (Host) Side
+    // =========================================================================
+    net VDD {
+      connect: [J_HOST.1, C_IN1.1, C_IN2.1, U_PWR."+VIN", U_ISO.Vcc1]
+      power_flag: true
+    }
+
+    net GND {
+      connect: [J_HOST.2, C_IN1.2, C_IN2.2, U_PWR."-VIN", U_ISO.GND1, U_ISO.INE, U_ISO.INF]
+      power_flag: true
+    }
+
+    net SCLK { connect: [J_HOST.3, U_ISO.INA] }
+    net CS   { connect: [J_HOST.4, U_ISO.INB] }
+    net MOSI { connect: [J_HOST.5, U_ISO.INC] }
+    net MISO { connect: [J_HOST.6, U_ISO.IND] }
+
+    // =========================================================================
+    // NETS — Isolated Power & Precision Reference Side
+    // =========================================================================
+    net VDD_ISO {
+      connect: [
+        U_PWR."+VOUT", C_ISO1.1, C_ISO2.1, R_PRELOAD.1, U_ISO.Vcc2, FB1.1, R_CS_PU.1,
+        C_DVDD1.1, C_DVDD2.1, C_DVDD3.1, C_DVDD4.1,
+        U_ADC1.DVDD, U_ADC2.DVDD, U_ADC3.DVDD, U_ADC4.DVDD
+      ]
+      power_flag: true
+    }
+
+    net REF_IN_F {
+      connect: [FB1.2, C_REF_IN.1, U_REF.IN]
+    }
+
+    net VREF_3V3 {
+      connect: [
+        U_REF.OUT, C_REF_OUT.1, C_REF_HF.1,
+        C_AVDD1.1, C_AVDD2.1, C_AVDD3.1, C_AVDD4.1,
+        U_ADC1.AVDD, U_ADC2.AVDD, U_ADC3.AVDD, U_ADC4.AVDD
+      ]
+      power_flag: true
+    }
+
+    net GND_ISO {
+      connect: [
+        U_PWR."-VOUT", C_ISO1.2, C_ISO2.2, R_PRELOAD.2, U_ISO.GND2,
+        C_REF_IN.2, U_REF.GND, C_REF_OUT.2, C_REF_HF.2, R_MOSI_PD.2, J_AIN.5,
+        C_AIN1.2, C_AVDD1.2, C_DVDD1.2, U_ADC1.AINM, U_ADC1.GND,
+        C_AIN2.2, C_AVDD2.2, C_DVDD2.2, U_ADC2.AINM, U_ADC2.GND,
+        C_AIN3.2, C_AVDD3.2, C_DVDD3.2, U_ADC3.AINM, U_ADC3.GND,
+        C_AIN4.2, C_AVDD4.2, C_DVDD4.2, U_ADC4.AINM, U_ADC4.GND
+      ]
+      power_flag: true
+    }
+
+    // Isolated SPI bus
+    net SCLK_ISO_RAW { connect: [U_ISO.OUTA, R_SCLK_D.1] }
+    net SCLK_ISO     { connect: [R_SCLK_D.2, U_ADC1.SCLK, U_ADC2.SCLK, U_ADC3.SCLK, U_ADC4.SCLK] }
+    net CS_ISO       { connect: [U_ISO.OUTB, R_CS_PU.2, U_ADC1.CS, U_ADC2.CS, U_ADC3.CS, U_ADC4.CS] }
+    net MOSI_ISO     { connect: [U_ISO.OUTC, R_MOSI_PD.1] }
+    net MISO_ISO     { connect: [U_ISO.OUTD, R_SDO1.1, R_SDO2.1, R_SDO3.1, R_SDO4.1] }
+    net SDO1         { connect: [R_SDO1.2, U_ADC1.SDO] }
+    net SDO2         { connect: [R_SDO2.2, U_ADC2.SDO] }
+    net SDO3         { connect: [R_SDO3.2, U_ADC3.SDO] }
+    net SDO4         { connect: [R_SDO4.2, U_ADC4.SDO] }
+
+    // 4-Channel Analog Inputs (Required InputNodes: AIN1..AIN4)
+    net AIN1   { connect: [J_AIN.1, R_AIN1.1] }
+    net AIN1_F { connect: [R_AIN1.2, C_AIN1.1, U_ADC1.AINP] }
+
+    net AIN2   { connect: [J_AIN.2, R_AIN2.1] }
+    net AIN2_F { connect: [R_AIN2.2, C_AIN2.1, U_ADC2.AINP] }
+
+    net AIN3   { connect: [J_AIN.3, R_AIN3.1] }
+    net AIN3_F { connect: [R_AIN3.2, C_AIN3.1, U_ADC3.AINP] }
+
+    net AIN4   { connect: [J_AIN.4, R_AIN4.1] }
+    net AIN4_F { connect: [R_AIN4.2, C_AIN4.1, U_ADC4.AINP] }
+  }
+
+  schematic MainSheet {
+    sheet: A2 landscape
+    title: "T51: 4-Channel Isolated DAQ System (4x ADS7042 + ISO7741 + NXE1S0303MC + REF3033)"
+
+    routing {
+      default: zone_local
+      power: symbol
+      ground: symbol
+    }
+
+    group PrimarySide {
+      title: "1. PRIMARY HOST SPI & 3.3V INPUT"
+      rect: (20.32mm, 25.40mm, 127.00mm, 279.40mm)
+      border: dashed
+      color: blue
+      members: [J_HOST, C_IN1, C_IN2]
+      note: "VDD=3.3V, GND, SCLK, CS, MOSI, MISO"
+    }
+
+    group IsolationStage {
+      title: "2. 5kV GALVANIC ISOLATION"
+      rect: (139.70mm, 25.40mm, 215.90mm, 279.40mm)
+      border: dashed
+      color: red
+      members: [U_ISO, U_PWR]
+      note: "ISO7741 SPI Isolator + NXE1S0303MC 3.3V DC-DC"
+    }
+
+    group IsoPowerRef {
+      title: "3. ISOLATED 3.3V POWER, REF3033 & SPI BUS"
+      rect: (228.60mm, 25.40mm, 342.90mm, 279.40mm)
+      border: dashed
+      color: amber
+      members: [C_ISO1, C_ISO2, R_PRELOAD, FB1, C_REF_IN, U_REF, C_REF_OUT, C_REF_HF, R_CS_PU, R_MOSI_PD, R_SCLK_D, R_SDO1, R_SDO2, R_SDO3, R_SDO4]
+      note: "REF3033 3.3V Precision Reference feeds all 4x ADS7042 AVDD"
+    }
+
+    group ADC_Bank {
+      title: "4. 4-CHANNEL ADS7042 12-BIT SAR ADC BANK"
+      rect: (355.60mm, 25.40mm, 558.80mm, 342.90mm)
+      border: dashed
+      color: green
+      members: [
+        J_AIN,
+        R_AIN1, C_AIN1, C_AVDD1, C_DVDD1, U_ADC1,
+        R_AIN2, C_AIN2, C_AVDD2, C_DVDD2, U_ADC2,
+        R_AIN3, C_AIN3, C_AVDD3, C_DVDD3, U_ADC3,
+        R_AIN4, C_AIN4, C_AVDD4, C_DVDD4, U_ADC4
+      ]
+      note: "100R + 1nF Anti-Aliasing RC Filters | Local AVDD & DVDD Bypass"
+    }
+
+    divider {
+      from: (177.80mm, 20.32mm)
+      to: (177.80mm, 287.02mm)
+      label: "GALVANIC ISOLATION BARRIER (VDD/GND | VDD_ISO/GND_ISO)"
+      color: red
+    }
+
+    // Group 1: Primary
+    place J_HOST center (45.72mm, 114.30mm) orient: 180
+    place C_IN1  center (81.28mm, 215.90mm)
+    place C_IN2  center (104.14mm, 96.52mm)
+
+    // Group 2: Isolation straddling x = 177.80mm
+    place U_ISO center (177.80mm, 114.30mm)
+    place U_PWR center (177.80mm, 215.90mm)
+
+    // Group 3: Isolated Power, REF3033, SPI Conditioning
+    place C_ISO1    center (246.38mm, 215.90mm)
+    place C_ISO2    center (264.16mm, 215.90mm)
+    place R_PRELOAD center (281.94mm, 215.90mm)
+    place FB1       center (248.92mm, 165.10mm) orient: 90
+    place C_REF_IN  center (269.24mm, 172.72mm)
+    place U_REF     center (292.10mm, 165.10mm)
+    place C_REF_OUT center (317.50mm, 172.72mm)
+    place C_REF_HF  center (332.74mm, 172.72mm)
+
+    place R_SCLK_D  center (254.00mm, 81.28mm) orient: 90
+    place R_CS_PU   center (254.00mm, 106.68mm)
+    place R_MOSI_PD center (279.40mm, 106.68mm)
+    place R_SDO1    center (309.88mm, 66.04mm) orient: 90
+    place R_SDO2    center (309.88mm, 83.82mm) orient: 90
+    place R_SDO3    center (309.88mm, 101.60mm) orient: 90
+    place R_SDO4    center (309.88mm, 119.38mm) orient: 90
+
+    // Group 4: 4-Channel ADC Bank
+    place J_AIN   center (375.92mm, 182.88mm) orient: 180
+
+    // Channel 1 row (y ~ 76.20mm)
+    place R_AIN1  center (416.56mm, 73.66mm) orient: 90
+    place C_AIN1  center (436.88mm, 83.82mm)
+    place U_ADC1  center (474.98mm, 76.20mm)
+    place C_AVDD1 center (515.62mm, 76.20mm)
+    place C_DVDD1 center (535.94mm, 76.20mm)
+
+    // Channel 2 row (y ~ 147.32mm)
+    place R_AIN2  center (416.56mm, 144.78mm) orient: 90
+    place C_AIN2  center (436.88mm, 154.94mm)
+    place U_ADC2  center (474.98mm, 147.32mm)
+    place C_AVDD2 center (515.62mm, 147.32mm)
+    place C_DVDD2 center (535.94mm, 147.32mm)
+
+    // Channel 3 row (y ~ 218.44mm)
+    place R_AIN3  center (416.56mm, 215.90mm) orient: 90
+    place C_AIN3  center (436.88mm, 226.06mm)
+    place U_ADC3  center (474.98mm, 218.44mm)
+    place C_AVDD3 center (515.62mm, 218.44mm)
+    place C_DVDD3 center (535.94mm, 218.44mm)
+
+    // Channel 4 row (y ~ 289.56mm)
+    place R_AIN4  center (416.56mm, 287.02mm) orient: 90
+    place C_AIN4  center (436.88mm, 297.18mm)
+    place U_ADC4  center (474.98mm, 289.56mm)
+    place C_AVDD4 center (515.62mm, 289.56mm)
+    place C_DVDD4 center (535.94mm, 289.56mm)
+  }
+
+  verify {
+    require all_required_pins_connected
+    require no_power_ground_short
+    require no_multiple_power_drivers
+    require voltage_compatibility
+    require no_single_pin_nets
+    require ic_decoupling
+    require bom_manufacturability
+    require galvanic_isolation(GND, GND_ISO)
+    require galvanic_isolation(VDD, VDD_ISO)
+    require galvanic_isolation(VDD, VREF_3V3)
+  }
+}

@@ -1,0 +1,15 @@
+ERC report (2026-11-27T23:55:10+0300, Encoding UTF8)
+Report includes: Errors, Warnings, Exclusions
+
+***** Sheet /
+[lib_symbol_issues]: Symbol 'TPD4E05U06' not found in symbol library 'test'
+    ; warning
+    @(109.22 mm, 114.30 mm): Symbol U_ESD [TPD4E05U06]
+[lib_symbol_issues]: Symbol 'BQ25895' not found in symbol library 'test'
+    ; warning
+    @(279.40 mm, 152.40 mm): Symbol U_CHG [BQ25895]
+[lib_symbol_issues]: Symbol 'INA226' not found in symbol library 'test'
+    ; warning
+    @(495.30 mm, 135.89 mm): Symbol U_MON [INA226]
+
+ ** ERC messages: 3  Errors 0  Warnings 3

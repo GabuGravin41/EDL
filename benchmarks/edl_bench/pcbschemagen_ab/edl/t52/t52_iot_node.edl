@@ -1,0 +1,409 @@
+// Task 52: IOT_SENSOR_NODE
+// IoT Sensor Node with STM32F103C8T6 MCU, SN65HVD230 CAN Transceiver, TPS54302 12V->5V Buck, TLV1117-33 5V->3.3V LDO
+// InputNodes:  VIN12 (12V), GND
+// OutputNodes: CANH, CANL, TEMP_ADC (3.3V system)
+
+project "T52_IOT_SENSOR_NODE" {
+  units: mm
+  frame Sheet: Frame2
+  symbol_lib "/home/lindah/projects/EDL/benchmarks/external/PCBSchemaGen_v2/library/test.kicad_sym"
+
+  circuit Main {
+    // =========================================================================
+    // 1. POWER STAGE 1 — 12V INPUT PROTECTION & TPS54302 12V->5.0V BUCK
+    // =========================================================================
+    component J_PWR: "Connector_Generic:Conn_01x02" {
+      value: "PWR_12V_IN"
+      footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal"
+      pin 1: power_out(12V)
+      pin 2: ground
+    }
+
+    component D_VIN: "Device:D_TVS" {
+      value: "SMBJ15A"
+      footprint: "Diode_SMD:D_SMB"
+    }
+
+    component C_IN1: "Device:C" { value: 10uF   voltage_rating: 25V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_IN2: "Device:C" { value: 100nF  voltage_rating: 25V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // EN UVLO divider: 12V * 22k / (100k + 22k) = 2.16V > 1.30V threshold
+    component R_EN_TOP: "Device:R" { value: 100k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_EN_BOT: "Device:R" { value: 22k   power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+
+    component U_BUCK: "test:TPS54302" {
+      value: "TPS54302"
+      footprint: "Package_TO_SOT_SMD:SOT-23-6"
+      pin VIN: power_in(4.5V..28V)
+      pin GND: ground
+      pin EN: input
+      pin FB: input
+      pin SW: output
+    }
+
+    component C_BOOT: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component L_BUCK: "Device:L" {
+      value: "10uH"
+      footprint: "Inductor_SMD:L_6.3x6.3_H3"
+    }
+
+    // 5.0V feedback divider: Vout = 0.596V * (1 + 75k / 10.2k) = 4.98V
+    component R_FB_TOP: "Device:R" { value: 75k    power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_FB_BOT: "Device:R" { value: 10.2k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_FF:     "Device:C" { value: 47pF   voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    component C_5V_1: "Device:C" { value: 22uF   voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_5V_2: "Device:C" { value: 22uF   voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_5V_3: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // =========================================================================
+    // 2. POWER STAGE 2 — TLV1117-33 5.0V -> 3.3V CLEAN LDO
+    // =========================================================================
+    component C_LDO_IN: "Device:C" { value: 10uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+
+    component U_LDO: "test:TLV1117-33" {
+      value: "TLV1117-33"
+      footprint: "Package_TO_SOT_SMD:SOT-223-3_TabPin2"
+      pin INPUT: power_in(4.5V..15V)
+      pin "ADJ/GND": ground
+      pin OUTPUT_1: power_out(3.3V)
+      pin OUTPUT_2: passive
+    }
+
+    component C_3V3_1: "Device:C" { value: 22uF   voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_3V3_2: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    component R_PWR_LED: "Device:R" { value: 1k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component D_PWR_LED: "Device:LED" {
+      value: "GREEN"
+      footprint: "LED_SMD:LED_0603_1608Metric"
+    }
+
+    // =========================================================================
+    // 3. STM32F103C8T6 MCU CORE, 8MHz HSE, RESET, BOOT, SWD & TEMP SENSOR
+    // =========================================================================
+    component U_MCU: "test:STM32F103C8T6" {
+      value: "STM32F103C8T6"
+      footprint: "Package_QFP:LQFP-48_7x7mm_P0.5mm"
+      pin VBAT: power_in(2.0V..3.6V)
+      pin VDDA: power_in(2.4V..3.6V)
+      pin VDD_1: power_in(2.0V..3.6V)
+      pin VDD_2: power_in(2.0V..3.6V)
+      pin VDD_3: power_in(2.0V..3.6V)
+      pin VSSA: ground
+      pin VSS_1: ground
+      pin VSS_2: ground
+      pin VSS_3: ground
+      pin NRST: input
+      pin BOOT0: input
+      pin PB2: input
+      pin "PA0-WKUP": input
+      pin PA11: input
+      pin PA12: output
+      pin PA13: bidir
+      pin PA14: input
+      // Explicitly mark unused GPIOs as no-connect for clean ERC
+      pin "PC13-TAMPER-RTC": nc
+      pin "PC14-OSC32_IN": nc
+      pin "PC15-OSC32_OUT": nc
+      pin PA1: nc
+      pin PA2: nc
+      pin PA3: nc
+      pin PA4: nc
+      pin PA5: nc
+      pin PA6: nc
+      pin PA7: nc
+      pin PB0: nc
+      pin PB1: nc
+      pin PB10: nc
+      pin PB11: nc
+      pin PB12: nc
+      pin PB13: nc
+      pin PB14: nc
+      pin PB15: nc
+      pin PA8: nc
+      pin PA9: nc
+      pin PA10: nc
+      pin PA15: nc
+      pin PB3: nc
+      pin PB4: nc
+      pin PB5: nc
+      pin PB6: nc
+      pin PB7: nc
+      pin PB8: nc
+      pin PB9: nc
+    }
+
+    // MCU Digital & Analog Power Decoupling
+    component C_MCU_BULK: "Device:C" { value: 4.7uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU1:     "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU2:     "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU3:     "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU4:     "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    component FB_VDDA: "Device:FerriteBead" {
+      value: "600R@100MHz"
+      footprint: "Inductor_SMD:L_0603_1608Metric"
+    }
+    component C_VDDA1: "Device:C" { value: 1uF    voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_VDDA2: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // 8 MHz HSE Crystal + Load Caps
+    component Y1: "Device:Crystal" {
+      value: "8MHz"
+      footprint: "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm"
+    }
+    component C_OSC1: "Device:C" { value: 20pF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_OSC2: "Device:C" { value: 20pF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // Reset RC & Boot Pulldowns
+    component R_NRST:  "Device:R" { value: 10k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_NRST:  "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_BOOT0: "Device:R" { value: 10k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_BOOT1: "Device:R" { value: 10k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+
+    // SWD Debug Header
+    component J_SWD: "Connector_Generic:Conn_01x04" {
+      value: "SWD_DBG"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
+    }
+
+    // Analog Temperature Sensor Front-End -> TEMP_ADC -> PA0-WKUP (ADC_IN0)
+    component R_TEMP_PU: "Device:R" { value: 10k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component TH_TEMP:   "Device:Thermistor_NTC" {
+      value: "10k_NTC"
+      footprint: "Resistor_SMD:R_0603_1608Metric"
+    }
+    component C_TEMP: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component J_TEMP: "Connector_Generic:Conn_01x02" {
+      value: "TEMP_OUT"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+    }
+
+    // =========================================================================
+    // 4. SN65HVD230 CAN TRANSCEIVER & SPLIT TERMINATION
+    // =========================================================================
+    component U_CAN: "test:SN65HVD230" {
+      value: "SN65HVD230"
+      footprint: "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+      pin VCC: power_in(3.3V)
+      pin GND: ground
+      pin D: input
+      pin R: output
+      pin RS: input
+      pin VREF: output
+    }
+
+    component C_CAN:       "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_CAN_RS:    "Device:R" { value: 10k    power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_CAN_T1:    "Device:R" { value: 60.4R  power_rating: 0.25W footprint: "Resistor_SMD:R_0805_2012Metric" }
+    component R_CAN_T2:    "Device:R" { value: 60.4R  power_rating: 0.25W footprint: "Resistor_SMD:R_0805_2012Metric" }
+    component C_CAN_SPLIT: "Device:C" { value: 4.7nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component D_CANH:      "Device:D_TVS" { value: "PESD1CAN"  footprint: "Diode_SMD:D_SOD-323" }
+    component D_CANL:      "Device:D_TVS" { value: "PESD1CAN"  footprint: "Diode_SMD:D_SOD-323" }
+
+    component J_CAN: "Connector_Generic:Conn_01x03" {
+      value: "CAN_BUS"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+    }
+
+    // =========================================================================
+    // NETS
+    // =========================================================================
+    net VIN12 {
+      connect: [J_PWR.1, D_VIN.1, C_IN1.1, C_IN2.1, R_EN_TOP.1, U_BUCK.VIN]
+      power_flag: true
+    }
+
+    net GND {
+      connect: [
+        J_PWR.2, D_VIN.2, C_IN1.2, C_IN2.2, R_EN_BOT.2, U_BUCK.GND,
+        R_FB_BOT.2, C_5V_1.2, C_5V_2.2, C_5V_3.2,
+        C_LDO_IN.2, U_LDO."ADJ/GND", C_3V3_1.2, C_3V3_2.2, D_PWR_LED.K,
+        U_MCU.VSSA, U_MCU.VSS_1, U_MCU.VSS_2, U_MCU.VSS_3,
+        C_MCU_BULK.2, C_MCU1.2, C_MCU2.2, C_MCU3.2, C_MCU4.2,
+        C_VDDA1.2, C_VDDA2.2, C_OSC1.2, C_OSC2.2, C_NRST.2, R_BOOT0.2, R_BOOT1.2,
+        J_SWD.4, TH_TEMP.2, C_TEMP.2, J_TEMP.2,
+        U_CAN.GND, C_CAN.2, R_CAN_RS.2, C_CAN_SPLIT.2, D_CANH.2, D_CANL.2, J_CAN.3
+      ]
+      power_flag: true
+    }
+
+    // Buck internal nodes
+    net BUCK_EN   { connect: [R_EN_TOP.2, R_EN_BOT.1, U_BUCK.EN] }
+    net BUCK_BOOT { connect: [U_BUCK.BOOT, C_BOOT.1] }
+    net BUCK_SW   { connect: [U_BUCK.SW, C_BOOT.2, L_BUCK.1] }
+    net BUCK_FB   { connect: [U_BUCK.FB, R_FB_TOP.2, R_FB_BOT.1, C_FF.2] }
+
+    // 5.0V intermediate rail (Buck output -> LDO input)
+    net V5V {
+      connect: [L_BUCK.2, R_FB_TOP.1, C_FF.1, C_5V_1.1, C_5V_2.1, C_5V_3.1, C_LDO_IN.1, U_LDO.INPUT]
+      power_flag: true
+    }
+
+    // 3.3V clean LDO output rail
+    net VDD_3V3 {
+      connect: [
+        U_LDO.OUTPUT_1, U_LDO.OUTPUT_2, C_3V3_1.1, C_3V3_2.1, R_PWR_LED.1,
+        U_MCU.VBAT, U_MCU.VDD_1, U_MCU.VDD_2, U_MCU.VDD_3,
+        C_MCU_BULK.1, C_MCU1.1, C_MCU2.1, C_MCU3.1, C_MCU4.1,
+        FB_VDDA.1, R_NRST.1, J_SWD.1, U_CAN.VCC, C_CAN.1
+      ]
+      power_flag: true
+    }
+
+    net PWR_LED_A { connect: [R_PWR_LED.2, D_PWR_LED.A] }
+
+    // Filtered Analog 3.3V rail
+    net VDDA_3V3 {
+      connect: [FB_VDDA.2, C_VDDA1.1, C_VDDA2.1, U_MCU.VDDA, R_TEMP_PU.1]
+    }
+
+    // MCU Clock, Reset, Boot, SWD
+    net OSC_IN   { connect: [U_MCU."PD0-OSC_IN", Y1.1, C_OSC1.1] }
+    net OSC_OUT  { connect: [U_MCU."PD1-OSC_OUT", Y1.2, C_OSC2.1] }
+    net MCU_NRST { connect: [U_MCU.NRST, R_NRST.2, C_NRST.1] }
+    net MCU_BOOT0 { connect: [U_MCU.BOOT0, R_BOOT0.1] }
+    net MCU_BOOT1 { connect: [U_MCU.PB2, R_BOOT1.1] }
+    net SWDIO    { connect: [U_MCU.PA13, J_SWD.2] }
+    net SWCLK    { connect: [U_MCU.PA14, J_SWD.3] }
+
+    // Temperature ADC OutputNode -> PA0-WKUP
+    net TEMP_ADC { connect: [R_TEMP_PU.2, TH_TEMP.1, C_TEMP.1, U_MCU."PA0-WKUP", J_TEMP.1] }
+
+    // CAN Interface
+    net CAN_TXD   { connect: [U_MCU.PA12, U_CAN.D] }
+    net CAN_RXD   { connect: [U_MCU.PA11, U_CAN.R] }
+    net CAN_RS    { connect: [U_CAN.RS, R_CAN_RS.1] }
+    net CAN_SPLIT { connect: [U_CAN.VREF, R_CAN_T1.2, R_CAN_T2.1, C_CAN_SPLIT.1] }
+    net CANH      { connect: [U_CAN.CANH, R_CAN_T1.1, D_CANH.1, J_CAN.1] }
+    net CANL      { connect: [U_CAN.CANL, R_CAN_T2.2, D_CANL.1, J_CAN.2] }
+  }
+
+  schematic MainSheet {
+    sheet: A2 landscape
+    title: "T52: IoT Sensor Node (STM32F103C8T6 + SN65HVD230 + TPS54302 + TLV1117-33)"
+
+    routing {
+      default: zone_local
+      power: symbol
+      ground: symbol
+    }
+
+    group PowerManagement {
+      title: "1. POWER TREE: 12V -> TPS54302 (5.0V BUCK) -> TLV1117-33 (3.3V LDO)"
+      rect: (20.32mm, 20.32mm, 228.60mm, 215.90mm)
+      border: dashed
+      color: red
+      members: [
+        J_PWR, D_VIN, C_IN1, C_IN2, R_EN_TOP, R_EN_BOT, U_BUCK, C_BOOT, L_BUCK,
+        R_FB_TOP, R_FB_BOT, C_FF, C_5V_1, C_5V_2, C_5V_3,
+        C_LDO_IN, U_LDO, C_3V3_1, C_3V3_2, R_PWR_LED, D_PWR_LED
+      ]
+      note: "UVLO EN>1.3V | FB=0.596V*(1+75k/10.2k)=4.98V | TLV1117-33 -> 3.3V"
+    }
+
+    group TempSensor {
+      title: "2. NTC TEMPERATURE SENSOR FRONT-END"
+      rect: (20.32mm, 228.60mm, 228.60mm, 342.90mm)
+      border: dashed
+      color: amber
+      members: [R_TEMP_PU, TH_TEMP, C_TEMP, J_TEMP]
+      note: "10k/10k NTC Divider from VDDA_3V3 -> TEMP_ADC (STM32 PA0/ADC_IN0)"
+    }
+
+    group MCU_Core {
+      title: "3. STM32F103C8T6 MCU CORE, 8MHz HSE, RESET, BOOT & SWD"
+      rect: (241.30mm, 20.32mm, 406.40mm, 342.90mm)
+      border: dashed
+      color: blue
+      members: [
+        U_MCU, C_MCU_BULK, C_MCU1, C_MCU2, C_MCU3, C_MCU4,
+        FB_VDDA, C_VDDA1, C_VDDA2, Y1, C_OSC1, C_OSC2,
+        R_NRST, C_NRST, R_BOOT0, R_BOOT1, J_SWD
+      ]
+      note: "LQFP-48 | 8MHz HSE | Ferrite-Filtered VDDA | Local 100nF per VDD"
+    }
+
+    group CAN_Interface {
+      title: "4. SN65HVD230 CAN BUS TRANSCEIVER"
+      rect: (419.10mm, 20.32mm, 558.80mm, 215.90mm)
+      border: dashed
+      color: green
+      members: [U_CAN, C_CAN, R_CAN_RS, R_CAN_T1, R_CAN_T2, C_CAN_SPLIT, D_CANH, D_CANL, J_CAN]
+      note: "STM32 PA11/PA12 <-> SN65HVD230 | Split 120R Termination + ESD"
+    }
+
+    // Group 1: Buck + LDO
+    place J_PWR    center (38.10mm, 76.20mm) orient: 180
+    place D_VIN    center (55.88mm, 91.44mm) orient: 90
+    place C_IN1    center (71.12mm, 91.44mm)
+    place C_IN2    center (86.36mm, 91.44mm)
+    place R_EN_TOP center (104.14mm, 55.88mm)
+    place R_EN_BOT center (104.14mm, 83.82mm)
+
+    place U_BUCK   center (127.00mm, 66.04mm)
+    place C_BOOT   center (144.78mm, 43.18mm) orient: 90
+    place L_BUCK   center (104.14mm, 121.92mm) orient: 90
+    place C_5V_1   center (137.16mm, 121.92mm)
+    place C_5V_2   center (154.94mm, 121.92mm)
+    place C_5V_3   center (172.72mm, 121.92mm)
+    place R_FB_TOP center (193.04mm, 66.04mm)
+    place C_FF     center (210.82mm, 66.04mm)
+    place R_FB_BOT center (193.04mm, 93.98mm)
+
+    place C_LDO_IN  center (48.26mm, 177.80mm)
+    place U_LDO     center (81.28mm, 172.72mm)
+    place C_3V3_1   center (144.78mm, 177.80mm)
+    place C_3V3_2   center (162.56mm, 177.80mm)
+    place R_PWR_LED center (185.42mm, 165.10mm)
+    place D_PWR_LED center (185.42mm, 193.04mm) orient: 90
+
+    // Group 2: Temp Sensor
+    place R_TEMP_PU center (76.20mm, 264.16mm)
+    place TH_TEMP   center (76.20mm, 304.80mm)
+    place C_TEMP    center (114.30mm, 304.80mm)
+    place J_TEMP    center (165.10mm, 284.48mm)
+
+    // Group 3: STM32F103C8T6 (pins on 1.27mm half-grid -> center at odd multiple of 1.27mm)
+    place U_MCU      center (326.39mm, 173.99mm)
+    place Y1         center (266.70mm, 154.94mm)
+    place C_OSC1     center (256.54mm, 185.42mm)
+    place C_OSC2     center (276.86mm, 185.42mm)
+    place R_NRST     center (261.62mm, 114.30mm)
+    place C_NRST     center (279.40mm, 124.46mm)
+    place FB_VDDA    center (261.62mm, 76.20mm) orient: 90
+    place C_VDDA1    center (284.48mm, 83.82mm)
+    place C_VDDA2    center (299.72mm, 83.82mm)
+    place R_BOOT0    center (381.00mm, 152.40mm)
+    place R_BOOT1    center (266.70mm, 226.06mm)
+    place J_SWD      center (381.00mm, 215.90mm)
+
+    place C_MCU_BULK center (261.62mm, 287.02mm)
+    place C_MCU1     center (281.94mm, 287.02mm)
+    place C_MCU2     center (302.26mm, 287.02mm)
+    place C_MCU3     center (322.58mm, 287.02mm)
+    place C_MCU4     center (342.90mm, 287.02mm)
+
+    // Group 4: CAN Transceiver (U_CAN pins on 1.27mm Y offset)
+    place U_CAN       center (454.66mm, 115.57mm)
+    place C_CAN       center (434.34mm, 157.48mm)
+    place R_CAN_RS    center (487.68mm, 86.36mm)
+    place R_CAN_T1    center (502.92mm, 106.68mm)
+    place R_CAN_T2    center (502.92mm, 129.54mm)
+    place C_CAN_SPLIT center (502.92mm, 154.94mm)
+    place D_CANH      center (525.78mm, 106.68mm) orient: 90
+    place D_CANL      center (525.78mm, 134.62mm) orient: 90
+    place J_CAN       center (546.10mm, 116.84mm)
+  }
+
+  verify {
+    require all_required_pins_connected
+    require no_power_ground_short
+    require no_multiple_power_drivers
+    require voltage_compatibility
+    require no_single_pin_nets
+    require ic_decoupling
+    require bom_manufacturability
+  }
+}

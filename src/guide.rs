@@ -253,13 +253,15 @@ project "Industrial_Controller" {
   }
 }
 ```
-Pro tips:
-- Prefer root non-`extends` KiCad 9 symbols (check with `edl symbols inspect`) for 0 `lib_symbol_mismatch` warnings.
+Pro tips (v3.6.0):
+- Prefer root non-`extends` KiCad 9 symbols (check with `edl symbols inspect`) or load vendor/custom libs via `symbol_lib "path/to/lib.kicad_sym"`.
+- Custom/isolated power rails (e.g., `ISO_GND`, `ISO_24V`, `GND1`, `GND2`) automatically get real symbols in `edl_power.kicad_sym` + `sym-lib-table` when exported with `--kicad-dir` (0 KiCad ERC warnings!).
 - Vertical shunt caps on `GND`/`+3V3` in the same group (`|dy| <= 20.32mm`, `dx <= 90mm`) auto-merge onto ONE shared horizontal bus!
-- Cross-group & cross-sheet signal nets automatically render as crisp red-outlined KiCad `global_label` flags.
+- Compact adjacent-zone nets (`<= 5` pins, `<= 180x90mm`, not crossing a `divider`) route via direct A* wires; cross-sheet signals auto-wire on the root hierarchy sheet with explicit `(sheet (pin ...))` ports!
+- Supports EE shorthand (`4.7k`, `100R`, `1M`), quoted/numeric pin overrides (`pin "V-": ground`, `pin 2: ground`), and hidden stacked-pin aliases.
 - Run `edl inspect file.edl --pins --zones --nets` to check exact pin tips & net boxes in < 50ms."#;
 
-const GUIDE_ARCH: &str = r#"## Domain: Architectural Floor Plans (`arch` -> SVG + 19-layer DXF)
+const GUIDE_ARCH: &str = r#"## Domain: Architectural Floor Plans (`arch` -> Construction-Document SVG + DXF `BLOCKS`/`A-ANNO-DIMS`)
 ```edl
 project "Clinic" {
   units: mm
@@ -276,7 +278,12 @@ project "Clinic" {
   fixture Desk: desk { room: Exam  size: (1400mm, 700mm)  against: east  offset: 500mm from start  clearance_front: 800mm }
   verify { require no_room_overlap  require opening_jamb_margin >= 100mm  require no_door_swing_collision  require all_rooms_reachable  require no_fixture_collision  require habitable_rooms_have_window }
 }
-```"#;
+```
+Complex Floorplan Design Principles (distilled from MSD / ResPlan real-world building datasets):
+1. **4-Zone Functional Separation:** Group rooms into **Public/Circulation** (Entry/Vestibule -> Living/Corridor hub), **Private** (Bedrooms/Exam rooms accessed off circulation, NEVER through another bedroom), **Wet/Service Core** (Kitchen, Bathrooms, WC, Utility sharing back-to-back plumbing walls), and **Outdoor/Transition** (Balcony/Terrace attached to Living/Master along exterior facade).
+2. **Non-Rectangular & Stepped Envelopes:** Real buildings (57% of ResPlan) use L-shaped/stepped wings or `notch` cutouts rather than bland boxes to maximize daylight perimeter for habitable rooms.
+3. **Wet-Wall Clustering:** Place Kitchen, Bathrooms, and Mechanical/Utility rooms adjacent along 1–2 shared wet spines so `overlay` plumbing runs stay short with valid gravity slopes and zero `ElecITRoom` clashes.
+4. **Structural Grid & Circulation Discipline:** Align load-bearing walls to regular `structural_grid` bays (`3.6m–6.0m`), keep corridors `>= 1.2m` residential / `>= 2.0m` clinical, and keep doors/windows clear of columns (`V7`)."#;
 
 const GUIDE_PLUMBING: &str = r#"## Domain: Building Plumbing (`mep.plumbing` via `overlay` -> P1-P9 proofs + DXF + CSV)
 Use `overlay "base_arch.edl"` so you NEVER duplicate architectural walls/rooms!

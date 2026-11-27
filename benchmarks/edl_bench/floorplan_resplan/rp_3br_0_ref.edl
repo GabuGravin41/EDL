@@ -1,0 +1,204 @@
+// EDL-Bench Experiment 1 Reference: Real ResPlan #14433 (RP_3BR_0) Complex 3BR/3BA/2-Balcony Apartment
+// Source topology: ResPlan (CC BY 4.0, Agour et al.) — 95.66 m2 target net area, 10 rooms, 10 connectivity edges,
+// 2 clustered wet cores (Kitchen+Bath1 & Bath0+Bath2) and private Master Suite (Bed1 + Ensuite Bath2 + Balcony1).
+project "ResPlan_14433_3BR_Ref" {
+  units: mm
+  frame Plan: Frame2
+
+  architecture.defaults {
+    measurement_basis: clear_interior
+    exterior_wall: 200mm
+    interior_wall: 120mm
+  }
+
+  // --- South Wing (Private Bed0 + Wet Core 1: Bath1 + Kitchen + Living Balcony0) ---
+  // Total clear width across 4 south rooms + 3*120mm interior walls = 3200 + 1800 + 2300 + 3800 + 360 = 11460mm
+  room Bed0 {
+    role: habitable
+    clear_size: (3200mm, 3220mm) // 10.30 m2 (target 10.32 m2)
+    anchor: southwest at Plan.origin
+  }
+  room Bath1 {
+    role: service
+    clear_size: (1800mm, 1880mm) // 3.38 m2 (target 3.37 m2) — shares wet wall with Kitchen!
+  }
+  room Kitchen {
+    role: service
+    clear_size: (2300mm, 2740mm) // 6.30 m2 (target 6.29 m2)
+  }
+  room Balcony0 {
+    role: outdoor
+    clear_size: (3800mm, 1650mm) // 6.27 m2 (target 6.27 m2) — outdoor living terrace!
+  }
+
+  // --- Central Public Hub (Living: spans full 11460mm width, 3120mm depth -> 35.76 m2, target 35.74 m2!) ---
+  room Living {
+    role: habitable
+    clear_size: (11460mm, 3120mm) // 35.76 m2 (target 35.74 m2)
+  }
+
+  // --- North Wing (Bed2 + Wet Core 2: Bath0 + Ensuite Bath2 + Master Bed1 + Master Balcony1) ---
+  // Width check: Bed2 (3000) + Bath0 (1600) + Bath2 (1540) + Bed1 (3900) + Balcony1 (1660) + 4*120 = 12180mm
+  // Wait — align cleanly to Living's 11460mm width:
+  // Bed2 (2980) + Bath0 (1600) + Bath2 (1520) + Bed1 (3640) + 3*120 = 10100mm, Balcony1 steps east (L-shape!)
+  room Bed2 {
+    role: habitable
+    clear_size: (2980mm, 3180mm) // 9.48 m2 (target 9.46 m2)
+  }
+  room Bath0 {
+    role: service
+    clear_size: (1600mm, 1820mm) // 2.91 m2 (target 2.92 m2) — shares wet wall with Bath2!
+  }
+  room Bath2 {
+    role: service
+    clear_size: (1520mm, 1820mm) // 2.77 m2 (target 2.78 m2) — master ensuite!
+  }
+  room Bed1 {
+    role: habitable
+    clear_size: (3640mm, 3640mm) // 13.25 m2 (target 13.22 m2) — master suite!
+  }
+  room Balcony1 {
+    role: outdoor
+    clear_size: (1460mm, 3640mm) // 5.31 m2 (target 5.30 m2) — private master balcony!
+  }
+
+  layout Plan {
+    // South row aligned along north face touching Living.south
+    require Living.west == Bed0.west
+    require Living.south == Bed0.north + interior_wall
+
+    require Bath1.west == Bed0.east + interior_wall
+    require Bath1.north == Bed0.north
+
+    require Kitchen.west == Bath1.east + interior_wall
+    require Kitchen.north == Bed0.north
+
+    require Balcony0.west == Kitchen.east + interior_wall
+    require Balcony0.north == Bed0.north
+
+    // North row aligned along south face touching Living.north
+    require Bed2.west == Living.west
+    require Bed2.south == Living.north + interior_wall
+
+    require Bath0.west == Bed2.east + interior_wall
+    require Bath0.south == Living.north + interior_wall
+
+    require Bath2.west == Bath0.east + interior_wall
+    require Bath2.south == Living.north + interior_wall
+
+    require Bed1.west == Bath2.east + interior_wall
+    require Bed1.south == Living.north + interior_wall
+
+    // Private Master Balcony stepping off East facade of Master Suite (real stepped ResPlan envelope!)
+    require Balcony1.west == Bed1.east + interior_wall
+    require Balcony1.south == Bed1.south
+  }
+
+  // --- All 10 ResPlan Connectivity Edges (`front_door` + 9 `via_door` edges) ---
+  opening FrontDoor: door {
+    host: exterior(Living, west)
+    width: 1000mm
+    offset: 1050mm from start
+    hinge: start
+    swing: into Living
+  }
+  opening D_Bed0: door {
+    host: shared_wall(Bed0, Living)
+    width: 850mm
+    offset: 1100mm from start
+    hinge: start
+    swing: into Bed0
+  }
+  opening D_Bath1: door {
+    host: shared_wall(Bath1, Living)
+    width: 750mm
+    offset: 500mm from start
+    hinge: start
+    swing: into Bath1
+  }
+  opening D_Kitchen: door {
+    host: shared_wall(Kitchen, Living)
+    width: 850mm
+    offset: 700mm from start
+    hinge: start
+    swing: into Kitchen
+  }
+  opening D_Balcony0: door {
+    host: shared_wall(Balcony0, Living)
+    width: 900mm
+    offset: 1400mm from start
+    hinge: start
+    swing: into Living
+  }
+  opening D_Bed2: door {
+    host: shared_wall(Living, Bed2)
+    width: 850mm
+    offset: 1050mm from start
+    hinge: start
+    swing: into Bed2
+  }
+  opening D_Bath0: door {
+    host: shared_wall(Living, Bath0)
+    width: 750mm
+    offset: 420mm from start
+    hinge: start
+    swing: into Bath0
+  }
+  opening D_Bed1: door {
+    host: shared_wall(Living, Bed1)
+    width: 900mm
+    offset: 1300mm from start
+    hinge: start
+    swing: into Bed1
+  }
+  opening D_Ensuite: door {
+    host: shared_wall(Bath2, Bed1)
+    width: 750mm
+    offset: 500mm from start
+    hinge: start
+    swing: into Bath2
+  }
+  opening D_Balcony1: door {
+    host: shared_wall(Bed1, Balcony1)
+    width: 900mm
+    offset: 1350mm from start
+    hinge: start
+    swing: into Bed1
+  }
+
+  // --- Exterior Daylighting Windows on All Habitable Rooms & Kitchen ---
+  opening W_Bed0: window { host: exterior(Bed0, south) width: 1400mm offset: 900mm from start }
+  opening W_Kitchen: window { host: exterior(Kitchen, south) width: 1100mm offset: 600mm from start }
+  opening W_Living_E: window { host: exterior(Living, east) width: 1500mm offset: 800mm from start }
+  opening W_Bed2: window { host: exterior(Bed2, north) width: 1400mm offset: 790mm from start }
+  opening W_Bed1: window { host: exterior(Bed1, north) width: 1600mm offset: 1020mm from start }
+
+  // --- Realistic Architectural & Wet-Core Fixtures ---
+  fixture LivingSofa: sofa { room: Living size: (2400mm, 900mm) against: north offset: 4800mm from start clearance_front: 700mm }
+  fixture DiningTable: table { room: Living size: (1800mm, 900mm) against: north offset: 9200mm from start clearance_front: 600mm }
+  fixture KitchenCounter: counter { room: Kitchen size: (1900mm, 600mm) against: west offset: 400mm from start clearance_front: 700mm }
+  fixture Bath1_WC: toilet { room: Bath1 size: (420mm, 680mm) against: east offset: 250mm from start clearance_front: 500mm }
+  fixture Bath1_Sink: sink { room: Bath1 size: (520mm, 420mm) against: west offset: 300mm from start clearance_front: 500mm }
+  fixture Bath0_WC: toilet { room: Bath0 size: (420mm, 680mm) against: east offset: 1100mm from start clearance_front: 500mm }
+  fixture Bath2_WC: toilet { room: Bath2 size: (420mm, 680mm) against: west offset: 250mm from start clearance_front: 500mm }
+  fixture Bed0_Bed: bed { room: Bed0 size: (1500mm, 2000mm) against: west offset: 350mm from start clearance_front: 600mm }
+  fixture Bed2_Bed: bed { room: Bed2 size: (1400mm, 2000mm) against: west offset: 1000mm from start clearance_front: 600mm }
+  fixture Bed1_Bed: bed { room: Bed1 size: (1800mm, 2100mm) against: north offset: 920mm from start clearance_front: 650mm }
+
+  view MainPlan: plan {
+    frame: Plan
+    sheet: A3 landscape
+    scale: 1:100
+    show_dimensions: true
+    show_labels: true
+  }
+
+  verify {
+    require no_room_overlap
+    require opening_jamb_margin >= 100mm
+    require no_door_swing_collision
+    require all_rooms_reachable
+    require no_fixture_collision
+    require habitable_rooms_have_window
+  }
+}

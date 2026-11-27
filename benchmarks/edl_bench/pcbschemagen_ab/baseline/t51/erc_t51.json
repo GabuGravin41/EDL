@@ -1,0 +1,125 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-11-28T00:01:44+0300",
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "9.0.9",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/238a86a8-ec9e-4706-a820-388d3c5e106a",
+            "violations": [
+                {
+                    "description": "Symbol 'NXE1S0303MC' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U6 [NXE1S0303MC]",
+                            "pos": {
+                                "x": 1.9558,
+                                "y": 0.762
+                            },
+                            "uuid": "e8921375-c7b1-41ca-815c-8c33dc320c86"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'ISO7741' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U5 [ISO7741]",
+                            "pos": {
+                                "x": 1.9558,
+                                "y": 2.286
+                            },
+                            "uuid": "3525d646-030c-4ae6-809d-b18d5f3febef"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'REF3033' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U7 [REF3033]",
+                            "pos": {
+                                "x": 3.556,
+                                "y": 0.8128
+                            },
+                            "uuid": "14c2e54a-ba77-4788-8e9d-40c90145926b"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'ADS7042' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U1 [ADS7042]",
+                            "pos": {
+                                "x": 3.302,
+                                "y": 1.8542
+                            },
+                            "uuid": "c7005322-892b-4992-acc7-81082d0da257"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'ADS7042' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U3 [ADS7042]",
+                            "pos": {
+                                "x": 3.302,
+                                "y": 2.9718
+                            },
+                            "uuid": "7c806ec5-326d-4112-8711-b1c17209444c"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'ADS7042' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U2 [ADS7042]",
+                            "pos": {
+                                "x": 4.826,
+                                "y": 1.8542
+                            },
+                            "uuid": "505d0b36-965c-43c1-9e57-bb1dc4e6fc6b"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'ADS7042' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U4 [ADS7042]",
+                            "pos": {
+                                "x": 4.826,
+                                "y": 2.9718
+                            },
+                            "uuid": "4065e11c-ee90-446a-a792-75e2dcd290fb"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                }
+            ]
+        }
+    ],
+    "source": "t51_daq_4ch.kicad_sch"
+}

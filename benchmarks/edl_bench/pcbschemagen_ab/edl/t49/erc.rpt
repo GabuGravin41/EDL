@@ -1,0 +1,27 @@
+ERC report (2026-11-27T23:48:37+0300, Encoding UTF8)
+Report includes: Errors, Warnings, Exclusions
+
+***** Sheet /
+[pin_not_connected]: Pin not connected
+    ; error
+    @(264.16 mm, 157.48 mm): Symbol U1 Hidden pin 11 [NC, Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(421.64 mm, 104.14 mm): Symbol U2 Hidden pin 3 [NC, Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(421.64 mm, 106.68 mm): Symbol U2 Hidden pin 13 [NC, Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(421.64 mm, 109.22 mm): Symbol U2 Hidden pin 15 [NC, Passive, Line]
+[lib_symbol_issues]: Symbol 'BQ76920' not found in symbol library 'test'
+    ; warning
+    @(266.70 mm, 139.70 mm): Symbol U1 [BQ76920]
+[lib_symbol_issues]: Symbol 'BQ76200' not found in symbol library 'test'
+    ; warning
+    @(431.80 mm, 114.30 mm): Symbol U2 [BQ76200]
+[lib_symbol_issues]: Symbol 'SN65HVD230' not found in symbol library 'test'
+    ; warning
+    @(419.10 mm, 283.21 mm): Symbol U3 [SN65HVD230]
+
+ ** ERC messages: 7  Errors 4  Warnings 3

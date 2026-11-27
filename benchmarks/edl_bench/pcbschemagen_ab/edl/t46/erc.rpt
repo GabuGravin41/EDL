@@ -1,0 +1,18 @@
+ERC report (2026-11-27T23:45:12+0300, Encoding UTF8)
+Report includes: Errors, Warnings, Exclusions
+
+***** Sheet /
+[pin_not_connected]: Pin not connected
+    ; error
+    @(167.64 mm, 162.56 mm): Symbol U3 Hidden pin 14 [NC, Passive, Line]
+[lib_symbol_issues]: Symbol 'ISO7741' not found in symbol library 'test'
+    ; warning
+    @(177.80 mm, 91.44 mm): Symbol U1 [ISO7741]
+[lib_symbol_issues]: Symbol 'NXE1S0303MC' not found in symbol library 'test'
+    ; warning
+    @(177.80 mm, 162.56 mm): Symbol U3 [NXE1S0303MC]
+[lib_symbol_issues]: Symbol 'SN65HVD230' not found in symbol library 'test'
+    ; warning
+    @(269.24 mm, 95.25 mm): Symbol U2 [SN65HVD230]
+
+ ** ERC messages: 4  Errors 1  Warnings 3

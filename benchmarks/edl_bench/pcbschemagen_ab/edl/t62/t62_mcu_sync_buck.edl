@@ -1,0 +1,550 @@
+// Task 62: MCU_SYNC_BUCK_SYSTEM
+// Complete 200V -> 100V Digital Synchronous Buck System:
+// STM32F103C8T6 MCU + 2x UCC5390E Isolated Gate Drivers + 2x IMZA65R015M2H 650V SiC MOSFETs
+// + INA240A1 Current Sense Amplifier + SN65HVD230 CAN Transceiver
+// InputNodes:  VIN (200V), PWM, GND, CAN_TXD, CAN_RXD
+// OutputNodes: VOUT (100V), CANH, CANL
+
+project "T62_MCU_SYNC_BUCK_SYSTEM" {
+  units: mm
+  frame Sheet: Frame2
+  symbol_lib "/home/lindah/projects/EDL/benchmarks/external/PCBSchemaGen_v2/library/test.kicad_sym"
+
+  circuit Main {
+    // =========================================================================
+    // 1. DIGITAL CONTROL & STM32F103C8T6 MCU CORE (3.3V / GND)
+    // =========================================================================
+    component J_CTRL: "Connector_Generic:Conn_01x05" {
+      value: "CTRL_IF"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical"
+      pin 1: power_out(3.3V)
+      pin 2: ground
+    }
+
+    component U_MCU: "test:STM32F103C8T6" {
+      value: "STM32F103C8T6"
+      footprint: "Package_QFP:LQFP-48_7x7mm_P0.5mm"
+      pin VBAT: power_in(2.0V..3.6V)
+      pin VDDA: power_in(2.4V..3.6V)
+      pin VDD_1: power_in(2.0V..3.6V)
+      pin VDD_2: power_in(2.0V..3.6V)
+      pin VDD_3: power_in(2.0V..3.6V)
+      pin VSSA: ground
+      pin VSS_1: ground
+      pin VSS_2: ground
+      pin VSS_3: ground
+      pin NRST: input
+      pin BOOT0: input
+      pin PB2: input
+      pin "PA0-WKUP": input
+      pin PA1: input
+      pin PA8: output
+      pin PB13: output
+      pin PA11: input
+      pin PA12: output
+      pin PA13: bidir
+      pin PA14: input
+      // Unused GPIOs cleanly marked no-connect
+      pin "PC13-TAMPER-RTC": nc
+      pin "PC14-OSC32_IN": nc
+      pin "PC15-OSC32_OUT": nc
+      pin PA2: nc
+      pin PA3: nc
+      pin PA4: nc
+      pin PA5: nc
+      pin PA6: nc
+      pin PA7: nc
+      pin PB0: nc
+      pin PB1: nc
+      pin PB10: nc
+      pin PB11: nc
+      pin PB12: nc
+      pin PB14: nc
+      pin PB15: nc
+      pin PA9: nc
+      pin PA10: nc
+      pin PA15: nc
+      pin PB3: nc
+      pin PB4: nc
+      pin PB5: nc
+      pin PB6: nc
+      pin PB7: nc
+      pin PB8: nc
+      pin PB9: nc
+    }
+
+    // MCU Decoupling & Analog VDDA Filter
+    component C_MCU_BULK: "Device:C" { value: 4.7uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU1:     "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU2:     "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU3:     "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_MCU4:     "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    component FB_VDDA: "Device:FerriteBead" {
+      value: "600R@100MHz"
+      footprint: "Inductor_SMD:L_0603_1608Metric"
+    }
+    component C_VDDA1: "Device:C" { value: 1uF    voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_VDDA2: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // 8MHz HSE Crystal, Reset, Boot, SWD
+    component Y1: "Device:Crystal" {
+      value: "8MHz"
+      footprint: "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm"
+    }
+    component C_OSC1:  "Device:C" { value: 20pF   voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_OSC2:  "Device:C" { value: 20pF   voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_NRST:  "Device:R" { value: 10k    power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_NRST:  "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_BOOT0: "Device:R" { value: 10k    power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_BOOT1: "Device:R" { value: 10k    power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component J_SWD: "Connector_Generic:Conn_01x04" {
+      value: "SWD_DBG"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
+    }
+
+    // =========================================================================
+    // 2. SN65HVD230 CAN TRANSCEIVER (3.3V / GND)
+    // =========================================================================
+    component U_CAN: "test:SN65HVD230" {
+      value: "SN65HVD230"
+      footprint: "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+      pin VCC: power_in(3.3V)
+      pin GND: ground
+      pin D: input
+      pin R: output
+      pin RS: input
+      pin VREF: output
+    }
+    component C_CAN:       "Device:C"     { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_CAN_RS:    "Device:R"     { value: 10k    power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_CAN_T1:    "Device:R"     { value: 60.4R  power_rating: 0.25W footprint: "Resistor_SMD:R_0805_2012Metric" }
+    component R_CAN_T2:    "Device:R"     { value: 60.4R  power_rating: 0.25W footprint: "Resistor_SMD:R_0805_2012Metric" }
+    component C_CAN_SPLIT: "Device:C"     { value: 4.7nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component D_CANH:      "Device:D_TVS" { value: "PESD1CAN"  footprint: "Diode_SMD:D_SOD-323" }
+    component D_CANL:      "Device:D_TVS" { value: "PESD1CAN"  footprint: "Diode_SMD:D_SOD-323" }
+    component J_CAN: "Connector_Generic:Conn_01x03" {
+      value: "CAN_BUS"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+    }
+
+    // =========================================================================
+    // 3. DUAL UCC5390E ISOLATED SiC GATE DRIVERS (SEPARATE TURN-ON / TURN-OFF)
+    // =========================================================================
+    // High-Side Isolated Gate Driver (Secondary floating on SW_NODE / KS_HS)
+    component R_PWM_HS: "Device:R" { value: 33R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_HS_PD:  "Device:R" { value: 10k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_DRV_HS_P: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    component U_DRV_HS: "test:UCC5390E" {
+      value: "UCC5390E"
+      isolated: true
+      footprint: "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+      pin VCC1: power_in(3.0V..5.5V)
+      pin GND1: ground
+      pin "IN+": input
+      pin "IN-": input
+      pin VCC2: power_in(12V..20V)
+      pin GND2: ground
+      pin VEE2: passive
+      pin OUT: output
+    }
+
+    component J_GDRV_HS: "Connector_Generic:Conn_01x03" {
+      value: "HS_ISO_PWR"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+      pin 1: power_out(18V)
+      pin 2: ground
+    }
+    component C_VCC2_HS:    "Device:C" { value: 10uF   voltage_rating: 35V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_VCC2_HS_HF: "Device:C" { value: 100nF  voltage_rating: 35V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_VEE2_HS:    "Device:C" { value: 1uF    voltage_rating: 25V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // Separate turn-on (10R) and turn-off (2.2R + Schottky) SiC gate drive + 10k G-KS bleed
+    component R_GON_HS:  "Device:R"          { value: 10R    power_rating: 0.5W  footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component R_GOFF_HS: "Device:R"          { value: 2.2R   power_rating: 0.5W  footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component D_GOFF_HS: "Device:D_Schottky" { value: "BAT54"  footprint: "Diode_SMD:D_SOD-323" }
+    component R_GS_HS:   "Device:R"          { value: 10k    power_rating: 0.25W footprint: "Resistor_SMD:R_0805_2012Metric" }
+
+    // Low-Side Isolated Gate Driver (Secondary referenced to KS_LS)
+    component R_PWM_LS: "Device:R" { value: 33R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_LS_PD:  "Device:R" { value: 10k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_DRV_LS_P: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    component U_DRV_LS: "test:UCC5390E" {
+      value: "UCC5390E"
+      isolated: true
+      footprint: "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+      pin VCC1: power_in(3.0V..5.5V)
+      pin GND1: ground
+      pin "IN+": input
+      pin "IN-": input
+      pin VCC2: power_in(12V..20V)
+      pin GND2: ground
+      pin VEE2: passive
+      pin OUT: output
+    }
+
+    component J_GDRV_LS: "Connector_Generic:Conn_01x03" {
+      value: "LS_ISO_PWR"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+      pin 1: power_out(18V)
+      pin 2: ground
+    }
+    component C_VCC2_LS:    "Device:C" { value: 10uF   voltage_rating: 35V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_VCC2_LS_HF: "Device:C" { value: 100nF  voltage_rating: 35V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_VEE2_LS:    "Device:C" { value: 1uF    voltage_rating: 25V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    component R_GON_LS:  "Device:R"          { value: 10R    power_rating: 0.5W  footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component R_GOFF_LS: "Device:R"          { value: 2.2R   power_rating: 0.5W  footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component D_GOFF_LS: "Device:D_Schottky" { value: "BAT54"  footprint: "Diode_SMD:D_SOD-323" }
+    component R_GS_LS:   "Device:R"          { value: 10k    power_rating: 0.25W footprint: "Resistor_SMD:R_0805_2012Metric" }
+
+    // =========================================================================
+    // 4. 200V -> 100V SiC SYNCHRONOUS BUCK POWER STAGE (2x IMZA65R015M2H)
+    // =========================================================================
+    component J_HV_IN: "Connector_Generic:Conn_01x02" {
+      value: "HV_200V_IN"
+      footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal"
+      pin 1: power_out(200V)
+      pin 2: ground
+    }
+
+    // 400V-rated DC-link bulk & HF snubbing capacitors (200V/400V = 50% derated)
+    component C_BUS1: "Device:C_Polarized" { value: 47uF   voltage_rating: 400V  footprint: "Capacitor_THT:CP_Radial_D16.0mm_P7.50mm" }
+    component C_BUS2: "Device:C"           { value: 1uF    voltage_rating: 400V  footprint: "Capacitor_THT:C_Rect_L18.0mm_W11.0mm_P15.00mm_FKS3_FKP3" }
+    component C_BUS3: "Device:C"           { value: 100nF  voltage_rating: 400V  footprint: "Capacitor_SMD:C_1206_3216Metric" }
+
+    component Q_HS: "test:IMZA65R015M2H" {
+      value: "IMZA65R015M2H"
+      voltage_rating: 650V
+      footprint: "Package_TO_SOT_THT:TO-247-4_Vertical"
+    }
+
+    component Q_LS: "test:IMZA65R015M2H" {
+      value: "IMZA65R015M2H"
+      voltage_rating: 650V
+      footprint: "Package_TO_SOT_THT:TO-247-4_Vertical"
+    }
+
+    component L_BUCK: "Device:L" {
+      value: "100uH"
+      footprint: "Inductor_THT:L_Toroid_Horizontal_D16.8mm_P14.70mm_Vishay_TJ3"
+    }
+
+    // 250V-rated Output Capacitors on 100V VOUT (100V/250V = 40% derated)
+    component C_OUT1: "Device:C_Polarized" { value: 47uF   voltage_rating: 250V  footprint: "Capacitor_THT:CP_Radial_D16.0mm_P7.50mm" }
+    component C_OUT2: "Device:C"           { value: 1uF    voltage_rating: 250V  footprint: "Capacitor_THT:C_Rect_L18.0mm_W11.0mm_P15.00mm_FKS3_FKP3" }
+    component C_OUT3: "Device:C"           { value: 100nF  voltage_rating: 250V  footprint: "Capacitor_SMD:C_1206_3216Metric" }
+
+    // Low-side Return Shunt (CM voltage = 0V, safely within INA240A1 -4V..+80V!)
+    component R_SHUNT: "Device:R" {
+      value: "5mR"
+      power_rating: 5W
+      footprint: "Resistor_SMD:R_2512_6332Metric"
+    }
+
+    component J_HV_OUT: "Connector_Generic:Conn_01x02" {
+      value: "HV_100V_OUT"
+      footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal"
+    }
+
+    // =========================================================================
+    // 5. INA240A1 CURRENT SENSE AMPLIFIER & 100V VOUT ADC FEEDBACK DIVIDER
+    // =========================================================================
+    component R_CS_P:    "Device:R" { value: 10R    power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_CS_N:    "Device:R" { value: 10R    power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_CS_DIFF: "Device:C" { value: 10nF   voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    component U_CS: "test:INA240A1" {
+      value: "INA240A1"
+      footprint: "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+      pin "V+": power_in(2.7V..5.5V)
+      pin GND: ground
+      pin 8: input
+      pin 1: input
+      pin REF1: input
+      pin REF2: input
+      pin 5: output
+    }
+    component C_CS:     "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_CS_OUT: "Device:R" { value: 100R   power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_CS_OUT: "Device:C" { value: 1nF    voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // 100V VOUT -> 2.63V ADC Feedback Divider (100k / 2.7k, 3.3V Zener Clamp)
+    component R_VS_TOP:   "Device:R"       { value: 100k   power_rating: 0.5W  footprint: "Resistor_SMD:R_1206_3216Metric" }
+    component R_VS_BOT:   "Device:R"       { value: 2.7k   power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_VS_FLT:   "Device:C"       { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component D_VS_CLAMP: "Device:D_Zener" { value: "3.3V" footprint: "Diode_SMD:D_SOD-323" }
+
+    // =========================================================================
+    // NETS — Digital Control Domain (VDD_3V3 / GND)
+    // =========================================================================
+    net VDD_3V3 {
+      connect: [
+        J_CTRL.1, U_MCU.VBAT, U_MCU.VDD_1, U_MCU.VDD_2, U_MCU.VDD_3,
+        C_MCU_BULK.1, C_MCU1.1, C_MCU2.1, C_MCU3.1, C_MCU4.1,
+        FB_VDDA.1, R_NRST.1, J_SWD.1,
+        U_CAN.VCC, C_CAN.1,
+        U_DRV_HS.VCC1, C_DRV_HS_P.1,
+        U_DRV_LS.VCC1, C_DRV_LS_P.1,
+        U_CS."V+", U_CS.REF1, C_CS.1
+      ]
+      power_flag: true
+    }
+
+    net GND {
+      connect: [
+        J_CTRL.2, U_MCU.VSSA, U_MCU.VSS_1, U_MCU.VSS_2, U_MCU.VSS_3,
+        C_MCU_BULK.2, C_MCU1.2, C_MCU2.2, C_MCU3.2, C_MCU4.2,
+        C_VDDA1.2, C_VDDA2.2, C_OSC1.2, C_OSC2.2, C_NRST.2, R_BOOT0.2, R_BOOT1.2, J_SWD.4,
+        U_CAN.GND, C_CAN.2, R_CAN_RS.2, C_CAN_SPLIT.2, D_CANH.2, D_CANL.2, J_CAN.3,
+        R_HS_PD.2, C_DRV_HS_P.2, U_DRV_HS.GND1, U_DRV_HS."IN-",
+        R_LS_PD.2, C_DRV_LS_P.2, U_DRV_LS.GND1, U_DRV_LS."IN-",
+        J_HV_IN.2, C_BUS1.2, C_BUS2.2, C_BUS3.2, Q_LS.S, R_SHUNT.2,
+        R_CS_N.1, U_CS.GND, U_CS.REF2, C_CS.2, C_CS_OUT.2,
+        R_VS_BOT.2, C_VS_FLT.2, D_VS_CLAMP.A
+      ]
+      power_flag: true
+    }
+
+    net VDDA_3V3  { connect: [FB_VDDA.2, C_VDDA1.1, C_VDDA2.1, U_MCU.VDDA] }
+    net OSC_IN    { connect: [U_MCU."PD0-OSC_IN", Y1.1, C_OSC1.1] }
+    net OSC_OUT   { connect: [U_MCU."PD1-OSC_OUT", Y1.2, C_OSC2.1] }
+    net MCU_NRST  { connect: [U_MCU.NRST, R_NRST.2, C_NRST.1] }
+    net MCU_BOOT0 { connect: [U_MCU.BOOT0, R_BOOT0.1] }
+    net MCU_BOOT1 { connect: [U_MCU.PB2, R_BOOT1.1] }
+    net SWDIO     { connect: [U_MCU.PA13, J_SWD.2] }
+    net SWCLK     { connect: [U_MCU.PA14, J_SWD.3] }
+
+    // Complementary Synchronous Buck PWM (Required InputNode: PWM)
+    net PWM       { connect: [J_CTRL.3, U_MCU.PA8, R_PWM_HS.1] }
+    net PWM_HS_IN { connect: [R_PWM_HS.2, R_HS_PD.1, U_DRV_HS."IN+"] }
+    net PWM_LS    { connect: [U_MCU.PB13, R_PWM_LS.1] }
+    net PWM_LS_IN { connect: [R_PWM_LS.2, R_LS_PD.1, U_DRV_LS."IN+"] }
+
+    // CAN Bus Interface (Required InputNodes: CAN_TXD, CAN_RXD; OutputNodes: CANH, CANL)
+    net CAN_TXD   { connect: [J_CTRL.4, U_MCU.PA12, U_CAN.D] }
+    net CAN_RXD   { connect: [J_CTRL.5, U_MCU.PA11, U_CAN.R] }
+    net CAN_RS    { connect: [U_CAN.RS, R_CAN_RS.1] }
+    net CAN_SPLIT { connect: [U_CAN.VREF, R_CAN_T1.2, R_CAN_T2.1, C_CAN_SPLIT.1] }
+    net CANH      { connect: [U_CAN.CANH, R_CAN_T1.1, D_CANH.1, J_CAN.1] }
+    net CANL      { connect: [U_CAN.CANL, R_CAN_T2.2, D_CANL.1, J_CAN.2] }
+
+    // =========================================================================
+    // NETS — Isolated High-Side & Low-Side SiC Gate Drive Secondary Domains
+    // =========================================================================
+    net VCC2_HS    { connect: [J_GDRV_HS.1, C_VCC2_HS.1, C_VCC2_HS_HF.1, U_DRV_HS.VCC2] power_flag: true }
+    net VEE2_HS    { connect: [J_GDRV_HS.3, C_VEE2_HS.2, U_DRV_HS.VEE2] }
+    net DRV_HS_OUT { connect: [U_DRV_HS.OUT, R_GON_HS.1, D_GOFF_HS.K] }
+    net HS_GOFF_N  { connect: [D_GOFF_HS.A, R_GOFF_HS.1] }
+    net HS_GATE    { connect: [R_GON_HS.2, R_GOFF_HS.2, R_GS_HS.1, Q_HS.G] }
+
+    net VCC2_LS    { connect: [J_GDRV_LS.1, C_VCC2_LS.1, C_VCC2_LS_HF.1, U_DRV_LS.VCC2] power_flag: true }
+    net KS_LS      { connect: [J_GDRV_LS.2, C_VCC2_LS.2, C_VCC2_LS_HF.2, C_VEE2_LS.1, U_DRV_LS.GND2, R_GS_LS.2, Q_LS.KS] power_flag: true }
+    net VEE2_LS    { connect: [J_GDRV_LS.3, C_VEE2_LS.2, U_DRV_LS.VEE2] }
+    net DRV_LS_OUT { connect: [U_DRV_LS.OUT, R_GON_LS.1, D_GOFF_LS.K] }
+    net LS_GOFF_N  { connect: [D_GOFF_LS.A, R_GOFF_LS.1] }
+    net LS_GATE    { connect: [R_GON_LS.2, R_GOFF_LS.2, R_GS_LS.1, Q_LS.G] }
+
+    // =========================================================================
+    // NETS — 200V -> 100V SiC Power Stage & Analog Feedback
+    // =========================================================================
+    net VIN {
+      connect: [J_HV_IN.1, C_BUS1.1, C_BUS2.1, C_BUS3.1, Q_HS.D]
+      power_flag: true
+    }
+
+    net SW_NODE {
+      connect: [Q_HS.S, Q_HS.KS, Q_LS.D, L_BUCK.1, J_GDRV_HS.2, C_VCC2_HS.2, C_VCC2_HS_HF.2, C_VEE2_HS.1, U_DRV_HS.GND2, R_GS_HS.2]
+      power_flag: true
+    }
+
+    net VOUT {
+      connect: [L_BUCK.2, C_OUT1.1, C_OUT2.1, C_OUT3.1, R_VS_TOP.1, J_HV_OUT.1]
+    }
+
+    net VOUT_RTN {
+      connect: [C_OUT1.2, C_OUT2.2, C_OUT3.2, J_HV_OUT.2, R_SHUNT.1, R_CS_P.1]
+    }
+
+    // Current & Voltage Sense Feedback -> STM32 ADC
+    net CS_INP     { connect: [R_CS_P.2, C_CS_DIFF.1, U_CS.8] }
+    net CS_INN     { connect: [R_CS_N.2, C_CS_DIFF.2, U_CS.1] }
+    net CS_OUT_RAW { connect: [U_CS.5, R_CS_OUT.1] }
+    net ISENSE_ADC { connect: [R_CS_OUT.2, C_CS_OUT.1, U_MCU."PA0-WKUP"] }
+    net VOUT_ADC   { connect: [R_VS_TOP.2, R_VS_BOT.1, C_VS_FLT.1, D_VS_CLAMP.K, U_MCU.PA1] }
+  }
+
+  schematic MainSheet {
+    sheet: A1 landscape
+    title: "T62: 200V->100V Digital Synchronous Buck System (STM32F103C8T6 + 2x UCC5390E + 2x IMZA65R015M2H + INA240A1 + SN65HVD230)"
+
+    routing {
+      default: zone_local
+      power: symbol
+      ground: symbol
+    }
+
+    group MCU_Core {
+      title: "1. STM32F103C8T6 DIGITAL CONTROLLER (TIM1 COMPLEMENTARY PWM + ADC + SWD)"
+      rect: (25.40mm, 25.40mm, 254.00mm, 342.90mm)
+      border: dashed
+      color: blue
+      members: [
+        J_CTRL, U_MCU, C_MCU_BULK, C_MCU1, C_MCU2, C_MCU3, C_MCU4,
+        FB_VDDA, C_VDDA1, C_VDDA2, Y1, C_OSC1, C_OSC2,
+        R_NRST, C_NRST, R_BOOT0, R_BOOT1, J_SWD
+      ]
+      note: "PA8=PWM(HS) | PB13=PWM_LS | PA0=ISENSE | PA1=VOUT_ADC | PA11/12=CAN"
+    }
+
+    group CAN_Stage {
+      title: "2. SN65HVD230 CAN TELEMETRY & CONTROL BUS"
+      rect: (25.40mm, 355.60mm, 254.00mm, 546.10mm)
+      border: dashed
+      color: green
+      members: [U_CAN, C_CAN, R_CAN_RS, R_CAN_T1, R_CAN_T2, C_CAN_SPLIT, D_CANH, D_CANL, J_CAN]
+      note: "Split 120R Termination + ESD Protection"
+    }
+
+    group GateDrivers {
+      title: "3. DUAL UCC5390E ISOLATED SiC GATE DRIVERS (+18V/-4V BIPOLAR, SPLIT RON/ROFF)"
+      rect: (266.70mm, 25.40mm, 520.70mm, 342.90mm)
+      border: dashed
+      color: red
+      members: [
+        R_PWM_HS, R_HS_PD, C_DRV_HS_P, U_DRV_HS, J_GDRV_HS, C_VCC2_HS, C_VCC2_HS_HF, C_VEE2_HS,
+        R_GON_HS, R_GOFF_HS, D_GOFF_HS, R_GS_HS,
+        R_PWM_LS, R_LS_PD, C_DRV_LS_P, U_DRV_LS, J_GDRV_LS, C_VCC2_LS, C_VCC2_LS_HF, C_VEE2_LS,
+        R_GON_LS, R_GOFF_LS, D_GOFF_LS, R_GS_LS
+      ]
+      note: "Ron=10R | Roff=2.2R+BAT54 | Kelvin-Source Return (KS_HS=SW_NODE, KS_LS)"
+    }
+
+    group SenseFeedback {
+      title: "4. INA240A1 BIDIRECTIONAL CURRENT SENSE (20V/V, V+/2) & 100V VOUT DIVIDER"
+      rect: (266.70mm, 355.60mm, 520.70mm, 546.10mm)
+      border: dashed
+      color: amber
+      members: [R_CS_P, R_CS_N, C_CS_DIFF, U_CS, C_CS, R_CS_OUT, C_CS_OUT, R_VS_TOP, R_VS_BOT, C_VS_FLT, D_VS_CLAMP]
+      note: "Low-Side Shunt (Vcm=0V safe inside -4V..80V) | 100k/2.7k VOUT Divider (2.63V@100V)"
+    }
+
+    group SiC_PowerStage {
+      title: "5. 200V -> 100V SiC SYNCHRONOUS BUCK POWER STAGE (2x IMZA65R015M2H 650V 15mR)"
+      rect: (533.40mm, 25.40mm, 800.10mm, 495.30mm)
+      border: dashed
+      color: slate
+      members: [J_HV_IN, C_BUS1, C_BUS2, C_BUS3, Q_HS, Q_LS, L_BUCK, C_OUT1, C_OUT2, C_OUT3, R_SHUNT, J_HV_OUT]
+      note: "400V DC-Link Caps | 100uH Buck Inductor | 250V Output Caps | 5mR 5W Return Shunt"
+    }
+
+    divider {
+      from: (360.68mm, 20.32mm)
+      to: (360.68mm, 347.98mm)
+      label: "CMTI GATE DRIVER ISOLATION BARRIER (3.3V LOGIC | +18V/-4V SiC GATE)"
+      color: red
+    }
+
+    // Group 1: MCU Core (U_MCU on 1.27mm half-grid)
+    place J_CTRL     center (45.72mm, 139.70mm) orient: 180
+    place U_MCU      center (153.67mm, 173.99mm)
+    place Y1         center (88.90mm, 154.94mm)
+    place C_OSC1     center (78.74mm, 185.42mm)
+    place C_OSC2     center (99.06mm, 185.42mm)
+    place R_NRST     center (83.82mm, 114.30mm)
+    place C_NRST     center (101.60mm, 124.46mm)
+    place FB_VDDA    center (83.82mm, 76.20mm) orient: 90
+    place C_VDDA1    center (106.68mm, 83.82mm)
+    place C_VDDA2    center (121.92mm, 83.82mm)
+    place R_BOOT0    center (208.28mm, 152.40mm)
+    place R_BOOT1    center (93.98mm, 226.06mm)
+    place J_SWD      center (215.90mm, 215.90mm)
+    place C_MCU_BULK center (88.90mm, 287.02mm)
+    place C_MCU1     center (109.22mm, 287.02mm)
+    place C_MCU2     center (129.54mm, 287.02mm)
+    place C_MCU3     center (149.86mm, 287.02mm)
+    place C_MCU4     center (170.18mm, 287.02mm)
+
+    // Group 2: CAN Stage (U_CAN on 1.27mm Y half-grid)
+    place U_CAN       center (88.90mm, 445.77mm)
+    place C_CAN       center (63.50mm, 487.68mm)
+    place R_CAN_RS    center (127.00mm, 411.48mm)
+    place R_CAN_T1    center (147.32mm, 434.34mm)
+    place R_CAN_T2    center (147.32mm, 462.28mm)
+    place C_CAN_SPLIT center (147.32mm, 492.76mm)
+    place D_CANH      center (177.80mm, 434.34mm) orient: 90
+    place D_CANL      center (177.80mm, 467.36mm) orient: 90
+    place J_CAN       center (215.90mm, 447.04mm)
+
+    // Group 3: Dual UCC5390E Gate Drivers straddling x = 360.68mm
+    // High-Side Driver (y ~ 110mm)
+    place R_PWM_HS     center (292.10mm, 106.68mm) orient: 90
+    place R_HS_PD      center (314.96mm, 129.54mm)
+    place C_DRV_HS_P   center (330.20mm, 104.14mm)
+    place U_DRV_HS     center (347.98mm, 104.14mm)
+    place J_GDRV_HS    center (411.48mm, 60.96mm) orient: 180
+    place C_VCC2_HS    center (439.42mm, 66.04mm)
+    place C_VCC2_HS_HF center (457.20mm, 66.04mm)
+    place C_VEE2_HS    center (490.22mm, 66.04mm)
+    place R_GON_HS     center (421.64mm, 111.76mm) orient: 90
+    place D_GOFF_HS    center (416.56mm, 134.62mm)
+    place R_GOFF_HS    center (449.58mm, 134.62mm) orient: 90
+    place R_GS_HS      center (487.68mm, 124.46mm)
+
+    // Low-Side Driver (y ~ 255mm)
+    place R_PWM_LS     center (292.10mm, 251.46mm) orient: 90
+    place R_LS_PD      center (314.96mm, 274.32mm)
+    place C_DRV_LS_P   center (330.20mm, 248.92mm)
+    place U_DRV_LS     center (347.98mm, 248.92mm)
+    place J_GDRV_LS    center (411.48mm, 205.74mm) orient: 180
+    place C_VCC2_LS    center (439.42mm, 210.82mm)
+    place C_VCC2_LS_HF center (457.20mm, 210.82mm)
+    place C_VEE2_LS    center (490.22mm, 210.82mm)
+    place R_GON_LS     center (421.64mm, 256.54mm) orient: 90
+    place D_GOFF_LS    center (416.56mm, 279.40mm)
+    place R_GOFF_LS    center (449.58mm, 279.40mm) orient: 90
+    place R_GS_LS      center (487.68mm, 269.24mm)
+
+    // Group 4: INA240A1 Current Sense & 100V VOUT Divider
+    place R_CS_P     center (294.64mm, 419.10mm) orient: 90
+    place R_CS_N     center (294.64mm, 444.50mm) orient: 90
+    place C_CS_DIFF  center (322.58mm, 431.80mm)
+    place U_CS       center (360.68mm, 431.80mm)
+    place C_CS       center (340.36mm, 396.24mm)
+    place R_CS_OUT   center (396.24mm, 431.80mm) orient: 90
+    place C_CS_OUT   center (419.10mm, 449.58mm)
+
+    place R_VS_TOP   center (457.20mm, 411.48mm)
+    place R_VS_BOT   center (457.20mm, 457.20mm)
+    place C_VS_FLT   center (477.52mm, 457.20mm)
+    place D_VS_CLAMP center (497.84mm, 457.20mm) orient: 270
+
+    // Group 5: 200V->100V SiC Synchronous Buck Power Stage
+    place J_HV_IN  center (556.26mm, 144.78mm) orient: 180
+    place C_BUS1   center (584.20mm, 165.10mm)
+    place C_BUS2   center (604.52mm, 165.10mm)
+    place C_BUS3   center (624.84mm, 165.10mm)
+
+    place Q_HS     center (660.40mm, 144.78mm)
+    place Q_LS     center (660.40mm, 289.56mm)
+
+    place L_BUCK   center (706.12mm, 218.44mm) orient: 90
+    place C_OUT1   center (718.82mm, 266.70mm)
+    place C_OUT2   center (736.60mm, 266.70mm)
+    place C_OUT3   center (754.38mm, 266.70mm)
+    place R_SHUNT  center (706.12mm, 355.60mm) orient: 90
+    place J_HV_OUT center (787.40mm, 266.70mm)
+  }
+
+  verify {
+    require all_required_pins_connected
+    require no_power_ground_short
+    require no_multiple_power_drivers
+    require voltage_compatibility
+    require no_single_pin_nets
+    require ic_decoupling
+    require bom_manufacturability
+  }
+}

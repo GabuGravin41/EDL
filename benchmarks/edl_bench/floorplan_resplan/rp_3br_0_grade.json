@@ -1,0 +1,50 @@
+{
+  "task_id": "RP_3BR_0",
+  "resplan_id": 14433,
+  "geometric": {
+    "target_area_m2": 95.66,
+    "actual_area_m2": 95.73,
+    "total_area_error_pct": 0.07,
+    "room_area_mape_pct": 0.22,
+    "room_type_counts": {
+      "living": {
+        "target": 1,
+        "actual": 1,
+        "ok": true
+      },
+      "kitchen": {
+        "target": 1,
+        "actual": 1,
+        "ok": true
+      },
+      "bedroom": {
+        "target": 3,
+        "actual": 3,
+        "ok": true
+      },
+      "bathroom": {
+        "target": 3,
+        "actual": 3,
+        "ok": true
+      },
+      "balcony": {
+        "target": 2,
+        "actual": 2,
+        "ok": true
+      }
+    },
+    "remaining_dof": 0
+  },
+  "topological": {
+    "door_count": 10,
+    "window_count": 5,
+    "required_type_edge_recall": 1.0
+  },
+  "engineering": {
+    "has_errors": false,
+    "evidence_passed": 7,
+    "evidence_violated": 0,
+    "evidence_total": 7
+  },
+  "pass_all": true
+}

@@ -1,0 +1,357 @@
+{
+  "suite": "pcbbench",
+  "parser": "kicad_cli",
+  "calibrated_roles": false,
+  "results": [
+    {
+      "task_id": 46,
+      "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/baseline/t46/t46_can_isolated.kicad_sch",
+      "exists": true,
+      "kicad_erc": {
+        "rc": 5,
+        "errors": 0,
+        "warnings": 3,
+        "error_samples": [],
+        "warning_samples": [
+          "lib_symbol_issues: Symbol 'NXE1S0303MC' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'ISO7741' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'SN65HVD230' not found in symbol library 'test'"
+        ]
+      },
+      "parsed_components": 26,
+      "parsed_nets": 16,
+      "pcbsg_passed": true,
+      "pcbsg_reward": 1.0,
+      "pcbsg_failing_layer": "PASS",
+      "pcbsg_errors": [],
+      "detected_topologies": [
+        "pi_filter"
+      ],
+      "arm": "baseline",
+      "name": "T46_CAN_ISOLATED_FULL"
+    },
+    {
+      "task_id": 49,
+      "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/baseline/t49/t49_bms_5s.kicad_sch",
+      "exists": true,
+      "kicad_erc": {
+        "rc": 5,
+        "errors": 0,
+        "warnings": 3,
+        "error_samples": [],
+        "warning_samples": [
+          "lib_symbol_issues: Symbol 'BQ76920' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'BQ76200' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'SN65HVD230' not found in symbol library 'test'"
+        ]
+      },
+      "parsed_components": 63,
+      "parsed_nets": 42,
+      "pcbsg_passed": true,
+      "pcbsg_reward": 1.0,
+      "pcbsg_failing_layer": "PASS",
+      "pcbsg_errors": [],
+      "detected_topologies": [],
+      "arm": "baseline",
+      "name": "T49_BMS_5S_FULL_SYSTEM"
+    },
+    {
+      "task_id": 51,
+      "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/baseline/t51/t51_daq_4ch.kicad_sch",
+      "exists": true,
+      "kicad_erc": {
+        "rc": 5,
+        "errors": 0,
+        "warnings": 7,
+        "error_samples": [],
+        "warning_samples": [
+          "lib_symbol_issues: Symbol 'NXE1S0303MC' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'ISO7741' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'REF3033' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'ADS7042' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'ADS7042' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'ADS7042' not found in symbol library 'test'"
+        ]
+      },
+      "parsed_components": 58,
+      "parsed_nets": 34,
+      "pcbsg_passed": true,
+      "pcbsg_reward": 1.0,
+      "pcbsg_failing_layer": "PASS",
+      "pcbsg_errors": [],
+      "detected_topologies": [
+        "pi_filter"
+      ],
+      "arm": "baseline",
+      "name": "T51_ISOLATED_DAQ_4CH"
+    },
+    {
+      "task_id": 52,
+      "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/baseline/t52/t52_iot_node.kicad_sch",
+      "exists": true,
+      "kicad_erc": {
+        "rc": 5,
+        "errors": 0,
+        "warnings": 4,
+        "error_samples": [],
+        "warning_samples": [
+          "lib_symbol_issues: Symbol 'TPS54302' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'STM32F103C8T6' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'TLV1117-33' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'SN65HVD230' not found in symbol library 'test'"
+        ]
+      },
+      "parsed_components": 57,
+      "parsed_nets": 27,
+      "pcbsg_passed": true,
+      "pcbsg_reward": 1.0,
+      "pcbsg_failing_layer": "PASS",
+      "pcbsg_errors": [],
+      "detected_topologies": [
+        "pierce_oscillator"
+      ],
+      "arm": "baseline",
+      "name": "T52_IOT_SENSOR_NODE"
+    },
+    {
+      "task_id": 54,
+      "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/baseline/t54/t54_charger.kicad_sch",
+      "exists": true,
+      "kicad_erc": {
+        "rc": 5,
+        "errors": 0,
+        "warnings": 3,
+        "error_samples": [],
+        "warning_samples": [
+          "lib_symbol_issues: Symbol 'TPD4E05U06' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'BQ25895' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'INA226' not found in symbol library 'test'"
+        ]
+      },
+      "parsed_components": 37,
+      "parsed_nets": 22,
+      "pcbsg_passed": false,
+      "pcbsg_reward": 0.6,
+      "pcbsg_failing_layer": "layer2_subcat_templates",
+      "pcbsg_errors": [
+        "U2 (INA226): missing shunt resistor between sense_plus and sense_minus"
+      ],
+      "detected_topologies": [],
+      "arm": "baseline",
+      "name": "T54_LI_ION_CHARGER_FULL"
+    },
+    {
+      "task_id": 62,
+      "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/baseline/t62/t62_mcu_sync_buck.kicad_sch",
+      "exists": true,
+      "kicad_erc": {
+        "rc": 5,
+        "errors": 0,
+        "warnings": 7,
+        "error_samples": [],
+        "warning_samples": [
+          "lib_symbol_issues: Symbol 'STM32F103C8T6' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'UCC5390E' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'SN65HVD230' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'UCC5390E' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'INA240A1' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'IMZA65R015M2H' not found in symbol library 'test'"
+        ]
+      },
+      "parsed_components": 72,
+      "parsed_nets": 38,
+      "pcbsg_passed": false,
+      "pcbsg_reward": 0.6,
+      "pcbsg_failing_layer": "layer2_subcat_templates",
+      "pcbsg_errors": [
+        "U4 (INA240A1): missing shunt resistor between sense_plus and sense_minus",
+        "Sync buck: missing output cap between VOUT='VOUT' and PGND='SHUNT_P'"
+      ],
+      "detected_topologies": [
+        "half_bridge",
+        "sync_buck",
+        "pierce_oscillator"
+      ],
+      "arm": "baseline",
+      "name": "T62_MCU_SYNC_BUCK_SYSTEM"
+    },
+    {
+      "task_id": 46,
+      "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/edl/t46/kicad/T46_CAN_ISOLATED_FULL.kicad_sch",
+      "exists": true,
+      "kicad_erc": {
+        "rc": 5,
+        "errors": 1,
+        "warnings": 3,
+        "error_samples": [
+          "pin_not_connected: Pin not connected"
+        ],
+        "warning_samples": [
+          "lib_symbol_issues: Symbol 'ISO7741' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'NXE1S0303MC' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'SN65HVD230' not found in symbol library 'test'"
+        ]
+      },
+      "parsed_components": 17,
+      "parsed_nets": 12,
+      "pcbsg_passed": true,
+      "pcbsg_reward": 1.0,
+      "pcbsg_failing_layer": "PASS",
+      "pcbsg_errors": [],
+      "detected_topologies": [],
+      "arm": "edl",
+      "name": "T46_CAN_ISOLATED_FULL"
+    },
+    {
+      "task_id": 49,
+      "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/edl/t49/kicad/T49_BMS_5S_FULL_SYSTEM.kicad_sch",
+      "exists": true,
+      "kicad_erc": {
+        "rc": 5,
+        "errors": 4,
+        "warnings": 3,
+        "error_samples": [
+          "pin_not_connected: Pin not connected",
+          "pin_not_connected: Pin not connected",
+          "pin_not_connected: Pin not connected",
+          "pin_not_connected: Pin not connected"
+        ],
+        "warning_samples": [
+          "lib_symbol_issues: Symbol 'BQ76920' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'BQ76200' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'SN65HVD230' not found in symbol library 'test'"
+        ]
+      },
+      "parsed_components": 60,
+      "parsed_nets": 45,
+      "pcbsg_passed": true,
+      "pcbsg_reward": 1.0,
+      "pcbsg_failing_layer": "PASS",
+      "pcbsg_errors": [],
+      "detected_topologies": [],
+      "arm": "edl",
+      "name": "T49_BMS_5S_FULL_SYSTEM"
+    },
+    {
+      "task_id": 51,
+      "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/edl/t51/kicad/T51_ISOLATED_DAQ_4CH.kicad_sch",
+      "exists": true,
+      "kicad_erc": {
+        "rc": 5,
+        "errors": 1,
+        "warnings": 7,
+        "error_samples": [
+          "pin_not_connected: Pin not connected"
+        ],
+        "warning_samples": [
+          "lib_symbol_issues: Symbol 'ISO7741' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'NXE1S0303MC' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'REF3033' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'ADS7042' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'ADS7042' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'ADS7042' not found in symbol library 'test'"
+        ]
+      },
+      "parsed_components": 41,
+      "parsed_nets": 27,
+      "pcbsg_passed": true,
+      "pcbsg_reward": 1.0,
+      "pcbsg_failing_layer": "PASS",
+      "pcbsg_errors": [],
+      "detected_topologies": [],
+      "arm": "edl",
+      "name": "T51_ISOLATED_DAQ_4CH"
+    },
+    {
+      "task_id": 52,
+      "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/edl/t52/kicad/T52_IOT_SENSOR_NODE.kicad_sch",
+      "exists": true,
+      "kicad_erc": {
+        "rc": 5,
+        "errors": 0,
+        "warnings": 4,
+        "error_samples": [],
+        "warning_samples": [
+          "lib_symbol_issues: Symbol 'TPS54302' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'TLV1117-33' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'STM32F103C8T6' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'SN65HVD230' not found in symbol library 'test'"
+        ]
+      },
+      "parsed_components": 51,
+      "parsed_nets": 24,
+      "pcbsg_passed": true,
+      "pcbsg_reward": 1.0,
+      "pcbsg_failing_layer": "PASS",
+      "pcbsg_errors": [],
+      "detected_topologies": [
+        "pierce_oscillator"
+      ],
+      "arm": "edl",
+      "name": "T52_IOT_SENSOR_NODE"
+    },
+    {
+      "task_id": 54,
+      "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/edl/t54/kicad/T54_LI_ION_CHARGER_FULL.kicad_sch",
+      "exists": true,
+      "kicad_erc": {
+        "rc": 5,
+        "errors": 0,
+        "warnings": 3,
+        "error_samples": [],
+        "warning_samples": [
+          "lib_symbol_issues: Symbol 'TPD4E05U06' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'BQ25895' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'INA226' not found in symbol library 'test'"
+        ]
+      },
+      "parsed_components": 35,
+      "parsed_nets": 23,
+      "pcbsg_passed": false,
+      "pcbsg_reward": 0.6,
+      "pcbsg_failing_layer": "layer2_subcat_templates",
+      "pcbsg_errors": [
+        "U_MON (INA226): missing shunt resistor between sense_plus and sense_minus"
+      ],
+      "detected_topologies": [],
+      "arm": "edl",
+      "name": "T54_LI_ION_CHARGER_FULL"
+    },
+    {
+      "task_id": 62,
+      "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/edl/t62/kicad/T62_MCU_SYNC_BUCK_SYSTEM.kicad_sch",
+      "exists": true,
+      "kicad_erc": {
+        "rc": 5,
+        "errors": 0,
+        "warnings": 7,
+        "error_samples": [],
+        "warning_samples": [
+          "lib_symbol_issues: Symbol 'STM32F103C8T6' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'UCC5390E' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'UCC5390E' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'SN65HVD230' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'INA240A1' not found in symbol library 'test'",
+          "lib_symbol_issues: Symbol 'IMZA65R015M2H' not found in symbol library 'test'"
+        ]
+      },
+      "parsed_components": 74,
+      "parsed_nets": 40,
+      "pcbsg_passed": false,
+      "pcbsg_reward": 0.4,
+      "pcbsg_failing_layer": "layer4_power_invariants",
+      "pcbsg_errors": [
+        "U_CS (INA240A1): missing shunt resistor between sense_plus and sense_minus",
+        "Sync buck: missing output cap between VOUT='VOUT' and PGND='GND'",
+        "Kelvin violation: Q_HS (IMZA65R015M2H) KS and Source on same net: {'SW_NODE'}"
+      ],
+      "detected_topologies": [
+        "half_bridge",
+        "sync_buck",
+        "pierce_oscillator"
+      ],
+      "arm": "edl",
+      "name": "T62_MCU_SYNC_BUCK_SYSTEM"
+    }
+  ]
+}

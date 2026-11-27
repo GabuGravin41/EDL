@@ -1,0 +1,18 @@
+ERC report (2026-11-27T23:52:27+0300, Encoding UTF8)
+Report includes: Errors, Warnings, Exclusions
+
+***** Sheet /
+[lib_symbol_issues]: Symbol 'TPS54302' not found in symbol library 'test'
+    ; warning
+    @(127.00 mm, 66.04 mm): Symbol U_BUCK [TPS54302]
+[lib_symbol_issues]: Symbol 'TLV1117-33' not found in symbol library 'test'
+    ; warning
+    @(81.28 mm, 172.72 mm): Symbol U_LDO [TLV1117-33]
+[lib_symbol_issues]: Symbol 'STM32F103C8T6' not found in symbol library 'test'
+    ; warning
+    @(328.93 mm, 176.53 mm): Symbol U_MCU [STM32F103C8T6]
+[lib_symbol_issues]: Symbol 'SN65HVD230' not found in symbol library 'test'
+    ; warning
+    @(454.66 mm, 118.11 mm): Symbol U_CAN [SN65HVD230]
+
+ ** ERC messages: 4  Errors 0  Warnings 4

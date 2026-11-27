@@ -1,0 +1,11 @@
+{
+  "meta": {
+    "filename": "T46_CAN_ISOLATED_FULL.kicad_pro",
+    "version": 1
+  },
+  "schematic": {
+    "drawing": {
+      "default_line_thickness": 6.0
+    }
+  }
+}

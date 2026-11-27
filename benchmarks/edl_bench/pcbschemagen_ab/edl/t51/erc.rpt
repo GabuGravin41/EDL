@@ -1,0 +1,30 @@
+ERC report (2026-11-27T23:50:19+0300, Encoding UTF8)
+Report includes: Errors, Warnings, Exclusions
+
+***** Sheet /
+[pin_not_connected]: Pin not connected
+    ; error
+    @(167.64 mm, 215.90 mm): Symbol U_PWR Hidden pin 14 [NC, Passive, Line]
+[lib_symbol_issues]: Symbol 'ISO7741' not found in symbol library 'test'
+    ; warning
+    @(177.80 mm, 114.30 mm): Symbol U_ISO [ISO7741]
+[lib_symbol_issues]: Symbol 'NXE1S0303MC' not found in symbol library 'test'
+    ; warning
+    @(177.80 mm, 215.90 mm): Symbol U_PWR [NXE1S0303MC]
+[lib_symbol_issues]: Symbol 'REF3033' not found in symbol library 'test'
+    ; warning
+    @(292.10 mm, 165.10 mm): Symbol U_REF [REF3033]
+[lib_symbol_issues]: Symbol 'ADS7042' not found in symbol library 'test'
+    ; warning
+    @(474.98 mm, 76.20 mm): Symbol U_ADC1 [ADS7042]
+[lib_symbol_issues]: Symbol 'ADS7042' not found in symbol library 'test'
+    ; warning
+    @(474.98 mm, 147.32 mm): Symbol U_ADC2 [ADS7042]
+[lib_symbol_issues]: Symbol 'ADS7042' not found in symbol library 'test'
+    ; warning
+    @(474.98 mm, 218.44 mm): Symbol U_ADC3 [ADS7042]
+[lib_symbol_issues]: Symbol 'ADS7042' not found in symbol library 'test'
+    ; warning
+    @(474.98 mm, 289.56 mm): Symbol U_ADC4 [ADS7042]
+
+ ** ERC messages: 8  Errors 1  Warnings 7

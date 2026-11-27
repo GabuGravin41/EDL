@@ -1,0 +1,27 @@
+ERC report (2026-11-27T23:58:51+0300, Encoding UTF8)
+Report includes: Errors, Warnings, Exclusions
+
+***** Sheet /
+[lib_symbol_issues]: Symbol 'STM32F103C8T6' not found in symbol library 'test'
+    ; warning
+    @(153.67 mm, 176.53 mm): Symbol U_MCU [STM32F103C8T6]
+[lib_symbol_issues]: Symbol 'UCC5390E' not found in symbol library 'test'
+    ; warning
+    @(347.98 mm, 104.14 mm): Symbol U_DRV_HS [UCC5390E]
+[lib_symbol_issues]: Symbol 'UCC5390E' not found in symbol library 'test'
+    ; warning
+    @(347.98 mm, 248.92 mm): Symbol U_DRV_LS [UCC5390E]
+[lib_symbol_issues]: Symbol 'SN65HVD230' not found in symbol library 'test'
+    ; warning
+    @(88.90 mm, 448.31 mm): Symbol U_CAN [SN65HVD230]
+[lib_symbol_issues]: Symbol 'INA240A1' not found in symbol library 'test'
+    ; warning
+    @(360.68 mm, 431.80 mm): Symbol U_CS [INA240A1]
+[lib_symbol_issues]: Symbol 'IMZA65R015M2H' not found in symbol library 'test'
+    ; warning
+    @(660.40 mm, 144.78 mm): Symbol Q_HS [IMZA65R015M2H]
+[lib_symbol_issues]: Symbol 'IMZA65R015M2H' not found in symbol library 'test'
+    ; warning
+    @(660.40 mm, 289.56 mm): Symbol Q_LS [IMZA65R015M2H]
+
+ ** ERC messages: 7  Errors 0  Warnings 7

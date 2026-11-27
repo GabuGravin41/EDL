@@ -1,0 +1,394 @@
+// Task 49: BMS_5S_FULL_SYSTEM
+// Complete 5S Li-Ion BMS with BQ76920 AFE, BQ76200 High-Side FET Driver, and SN65HVD230 CAN Transceiver
+// InputNodes:  CELL0..CELL5, PACK+, PACK-, CAN_TXD, CAN_RXD (20V 5S pack)
+// OutputNodes: CANH, CANL, CHG, DSG (3.3V logic/CAN via BQ76920 REGOUT)
+
+project "T49_BMS_5S_FULL_SYSTEM" {
+  units: mm
+  frame Sheet: Frame2
+  symbol_lib "/home/lindah/projects/EDL/benchmarks/external/PCBSchemaGen_v2/library/test.kicad_sym"
+
+  circuit Main {
+    // =========================================================================
+    // 1. 5S BATTERY CELL TAP INTERFACE & RC INPUT FILTERS
+    // =========================================================================
+    component J_CELLS: "Connector_Generic:Conn_01x06" {
+      value: "5S_CELLS"
+      footprint: "Connector_JST:JST_XH_B6B-XH-A_1x06_P2.50mm_Vertical"
+      pin 1: ground
+      pin 6: power_out(20V)
+    }
+
+    component R_VC5: "Device:R" { value: 1k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_VC4: "Device:R" { value: 1k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_VC3: "Device:R" { value: 1k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_VC2: "Device:R" { value: 1k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_VC1: "Device:R" { value: 1k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_VC0: "Device:R" { value: 100R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+
+    component C_C5: "Device:C" { value: 1uF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_C4: "Device:C" { value: 1uF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_C3: "Device:C" { value: 1uF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_C2: "Device:C" { value: 1uF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_C1: "Device:C" { value: 1uF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // 10k NTC Thermistor for BQ76920 TS1
+    component TH1: "Device:Thermistor_NTC" {
+      value: "10k_NTC"
+      footprint: "Resistor_SMD:R_0603_1608Metric"
+    }
+
+    // =========================================================================
+    // 2. BQ76920 5S BATTERY MONITOR AFE & CURRENT SHUNT KELVIN FILTER
+    // =========================================================================
+    component U1: "test:BQ76920" {
+      value: "BQ76920"
+      footprint: "Package_SO:TSSOP-20_4.4x6.5mm_P0.65mm"
+      pin BAT: power_in(6V..25V)
+      pin REGSRC: power_in(6V..25V)
+      pin REGOUT: power_out(3.3V)
+      pin VSS: ground
+      pin NC: nc
+      pin SDA: bidir
+      pin SCL: input
+      pin ALERT: bidir
+      pin CHG: output
+      pin DSG: output
+    }
+
+    component R_BAT: "Device:R" { value: 1k  power_rating: 0.25W  footprint: "Resistor_SMD:R_0805_2012Metric" }
+    component C_BAT: "Device:C" { value: 10uF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+
+    component R_REGSRC: "Device:R" { value: 100R  power_rating: 0.25W  footprint: "Resistor_SMD:R_0805_2012Metric" }
+    component C_REGSRC: "Device:C" { value: 1uF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    component C_REGOUT: "Device:C" { value: 4.7uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_CAP1: "Device:C" { value: 1uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // Low-side current sense shunt + Kelvin RC filter
+    component R_SHUNT: "Device:R" {
+      value: "5mR"
+      power_rating: 3W
+      footprint: "Resistor_SMD:R_2512_6332Metric"
+    }
+    component R_SRP: "Device:R" { value: 100R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_SRN: "Device:R" { value: 100R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_SRD: "Device:C" { value: 100nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_SRP: "Device:C" { value: 100nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_SRN: "Device:C" { value: 100nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // I2C & Alert Pull-Ups to 3.3V REGOUT + Host Interface Connector
+    component R_SDA: "Device:R" { value: 4.7k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_SCL: "Device:R" { value: 4.7k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_ALERT: "Device:R" { value: 10k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+
+    component J_HOST: "Connector_Generic:Conn_01x06" {
+      value: "MCU_IF"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical"
+    }
+
+    // =========================================================================
+    // 3. BQ76200 HIGH-SIDE FET DRIVER & BACK-TO-BACK COMMON-DRAIN POWER FETS
+    // =========================================================================
+    component U2: "test:BQ76200" {
+      value: "BQ76200"
+      footprint: "Package_SO:TSSOP-16_4.4x5mm_P0.65mm"
+      pin BAT: power_in(8V..75V)
+      pin VSS: ground
+      pin CHG_EN: input
+      pin CP_EN: input
+      pin DSG_EN: input
+      pin PCHG_EN: input
+      pin PMON_EN: input
+      pin CHG: output
+      pin DSG: output
+      pin PCHG: nc
+      pin PACKDIV: nc
+      pin 3: nc
+      pin 13: nc
+      pin 15: nc
+    }
+
+    component R_BAT_DRV: "Device:R" { value: 100R  power_rating: 0.25W  footprint: "Resistor_SMD:R_0805_2012Metric" }
+    component C_BAT_DRV: "Device:C" { value: 1uF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    // Charge pump storage capacitor between VDDCP and BAT
+    component C_VDDCP: "Device:C" { value: 470nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+
+    // Enable/interface conditioning resistors
+    component R_CP_EN: "Device:R" { value: 10k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_CHG_EN: "Device:R" { value: 1k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_DSG_EN: "Device:R" { value: 1k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_CHG_PD: "Device:R" { value: 1M  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_DSG_PD: "Device:R" { value: 1M  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_PCHG_PD: "Device:R" { value: 10k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_PMON_PD: "Device:R" { value: 10k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+
+    // PACK+ sense protection & filter
+    component R_PACK: "Device:R" { value: 10k  power_rating: 0.25W  footprint: "Resistor_SMD:R_0805_2012Metric" }
+    component C_PACK: "Device:C" { value: 100nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // Back-to-back High-Side N-MOSFETs (Common-Drain per BQ76200 Datasheet Fig. 8-1)
+    component Q_CHG: "Device:Q_NMOS" {
+      value: "BSC052N08NS5"
+      voltage_rating: 80V
+      footprint: "Package_TO_SOT_SMD:TDSON-8-1"
+    }
+    component Q_DSG: "Device:Q_NMOS" {
+      value: "BSC052N08NS5"
+      voltage_rating: 80V
+      footprint: "Package_TO_SOT_SMD:TDSON-8-1"
+    }
+
+    component R_G_CHG: "Device:R" { value: 100R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_G_DSG: "Device:R" { value: 100R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_GS_CHG: "Device:R" { value: 1M  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_GS_DSG: "Device:R" { value: 1M  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+
+    // Pack output TVS & high-current terminal
+    component D_PACK: "Device:D_TVS" {
+      value: "SMBJ26A"
+      footprint: "Diode_SMD:D_SMB"
+    }
+
+    component J_PACK: "Connector_Generic:Conn_01x02" {
+      value: "PACK_TERM"
+      footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal"
+    }
+
+    // =========================================================================
+    // 4. SN65HVD230 CAN BUS TRANSCEIVER (Powered by BQ76920 3.3V REGOUT)
+    // =========================================================================
+    component U3: "test:SN65HVD230" {
+      value: "SN65HVD230"
+      footprint: "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+      pin VCC: power_in(3.3V)
+      pin GND: ground
+      pin D: input
+      pin R: output
+      pin RS: input
+      pin VREF: output
+    }
+
+    component C_CAN: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component R_CAN_RS: "Device:R" { value: 10k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_CAN_T1: "Device:R" { value: 60.4R  power_rating: 0.25W  footprint: "Resistor_SMD:R_0805_2012Metric" }
+    component R_CAN_T2: "Device:R" { value: 60.4R  power_rating: 0.25W  footprint: "Resistor_SMD:R_0805_2012Metric" }
+    component C_CAN_SPLIT: "Device:C" { value: 4.7nF  voltage_rating: 50V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component D_CANH: "Device:D_TVS" { value: "PESD1CAN"  footprint: "Diode_SMD:D_SOD-323" }
+    component D_CANL: "Device:D_TVS" { value: "PESD1CAN"  footprint: "Diode_SMD:D_SOD-323" }
+
+    component J_CAN: "Connector_Generic:Conn_01x03" {
+      value: "CAN_BUS"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+    }
+
+    // =========================================================================
+    // NETS — Power, Ground, Cell Taps
+    // =========================================================================
+    net CELL0 {
+      connect: [
+        J_CELLS.1, R_VC0.1, TH1.2, U1.VSS, C_BAT.2, C_REGSRC.2, C_REGOUT.2, C_CAP1.2,
+        R_SHUNT.1, R_SRP.1, C_SRP.2, C_SRN.2, J_HOST.6,
+        U2.VSS, C_BAT_DRV.2, R_CHG_PD.2, R_DSG_PD.2, R_PCHG_PD.2, R_PMON_PD.2, C_PACK.2,
+        U3.GND, C_CAN.2, R_CAN_RS.2, C_CAN_SPLIT.2, D_CANH.2, D_CANL.2, J_CAN.3
+      ]
+      power_flag: true
+    }
+
+    net CELL1 { connect: [J_CELLS.2, R_VC1.1] }
+    net CELL2 { connect: [J_CELLS.3, R_VC2.1] }
+    net CELL3 { connect: [J_CELLS.4, R_VC3.1] }
+    net CELL4 { connect: [J_CELLS.5, R_VC4.1] }
+    net CELL5 {
+      connect: [J_CELLS.6, R_VC5.1, R_BAT.1, R_REGSRC.1, R_BAT_DRV.1, Q_CHG.S, R_GS_CHG.2]
+      power_flag: true
+    }
+
+    net VC0_F { connect: [R_VC0.2, C_C1.2, U1.VC0] }
+    net VC1_F { connect: [R_VC1.2, C_C1.1, C_C2.2, U1.VC1] }
+    net VC2_F { connect: [R_VC2.2, C_C2.1, C_C3.2, U1.VC2] }
+    net VC3_F { connect: [R_VC3.2, C_C3.1, C_C4.2, U1.VC3] }
+    net VC4_F { connect: [R_VC4.2, C_C4.1, C_C5.2, U1.VC4] }
+    net VC5_F { connect: [R_VC5.2, C_C5.1, U1.VC5] }
+
+    net TS1_NTC { connect: [TH1.1, U1.TS1] }
+    net BAT_AFE { connect: [R_BAT.2, C_BAT.1, U1.BAT] }
+    net REGSRC_F { connect: [R_REGSRC.2, C_REGSRC.1, U1.REGSRC] }
+    net CAP1_NODE { connect: [C_CAP1.1, U1.CAP1] }
+
+    net VDD_3V3 {
+      connect: [U1.REGOUT, C_REGOUT.1, R_SDA.1, R_SCL.1, R_ALERT.1, R_CP_EN.1, U3.VCC, C_CAN.1]
+      power_flag: true
+    }
+
+    // Current sense shunt & Kelvin filter
+    net "PACK-" { connect: [R_SHUNT.2, R_SRN.1, D_PACK.2, J_PACK.2] }
+    net SRP_F { connect: [R_SRP.2, C_SRD.1, C_SRP.1, U1.SRP] }
+    net SRN_F { connect: [R_SRN.2, C_SRD.2, C_SRN.1, U1.SRN] }
+
+    // Host I2C & Alert
+    net I2C_SDA { connect: [U1.SDA, R_SDA.2, J_HOST.3] }
+    net I2C_SCL { connect: [U1.SCL, R_SCL.2, J_HOST.4] }
+    net AFE_ALERT { connect: [U1.ALERT, R_ALERT.2, J_HOST.5] }
+
+    // AFE -> BQ76200 High-Side Driver
+    net AFE_CHG { connect: [U1.CHG, R_CHG_EN.1] }
+    net AFE_DSG { connect: [U1.DSG, R_DSG_EN.1] }
+    net DRV_CHG_EN { connect: [R_CHG_EN.2, R_CHG_PD.1, U2.CHG_EN] }
+    net DRV_DSG_EN { connect: [R_DSG_EN.2, R_DSG_PD.1, U2.DSG_EN] }
+    net DRV_CP_EN { connect: [R_CP_EN.2, U2.CP_EN] }
+    net DRV_PCHG_EN { connect: [R_PCHG_PD.1, U2.PCHG_EN] }
+    net DRV_PMON_EN { connect: [R_PMON_PD.1, U2.PMON_EN] }
+
+    net BAT_DRV { connect: [R_BAT_DRV.2, C_BAT_DRV.1, C_VDDCP.2, U2.BAT] }
+    net VDDCP_NODE { connect: [C_VDDCP.1, U2.VDDCP] }
+    net PACK_SENSE { connect: [R_PACK.2, C_PACK.1, U2.PACK] }
+
+    // High-side gate drives (Required OutputNodes: CHG, DSG) & Power FET path
+    net CHG { connect: [U2.CHG, R_G_CHG.1] }
+    net DSG { connect: [U2.DSG, R_G_DSG.1] }
+    net CHG_GATE { connect: [R_G_CHG.2, R_GS_CHG.1, Q_CHG.G] }
+    net DSG_GATE { connect: [R_G_DSG.2, R_GS_DSG.1, Q_DSG.G] }
+    net FET_MID { connect: [Q_CHG.D, Q_DSG.D] }
+    net "PACK+" { connect: [Q_DSG.S, R_GS_DSG.2, R_PACK.1, D_PACK.1, J_PACK.1] }
+
+    // CAN Bus Interface (Required InputNodes: CAN_TXD, CAN_RXD; OutputNodes: CANH, CANL)
+    net CAN_TXD { connect: [J_HOST.1, U3.D] }
+    net CAN_RXD { connect: [J_HOST.2, U3.R] }
+    net CAN_RS { connect: [U3.RS, R_CAN_RS.1] }
+    net CAN_SPLIT { connect: [U3.VREF, R_CAN_T1.2, R_CAN_T2.1, C_CAN_SPLIT.1] }
+    net CANH { connect: [U3.CANH, R_CAN_T1.1, D_CANH.1, J_CAN.1] }
+    net CANL { connect: [U3.CANL, R_CAN_T2.2, D_CANL.1, J_CAN.2] }
+  }
+
+  schematic MainSheet {
+    sheet: A2 landscape
+    title: "T49: Complete 5S Li-Ion BMS System (BQ76920 + BQ76200 + SN65HVD230)"
+
+    routing {
+      default: zone_local
+      power: symbol
+      ground: symbol
+    }
+
+    group CellSensing {
+      title: "1. 5S CELL TAPS & RC FILTER BANK"
+      rect: (20.32mm, 20.32mm, 165.10mm, 241.30mm)
+      border: dashed
+      color: blue
+      members: [J_CELLS, R_VC5, R_VC4, R_VC3, R_VC2, R_VC1, R_VC0, C_C5, C_C4, C_C3, C_C2, C_C1, TH1]
+      note: "CELL0..CELL5 -> 1k/1uF differential filters + 10k NTC"
+    }
+
+    group AFE_Stage {
+      title: "2. BQ76920 AFE, SHUNT KELVIN SENSE & HOST I2C"
+      rect: (177.80mm, 20.32mm, 355.60mm, 342.90mm)
+      border: dashed
+      color: amber
+      members: [U1, R_BAT, C_BAT, R_REGSRC, C_REGSRC, C_REGOUT, C_CAP1, R_SHUNT, R_SRP, R_SRN, C_SRD, C_SRP, C_SRN, R_SDA, R_SCL, R_ALERT, J_HOST]
+      note: "REGOUT=3.3V LDO | 5mR Shunt + Kelvin RC Filter | 4.7k I2C Pull-ups"
+    }
+
+    group FET_Driver_Stage {
+      title: "3. BQ76200 HIGH-SIDE DRIVER & BACK-TO-BACK POWER FETS"
+      rect: (368.30mm, 20.32mm, 553.72mm, 215.90mm)
+      border: dashed
+      color: red
+      members: [U2, R_BAT_DRV, C_BAT_DRV, C_VDDCP, R_CP_EN, R_CHG_EN, R_DSG_EN, R_CHG_PD, R_DSG_PD, R_PCHG_PD, R_PMON_PD, R_PACK, C_PACK, Q_CHG, Q_DSG, R_G_CHG, R_G_DSG, R_GS_CHG, R_GS_DSG, D_PACK, J_PACK]
+      note: "Common-Drain 80V N-FETs (Q_CHG/Q_DSG) + VDDCP Charge Pump + SMBJ26A TVS"
+    }
+
+    group CAN_Stage {
+      title: "4. SN65HVD230 CAN TRANSCEIVER & SPLIT TERMINATION"
+      rect: (368.30mm, 228.60mm, 553.72mm, 342.90mm)
+      border: dashed
+      color: green
+      members: [U3, C_CAN, R_CAN_RS, R_CAN_T1, R_CAN_T2, C_CAN_SPLIT, D_CANH, D_CANL, J_CAN]
+      note: "Powered from BQ76920 3.3V REGOUT | Split 120R Termination + ESD"
+    }
+
+    // Group 1: Cell Taps
+    place J_CELLS center (40.64mm, 114.30mm) orient: 180
+    place R_VC5   center (81.28mm, 55.88mm) orient: 90
+    place R_VC4   center (81.28mm, 76.20mm) orient: 90
+    place R_VC3   center (81.28mm, 96.52mm) orient: 90
+    place R_VC2   center (81.28mm, 116.84mm) orient: 90
+    place R_VC1   center (81.28mm, 137.16mm) orient: 90
+    place R_VC0   center (81.28mm, 157.48mm) orient: 90
+    place C_C5    center (116.84mm, 66.04mm)
+    place C_C4    center (137.16mm, 86.36mm)
+    place C_C3    center (116.84mm, 106.68mm)
+    place C_C2    center (137.16mm, 127.00mm)
+    place C_C1    center (116.84mm, 147.32mm)
+    place TH1     center (81.28mm, 198.12mm)
+
+    // Group 2: BQ76920 AFE & Shunt
+    place U1       center (266.70mm, 139.70mm)
+    place R_BAT    center (317.50mm, 86.36mm) orient: 90
+    place C_BAT    center (335.28mm, 106.68mm)
+    place R_REGSRC center (266.70mm, 66.04mm) orient: 90
+    place C_REGSRC center (292.10mm, 81.28mm)
+    place C_REGOUT center (317.50mm, 129.54mm)
+    place C_CAP1   center (228.60mm, 157.48mm)
+
+    // Host I2C & Pull-ups
+    place J_HOST   center (198.12mm, 83.82mm) orient: 180
+    place R_SDA    center (223.52mm, 60.96mm)
+    place R_SCL    center (238.76mm, 60.96mm)
+    place R_ALERT  center (254.00mm, 60.96mm)
+
+    // Shunt & Kelvin filter
+    place R_SHUNT  center (228.60mm, 279.40mm) orient: 90
+    place R_SRP    center (269.24mm, 261.62mm) orient: 90
+    place R_SRN    center (269.24mm, 297.18mm) orient: 90
+    place C_SRD    center (304.80mm, 279.40mm)
+    place C_SRP    center (325.12mm, 259.08mm)
+    place C_SRN    center (325.12mm, 304.80mm)
+
+    // Group 3: BQ76200 & Back-to-back FETs
+    place U2        center (431.80mm, 114.30mm)
+    place R_BAT_DRV center (406.40mm, 63.50mm) orient: 90
+    place C_BAT_DRV center (424.18mm, 66.04mm)
+    place C_VDDCP   center (462.28mm, 78.74mm)
+    place R_CP_EN   center (388.62mm, 114.30mm) orient: 90
+    place R_CHG_EN  center (388.62mm, 93.98mm) orient: 90
+    place R_CHG_PD  center (406.40mm, 101.60mm)
+    place R_DSG_EN  center (388.62mm, 134.62mm) orient: 90
+    place R_DSG_PD  center (406.40mm, 144.78mm)
+    place R_PCHG_PD center (388.62mm, 160.02mm)
+    place R_PMON_PD center (406.40mm, 175.26mm)
+
+    place R_G_CHG   center (469.90mm, 106.68mm) orient: 90
+    place R_G_DSG   center (469.90mm, 129.54mm) orient: 90
+    place Q_CHG     center (495.30mm, 91.44mm)
+    place Q_DSG     center (520.70mm, 91.44mm)
+    place R_GS_CHG  center (495.30mm, 127.00mm)
+    place R_GS_DSG  center (520.70mm, 127.00mm)
+    place R_PACK    center (462.28mm, 50.80mm) orient: 90
+    place C_PACK    center (487.68mm, 53.34mm)
+    place D_PACK    center (525.78mm, 160.02mm)
+    place J_PACK    center (541.02mm, 121.92mm)
+
+    // Group 4: CAN Transceiver (U3 pins on 1.27mm offset -> +1.27mm Y)
+    place U3          center (419.10mm, 280.67mm)
+    place C_CAN       center (388.62mm, 284.48mm)
+    place R_CAN_RS    center (454.66mm, 256.54mm)
+    place R_CAN_T1    center (477.52mm, 271.78mm)
+    place R_CAN_T2    center (477.52mm, 294.64mm)
+    place C_CAN_SPLIT center (477.52mm, 317.50mm)
+    place D_CANH      center (508.00mm, 271.78mm)
+    place D_CANL      center (508.00mm, 299.72mm)
+    place J_CAN       center (538.48mm, 281.94mm)
+  }
+
+  verify {
+    require all_required_pins_connected
+    require no_power_ground_short
+    require no_multiple_power_drivers
+    require voltage_compatibility
+    require no_single_pin_nets
+    require ic_decoupling
+    require i2c_pullups
+    require bom_manufacturability
+  }
+}

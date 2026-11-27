@@ -1,0 +1,5 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "edl_power")(type "KiCad")(uri "${KIPRJMOD}/edl_power.kicad_sym")(options "")(descr "EDL custom and isolated power symbols"))
+  (lib (name "test")(type "KiCad")(uri "/home/lindah/projects/EDL/benchmarks/external/PCBSchemaGen_v2/library/test.kicad_sym")(options "")(descr "EDL project symbol library"))
+)

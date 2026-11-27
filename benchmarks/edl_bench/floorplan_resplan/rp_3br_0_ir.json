@@ -1,0 +1,3543 @@
+{
+  "ir_version": "0.3.0",
+  "project": {
+    "name": "ResPlan_14433_3BR_Ref",
+    "domain": "architecture",
+    "default_unit": "mm",
+    "exterior_footprint_mm": [
+      12080.0,
+      10620.0
+    ],
+    "exterior_bounds": {
+      "min_x": -200.0,
+      "min_y": -200.0,
+      "max_x": 11880.0,
+      "max_y": 10420.0
+    },
+    "total_clear_area_m2": 95.734,
+    "room_count": 10,
+    "opening_count": 15,
+    "fixture_count": 10,
+    "component_count": 0,
+    "net_count": 0,
+    "remaining_dof": [],
+    "has_errors": false
+  },
+  "frames": [
+    {
+      "id": "Plan",
+      "kind": "Frame2",
+      "dim": 2,
+      "handedness": "right"
+    }
+  ],
+  "entities": [
+    {
+      "id": "Bed0",
+      "kind": "arch.room",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 16,
+        "start_col": 3,
+        "end_line": 20,
+        "end_col": 4
+      },
+      "props": {
+        "area_m2": 10.304,
+        "measurement_basis": "clear_interior",
+        "role": "habitable"
+      },
+      "geometry": {
+        "type": "rect",
+        "min": [
+          0.0,
+          0.0
+        ],
+        "max": [
+          3200.0,
+          3220.0
+        ],
+        "width_mm": 3200.0,
+        "depth_mm": 3220.0,
+        "area_m2": 10.304
+      }
+    },
+    {
+      "id": "Bath1",
+      "kind": "arch.room",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 21,
+        "start_col": 3,
+        "end_line": 24,
+        "end_col": 4
+      },
+      "props": {
+        "area_m2": 3.384,
+        "measurement_basis": "clear_interior",
+        "role": "service"
+      },
+      "geometry": {
+        "type": "rect",
+        "min": [
+          3320.0,
+          1340.0
+        ],
+        "max": [
+          5120.0,
+          3220.0
+        ],
+        "width_mm": 1800.0,
+        "depth_mm": 1880.0,
+        "area_m2": 3.384
+      }
+    },
+    {
+      "id": "Kitchen",
+      "kind": "arch.room",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 25,
+        "start_col": 3,
+        "end_line": 28,
+        "end_col": 4
+      },
+      "props": {
+        "area_m2": 6.302,
+        "measurement_basis": "clear_interior",
+        "role": "service"
+      },
+      "geometry": {
+        "type": "rect",
+        "min": [
+          5240.0,
+          480.0
+        ],
+        "max": [
+          7540.0,
+          3220.0
+        ],
+        "width_mm": 2300.0,
+        "depth_mm": 2740.0,
+        "area_m2": 6.302
+      }
+    },
+    {
+      "id": "Balcony0",
+      "kind": "arch.room",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 29,
+        "start_col": 3,
+        "end_line": 32,
+        "end_col": 4
+      },
+      "props": {
+        "area_m2": 6.27,
+        "measurement_basis": "clear_interior",
+        "role": "outdoor"
+      },
+      "geometry": {
+        "type": "rect",
+        "min": [
+          7660.0,
+          1570.0
+        ],
+        "max": [
+          11460.0,
+          3220.0
+        ],
+        "width_mm": 3800.0,
+        "depth_mm": 1650.0,
+        "area_m2": 6.27
+      }
+    },
+    {
+      "id": "Living",
+      "kind": "arch.room",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 35,
+        "start_col": 3,
+        "end_line": 38,
+        "end_col": 4
+      },
+      "props": {
+        "area_m2": 35.7552,
+        "measurement_basis": "clear_interior",
+        "role": "habitable"
+      },
+      "geometry": {
+        "type": "rect",
+        "min": [
+          0.0,
+          3340.0
+        ],
+        "max": [
+          11460.0,
+          6460.0
+        ],
+        "width_mm": 11460.0,
+        "depth_mm": 3120.0,
+        "area_m2": 35.7552
+      }
+    },
+    {
+      "id": "Bed2",
+      "kind": "arch.room",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 44,
+        "start_col": 3,
+        "end_line": 47,
+        "end_col": 4
+      },
+      "props": {
+        "area_m2": 9.4764,
+        "measurement_basis": "clear_interior",
+        "role": "habitable"
+      },
+      "geometry": {
+        "type": "rect",
+        "min": [
+          0.0,
+          6580.0
+        ],
+        "max": [
+          2980.0,
+          9760.0
+        ],
+        "width_mm": 2980.0,
+        "depth_mm": 3180.0,
+        "area_m2": 9.4764
+      }
+    },
+    {
+      "id": "Bath0",
+      "kind": "arch.room",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 48,
+        "start_col": 3,
+        "end_line": 51,
+        "end_col": 4
+      },
+      "props": {
+        "area_m2": 2.912,
+        "measurement_basis": "clear_interior",
+        "role": "service"
+      },
+      "geometry": {
+        "type": "rect",
+        "min": [
+          3100.0,
+          6580.0
+        ],
+        "max": [
+          4700.0,
+          8400.0
+        ],
+        "width_mm": 1600.0,
+        "depth_mm": 1820.0,
+        "area_m2": 2.912
+      }
+    },
+    {
+      "id": "Bath2",
+      "kind": "arch.room",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 52,
+        "start_col": 3,
+        "end_line": 55,
+        "end_col": 4
+      },
+      "props": {
+        "area_m2": 2.7664,
+        "measurement_basis": "clear_interior",
+        "role": "service"
+      },
+      "geometry": {
+        "type": "rect",
+        "min": [
+          4820.0,
+          6580.0
+        ],
+        "max": [
+          6340.0,
+          8400.0
+        ],
+        "width_mm": 1520.0,
+        "depth_mm": 1820.0,
+        "area_m2": 2.7664
+      }
+    },
+    {
+      "id": "Bed1",
+      "kind": "arch.room",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 56,
+        "start_col": 3,
+        "end_line": 59,
+        "end_col": 4
+      },
+      "props": {
+        "area_m2": 13.2496,
+        "measurement_basis": "clear_interior",
+        "role": "habitable"
+      },
+      "geometry": {
+        "type": "rect",
+        "min": [
+          6460.0,
+          6580.0
+        ],
+        "max": [
+          10100.0,
+          10220.0
+        ],
+        "width_mm": 3640.0,
+        "depth_mm": 3640.0,
+        "area_m2": 13.2496
+      }
+    },
+    {
+      "id": "Balcony1",
+      "kind": "arch.room",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 60,
+        "start_col": 3,
+        "end_line": 63,
+        "end_col": 4
+      },
+      "props": {
+        "area_m2": 5.3144,
+        "measurement_basis": "clear_interior",
+        "role": "outdoor"
+      },
+      "geometry": {
+        "type": "rect",
+        "min": [
+          10220.0,
+          6580.0
+        ],
+        "max": [
+          11680.0,
+          10220.0
+        ],
+        "width_mm": 1460.0,
+        "depth_mm": 3640.0,
+        "area_m2": 5.3144
+      }
+    },
+    {
+      "id": "FrontDoor",
+      "kind": "arch.door",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 98,
+        "start_col": 3,
+        "end_line": 104,
+        "end_col": 4
+      },
+      "props": {
+        "end_margin_mm": 1070.0,
+        "hinge": "start",
+        "host_wall": "W_Ext_Living_west",
+        "start_margin_mm": 1050.0,
+        "swing_into": "Living",
+        "width_mm": 1000.0
+      },
+      "geometry": {
+        "type": "door",
+        "cutout_rect": {
+          "min_x": -200.0,
+          "min_y": 4390.0,
+          "max_x": 0.0,
+          "max_y": 5390.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": -100.0,
+            "y": 4390.0
+          },
+          "p1": {
+            "x": -100.0,
+            "y": 5390.0
+          }
+        },
+        "leaf_open": {
+          "p0": {
+            "x": 0.0,
+            "y": 4390.0
+          },
+          "p1": {
+            "x": 1000.0,
+            "y": 4390.0
+          }
+        },
+        "swing_arc": {
+          "center": {
+            "x": 0.0,
+            "y": 4390.0
+          },
+          "radius": 1000.0,
+          "start_deg": 90.0,
+          "sweep_deg": -90.0
+        }
+      }
+    },
+    {
+      "id": "D_Bed0",
+      "kind": "arch.door",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 105,
+        "start_col": 3,
+        "end_line": 111,
+        "end_col": 4
+      },
+      "props": {
+        "end_margin_mm": 1250.0,
+        "hinge": "start",
+        "host_wall": "W_Shared_Bed0_Living",
+        "start_margin_mm": 1100.0,
+        "swing_into": "Bed0",
+        "width_mm": 850.0
+      },
+      "geometry": {
+        "type": "door",
+        "cutout_rect": {
+          "min_x": 1100.0,
+          "min_y": 3220.0,
+          "max_x": 1950.0,
+          "max_y": 3340.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 1100.0,
+            "y": 3280.0
+          },
+          "p1": {
+            "x": 1950.0,
+            "y": 3280.0
+          }
+        },
+        "leaf_open": {
+          "p0": {
+            "x": 1100.0,
+            "y": 3220.0
+          },
+          "p1": {
+            "x": 1100.0,
+            "y": 2370.0
+          }
+        },
+        "swing_arc": {
+          "center": {
+            "x": 1100.0,
+            "y": 3220.0
+          },
+          "radius": 850.0,
+          "start_deg": 0.0,
+          "sweep_deg": -90.0
+        }
+      }
+    },
+    {
+      "id": "D_Bath1",
+      "kind": "arch.door",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 112,
+        "start_col": 3,
+        "end_line": 118,
+        "end_col": 4
+      },
+      "props": {
+        "end_margin_mm": 550.0,
+        "hinge": "start",
+        "host_wall": "W_Shared_Bath1_Living",
+        "start_margin_mm": 500.0,
+        "swing_into": "Bath1",
+        "width_mm": 750.0
+      },
+      "geometry": {
+        "type": "door",
+        "cutout_rect": {
+          "min_x": 3820.0,
+          "min_y": 3220.0,
+          "max_x": 4570.0,
+          "max_y": 3340.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 3820.0,
+            "y": 3280.0
+          },
+          "p1": {
+            "x": 4570.0,
+            "y": 3280.0
+          }
+        },
+        "leaf_open": {
+          "p0": {
+            "x": 3820.0,
+            "y": 3220.0
+          },
+          "p1": {
+            "x": 3820.0,
+            "y": 2470.0
+          }
+        },
+        "swing_arc": {
+          "center": {
+            "x": 3820.0,
+            "y": 3220.0
+          },
+          "radius": 750.0,
+          "start_deg": 0.0,
+          "sweep_deg": -90.0
+        }
+      }
+    },
+    {
+      "id": "D_Kitchen",
+      "kind": "arch.door",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 119,
+        "start_col": 3,
+        "end_line": 125,
+        "end_col": 4
+      },
+      "props": {
+        "end_margin_mm": 750.0,
+        "hinge": "start",
+        "host_wall": "W_Shared_Kitchen_Living",
+        "start_margin_mm": 700.0,
+        "swing_into": "Kitchen",
+        "width_mm": 850.0
+      },
+      "geometry": {
+        "type": "door",
+        "cutout_rect": {
+          "min_x": 5940.0,
+          "min_y": 3220.0,
+          "max_x": 6790.0,
+          "max_y": 3340.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 5940.0,
+            "y": 3280.0
+          },
+          "p1": {
+            "x": 6790.0,
+            "y": 3280.0
+          }
+        },
+        "leaf_open": {
+          "p0": {
+            "x": 5940.0,
+            "y": 3220.0
+          },
+          "p1": {
+            "x": 5940.0,
+            "y": 2370.0
+          }
+        },
+        "swing_arc": {
+          "center": {
+            "x": 5940.0,
+            "y": 3220.0
+          },
+          "radius": 850.0,
+          "start_deg": 0.0,
+          "sweep_deg": -90.0
+        }
+      }
+    },
+    {
+      "id": "D_Balcony0",
+      "kind": "arch.door",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 126,
+        "start_col": 3,
+        "end_line": 132,
+        "end_col": 4
+      },
+      "props": {
+        "end_margin_mm": 1500.0,
+        "hinge": "start",
+        "host_wall": "W_Shared_Balcony0_Living",
+        "start_margin_mm": 1400.0,
+        "swing_into": "Living",
+        "width_mm": 900.0
+      },
+      "geometry": {
+        "type": "door",
+        "cutout_rect": {
+          "min_x": 9060.0,
+          "min_y": 3220.0,
+          "max_x": 9960.0,
+          "max_y": 3340.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 9060.0,
+            "y": 3280.0
+          },
+          "p1": {
+            "x": 9960.0,
+            "y": 3280.0
+          }
+        },
+        "leaf_open": {
+          "p0": {
+            "x": 9060.0,
+            "y": 3340.0
+          },
+          "p1": {
+            "x": 9060.0,
+            "y": 4240.0
+          }
+        },
+        "swing_arc": {
+          "center": {
+            "x": 9060.0,
+            "y": 3340.0
+          },
+          "radius": 900.0,
+          "start_deg": 0.0,
+          "sweep_deg": 90.0
+        }
+      }
+    },
+    {
+      "id": "D_Bed2",
+      "kind": "arch.door",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 133,
+        "start_col": 3,
+        "end_line": 139,
+        "end_col": 4
+      },
+      "props": {
+        "end_margin_mm": 1080.0,
+        "hinge": "start",
+        "host_wall": "W_Shared_Living_Bed2",
+        "start_margin_mm": 1050.0,
+        "swing_into": "Bed2",
+        "width_mm": 850.0
+      },
+      "geometry": {
+        "type": "door",
+        "cutout_rect": {
+          "min_x": 1050.0,
+          "min_y": 6460.0,
+          "max_x": 1900.0,
+          "max_y": 6580.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 1050.0,
+            "y": 6520.0
+          },
+          "p1": {
+            "x": 1900.0,
+            "y": 6520.0
+          }
+        },
+        "leaf_open": {
+          "p0": {
+            "x": 1050.0,
+            "y": 6580.0
+          },
+          "p1": {
+            "x": 1050.0,
+            "y": 7430.0
+          }
+        },
+        "swing_arc": {
+          "center": {
+            "x": 1050.0,
+            "y": 6580.0
+          },
+          "radius": 850.0,
+          "start_deg": 0.0,
+          "sweep_deg": 90.0
+        }
+      }
+    },
+    {
+      "id": "D_Bath0",
+      "kind": "arch.door",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 140,
+        "start_col": 3,
+        "end_line": 146,
+        "end_col": 4
+      },
+      "props": {
+        "end_margin_mm": 430.0,
+        "hinge": "start",
+        "host_wall": "W_Shared_Living_Bath0",
+        "start_margin_mm": 420.0,
+        "swing_into": "Bath0",
+        "width_mm": 750.0
+      },
+      "geometry": {
+        "type": "door",
+        "cutout_rect": {
+          "min_x": 3520.0,
+          "min_y": 6460.0,
+          "max_x": 4270.0,
+          "max_y": 6580.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 3520.0,
+            "y": 6520.0
+          },
+          "p1": {
+            "x": 4270.0,
+            "y": 6520.0
+          }
+        },
+        "leaf_open": {
+          "p0": {
+            "x": 3520.0,
+            "y": 6580.0
+          },
+          "p1": {
+            "x": 3520.0,
+            "y": 7330.0
+          }
+        },
+        "swing_arc": {
+          "center": {
+            "x": 3520.0,
+            "y": 6580.0
+          },
+          "radius": 750.0,
+          "start_deg": 0.0,
+          "sweep_deg": 90.0
+        }
+      }
+    },
+    {
+      "id": "D_Bed1",
+      "kind": "arch.door",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 147,
+        "start_col": 3,
+        "end_line": 153,
+        "end_col": 4
+      },
+      "props": {
+        "end_margin_mm": 1440.0,
+        "hinge": "start",
+        "host_wall": "W_Shared_Living_Bed1",
+        "start_margin_mm": 1300.0,
+        "swing_into": "Bed1",
+        "width_mm": 900.0
+      },
+      "geometry": {
+        "type": "door",
+        "cutout_rect": {
+          "min_x": 7760.0,
+          "min_y": 6460.0,
+          "max_x": 8660.0,
+          "max_y": 6580.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 7760.0,
+            "y": 6520.0
+          },
+          "p1": {
+            "x": 8660.0,
+            "y": 6520.0
+          }
+        },
+        "leaf_open": {
+          "p0": {
+            "x": 7760.0,
+            "y": 6580.0
+          },
+          "p1": {
+            "x": 7760.0,
+            "y": 7480.0
+          }
+        },
+        "swing_arc": {
+          "center": {
+            "x": 7760.0,
+            "y": 6580.0
+          },
+          "radius": 900.0,
+          "start_deg": 0.0,
+          "sweep_deg": 90.0
+        }
+      }
+    },
+    {
+      "id": "D_Ensuite",
+      "kind": "arch.door",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 154,
+        "start_col": 3,
+        "end_line": 160,
+        "end_col": 4
+      },
+      "props": {
+        "end_margin_mm": 570.0,
+        "hinge": "start",
+        "host_wall": "W_Shared_Bath2_Bed1",
+        "start_margin_mm": 500.0,
+        "swing_into": "Bath2",
+        "width_mm": 750.0
+      },
+      "geometry": {
+        "type": "door",
+        "cutout_rect": {
+          "min_x": 6340.0,
+          "min_y": 7080.0,
+          "max_x": 6460.0,
+          "max_y": 7830.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 6400.0,
+            "y": 7080.0
+          },
+          "p1": {
+            "x": 6400.0,
+            "y": 7830.0
+          }
+        },
+        "leaf_open": {
+          "p0": {
+            "x": 6340.0,
+            "y": 7080.0
+          },
+          "p1": {
+            "x": 5590.0,
+            "y": 7080.0
+          }
+        },
+        "swing_arc": {
+          "center": {
+            "x": 6340.0,
+            "y": 7080.0
+          },
+          "radius": 750.0,
+          "start_deg": 90.0,
+          "sweep_deg": 90.0
+        }
+      }
+    },
+    {
+      "id": "D_Balcony1",
+      "kind": "arch.door",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 161,
+        "start_col": 3,
+        "end_line": 167,
+        "end_col": 4
+      },
+      "props": {
+        "end_margin_mm": 1390.0,
+        "hinge": "start",
+        "host_wall": "W_Shared_Bed1_Balcony1",
+        "start_margin_mm": 1350.0,
+        "swing_into": "Bed1",
+        "width_mm": 900.0
+      },
+      "geometry": {
+        "type": "door",
+        "cutout_rect": {
+          "min_x": 10100.0,
+          "min_y": 7930.0,
+          "max_x": 10220.0,
+          "max_y": 8830.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 10160.0,
+            "y": 7930.0
+          },
+          "p1": {
+            "x": 10160.0,
+            "y": 8830.0
+          }
+        },
+        "leaf_open": {
+          "p0": {
+            "x": 10100.0,
+            "y": 7930.0
+          },
+          "p1": {
+            "x": 9200.0,
+            "y": 7930.0
+          }
+        },
+        "swing_arc": {
+          "center": {
+            "x": 10100.0,
+            "y": 7930.0
+          },
+          "radius": 900.0,
+          "start_deg": 90.0,
+          "sweep_deg": 90.0
+        }
+      }
+    },
+    {
+      "id": "W_Bed0",
+      "kind": "arch.window",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 170,
+        "start_col": 3,
+        "end_line": 170,
+        "end_col": 96
+      },
+      "props": {
+        "end_margin_mm": 900.0,
+        "host_wall": "W_Ext_Bed0_south",
+        "start_margin_mm": 900.0,
+        "width_mm": 1400.0
+      },
+      "geometry": {
+        "type": "window",
+        "cutout_rect": {
+          "min_x": 900.0,
+          "min_y": -200.0,
+          "max_x": 2300.0,
+          "max_y": 0.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 900.0,
+            "y": -100.0
+          },
+          "p1": {
+            "x": 2300.0,
+            "y": -100.0
+          }
+        }
+      }
+    },
+    {
+      "id": "W_Kitchen",
+      "kind": "arch.window",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 171,
+        "start_col": 3,
+        "end_line": 171,
+        "end_col": 102
+      },
+      "props": {
+        "end_margin_mm": 600.0,
+        "host_wall": "W_Ext_Kitchen_south",
+        "start_margin_mm": 600.0,
+        "width_mm": 1100.0
+      },
+      "geometry": {
+        "type": "window",
+        "cutout_rect": {
+          "min_x": 5840.0,
+          "min_y": 280.0,
+          "max_x": 6940.0,
+          "max_y": 480.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 5840.0,
+            "y": 380.0
+          },
+          "p1": {
+            "x": 6940.0,
+            "y": 380.0
+          }
+        }
+      }
+    },
+    {
+      "id": "W_Living_E",
+      "kind": "arch.window",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 172,
+        "start_col": 3,
+        "end_line": 172,
+        "end_col": 101
+      },
+      "props": {
+        "end_margin_mm": 820.0,
+        "host_wall": "W_Ext_Living_east",
+        "start_margin_mm": 800.0,
+        "width_mm": 1500.0
+      },
+      "geometry": {
+        "type": "window",
+        "cutout_rect": {
+          "min_x": 11460.0,
+          "min_y": 4140.0,
+          "max_x": 11660.0,
+          "max_y": 5640.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 11560.0,
+            "y": 4140.0
+          },
+          "p1": {
+            "x": 11560.0,
+            "y": 5640.0
+          }
+        }
+      }
+    },
+    {
+      "id": "W_Bed2",
+      "kind": "arch.window",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 173,
+        "start_col": 3,
+        "end_line": 173,
+        "end_col": 96
+      },
+      "props": {
+        "end_margin_mm": 790.0,
+        "host_wall": "W_Ext_Bed2_north",
+        "start_margin_mm": 790.0,
+        "width_mm": 1400.0
+      },
+      "geometry": {
+        "type": "window",
+        "cutout_rect": {
+          "min_x": 790.0,
+          "min_y": 9760.0,
+          "max_x": 2190.0,
+          "max_y": 9960.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 790.0,
+            "y": 9860.0
+          },
+          "p1": {
+            "x": 2190.0,
+            "y": 9860.0
+          }
+        }
+      }
+    },
+    {
+      "id": "W_Bed1",
+      "kind": "arch.window",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 174,
+        "start_col": 3,
+        "end_line": 174,
+        "end_col": 97
+      },
+      "props": {
+        "end_margin_mm": 1020.0,
+        "host_wall": "W_Ext_Bed1_north",
+        "start_margin_mm": 1020.0,
+        "width_mm": 1600.0
+      },
+      "geometry": {
+        "type": "window",
+        "cutout_rect": {
+          "min_x": 7480.0,
+          "min_y": 10220.0,
+          "max_x": 9080.0,
+          "max_y": 10420.0
+        },
+        "opening_segment": {
+          "p0": {
+            "x": 7480.0,
+            "y": 10320.0
+          },
+          "p1": {
+            "x": 9080.0,
+            "y": 10320.0
+          }
+        }
+      }
+    },
+    {
+      "id": "LivingSofa",
+      "kind": "arch.fixture",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 177,
+        "start_col": 3,
+        "end_line": 177,
+        "end_col": 130
+      },
+      "props": {
+        "against": "north",
+        "category": "sofa",
+        "clearance_front_mm": 700.0,
+        "depth_mm": 900.0,
+        "room": "Living",
+        "width_mm": 2400.0
+      },
+      "geometry": {
+        "type": "fixture",
+        "category": "sofa",
+        "against": "north",
+        "body_rect": {
+          "min_x": 4800.0,
+          "min_y": 5560.0,
+          "max_x": 7200.0,
+          "max_y": 6460.0
+        },
+        "clearance_rect": {
+          "min_x": 4800.0,
+          "min_y": 4860.0,
+          "max_x": 7200.0,
+          "max_y": 5560.0
+        }
+      }
+    },
+    {
+      "id": "DiningTable",
+      "kind": "arch.fixture",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 178,
+        "start_col": 3,
+        "end_line": 178,
+        "end_col": 132
+      },
+      "props": {
+        "against": "north",
+        "category": "table",
+        "clearance_front_mm": 600.0,
+        "depth_mm": 900.0,
+        "room": "Living",
+        "width_mm": 1800.0
+      },
+      "geometry": {
+        "type": "fixture",
+        "category": "table",
+        "against": "north",
+        "body_rect": {
+          "min_x": 9200.0,
+          "min_y": 5560.0,
+          "max_x": 11000.0,
+          "max_y": 6460.0
+        },
+        "clearance_rect": {
+          "min_x": 9200.0,
+          "min_y": 4960.0,
+          "max_x": 11000.0,
+          "max_y": 5560.0
+        }
+      }
+    },
+    {
+      "id": "KitchenCounter",
+      "kind": "arch.fixture",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 179,
+        "start_col": 3,
+        "end_line": 179,
+        "end_col": 136
+      },
+      "props": {
+        "against": "west",
+        "category": "counter",
+        "clearance_front_mm": 700.0,
+        "depth_mm": 600.0,
+        "room": "Kitchen",
+        "width_mm": 1900.0
+      },
+      "geometry": {
+        "type": "fixture",
+        "category": "counter",
+        "against": "west",
+        "body_rect": {
+          "min_x": 5240.0,
+          "min_y": 880.0,
+          "max_x": 5840.0,
+          "max_y": 2780.0
+        },
+        "clearance_rect": {
+          "min_x": 5840.0,
+          "min_y": 880.0,
+          "max_x": 6540.0,
+          "max_y": 2780.0
+        }
+      }
+    },
+    {
+      "id": "Bath1_WC",
+      "kind": "arch.fixture",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 180,
+        "start_col": 3,
+        "end_line": 180,
+        "end_col": 126
+      },
+      "props": {
+        "against": "east",
+        "category": "toilet",
+        "clearance_front_mm": 500.0,
+        "depth_mm": 680.0,
+        "room": "Bath1",
+        "width_mm": 420.0
+      },
+      "geometry": {
+        "type": "fixture",
+        "category": "toilet",
+        "against": "east",
+        "body_rect": {
+          "min_x": 4440.0,
+          "min_y": 1590.0,
+          "max_x": 5120.0,
+          "max_y": 2010.0
+        },
+        "clearance_rect": {
+          "min_x": 3940.0,
+          "min_y": 1590.0,
+          "max_x": 4440.0,
+          "max_y": 2010.0
+        }
+      }
+    },
+    {
+      "id": "Bath1_Sink",
+      "kind": "arch.fixture",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 181,
+        "start_col": 3,
+        "end_line": 181,
+        "end_col": 126
+      },
+      "props": {
+        "against": "west",
+        "category": "sink",
+        "clearance_front_mm": 500.0,
+        "depth_mm": 420.0,
+        "room": "Bath1",
+        "width_mm": 520.0
+      },
+      "geometry": {
+        "type": "fixture",
+        "category": "sink",
+        "against": "west",
+        "body_rect": {
+          "min_x": 3320.0,
+          "min_y": 1640.0,
+          "max_x": 3740.0,
+          "max_y": 2160.0
+        },
+        "clearance_rect": {
+          "min_x": 3740.0,
+          "min_y": 1640.0,
+          "max_x": 4240.0,
+          "max_y": 2160.0
+        }
+      }
+    },
+    {
+      "id": "Bath0_WC",
+      "kind": "arch.fixture",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 182,
+        "start_col": 3,
+        "end_line": 182,
+        "end_col": 127
+      },
+      "props": {
+        "against": "east",
+        "category": "toilet",
+        "clearance_front_mm": 500.0,
+        "depth_mm": 680.0,
+        "room": "Bath0",
+        "width_mm": 420.0
+      },
+      "geometry": {
+        "type": "fixture",
+        "category": "toilet",
+        "against": "east",
+        "body_rect": {
+          "min_x": 4020.0,
+          "min_y": 7680.0,
+          "max_x": 4700.0,
+          "max_y": 8100.0
+        },
+        "clearance_rect": {
+          "min_x": 3520.0,
+          "min_y": 7680.0,
+          "max_x": 4020.0,
+          "max_y": 8100.0
+        }
+      }
+    },
+    {
+      "id": "Bath2_WC",
+      "kind": "arch.fixture",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 183,
+        "start_col": 3,
+        "end_line": 183,
+        "end_col": 126
+      },
+      "props": {
+        "against": "west",
+        "category": "toilet",
+        "clearance_front_mm": 500.0,
+        "depth_mm": 680.0,
+        "room": "Bath2",
+        "width_mm": 420.0
+      },
+      "geometry": {
+        "type": "fixture",
+        "category": "toilet",
+        "against": "west",
+        "body_rect": {
+          "min_x": 4820.0,
+          "min_y": 6830.0,
+          "max_x": 5500.0,
+          "max_y": 7250.0
+        },
+        "clearance_rect": {
+          "min_x": 5500.0,
+          "min_y": 6830.0,
+          "max_x": 6000.0,
+          "max_y": 7250.0
+        }
+      }
+    },
+    {
+      "id": "Bed0_Bed",
+      "kind": "arch.fixture",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 184,
+        "start_col": 3,
+        "end_line": 184,
+        "end_col": 124
+      },
+      "props": {
+        "against": "west",
+        "category": "bed",
+        "clearance_front_mm": 600.0,
+        "depth_mm": 2000.0,
+        "room": "Bed0",
+        "width_mm": 1500.0
+      },
+      "geometry": {
+        "type": "fixture",
+        "category": "bed",
+        "against": "west",
+        "body_rect": {
+          "min_x": 0.0,
+          "min_y": 350.0,
+          "max_x": 2000.0,
+          "max_y": 1850.0
+        },
+        "clearance_rect": {
+          "min_x": 2000.0,
+          "min_y": 350.0,
+          "max_x": 2600.0,
+          "max_y": 1850.0
+        }
+      }
+    },
+    {
+      "id": "Bed2_Bed",
+      "kind": "arch.fixture",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 185,
+        "start_col": 3,
+        "end_line": 185,
+        "end_col": 125
+      },
+      "props": {
+        "against": "west",
+        "category": "bed",
+        "clearance_front_mm": 600.0,
+        "depth_mm": 2000.0,
+        "room": "Bed2",
+        "width_mm": 1400.0
+      },
+      "geometry": {
+        "type": "fixture",
+        "category": "bed",
+        "against": "west",
+        "body_rect": {
+          "min_x": 0.0,
+          "min_y": 7580.0,
+          "max_x": 2000.0,
+          "max_y": 8980.0
+        },
+        "clearance_rect": {
+          "min_x": 2000.0,
+          "min_y": 7580.0,
+          "max_x": 2600.0,
+          "max_y": 8980.0
+        }
+      }
+    },
+    {
+      "id": "Bed1_Bed",
+      "kind": "arch.fixture",
+      "frame": "Plan",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 186,
+        "start_col": 3,
+        "end_line": 186,
+        "end_col": 125
+      },
+      "props": {
+        "against": "north",
+        "category": "bed",
+        "clearance_front_mm": 650.0,
+        "depth_mm": 2100.0,
+        "room": "Bed1",
+        "width_mm": 1800.0
+      },
+      "geometry": {
+        "type": "fixture",
+        "category": "bed",
+        "against": "north",
+        "body_rect": {
+          "min_x": 7380.0,
+          "min_y": 8120.0,
+          "max_x": 9180.0,
+          "max_y": 10220.0
+        },
+        "clearance_rect": {
+          "min_x": 7380.0,
+          "min_y": 7470.0,
+          "max_x": 9180.0,
+          "max_y": 8120.0
+        }
+      }
+    }
+  ],
+  "derived_walls": [
+    {
+      "id": "W_Shared_Kitchen_Balcony0",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Kitchen",
+        "Balcony0"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 7540.0,
+          "y": 1570.0
+        },
+        "p1": {
+          "x": 7540.0,
+          "y": 3220.0
+        }
+      },
+      "clear_length_mm": 1650.0,
+      "rect": {
+        "min_x": 7540.0,
+        "min_y": 1570.0,
+        "max_x": 7660.0,
+        "max_y": 3220.0
+      }
+    },
+    {
+      "id": "W_Shared_Balcony0_Living",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Balcony0",
+        "Living"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 7660.0,
+          "y": 3220.0
+        },
+        "p1": {
+          "x": 11460.0,
+          "y": 3220.0
+        }
+      },
+      "clear_length_mm": 3800.0,
+      "rect": {
+        "min_x": 7660.0,
+        "min_y": 3220.0,
+        "max_x": 11460.0,
+        "max_y": 3340.0
+      }
+    },
+    {
+      "id": "W_Shared_Bed1_Balcony1",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Bed1",
+        "Balcony1"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 10100.0,
+          "y": 6580.0
+        },
+        "p1": {
+          "x": 10100.0,
+          "y": 10220.0
+        }
+      },
+      "clear_length_mm": 3640.0,
+      "rect": {
+        "min_x": 10100.0,
+        "min_y": 6580.0,
+        "max_x": 10220.0,
+        "max_y": 10220.0
+      }
+    },
+    {
+      "id": "W_Shared_Living_Balcony1",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Living",
+        "Balcony1"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 10220.0,
+          "y": 6460.0
+        },
+        "p1": {
+          "x": 11460.0,
+          "y": 6460.0
+        }
+      },
+      "clear_length_mm": 1240.0,
+      "rect": {
+        "min_x": 10220.0,
+        "min_y": 6460.0,
+        "max_x": 11460.0,
+        "max_y": 6580.0
+      }
+    },
+    {
+      "id": "W_Shared_Bath0_Bath2",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Bath0",
+        "Bath2"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 4700.0,
+          "y": 6580.0
+        },
+        "p1": {
+          "x": 4700.0,
+          "y": 8400.0
+        }
+      },
+      "clear_length_mm": 1820.0,
+      "rect": {
+        "min_x": 4700.0,
+        "min_y": 6580.0,
+        "max_x": 4820.0,
+        "max_y": 8400.0
+      }
+    },
+    {
+      "id": "W_Shared_Bed2_Bath0",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Bed2",
+        "Bath0"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 2980.0,
+          "y": 6580.0
+        },
+        "p1": {
+          "x": 2980.0,
+          "y": 8400.0
+        }
+      },
+      "clear_length_mm": 1820.0,
+      "rect": {
+        "min_x": 2980.0,
+        "min_y": 6580.0,
+        "max_x": 3100.0,
+        "max_y": 8400.0
+      }
+    },
+    {
+      "id": "W_Shared_Living_Bath0",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Living",
+        "Bath0"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 3100.0,
+          "y": 6460.0
+        },
+        "p1": {
+          "x": 4700.0,
+          "y": 6460.0
+        }
+      },
+      "clear_length_mm": 1600.0,
+      "rect": {
+        "min_x": 3100.0,
+        "min_y": 6460.0,
+        "max_x": 4700.0,
+        "max_y": 6580.0
+      }
+    },
+    {
+      "id": "W_Shared_Bed0_Bath1",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Bed0",
+        "Bath1"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 3200.0,
+          "y": 1340.0
+        },
+        "p1": {
+          "x": 3200.0,
+          "y": 3220.0
+        }
+      },
+      "clear_length_mm": 1880.0,
+      "rect": {
+        "min_x": 3200.0,
+        "min_y": 1340.0,
+        "max_x": 3320.0,
+        "max_y": 3220.0
+      }
+    },
+    {
+      "id": "W_Shared_Bath1_Kitchen",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Bath1",
+        "Kitchen"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 5120.0,
+          "y": 1340.0
+        },
+        "p1": {
+          "x": 5120.0,
+          "y": 3220.0
+        }
+      },
+      "clear_length_mm": 1880.0,
+      "rect": {
+        "min_x": 5120.0,
+        "min_y": 1340.0,
+        "max_x": 5240.0,
+        "max_y": 3220.0
+      }
+    },
+    {
+      "id": "W_Shared_Bath1_Living",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Bath1",
+        "Living"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 3320.0,
+          "y": 3220.0
+        },
+        "p1": {
+          "x": 5120.0,
+          "y": 3220.0
+        }
+      },
+      "clear_length_mm": 1800.0,
+      "rect": {
+        "min_x": 3320.0,
+        "min_y": 3220.0,
+        "max_x": 5120.0,
+        "max_y": 3340.0
+      }
+    },
+    {
+      "id": "W_Shared_Bath2_Bed1",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Bath2",
+        "Bed1"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 6340.0,
+          "y": 6580.0
+        },
+        "p1": {
+          "x": 6340.0,
+          "y": 8400.0
+        }
+      },
+      "clear_length_mm": 1820.0,
+      "rect": {
+        "min_x": 6340.0,
+        "min_y": 6580.0,
+        "max_x": 6460.0,
+        "max_y": 8400.0
+      }
+    },
+    {
+      "id": "W_Shared_Living_Bath2",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Living",
+        "Bath2"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 4820.0,
+          "y": 6460.0
+        },
+        "p1": {
+          "x": 6340.0,
+          "y": 6460.0
+        }
+      },
+      "clear_length_mm": 1520.0,
+      "rect": {
+        "min_x": 4820.0,
+        "min_y": 6460.0,
+        "max_x": 6340.0,
+        "max_y": 6580.0
+      }
+    },
+    {
+      "id": "W_Shared_Bed0_Living",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Bed0",
+        "Living"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 0.0,
+          "y": 3220.0
+        },
+        "p1": {
+          "x": 3200.0,
+          "y": 3220.0
+        }
+      },
+      "clear_length_mm": 3200.0,
+      "rect": {
+        "min_x": 0.0,
+        "min_y": 3220.0,
+        "max_x": 3200.0,
+        "max_y": 3340.0
+      }
+    },
+    {
+      "id": "W_Shared_Living_Bed1",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Living",
+        "Bed1"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 6460.0,
+          "y": 6460.0
+        },
+        "p1": {
+          "x": 10100.0,
+          "y": 6460.0
+        }
+      },
+      "clear_length_mm": 3640.0,
+      "rect": {
+        "min_x": 6460.0,
+        "min_y": 6460.0,
+        "max_x": 10100.0,
+        "max_y": 6580.0
+      }
+    },
+    {
+      "id": "W_Shared_Living_Bed2",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Living",
+        "Bed2"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 0.0,
+          "y": 6460.0
+        },
+        "p1": {
+          "x": 2980.0,
+          "y": 6460.0
+        }
+      },
+      "clear_length_mm": 2980.0,
+      "rect": {
+        "min_x": 0.0,
+        "min_y": 6460.0,
+        "max_x": 2980.0,
+        "max_y": 6580.0
+      }
+    },
+    {
+      "id": "W_Shared_Kitchen_Living",
+      "kind": "arch.wall.interior",
+      "derived_from": [
+        "Kitchen",
+        "Living"
+      ],
+      "thickness_mm": 120.0,
+      "clear_segment": {
+        "p0": {
+          "x": 5240.0,
+          "y": 3220.0
+        },
+        "p1": {
+          "x": 7540.0,
+          "y": 3220.0
+        }
+      },
+      "clear_length_mm": 2300.0,
+      "rect": {
+        "min_x": 5240.0,
+        "min_y": 3220.0,
+        "max_x": 7540.0,
+        "max_y": 3340.0
+      }
+    },
+    {
+      "id": "W_Ext_Balcony0_south",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Balcony0"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 7660.0,
+          "y": 1570.0
+        },
+        "p1": {
+          "x": 11460.0,
+          "y": 1570.0
+        }
+      },
+      "clear_length_mm": 3800.0,
+      "rect": {
+        "min_x": 7660.0,
+        "min_y": 1370.0,
+        "max_x": 11460.0,
+        "max_y": 1570.0
+      }
+    },
+    {
+      "id": "W_Ext_Balcony0_east",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Balcony0"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 11460.0,
+          "y": 1570.0
+        },
+        "p1": {
+          "x": 11460.0,
+          "y": 3220.0
+        }
+      },
+      "clear_length_mm": 1650.0,
+      "rect": {
+        "min_x": 11460.0,
+        "min_y": 1570.0,
+        "max_x": 11660.0,
+        "max_y": 3220.0
+      }
+    },
+    {
+      "id": "W_Ext_Balcony1_south",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Balcony1"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 11660.0,
+          "y": 6580.0
+        },
+        "p1": {
+          "x": 11680.0,
+          "y": 6580.0
+        }
+      },
+      "clear_length_mm": 20.0,
+      "rect": {
+        "min_x": 11660.0,
+        "min_y": 6380.0,
+        "max_x": 11680.0,
+        "max_y": 6580.0
+      }
+    },
+    {
+      "id": "W_Ext_Balcony1_north",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Balcony1"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 10220.0,
+          "y": 10220.0
+        },
+        "p1": {
+          "x": 11680.0,
+          "y": 10220.0
+        }
+      },
+      "clear_length_mm": 1460.0,
+      "rect": {
+        "min_x": 10220.0,
+        "min_y": 10220.0,
+        "max_x": 11680.0,
+        "max_y": 10420.0
+      }
+    },
+    {
+      "id": "W_Ext_Balcony1_east",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Balcony1"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 11680.0,
+          "y": 6580.0
+        },
+        "p1": {
+          "x": 11680.0,
+          "y": 10220.0
+        }
+      },
+      "clear_length_mm": 3640.0,
+      "rect": {
+        "min_x": 11680.0,
+        "min_y": 6580.0,
+        "max_x": 11880.0,
+        "max_y": 10220.0
+      }
+    },
+    {
+      "id": "W_Ext_Bath0_north",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Bath0"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 3100.0,
+          "y": 8400.0
+        },
+        "p1": {
+          "x": 4700.0,
+          "y": 8400.0
+        }
+      },
+      "clear_length_mm": 1600.0,
+      "rect": {
+        "min_x": 3100.0,
+        "min_y": 8400.0,
+        "max_x": 4700.0,
+        "max_y": 8600.0
+      }
+    },
+    {
+      "id": "W_Ext_Bath1_south",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Bath1"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 3320.0,
+          "y": 1340.0
+        },
+        "p1": {
+          "x": 5120.0,
+          "y": 1340.0
+        }
+      },
+      "clear_length_mm": 1800.0,
+      "rect": {
+        "min_x": 3320.0,
+        "min_y": 1140.0,
+        "max_x": 5120.0,
+        "max_y": 1340.0
+      }
+    },
+    {
+      "id": "W_Ext_Bath2_north",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Bath2"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 4820.0,
+          "y": 8400.0
+        },
+        "p1": {
+          "x": 6340.0,
+          "y": 8400.0
+        }
+      },
+      "clear_length_mm": 1520.0,
+      "rect": {
+        "min_x": 4820.0,
+        "min_y": 8400.0,
+        "max_x": 6340.0,
+        "max_y": 8600.0
+      }
+    },
+    {
+      "id": "W_Ext_Bed0_south",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Bed0"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "p1": {
+          "x": 3200.0,
+          "y": 0.0
+        }
+      },
+      "clear_length_mm": 3200.0,
+      "rect": {
+        "min_x": 0.0,
+        "min_y": -200.0,
+        "max_x": 3200.0,
+        "max_y": 0.0
+      }
+    },
+    {
+      "id": "W_Ext_Bed0_west",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Bed0"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "p1": {
+          "x": 0.0,
+          "y": 3220.0
+        }
+      },
+      "clear_length_mm": 3220.0,
+      "rect": {
+        "min_x": -200.0,
+        "min_y": 0.0,
+        "max_x": 0.0,
+        "max_y": 3220.0
+      }
+    },
+    {
+      "id": "W_Ext_Bed0_east",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Bed0"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 3200.0,
+          "y": 0.0
+        },
+        "p1": {
+          "x": 3200.0,
+          "y": 1140.0
+        }
+      },
+      "clear_length_mm": 1140.0,
+      "rect": {
+        "min_x": 3200.0,
+        "min_y": 0.0,
+        "max_x": 3400.0,
+        "max_y": 1140.0
+      }
+    },
+    {
+      "id": "W_Ext_Bed1_north",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Bed1"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 6460.0,
+          "y": 10220.0
+        },
+        "p1": {
+          "x": 10100.0,
+          "y": 10220.0
+        }
+      },
+      "clear_length_mm": 3640.0,
+      "rect": {
+        "min_x": 6460.0,
+        "min_y": 10220.0,
+        "max_x": 10100.0,
+        "max_y": 10420.0
+      }
+    },
+    {
+      "id": "W_Ext_Bed1_west",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Bed1"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 6460.0,
+          "y": 8600.0
+        },
+        "p1": {
+          "x": 6460.0,
+          "y": 10220.0
+        }
+      },
+      "clear_length_mm": 1620.0,
+      "rect": {
+        "min_x": 6260.0,
+        "min_y": 8600.0,
+        "max_x": 6460.0,
+        "max_y": 10220.0
+      }
+    },
+    {
+      "id": "W_Ext_Bed2_north",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Bed2"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 0.0,
+          "y": 9760.0
+        },
+        "p1": {
+          "x": 2980.0,
+          "y": 9760.0
+        }
+      },
+      "clear_length_mm": 2980.0,
+      "rect": {
+        "min_x": 0.0,
+        "min_y": 9760.0,
+        "max_x": 2980.0,
+        "max_y": 9960.0
+      }
+    },
+    {
+      "id": "W_Ext_Bed2_west",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Bed2"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 0.0,
+          "y": 6580.0
+        },
+        "p1": {
+          "x": 0.0,
+          "y": 9760.0
+        }
+      },
+      "clear_length_mm": 3180.0,
+      "rect": {
+        "min_x": -200.0,
+        "min_y": 6580.0,
+        "max_x": 0.0,
+        "max_y": 9760.0
+      }
+    },
+    {
+      "id": "W_Ext_Bed2_east",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Bed2"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 2980.0,
+          "y": 8600.0
+        },
+        "p1": {
+          "x": 2980.0,
+          "y": 9760.0
+        }
+      },
+      "clear_length_mm": 1160.0,
+      "rect": {
+        "min_x": 2980.0,
+        "min_y": 8600.0,
+        "max_x": 3180.0,
+        "max_y": 9760.0
+      }
+    },
+    {
+      "id": "W_Ext_Kitchen_south",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Kitchen"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 5240.0,
+          "y": 480.0
+        },
+        "p1": {
+          "x": 7540.0,
+          "y": 480.0
+        }
+      },
+      "clear_length_mm": 2300.0,
+      "rect": {
+        "min_x": 5240.0,
+        "min_y": 280.0,
+        "max_x": 7540.0,
+        "max_y": 480.0
+      }
+    },
+    {
+      "id": "W_Ext_Kitchen_west",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Kitchen"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 5240.0,
+          "y": 480.0
+        },
+        "p1": {
+          "x": 5240.0,
+          "y": 1140.0
+        }
+      },
+      "clear_length_mm": 660.0,
+      "rect": {
+        "min_x": 5040.0,
+        "min_y": 480.0,
+        "max_x": 5240.0,
+        "max_y": 1140.0
+      }
+    },
+    {
+      "id": "W_Ext_Kitchen_east",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Kitchen"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 7540.0,
+          "y": 480.0
+        },
+        "p1": {
+          "x": 7540.0,
+          "y": 1370.0
+        }
+      },
+      "clear_length_mm": 890.0,
+      "rect": {
+        "min_x": 7540.0,
+        "min_y": 480.0,
+        "max_x": 7740.0,
+        "max_y": 1370.0
+      }
+    },
+    {
+      "id": "W_Ext_Living_west",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Living"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 0.0,
+          "y": 3340.0
+        },
+        "p1": {
+          "x": 0.0,
+          "y": 6460.0
+        }
+      },
+      "clear_length_mm": 3120.0,
+      "rect": {
+        "min_x": -200.0,
+        "min_y": 3340.0,
+        "max_x": 0.0,
+        "max_y": 6460.0
+      }
+    },
+    {
+      "id": "W_Ext_Living_east",
+      "kind": "arch.wall.exterior",
+      "derived_from": [
+        "Living"
+      ],
+      "thickness_mm": 200.0,
+      "clear_segment": {
+        "p0": {
+          "x": 11460.0,
+          "y": 3340.0
+        },
+        "p1": {
+          "x": 11460.0,
+          "y": 6460.0
+        }
+      },
+      "clear_length_mm": 3120.0,
+      "rect": {
+        "min_x": 11460.0,
+        "min_y": 3340.0,
+        "max_x": 11660.0,
+        "max_y": 6460.0
+      }
+    }
+  ],
+  "wall_solids": [
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": -200.0,
+        "min_y": -200.0,
+        "max_x": 900.0,
+        "max_y": 0.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 2300.0,
+        "min_y": -200.0,
+        "max_x": 3400.0,
+        "max_y": 0.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": -200.0,
+        "min_y": 0.0,
+        "max_x": 0.0,
+        "max_y": 4390.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 3200.0,
+        "min_y": 0.0,
+        "max_x": 3400.0,
+        "max_y": 1140.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 5040.0,
+        "min_y": 280.0,
+        "max_x": 5840.0,
+        "max_y": 480.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 6940.0,
+        "min_y": 280.0,
+        "max_x": 7740.0,
+        "max_y": 480.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 5040.0,
+        "min_y": 480.0,
+        "max_x": 5240.0,
+        "max_y": 1140.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 7540.0,
+        "min_y": 480.0,
+        "max_x": 7740.0,
+        "max_y": 1370.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 3200.0,
+        "min_y": 1140.0,
+        "max_x": 3320.0,
+        "max_y": 3220.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 3320.0,
+        "min_y": 1140.0,
+        "max_x": 5120.0,
+        "max_y": 1340.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 5120.0,
+        "min_y": 1140.0,
+        "max_x": 5240.0,
+        "max_y": 3220.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 7540.0,
+        "min_y": 1370.0,
+        "max_x": 7660.0,
+        "max_y": 3220.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 7660.0,
+        "min_y": 1370.0,
+        "max_x": 11660.0,
+        "max_y": 1570.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 11460.0,
+        "min_y": 1570.0,
+        "max_x": 11660.0,
+        "max_y": 4140.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 0.0,
+        "min_y": 3220.0,
+        "max_x": 1100.0,
+        "max_y": 3340.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 1950.0,
+        "min_y": 3220.0,
+        "max_x": 3820.0,
+        "max_y": 3340.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 4570.0,
+        "min_y": 3220.0,
+        "max_x": 5940.0,
+        "max_y": 3340.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 6790.0,
+        "min_y": 3220.0,
+        "max_x": 9060.0,
+        "max_y": 3340.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 9960.0,
+        "min_y": 3220.0,
+        "max_x": 11460.0,
+        "max_y": 3340.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": -200.0,
+        "min_y": 5390.0,
+        "max_x": 0.0,
+        "max_y": 9760.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 11460.0,
+        "min_y": 5640.0,
+        "max_x": 11660.0,
+        "max_y": 6380.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 11460.0,
+        "min_y": 6380.0,
+        "max_x": 11880.0,
+        "max_y": 6460.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 0.0,
+        "min_y": 6460.0,
+        "max_x": 1050.0,
+        "max_y": 6580.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 1900.0,
+        "min_y": 6460.0,
+        "max_x": 3520.0,
+        "max_y": 6580.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 4270.0,
+        "min_y": 6460.0,
+        "max_x": 7760.0,
+        "max_y": 6580.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 8660.0,
+        "min_y": 6460.0,
+        "max_x": 11660.0,
+        "max_y": 6580.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 11660.0,
+        "min_y": 6460.0,
+        "max_x": 11880.0,
+        "max_y": 6580.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 2980.0,
+        "min_y": 6580.0,
+        "max_x": 3100.0,
+        "max_y": 8600.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 4700.0,
+        "min_y": 6580.0,
+        "max_x": 4820.0,
+        "max_y": 8400.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 6340.0,
+        "min_y": 6580.0,
+        "max_x": 6460.0,
+        "max_y": 7080.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 10100.0,
+        "min_y": 6580.0,
+        "max_x": 10220.0,
+        "max_y": 7930.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 11680.0,
+        "min_y": 6580.0,
+        "max_x": 11880.0,
+        "max_y": 10220.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 6340.0,
+        "min_y": 7830.0,
+        "max_x": 6460.0,
+        "max_y": 8600.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 3100.0,
+        "min_y": 8400.0,
+        "max_x": 6340.0,
+        "max_y": 8600.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 2980.0,
+        "min_y": 8600.0,
+        "max_x": 3180.0,
+        "max_y": 9760.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 6260.0,
+        "min_y": 8600.0,
+        "max_x": 6460.0,
+        "max_y": 10220.0
+      }
+    },
+    {
+      "kind": "interior",
+      "rect": {
+        "min_x": 10100.0,
+        "min_y": 8830.0,
+        "max_x": 10220.0,
+        "max_y": 10220.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": -200.0,
+        "min_y": 9760.0,
+        "max_x": 790.0,
+        "max_y": 9960.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 2190.0,
+        "min_y": 9760.0,
+        "max_x": 3180.0,
+        "max_y": 9960.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 6260.0,
+        "min_y": 10220.0,
+        "max_x": 7480.0,
+        "max_y": 10420.0
+      }
+    },
+    {
+      "kind": "exterior",
+      "rect": {
+        "min_x": 9080.0,
+        "min_y": 10220.0,
+        "max_x": 11880.0,
+        "max_y": 10420.0
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "id": "C01",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bed0.east - Bed0.west == 3200mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 16,
+        "start_col": 3,
+        "end_line": 20,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C02",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bed0.north - Bed0.south == 3220mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 16,
+        "start_col": 3,
+        "end_line": 20,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C03",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bed0.west == 0mm (anchor)",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 19,
+        "start_col": 5,
+        "end_line": 19,
+        "end_col": 37
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C04",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bed0.south == 0mm (anchor)",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 19,
+        "start_col": 5,
+        "end_line": 19,
+        "end_col": 37
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C05",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bath1.east - Bath1.west == 1800mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 21,
+        "start_col": 3,
+        "end_line": 24,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C06",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bath1.north - Bath1.south == 1880mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 21,
+        "start_col": 3,
+        "end_line": 24,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C07",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Kitchen.east - Kitchen.west == 2300mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 25,
+        "start_col": 3,
+        "end_line": 28,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C08",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Kitchen.north - Kitchen.south == 2740mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 25,
+        "start_col": 3,
+        "end_line": 28,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C09",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Balcony0.east - Balcony0.west == 3800mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 29,
+        "start_col": 3,
+        "end_line": 32,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C10",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Balcony0.north - Balcony0.south == 1650mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 29,
+        "start_col": 3,
+        "end_line": 32,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C11",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Living.east - Living.west == 11460mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 35,
+        "start_col": 3,
+        "end_line": 38,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C12",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Living.north - Living.south == 3120mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 35,
+        "start_col": 3,
+        "end_line": 38,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C13",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bed2.east - Bed2.west == 2980mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 44,
+        "start_col": 3,
+        "end_line": 47,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C14",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bed2.north - Bed2.south == 3180mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 44,
+        "start_col": 3,
+        "end_line": 47,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C15",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bath0.east - Bath0.west == 1600mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 48,
+        "start_col": 3,
+        "end_line": 51,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C16",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bath0.north - Bath0.south == 1820mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 48,
+        "start_col": 3,
+        "end_line": 51,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C17",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bath2.east - Bath2.west == 1520mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 52,
+        "start_col": 3,
+        "end_line": 55,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C18",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bath2.north - Bath2.south == 1820mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 52,
+        "start_col": 3,
+        "end_line": 55,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C19",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bed1.east - Bed1.west == 3640mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 56,
+        "start_col": 3,
+        "end_line": 59,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C20",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Bed1.north - Bed1.south == 3640mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 56,
+        "start_col": 3,
+        "end_line": 59,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C21",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Balcony1.east - Balcony1.west == 1460mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 60,
+        "start_col": 3,
+        "end_line": 63,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C22",
+      "tier": 2,
+      "strength": "require",
+      "expr": "Balcony1.north - Balcony1.south == 3640mm",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 60,
+        "start_col": 3,
+        "end_line": 63,
+        "end_col": 4
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C23",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Living.west == Bed0.west",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 67,
+        "start_col": 5,
+        "end_line": 67,
+        "end_col": 37
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C24",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Living.south == Bed0.north + interior_wall",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 68,
+        "start_col": 5,
+        "end_line": 68,
+        "end_col": 55
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C25",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Bath1.west == Bed0.east + interior_wall",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 70,
+        "start_col": 5,
+        "end_line": 70,
+        "end_col": 52
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C26",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Bath1.north == Bed0.north",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 71,
+        "start_col": 5,
+        "end_line": 71,
+        "end_col": 38
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C27",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Kitchen.west == Bath1.east + interior_wall",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 73,
+        "start_col": 5,
+        "end_line": 73,
+        "end_col": 55
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C28",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Kitchen.north == Bed0.north",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 74,
+        "start_col": 5,
+        "end_line": 74,
+        "end_col": 40
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C29",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Balcony0.west == Kitchen.east + interior_wall",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 76,
+        "start_col": 5,
+        "end_line": 76,
+        "end_col": 58
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C30",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Balcony0.north == Bed0.north",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 77,
+        "start_col": 5,
+        "end_line": 77,
+        "end_col": 41
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C31",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Bed2.west == Living.west",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 80,
+        "start_col": 5,
+        "end_line": 80,
+        "end_col": 37
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C32",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Bed2.south == Living.north + interior_wall",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 81,
+        "start_col": 5,
+        "end_line": 81,
+        "end_col": 55
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C33",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Bath0.west == Bed2.east + interior_wall",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 83,
+        "start_col": 5,
+        "end_line": 83,
+        "end_col": 52
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C34",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Bath0.south == Living.north + interior_wall",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 84,
+        "start_col": 5,
+        "end_line": 84,
+        "end_col": 56
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C35",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Bath2.west == Bath0.east + interior_wall",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 86,
+        "start_col": 5,
+        "end_line": 86,
+        "end_col": 53
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C36",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Bath2.south == Living.north + interior_wall",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 87,
+        "start_col": 5,
+        "end_line": 87,
+        "end_col": 56
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C37",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Bed1.west == Bath2.east + interior_wall",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 89,
+        "start_col": 5,
+        "end_line": 89,
+        "end_col": 52
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C38",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Bed1.south == Living.north + interior_wall",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 90,
+        "start_col": 5,
+        "end_line": 90,
+        "end_col": 55
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C39",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Balcony1.west == Bed1.east + interior_wall",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 93,
+        "start_col": 5,
+        "end_line": 93,
+        "end_col": 55
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    },
+    {
+      "id": "C40",
+      "tier": 2,
+      "strength": "require",
+      "expr": "require Balcony1.south == Bed1.south",
+      "span": {
+        "file": "rp_3br_0_ref.edl",
+        "start_line": 94,
+        "start_col": 5,
+        "end_line": 94,
+        "end_col": 41
+      },
+      "status": "EXACTLY_CHECKED",
+      "residual_mm": 0.0
+    }
+  ],
+  "views": [
+    {
+      "id": "MainPlan",
+      "kind": "plan",
+      "frame": "Plan",
+      "sheet": "A3 landscape",
+      "scale": "1:100",
+      "show_dimensions": true,
+      "show_labels": true
+    }
+  ],
+  "evidence": [
+    {
+      "check_id": "T2_linear_layout_solve",
+      "status": "EXACTLY_CHECKED",
+      "method": "rref_linear_solver_with_provenance_v0.1",
+      "tolerance_mm": 1e-7,
+      "subjects": [
+        "Bed0",
+        "Bath1",
+        "Kitchen",
+        "Balcony0",
+        "Living",
+        "Bed2",
+        "Bath0",
+        "Bath2",
+        "Bed1",
+        "Balcony1"
+      ],
+      "details": "All 10 room(s) uniquely determined (0 remaining DOF, 40 equations)"
+    },
+    {
+      "check_id": "V1_no_room_overlap",
+      "status": "EXACTLY_CHECKED",
+      "method": "exact_aabb_interior_overlap_v0.1",
+      "tolerance_mm": 1e-6,
+      "subjects": [
+        "Balcony0",
+        "Balcony1",
+        "Bath0",
+        "Bath1",
+        "Bath2",
+        "Bed0",
+        "Bed1",
+        "Bed2",
+        "Kitchen",
+        "Living"
+      ],
+      "details": "0 room overlaps detected"
+    },
+    {
+      "check_id": "V2_opening_jamb_margin",
+      "status": "EXACTLY_CHECKED",
+      "method": "exact_host_segment_margin_v0.1",
+      "tolerance_mm": 1e-6,
+      "subjects": [
+        "FrontDoor",
+        "D_Bed0",
+        "D_Bath1",
+        "D_Kitchen",
+        "D_Balcony0",
+        "D_Bed2",
+        "D_Bath0",
+        "D_Bed1",
+        "D_Ensuite",
+        "D_Balcony1",
+        "W_Bed0",
+        "W_Kitchen",
+        "W_Living_E",
+        "W_Bed2",
+        "W_Bed1"
+      ],
+      "details": "All 15 opening(s) satisfy jamb margin >= 100.0mm"
+    },
+    {
+      "check_id": "V3_no_door_swing_collision",
+      "status": "EXACTLY_CHECKED",
+      "method": "exact_analytical_quarter_disk_intersection_v0.2",
+      "tolerance_mm": 1e-6,
+      "subjects": [
+        "FrontDoor",
+        "D_Bed0",
+        "D_Bath1",
+        "D_Kitchen",
+        "D_Balcony0",
+        "D_Bed2",
+        "D_Bath0",
+        "D_Bed1",
+        "D_Ensuite",
+        "D_Balcony1"
+      ],
+      "details": "0 collisions across 10 door swing arc(s)"
+    },
+    {
+      "check_id": "V4_all_rooms_reachable",
+      "status": "EXACTLY_CHECKED",
+      "method": "exact_bfs_room_connectivity_graph_v0.2",
+      "tolerance_mm": null,
+      "subjects": [
+        "Balcony0",
+        "Balcony1",
+        "Bath0",
+        "Bath1",
+        "Bath2",
+        "Bed0",
+        "Bed1",
+        "Bed2",
+        "Kitchen",
+        "Living"
+      ],
+      "details": "All 10 room(s) reachable from entry root(s) [Living]"
+    },
+    {
+      "check_id": "V5_no_fixture_collision",
+      "status": "EXACTLY_CHECKED",
+      "method": "exact_fixture_aabb_and_clearance_v0.2",
+      "tolerance_mm": 1e-6,
+      "subjects": [
+        "LivingSofa",
+        "DiningTable",
+        "KitchenCounter",
+        "Bath1_WC",
+        "Bath1_Sink",
+        "Bath0_WC",
+        "Bath2_WC",
+        "Bed0_Bed",
+        "Bed2_Bed",
+        "Bed1_Bed"
+      ],
+      "details": "0 collisions or clearance violations across 10 fixture(s)"
+    },
+    {
+      "check_id": "V6_habitable_rooms_have_window",
+      "status": "EXACTLY_CHECKED",
+      "method": "exact_exterior_window_membership_v0.2",
+      "tolerance_mm": null,
+      "subjects": [
+        "Bed0",
+        "Living",
+        "Bed2",
+        "Bed1"
+      ],
+      "details": "All 4 habitable room(s) have exterior natural light"
+    }
+  ],
+  "diagnostics": []
+}

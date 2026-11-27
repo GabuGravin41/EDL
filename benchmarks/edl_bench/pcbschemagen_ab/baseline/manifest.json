@@ -1,0 +1,38 @@
+[
+  {
+    "task_id": 46,
+    "arm": "baseline",
+    "name": "T46_CAN_ISOLATED_FULL",
+    "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/baseline/t46/t46_can_isolated.kicad_sch"
+  },
+  {
+    "task_id": 49,
+    "arm": "baseline",
+    "name": "T49_BMS_5S_FULL_SYSTEM",
+    "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/baseline/t49/t49_bms_5s.kicad_sch"
+  },
+  {
+    "task_id": 51,
+    "arm": "baseline",
+    "name": "T51_ISOLATED_DAQ_4CH",
+    "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/baseline/t51/t51_daq_4ch.kicad_sch"
+  },
+  {
+    "task_id": 52,
+    "arm": "baseline",
+    "name": "T52_IOT_SENSOR_NODE",
+    "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/baseline/t52/t52_iot_node.kicad_sch"
+  },
+  {
+    "task_id": 54,
+    "arm": "baseline",
+    "name": "T54_LI_ION_CHARGER_FULL",
+    "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/baseline/t54/t54_charger.kicad_sch"
+  },
+  {
+    "task_id": 62,
+    "arm": "baseline",
+    "name": "T62_MCU_SYNC_BUCK_SYSTEM",
+    "schematic": "/home/lindah/projects/EDL/benchmarks/edl_bench/pcbschemagen_ab/baseline/t62/t62_mcu_sync_buck.kicad_sch"
+  }
+]

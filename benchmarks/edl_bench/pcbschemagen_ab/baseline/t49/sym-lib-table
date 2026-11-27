@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "test")(type "KiCad")(uri "/home/lindah/projects/EDL/benchmarks/external/PCBSchemaGen_v2/library/test.kicad_sym")(options "")(descr "PCBBench IC library"))
+)

@@ -1,0 +1,307 @@
+// Task 54: LI_ION_CHARGER_FULL
+// Single-Cell Li-Ion Battery Charger System:
+// BQ25895 5A I2C Switch-Mode Charger + INA226 16-bit I2C Power Monitor + TPD4E05U06 USB ESD Protection
+// InputNodes:  VBUS (5V), D+, D-, GND
+// OutputNodes: BAT (4.2V), SYS
+
+project "T54_LI_ION_CHARGER_FULL" {
+  units: mm
+  frame Sheet: Frame2
+  symbol_lib "/home/lindah/projects/EDL/benchmarks/external/PCBSchemaGen_v2/library/test.kicad_sym"
+
+  circuit Main {
+    // =========================================================================
+    // 1. USB INPUT & TPD4E05U06 HIGH-SPEED ESD PROTECTION
+    // =========================================================================
+    component J_USB: "Connector_Generic:Conn_01x04" {
+      value: "USB_IN"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
+      pin 1: power_out(5V)
+      pin 4: ground
+    }
+
+    component D_VBUS: "Device:D_TVS" {
+      value: "SMAJ6.0A"
+      footprint: "Diode_SMD:D_SMA"
+    }
+
+    component U_ESD: "test:TPD4E05U06" {
+      value: "TPD4E05U06"
+      footprint: "Package_SON:USON-10_2.5x1.0mm_P0.5mm"
+      pin GND: ground
+      pin "D2+": nc
+      pin "D2-": nc
+      pin 6: nc
+      pin 7: nc
+      pin 9: nc
+      pin 10: nc
+    }
+
+    // =========================================================================
+    // 2. BQ25895 5A I2C SWITCH-MODE LI-ION CHARGER CONTROLLER
+    // =========================================================================
+    component U_CHG: "test:BQ25895" {
+      value: "BQ25895"
+      footprint: "Package_DFN_QFN:QFN-24-1EP_4x4mm_P0.5mm_EP2.7x2.7mm"
+      pin VBUS: power_in(3.9V..14V)
+      pin PGND: ground
+      pin SYS: power_out(4.2V)
+      pin BAT: bidir
+      pin SW: output
+      pin REGN: power_out(5V)
+      pin SCL: input
+      pin SDA: bidir
+      pin INT: output
+      pin STAT: output
+      pin OTG: input
+      pin CE: input
+      pin QON: input
+      pin DSEL: nc
+    }
+
+    // VBUS, PMID, REGN decoupling
+    component C_VBUS:  "Device:C" { value: 1uF    voltage_rating: 25V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_PMID1: "Device:C" { value: 10uF   voltage_rating: 25V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_PMID2: "Device:C" { value: 10uF   voltage_rating: 25V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_PMID3: "Device:C" { value: 100nF  voltage_rating: 25V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component C_REGN:  "Device:C" { value: 4.7uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // Buck-Boost Switch Node: Bootstrap cap + 1uH 6A Power Inductor
+    component C_BTST: "Device:C" { value: 47nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+    component L_CHG:  "Device:L" {
+      value: "1uH"
+      footprint: "Inductor_SMD:L_6.3x6.3_H3"
+    }
+
+    // SYS & BAT output bulk capacitors
+    component C_SYS1: "Device:C" { value: 22uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_SYS2: "Device:C" { value: 22uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_BAT1: "Device:C" { value: 10uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+    component C_BAT2: "Device:C" { value: 10uF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0805_2012Metric" }
+
+    // Configuration: ILIM (180R -> ~2.0A), CE (enable low), OTG (off), QON pull-up, STAT LED
+    component R_ILIM: "Device:R" { value: 180R  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_CE:   "Device:R" { value: 10k   power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_OTG:  "Device:R" { value: 10k   power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_QON:  "Device:R" { value: 10k   power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_STAT: "Device:R" { value: 1k    power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component D_STAT: "Device:LED" {
+      value: "AMBER"
+      footprint: "LED_SMD:LED_0603_1608Metric"
+    }
+
+    // Battery NTC Temperature Sensing Network (BQ25895 Datasheet 103AT: RT1=5.23k, RT2=30.1k)
+    component R_TS1:  "Device:R" { value: 5.23k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_TS2:  "Device:R" { value: 30.1k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component TH_BAT: "Device:Thermistor_NTC" {
+      value: "10k_NTC"
+      footprint: "Resistor_SMD:R_0603_1608Metric"
+    }
+
+    // =========================================================================
+    // 3. INA226 16-BIT I2C POWER MONITOR & BATTERY SHUNT KELVIN SENSE
+    // =========================================================================
+    component R_SHUNT: "Device:R" {
+      value: "10mR"
+      power_rating: 1W
+      footprint: "Resistor_SMD:R_2512_6332Metric"
+    }
+    component R_INP:    "Device:R" { value: 10R    power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_INN:    "Device:R" { value: 10R    power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component C_INDIFF: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    component U_MON: "test:INA226" {
+      value: "INA226"
+      footprint: "Package_SO:VSSOP-10_3x3mm_P0.5mm"
+      pin VS: power_in(2.7V..5.5V)
+      pin GND: ground
+      pin A0: input
+      pin A1: input
+      pin SDA: bidir
+      pin SCL: input
+      pin "VIN+": input
+      pin "VIN-": input
+    }
+    component C_INA: "Device:C" { value: 100nF  voltage_rating: 16V  footprint: "Capacitor_SMD:C_0603_1608Metric" }
+
+    // Shared I2C Bus Pull-ups & Host / Output Connectors
+    component R_SCL: "Device:R" { value: 4.7k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_SDA: "Device:R" { value: 4.7k  power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+    component R_INT: "Device:R" { value: 10k   power_rating: 0.1W  footprint: "Resistor_SMD:R_0603_1608Metric" }
+
+    component J_I2C: "Connector_Generic:Conn_01x05" {
+      value: "HOST_I2C"
+      footprint: "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical"
+    }
+
+    component J_OUT: "Connector_Generic:Conn_01x03" {
+      value: "BAT_SYS_OUT"
+      footprint: "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-3-5.08_1x03_P5.08mm_Horizontal"
+    }
+
+    // =========================================================================
+    // NETS
+    // =========================================================================
+    net VBUS {
+      connect: [J_USB.1, D_VBUS.1, C_VBUS.1, U_CHG.VBUS]
+      power_flag: true
+    }
+
+    net "D+" { connect: [J_USB.2, U_ESD."D1+", U_CHG."D+"] }
+    net "D-" { connect: [J_USB.3, U_ESD."D1-", U_CHG."D-"] }
+
+    net GND {
+      connect: [
+        J_USB.4, D_VBUS.2, U_ESD.GND,
+        U_CHG.PGND,
+        C_VBUS.2, C_PMID1.2, C_PMID2.2, C_PMID3.2, C_REGN.2,
+        C_SYS1.2, C_SYS2.2, C_BAT1.2, C_BAT2.2,
+        R_ILIM.2, R_CE.2, R_OTG.2, R_TS2.2, TH_BAT.2,
+        U_MON.GND, U_MON.A0, U_MON.A1, C_INA.2,
+        J_I2C.5, J_OUT.3
+      ]
+      power_flag: true
+    }
+
+    // BQ25895 internal power & control rails
+    net PMID     { connect: [U_CHG.PMID, C_PMID1.1, C_PMID2.1, C_PMID3.1] }
+    net REGN     { connect: [U_CHG.REGN, C_REGN.1, R_STAT.1, R_TS1.1] power_flag: true }
+    net CHG_BTST { connect: [U_CHG.BTST, C_BTST.1] }
+    net CHG_SW   { connect: [U_CHG.SW, C_BTST.2, L_CHG.1] }
+
+    net CHG_ILIM { connect: [U_CHG.ILIM, R_ILIM.1] }
+    net CHG_CE   { connect: [U_CHG.CE, R_CE.1] }
+    net CHG_OTG  { connect: [U_CHG.OTG, R_OTG.1] }
+    net CHG_QON  { connect: [U_CHG.QON, R_QON.2] }
+    net STAT_LED_A { connect: [R_STAT.2, D_STAT.A] }
+    net CHG_STAT { connect: [D_STAT.K, U_CHG.STAT] }
+    net TS_NTC   { connect: [R_TS1.2, R_TS2.1, TH_BAT.1, U_CHG.TS] }
+
+    // System & Battery Output Rails (Required OutputNodes: SYS, BAT)
+    net SYS {
+      connect: [
+        L_CHG.2, U_CHG.SYS, C_SYS1.1, C_SYS2.1,
+        R_QON.1, R_SCL.1, R_SDA.1, R_INT.1,
+        U_MON.VS, C_INA.1, J_I2C.1, J_OUT.1
+      ]
+      power_flag: true
+    }
+
+    net BAT_CHG {
+      connect: [U_CHG.BAT, C_BAT1.1, R_SHUNT.1, R_INP.1]
+      power_flag: true
+    }
+
+    net BAT {
+      connect: [R_SHUNT.2, R_INN.1, C_BAT2.1, J_OUT.2]
+    }
+
+    // INA226 Kelvin differential inputs
+    net INA_VINP { connect: [R_INP.2, C_INDIFF.1, U_MON."VIN+"] }
+    net INA_VINN { connect: [R_INN.2, C_INDIFF.2, U_MON."VIN-"] }
+
+    // Shared I2C Bus (BQ25895 + INA226 + Host)
+    net I2C_SCL { connect: [U_CHG.SCL, U_MON.SCL, R_SCL.2, J_I2C.2] }
+    net I2C_SDA { connect: [U_CHG.SDA, U_MON.SDA, R_SDA.2, J_I2C.3] }
+    net CHG_INT { connect: [U_CHG.INT, R_INT.2, J_I2C.4] }
+  }
+
+  schematic MainSheet {
+    sheet: A2 landscape
+    title: "T54: Li-Ion Battery Charger System (BQ25895 + INA226 + TPD4E05U06)"
+
+    routing {
+      default: zone_local
+      power: symbol
+      ground: symbol
+    }
+
+    group USB_ESD_Stage {
+      title: "1. USB 5V INPUT & TPD4E05U06 ESD PROTECTION"
+      rect: (20.32mm, 25.40mm, 165.10mm, 215.90mm)
+      border: dashed
+      color: blue
+      members: [J_USB, D_VBUS, U_ESD, C_VBUS]
+      note: "VBUS=5V, D+, D-, GND | 0.55pF ESD Array + SMAJ6.0A TVS"
+    }
+
+    group Charger_Stage {
+      title: "2. BQ25895 5A I2C SWITCH-MODE LI-ION CHARGER"
+      rect: (177.80mm, 25.40mm, 393.70mm, 330.20mm)
+      border: dashed
+      color: red
+      members: [
+        U_CHG, C_PMID1, C_PMID2, C_PMID3, C_REGN, C_BTST, L_CHG,
+        C_SYS1, C_SYS2, C_BAT1, R_ILIM, R_CE, R_OTG, R_QON,
+        R_STAT, D_STAT, R_TS1, R_TS2, TH_BAT
+      ]
+      note: "1uH Switch-Mode Charger | 103AT NTC Network | ILIM=180R (~2A)"
+    }
+
+    group Monitor_Stage {
+      title: "3. INA226 POWER MONITOR, SHUNT & HOST I2C / OUTPUTS"
+      rect: (406.40mm, 25.40mm, 558.80mm, 330.20mm)
+      border: dashed
+      color: green
+      members: [R_SHUNT, R_INP, R_INN, C_INDIFF, U_MON, C_INA, C_BAT2, R_SCL, R_SDA, R_INT, J_I2C, J_OUT]
+      note: "10mR High-Side BAT Shunt + Kelvin Filter | Shared 4.7k I2C Pull-ups"
+    }
+
+    // Group 1: USB Input & ESD
+    place J_USB  center (43.18mm, 114.30mm) orient: 180
+    place D_VBUS center (73.66mm, 137.16mm) orient: 90
+    place U_ESD  center (109.22mm, 114.30mm)
+    place C_VBUS center (144.78mm, 137.16mm)
+
+    // Group 2: BQ25895 Charger
+    place U_CHG   center (279.40mm, 152.40mm)
+    place R_OTG   center (215.90mm, 157.48mm)
+    place R_CE    center (231.14mm, 165.10mm)
+    place R_QON   center (215.90mm, 193.04mm)
+    place R_ILIM  center (231.14mm, 200.66mm)
+
+    place R_STAT  center (325.12mm, 66.04mm)
+    place D_STAT  center (325.12mm, 93.98mm) orient: 90
+
+    place C_PMID1 center (325.12mm, 129.54mm)
+    place C_PMID2 center (342.90mm, 129.54mm)
+    place C_PMID3 center (360.68mm, 129.54mm)
+
+    place C_BTST  center (325.12mm, 157.48mm) orient: 90
+    place L_CHG   center (353.06mm, 157.48mm) orient: 90
+    place C_SYS1  center (353.06mm, 193.04mm)
+    place C_SYS2  center (370.84mm, 193.04mm)
+    place C_BAT1  center (325.12mm, 226.06mm)
+
+    place C_REGN  center (325.12mm, 266.70mm)
+    place R_TS1   center (350.52mm, 254.00mm)
+    place R_TS2   center (350.52mm, 289.56mm)
+    place TH_BAT  center (373.38mm, 289.56mm)
+
+    // Group 3: INA226 & Outputs (U_MON pins on 1.27mm Y offset)
+    place R_SHUNT  center (449.58mm, 76.20mm) orient: 90
+    place R_INP    center (441.96mm, 106.68mm)
+    place R_INN    center (462.28mm, 106.68mm)
+    place C_INDIFF center (452.12mm, 134.62mm) orient: 90
+    place U_MON    center (495.30mm, 135.89mm)
+    place C_INA    center (528.32mm, 154.94mm)
+    place C_BAT2   center (508.00mm, 83.82mm)
+    place J_OUT    center (538.48mm, 78.74mm)
+
+    place R_SCL    center (431.80mm, 228.60mm)
+    place R_SDA    center (452.12mm, 228.60mm)
+    place R_INT    center (472.44mm, 228.60mm)
+    place J_I2C    center (515.62mm, 246.38mm)
+  }
+
+  verify {
+    require all_required_pins_connected
+    require no_power_ground_short
+    require no_multiple_power_drivers
+    require voltage_compatibility
+    require no_single_pin_nets
+    require ic_decoupling
+    require i2c_pullups
+    require bom_manufacturability
+  }
+}

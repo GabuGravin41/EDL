@@ -1,0 +1,78 @@
+{
+  "suite": "PCBBench (UT Austin NeurIPS 2026)",
+  "symbol_library": "/home/lindah/projects/EDL/benchmarks/external/PCBSchemaGen_v2/library/test.kicad_sym",
+  "tasks": [
+    {
+      "Id": "46",
+      "Level": "Medium",
+      "Type": "Comm",
+      "Task": "Design a fully isolated CAN interface using ISO7741 digital isolator, SN65HVD230 CAN transceiver, and NXE1S0303MC isolated DC-DC power supply.",
+      "InputNodes": "VDD, GND, TXD, RXD",
+      "OutputNodes": "CANH, CANL",
+      "InputVoltage": "3.3",
+      "OutputVoltage": "3.3",
+      "Components": "ISO7741, SN65HVD230, NXE1S0303MC",
+      "SubModuleName": "CAN_ISOLATED_FULL"
+    },
+    {
+      "Id": "49",
+      "Level": "Hard",
+      "Type": "BMS-System",
+      "Task": "Design a complete 5S BMS system with BQ76920 AFE, BQ76200 high-side charge/discharge FET driver, and SN65HVD230 CAN bus communication interface.",
+      "InputNodes": "CELL0, CELL1, CELL2, CELL3, CELL4, CELL5, PACK+, PACK-, CAN_TXD, CAN_RXD",
+      "OutputNodes": "CANH, CANL, CHG, DSG",
+      "InputVoltage": "20",
+      "OutputVoltage": "3.3",
+      "Components": "BQ76920, BQ76200, SN65HVD230",
+      "SubModuleName": "BMS_5S_FULL_SYSTEM"
+    },
+    {
+      "Id": "51",
+      "Level": "Hard",
+      "Type": "DAQ-System",
+      "Task": "Design a 4-channel isolated data acquisition system with four ADS7042 ADCs, ISO7741 SPI isolator, NXE1S0303MC isolated DC-DC power, and REF3033 precision reference.",
+      "InputNodes": "AIN1, AIN2, AIN3, AIN4, VDD, GND, SCLK, MOSI, CS",
+      "OutputNodes": "MISO",
+      "InputVoltage": "3.3",
+      "OutputVoltage": "3.3",
+      "Components": "ADS7042, ISO7741, NXE1S0303MC, REF3033",
+      "SubModuleName": "ISOLATED_DAQ_4CH"
+    },
+    {
+      "Id": "52",
+      "Level": "Hard",
+      "Type": "IoT-System",
+      "Task": "Design an IoT sensor node with STM32F103C8T6 MCU, SN65HVD230 CAN transceiver, TPS54302 Buck regulator, and TLV1117-33 LDO for power management.",
+      "InputNodes": "VIN12, GND",
+      "OutputNodes": "CANH, CANL, TEMP_ADC",
+      "InputVoltage": "12",
+      "OutputVoltage": "3.3",
+      "Components": "STM32F103C8T6, SN65HVD230, TPS54302, TLV1117-33",
+      "SubModuleName": "IOT_SENSOR_NODE"
+    },
+    {
+      "Id": "54",
+      "Level": "Hard",
+      "Type": "Charger-System",
+      "Task": "Design a Li-ion battery charger system with BQ25895 charge controller, INA226 power monitor, and TPD4E05U06 USB ESD protection.",
+      "InputNodes": "VBUS, D+, D-, GND",
+      "OutputNodes": "BAT, SYS",
+      "InputVoltage": "5",
+      "OutputVoltage": "4.2",
+      "Components": "BQ25895, INA226, TPD4E05U06",
+      "SubModuleName": "LI_ION_CHARGER_FULL"
+    },
+    {
+      "Id": "62",
+      "Level": "Hard",
+      "Type": "DigitalPower",
+      "Task": "Design a complete MCU digital synchronous buck system with STM32F103C8T6 MCU, two UCC5390E isolated gate drivers, two IMZA65R015M2H SiC MOSFETs, INA240A1 current sense, and SN65HVD230 CAN transceiver.",
+      "InputNodes": "VIN, PWM, GND, CAN_TXD, CAN_RXD",
+      "OutputNodes": "VOUT, CANH, CANL",
+      "InputVoltage": "200",
+      "OutputVoltage": "100",
+      "Components": "STM32F103C8T6, UCC5390E, IMZA65R015M2H, INA240A1, SN65HVD230",
+      "SubModuleName": "MCU_SYNC_BUCK_SYSTEM"
+    }
+  ]
+}

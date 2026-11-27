@@ -1,0 +1,65 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-11-28T00:01:36+0300",
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "9.0.9",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/a393e016-671d-4e64-b5d8-52cf4d11dba5",
+            "violations": [
+                {
+                    "description": "Symbol 'NXE1S0303MC' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U1 [NXE1S0303MC]",
+                            "pos": {
+                                "x": 2.0828,
+                                "y": 0.762
+                            },
+                            "uuid": "85fb879a-b4ca-4280-9ded-cad5dc4b4410"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'ISO7741' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U2 [ISO7741]",
+                            "pos": {
+                                "x": 2.0828,
+                                "y": 1.7272
+                            },
+                            "uuid": "ea0985eb-a46d-45cd-b411-3e4ad11d5948"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "Symbol 'SN65HVD230' not found in symbol library 'test'",
+                    "items": [
+                        {
+                            "description": "Symbol U3 [SN65HVD230]",
+                            "pos": {
+                                "x": 2.9972,
+                                "y": 1.7272
+                            },
+                            "uuid": "34a3ded6-0656-4d17-b96e-95f0e50c194c"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                }
+            ]
+        }
+    ],
+    "source": "t46_can_isolated.kicad_sch"
+}
