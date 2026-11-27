@@ -321,6 +321,30 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                                     .push(unique_name);
                             }
                         }
+                        // Alias hidden stacked KiCad pins (e.g., STM32F407 VSS pins 27/74/99 stacked on pin 10)
+                        // to the visible pin sharing the exact same (x, y) coordinates on the same unit.
+                        for hp in sym.pins.iter().filter(|p| p.hide && (all_units || p.unit == 0 || p.unit == target_unit)) {
+                            if seen_pin_nums.contains(&hp.number) {
+                                continue;
+                            }
+                            if let Some(vp) = sym.pins.iter().find(|v| {
+                                seen_pin_nums.contains(&v.number)
+                                    && (all_units || v.unit == 0 || v.unit == target_unit)
+                                    && (v.x - hp.x).abs() < 0.05
+                                    && (v.y - hp.y).abs() < 0.05
+                            }) {
+                                if let Some(v_unique) = pin_aliases
+                                    .get(&(comp.id.clone(), vp.number.clone()))
+                                    .and_then(|v| v.first())
+                                    .cloned()
+                                {
+                                    pin_aliases
+                                        .entry((comp.id.clone(), hp.number.clone()))
+                                        .or_default()
+                                        .push(v_unique);
+                                }
+                            }
+                        }
                         loaded_syms.insert(comp.id.clone(), sym);
                     }
                     Err(msg) => {
@@ -2238,7 +2262,8 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
     let gnd_rail_y = snap_grid(max_comp_y + 12.70);
     let mut local_routes: Vec<SchematicRouteIr> = Vec::new();
     let mut astar_occ = crate::domains::elec::router::GridOccupancy::default();
-    let mut pending_astar_nets: Vec<(String, bool, bool, Vec<RoutablePin>)> = Vec::new();
+    // (net_name, is_pwr, is_gnd, is_cross_sheet, endpoints)
+    let mut pending_astar_nets: Vec<(String, bool, bool, bool, Vec<RoutablePin>)> = Vec::new();
     let all_sheet_pin_tips: BTreeSet<(i32, i32)> = placed_pins
         .values()
         .map(|rp| {
@@ -2643,7 +2668,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
             continue;
         }
 
-        // --- MODE A2: Cross-Sheet Global Flags & Zone-Local Obstacle-Aware A* Routing ---
+        // --- MODE A2: Cross-Sheet Global Flags & Zone-Local / Adjacent-Zone Obstacle-Aware A* Routing ---
         let is_cross_sheet = cross_sheet_nets.contains(&net.name);
         let touches_rel_sat = !moved_satellites.is_empty()
             && net
@@ -2656,21 +2681,72 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 .iter()
                 .any(|p| pinned_explicit.contains(&p.component));
         let cols_in_net_pre: BTreeSet<usize> = net_endpoints.iter().map(|rp| rp.col_idx).collect();
-        let use_local_astar = !is_cross_sheet
-            && !is_gnd
+        let (ep_min_x, ep_max_x, ep_min_y, ep_max_y) = net_endpoints.iter().fold(
+            (f64::INFINITY, f64::NEG_INFINITY, f64::INFINITY, f64::NEG_INFINITY),
+            |(x0, x1, y0, y1), rp| {
+                (
+                    x0.min(rp.pin.tip_point.x),
+                    x1.max(rp.pin.tip_point.x),
+                    y0.min(rp.pin.tip_point.y),
+                    y1.max(rp.pin.tip_point.y),
+                )
+            },
+        );
+        let net_span_x = (ep_max_x - ep_min_x).max(0.0);
+        let net_span_y = (ep_max_y - ep_min_y).max(0.0);
+        // Never allow direct wiring across a declared galvanic isolation divider line!
+        let straddles_divider = local_dividers.iter().any(|dv| {
+            let dx = dv.to.x - dv.from.x;
+            let dy = dv.to.y - dv.from.y;
+            let mut has_pos = false;
+            let mut has_neg = false;
+            let dv_min_x = dv.from.x.min(dv.to.x) - 2.0;
+            let dv_max_x = dv.from.x.max(dv.to.x) + 2.0;
+            let dv_min_y = dv.from.y.min(dv.to.y) - 2.0;
+            let dv_max_y = dv.from.y.max(dv.to.y) + 2.0;
+            let bbox_hits_div = ep_max_x >= dv_min_x
+                && ep_min_x <= dv_max_x
+                && ep_max_y >= dv_min_y
+                && ep_min_y <= dv_max_y;
+            if !bbox_hits_div {
+                return false;
+            }
+            for rp in &net_endpoints {
+                let cross = dx * (rp.pin.tip_point.y - dv.from.y)
+                    - dy * (rp.pin.tip_point.x - dv.from.x);
+                if cross > 0.5 {
+                    has_pos = true;
+                } else if cross < -0.5 {
+                    has_neg = true;
+                }
+            }
+            has_pos && has_neg
+        });
+        let compact_adjacent_zones = cols_in_net_pre.len() > 1
+            && net_endpoints.len() <= 5
+            && net_span_x <= 180.0
+            && net_span_y <= 90.0
+            && !straddles_divider;
+        // Same-zone direct/zone_local nets route directly (and if a wire genuinely crosses an interior
+        // divider in the same zone, E15 catches it!). Cross-zone adjacent clusters auto-avoid dividers.
+        let compact_local_cluster = cols_in_net_pre.len() == 1 || compact_adjacent_zones;
+        let astar_style_eligible = style == NetRoutingStyle::ZoneLocal
+            || ((touches_rel_sat || touches_explicit) && style == NetRoutingStyle::Direct);
+        let use_local_astar = !is_gnd
             && !is_pwr
-            && cols_in_net_pre.len() == 1
             && net_endpoints.len() >= 2
-            && (style == NetRoutingStyle::ZoneLocal
-                || ((touches_rel_sat || touches_explicit) && style == NetRoutingStyle::Direct));
+            && astar_style_eligible
+            && compact_local_cluster
+            && (!is_cross_sheet || (net_endpoints.len() <= 5 && net_span_x <= 180.0 && net_span_y <= 90.0));
 
         if use_local_astar {
-            // Defer intra-zone A* routing to Pass 2 so all power/GND symbols and label stubs
-            // reserve their grid edges & terminal cells FIRST (zero accidental shorts!).
+            // Defer intra-zone / compact adjacent-zone A* routing to Pass 2 so all power/GND symbols
+            // and flag stubs reserve their grid edges & terminal cells FIRST (zero accidental shorts!).
             pending_astar_nets.push((
                 net.name.clone(),
                 is_pwr,
                 is_gnd,
+                is_cross_sheet,
                 net_endpoints.into_iter().cloned().collect(),
             ));
             continue;
@@ -3161,34 +3237,91 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 }
                 (((x1 - x0) + (y1 - y0)) * 100.0) as i64
             };
-            span_of(&a.3).cmp(&span_of(&b.3)).then_with(|| a.0.cmp(&b.0))
+            span_of(&a.4).cmp(&span_of(&b.4)).then_with(|| a.0.cmp(&b.0))
         });
 
-        for (net_name, is_pwr, is_gnd, rps) in pending_astar_nets {
+        for (net_name, is_pwr, is_gnd, is_cross_sheet, rps) in pending_astar_nets {
             let eps: Vec<(Point2, Side)> = rps
                 .iter()
                 .map(|rp| (rp.pin.tip_point, rp.pin.side))
                 .collect();
-            if let Some((segs, juncs)) = crate::domains::elec::router::try_route_net_astar_strict(
+            if let Some((mut segs, mut juncs)) = crate::domains::elec::router::try_route_net_astar_strict(
                 &eps,
                 &body_obs,
                 &foreign_tips,
                 &mut astar_occ,
             ) {
+                let mut terminals = Vec::new();
+                if is_cross_sheet {
+                    // Attach ONE crisp cross-sheet flag cleanly on the outermost endpoint of the wired cluster!
+                    let to_g = |p: Point2| -> (i32, i32) {
+                        ((p.x / GRID_MM).round() as i32, (p.y / GRID_MM).round() as i32)
+                    };
+                    let anchor_rp = rps
+                        .iter()
+                        .min_by(|a, b| a.pin.tip_point.x.partial_cmp(&b.pin.tip_point.x).unwrap())
+                        .unwrap();
+                    let tip = anchor_rp.pin.tip_point;
+                    let mut placed_flag = false;
+                    // Prefer stub extending outward to the left (West) or right (East) if cell is completely free
+                    for (dx_g, dir) in [(-2_i32, Side::West), (-1, Side::West), (2, Side::East), (1, Side::East)] {
+                        let cand = Point2::new(snap_grid(tip.x + (dx_g as f64) * GRID_MM), tip.y);
+                        let cg = to_g(cand);
+                        let mid = Point2::new(snap_grid(tip.x + (dx_g.signum() as f64) * GRID_MM), tip.y);
+                        let mg = to_g(mid);
+                        let hits_body = body_obs.iter().any(|b| {
+                            let sx0 = tip.x.min(cand.x);
+                            let sx1 = tip.x.max(cand.x);
+                            tip.y >= b.min_y - 0.2 && tip.y <= b.max_y + 0.2 && sx1 >= b.min_x - 0.2 && sx0 <= b.max_x + 0.2
+                        });
+                        if !hits_body
+                            && !astar_occ.used_cells.contains(&cg)
+                            && !foreign_tips.contains(&cg)
+                            && (dx_g.abs() == 1 || (!astar_occ.used_cells.contains(&mg) && !foreign_tips.contains(&mg)))
+                        {
+                            add_ortho_seg(&mut segs, tip, cand);
+                            juncs.push(tip);
+                            astar_occ.record_world_segment(Segment2::new(tip, cand));
+                            astar_occ.record_terminal_point(cand);
+                            terminals.push(NetTerminalIr {
+                                kind: "global_flag".to_string(),
+                                pos: cand,
+                                dir,
+                                label: net_name.clone(),
+                            });
+                            placed_flag = true;
+                            break;
+                        }
+                    }
+                    if !placed_flag {
+                        // Direct pin-tip hierarchical/global flag: 100% valid in KiCad 9, mathematically short-free!
+                        let dir = match anchor_rp.pin.side {
+                            Side::East => Side::East,
+                            _ => Side::West,
+                        };
+                        terminals.push(NetTerminalIr {
+                            kind: "global_flag".to_string(),
+                            pos: tip,
+                            dir,
+                            label: net_name.clone(),
+                        });
+                    }
+                }
                 local_routes.push(SchematicRouteIr {
                     net_id: net_name,
                     sheet: sheet_tag.clone(),
-                    style: "zone_local".to_string(),
+                    style: if is_cross_sheet { "global_flag" } else { "zone_local" }.to_string(),
                     is_power: is_pwr,
                     is_ground: is_gnd,
                     segments: segs,
                     junctions: juncs,
-                    terminals: Vec::new(),
+                    terminals,
                     label_pos: None,
                 });
             } else {
-                // Corridor completely congested: emit clean local `label_flag` stubs — ALWAYS checking
-                // `astar_occ` so a fallback stub NEVER terminates on top of a passing A* wire!
+                // Corridor completely congested: emit clean local `label_flag` (or `global_flag` for cross-sheet) stubs —
+                // ALWAYS checking `astar_occ` so a fallback stub NEVER terminates on top of a passing A* wire!
+                let fb_kind = if is_cross_sheet { "global_flag" } else { "label_flag" };
                 let mut segments = Vec::new();
                 let mut terminals = Vec::new();
                 let to_g = |p: Point2| -> (i32, i32) {
@@ -3264,7 +3397,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                         }
                     };
                     terminals.push(NetTerminalIr {
-                        kind: "label_flag".to_string(),
+                        kind: fb_kind.to_string(),
                         pos: end,
                         dir: term_dir,
                         label: net_name.clone(),
@@ -3279,7 +3412,7 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                 local_routes.push(SchematicRouteIr {
                     net_id: net_name,
                     sheet: sheet_tag.clone(),
-                    style: "zone_local".to_string(),
+                    style: if is_cross_sheet { "global_flag" } else { "zone_local" }.to_string(),
                     is_power: is_pwr,
                     is_ground: is_gnd,
                     segments,
@@ -3727,6 +3860,43 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
                     },
                 ],
             });
+        }
+    }
+
+    // 5b-ii. E12b: Zone-to-Zone Overlap Advisory Check (v3.6)
+    //        Warns when two same-sheet `group` frames collide (e.g. after auto-expansion).
+    if local_groups.len() >= 2 {
+        for i in 0..local_groups.len() {
+            for j in (i + 1)..local_groups.len() {
+                let a = local_groups[i].bbox;
+                let b = local_groups[j].bbox;
+                let ox = a.max_x.min(b.max_x) - a.min_x.max(b.min_x);
+                let oy = a.max_y.min(b.max_y) - a.min_y.max(b.min_y);
+                if ox > 1.0 && oy > 1.0 {
+                    diagnostics.push(
+                        Diagnostic::warning(
+                            "W_ZONE_OVERLAP",
+                            "layout",
+                            format!(
+                                "Zone '{}' ({:.1}..{:.1}, {:.1}..{:.1}mm) overlaps zone '{}' ({:.1}..{:.1}, {:.1}..{:.1}mm) by {:.1}×{:.1}mm on '{}'",
+                                local_groups[i].name,
+                                a.min_x, a.max_x, a.min_y, a.max_y,
+                                local_groups[j].name,
+                                b.min_x, b.max_x, b.min_y, b.max_y,
+                                ox, oy, sheet_name_str
+                            ),
+                            schem.map(|s| s.span.clone()),
+                        )
+                        .with_entities(vec![local_groups[i].name.clone(), local_groups[j].name.clone()])
+                        .with_suggestion(format!(
+                            "Separate `rect:` boundaries or increase gap between '{}' and '{}' by at least {:.2}mm",
+                            local_groups[i].name,
+                            local_groups[j].name,
+                            ox.min(oy) + 5.08
+                        )),
+                    );
+                }
+            }
         }
     }
 

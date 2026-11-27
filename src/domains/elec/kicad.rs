@@ -20,10 +20,13 @@ pub fn export_kicad_sch(ir: &CanonicalIr) -> String {
 }
 
 /// Export a complete KiCad 9 schematic project (1 file for single-sheet, or root hierarchical sheet +
-/// per-sheet `.kicad_sch` sub-sheets for multi-sheet projects). Key = filename, Value = file contents.
+/// per-sheet `.kicad_sch` sub-sheets for multi-sheet projects, plus `edl_power.kicad_sym`,
+/// `sym-lib-table`, and `<project>.kicad_pro` when custom/isolated power rails are used).
+/// Key = filename, Value = file contents.
 pub fn export_kicad_project(ir: &CanonicalIr) -> BTreeMap<String, String> {
     let mut files = BTreeMap::new();
-    let root_file = format!("{}.kicad_sch", sanitize_filename(&ir.project.name));
+    let proj_slug = sanitize_filename(&ir.project.name);
+    let root_file = format!("{proj_slug}.kicad_sch");
     if !ir.explicit_sheets.is_empty() {
         // Build recursive KiCad hierarchy map: sheet_file -> Vec<(semantic_path, uuid_path)>
         // so single-use AND reused multi-level child sheets emit exact `(path "/root_uuid/sheet_uuid/...")`!
@@ -111,35 +114,335 @@ pub fn export_kicad_project(ir: &CanonicalIr) -> BTreeMap<String, String> {
         }
         return files;
     }
+
+    let mut custom_power_syms: BTreeMap<String, (String, bool)> = BTreeMap::new();
+    let empty_hier: BTreeSet<String> = BTreeSet::new();
     if ir.views.len() <= 1 {
-        files.insert(root_file, export_kicad_sch(ir));
+        let sch = export_kicad_sheet_inner(
+            ir,
+            None,
+            None,
+            1,
+            &empty_hier,
+            Some(&mut custom_power_syms),
+        );
+        files.insert(root_file, sch);
+        attach_custom_power_project_files(&proj_slug, &custom_power_syms, &mut files);
         return files;
     }
 
+    // Collect cross-sheet non-power/non-ground signal nets that have `global_flag` terminals on >= 2 sheets.
+    // These become true KiCad 9 hierarchical sheet pins wired cleanly on the root sheet!
+    let mut net_to_sheets: BTreeMap<String, BTreeSet<usize>> = BTreeMap::new();
+    let view_idx_by_id: BTreeMap<&str, usize> = ir
+        .views
+        .iter()
+        .enumerate()
+        .map(|(i, v)| (v.id.as_str(), i))
+        .collect();
+    let mut global_power_rails: BTreeSet<String> = BTreeSet::new();
+    let mut global_gnd_rails: BTreeSet<String> = BTreeSet::new();
+    for route in &ir.schematic_routes {
+        if route.is_ground {
+            global_gnd_rails.insert(route.net_id.clone());
+        } else if route.is_power {
+            global_power_rails.insert(route.net_id.clone());
+        }
+        if route.is_power || route.is_ground {
+            continue;
+        }
+        let has_flag = route.terminals.iter().any(|t| t.kind == "global_flag");
+        if !has_flag {
+            continue;
+        }
+        if let Some(s_id) = route.sheet.as_deref() {
+            if let Some(&v_idx) = view_idx_by_id.get(s_id) {
+                net_to_sheets.entry(route.net_id.clone()).or_default().insert(v_idx);
+            }
+        }
+    }
+    let hier_signal_nets: BTreeSet<String> = net_to_sheets
+        .iter()
+        .filter(|(_, sheets)| sheets.len() >= 2)
+        .map(|(net, _)| net.clone())
+        .collect();
+
+    // Partition hierarchical nets into:
+    //  - Horizontal top-row peer nets (ONLY connecting Sheet 0 and Sheet 1 in a 2x2 layout)
+    //  - Horizontal bottom-row peer nets (ONLY connecting Sheet 2 and Sheet 3 in a 2x2 layout)
+    //  - Central horizontal bus nets (all other multi-sheet nets: top<->bottom or 3+ sheets)
+    let is_2x2 = ir.views.len() <= 4;
+    let cols_per_row = if is_2x2 { 2 } else { 3 };
+    let mut top_horiz_nets: Vec<String> = Vec::new();
+    let mut bot_horiz_nets: Vec<String> = Vec::new();
+    let mut bus_nets: Vec<String> = Vec::new();
+    for net in &hier_signal_nets {
+        let sheets = &net_to_sheets[net];
+        if is_2x2 && sheets.len() == 2 && sheets.contains(&0) && sheets.contains(&1) {
+            top_horiz_nets.push(net.clone());
+        } else if is_2x2 && sheets.len() == 2 && sheets.contains(&2) && sheets.contains(&3) {
+            bot_horiz_nets.push(net.clone());
+        } else {
+            bus_nets.push(net.clone());
+        }
+    }
+
+    // Choose generous A3 or A2 landscape canvas for clean hierarchical root wiring
+    let use_a2 = !is_2x2 || bus_nets.len() > 8;
+    let (paper_str, sheet_w, sheet_h) = if use_a2 {
+        ("A2", 594.0_f64, 420.0_f64)
+    } else {
+        ("A3", 420.0_f64, 297.0_f64)
+    };
+    let snap254 = |v: f64| -> f64 { (v / 2.54).round() * 2.54 };
+
+    // Compute clean 2x2 (or 3xN) sheet boxes with generous central horizontal bus corridor
+    // and >= 56mm bottom clearance so bottom-row sheets NEVER touch the title block or legend box!
+    let margin_x = if use_a2 { 35.56 } else { 25.40 };
+    let top_y = if use_a2 { 45.72 } else { 35.56 };
+    let bus_corridor_h = snap254(((bus_nets.len().max(4) as f64) * 5.08 + 25.40).max(45.72));
+    let box_w = if is_2x2 {
+        snap254(if use_a2 { 218.44 } else { 152.40 })
+    } else {
+        snap254(152.40)
+    };
+    let gap_x = if is_2x2 {
+        snap254(sheet_w - 2.0 * margin_x - 2.0 * box_w).max(50.80)
+    } else {
+        snap254(35.56)
+    };
+    let rows_total = (ir.views.len() + cols_per_row - 1) / cols_per_row;
+    let bottom_reserve = if use_a2 { 60.96 } else { 55.88 };
+    let box_h = if rows_total <= 2 {
+        snap254(((sheet_h - top_y - bottom_reserve - bus_corridor_h) / 2.0).clamp(55.88, 101.60))
+    } else {
+        snap254(60.96)
+    };
+
+    let sheet_rect = |idx: usize| -> (f64, f64, f64, f64) {
+        let col = idx % cols_per_row;
+        let row = idx / cols_per_row;
+        let sx = snap254(margin_x + (col as f64) * (box_w + gap_x));
+        let sy = if row == 0 {
+            top_y
+        } else {
+            snap254(top_y + box_h + bus_corridor_h + ((row - 1) as f64) * (box_h + 30.48))
+        };
+        (sx, sy, box_w, box_h)
+    };
+
+    // Assign exact pin coordinates `(net, x, y, angle)` on each sheet box
+    // KiCad 9 sheet pin angles: right = 0, left = 180, top = 90, bottom = 270.
+    let mut sheet_pins: Vec<Vec<(String, f64, f64, i32)>> = vec![Vec::new(); ir.views.len()];
+    // Track per-net pin points to wire on the root sheet
+    let mut root_wire_segs: Vec<((f64, f64), (f64, f64))> = Vec::new();
+    let mut root_pin_pts: Vec<(f64, f64)> = Vec::new();
+    let mut root_junctions: Vec<(f64, f64)> = Vec::new();
+
+    // 1. Direct horizontal top-row connections (Sheet 0 right -> Sheet 1 left)
+    if !top_horiz_nets.is_empty() {
+        let (s0x, s0y, s0w, s0h) = sheet_rect(0);
+        let (s1x, _, _, _) = sheet_rect(1);
+        let pitch = snap254(((s0h - 20.32) / (top_horiz_nets.len() as f64 + 1.0)).clamp(5.08, 12.70));
+        let start_y = snap254(s0y + 15.24);
+        for (i, net) in top_horiz_nets.iter().enumerate() {
+            let py = snap254(start_y + (i as f64) * pitch);
+            let p0 = (s0x + s0w, py);
+            let p1 = (s1x, py);
+            sheet_pins[0].push((net.clone(), p0.0, p0.1, 0));
+            sheet_pins[1].push((net.clone(), p1.0, p1.1, 180));
+            root_pin_pts.push(p0);
+            root_pin_pts.push(p1);
+            root_wire_segs.push((p0, p1));
+        }
+    }
+
+    // 2. Direct horizontal bottom-row connections (Sheet 2 right -> Sheet 3 left)
+    if !bot_horiz_nets.is_empty() && ir.views.len() >= 4 {
+        let (s2x, s2y, s2w, s2h) = sheet_rect(2);
+        let (s3x, _, _, _) = sheet_rect(3);
+        let pitch = snap254(((s2h - 20.32) / (bot_horiz_nets.len() as f64 + 1.0)).clamp(5.08, 12.70));
+        let start_y = snap254(s2y + 15.24);
+        for (i, net) in bot_horiz_nets.iter().enumerate() {
+            let py = snap254(start_y + (i as f64) * pitch);
+            let p0 = (s2x + s2w, py);
+            let p1 = (s3x, py);
+            sheet_pins[2].push((net.clone(), p0.0, p0.1, 0));
+            sheet_pins[3].push((net.clone(), p1.0, p1.1, 180));
+            root_pin_pts.push(p0);
+            root_pin_pts.push(p1);
+            root_wire_segs.push((p0, p1));
+        }
+    }
+
+    // 3. Central horizontal bus connections (top-row bottom edge `270` <-> bottom-row top edge `90`)
+    // Allocate clean X slots per sheet edge using EVEN/ODD 2.54mm grid parity between top-row
+    // and bottom-row sheets so no top-row vertical drop can EVER collide with a bottom-row drop!
+    let mut edge_slots: BTreeMap<(usize, String), (f64, f64, i32)> = BTreeMap::new();
+    let mut max_edge_pins = 0usize;
+    for s_idx in 0..ir.views.len() {
+        let c = bus_nets.iter().filter(|n| net_to_sheets[*n].contains(&s_idx)).count();
+        max_edge_pins = max_edge_pins.max(c);
+    }
+    let _ = max_edge_pins;
+    for s_idx in 0..ir.views.len() {
+        let nets_here: Vec<&String> = bus_nets
+            .iter()
+            .filter(|n| net_to_sheets[*n].contains(&s_idx))
+            .collect();
+        if nets_here.is_empty() {
+            continue;
+        }
+        let (sx, sy, sw, sh) = sheet_rect(s_idx);
+        let row = s_idx / cols_per_row;
+        let (py, angle) = if row == 0 {
+            (sy + sh, 270) // Bottom edge of top-row sheet
+        } else {
+            (sy, 90) // Top edge of bottom-row sheet
+        };
+        let usable_w = (sw - 15.24).max(25.40);
+        // Always use an EVEN multiple of 2.54mm (5.08, 10.16, ...) for pitch, and offset
+        // bottom-row sheets by +2.54mm so top drops lie on EVEN grid columns and bottom drops
+        // lie strictly on ODD grid columns (0 vertical overlaps guaranteed!).
+        let raw_step_254 = (usable_w / (nets_here.len() as f64 + 1.0) / 2.54).floor() as i32;
+        let step_254 = ((raw_step_254 / 2) * 2).clamp(2, 4);
+        let pitch = (step_254 as f64) * 2.54;
+        let base_col_254 = ((sx + 10.16) / 2.54).round() as i32;
+        let even_base = if base_col_254 % 2 == 0 { base_col_254 } else { base_col_254 + 1 };
+        let parity_offset = if row == 0 { 0 } else { 1 };
+        let start_x = ((even_base + parity_offset) as f64) * 2.54;
+        for (k, net) in nets_here.iter().enumerate() {
+            let px = start_x + (k as f64) * pitch;
+            sheet_pins[s_idx].push(((*net).clone(), px, py, angle));
+            edge_slots.insert((s_idx, (*net).clone()), (px, py, angle));
+            root_pin_pts.push((px, py));
+        }
+    }
+    let bus_y_start = snap254(top_y + box_h + 10.16);
+    for (n_idx, net) in bus_nets.iter().enumerate() {
+        let mut pts: Vec<(f64, f64)> = net_to_sheets[net]
+            .iter()
+            .filter_map(|&si| edge_slots.get(&(si, net.clone())).map(|&(x, y, _)| (x, y)))
+            .collect();
+        if pts.len() < 2 {
+            continue;
+        }
+        pts.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        let track_y = snap254(bus_y_start + (n_idx as f64) * 5.08);
+        let min_x = pts.first().unwrap().0;
+        let max_x = pts.last().unwrap().0;
+        if (max_x - min_x).abs() > 0.01 {
+            root_wire_segs.push(((min_x, track_y), (max_x, track_y)));
+        }
+        for &(px, py) in &pts {
+            if (py - track_y).abs() > 0.01 {
+                root_wire_segs.push(((px, py), (px, track_y)));
+            }
+            // Emit junction dot on interior horizontal bus taps
+            if (px - min_x).abs() > 0.01 && (px - max_x).abs() > 0.01 {
+                root_junctions.push((px, track_y));
+            }
+        }
+    }
+
+    // Split all root wires at every interior pin and junction coordinate (mandatory for KiCad 9 connectivity!)
+    let mut split_pts: Vec<(f64, f64)> = root_pin_pts.clone();
+    split_pts.extend(root_junctions.iter().copied());
+    for &(a, b) in &root_wire_segs {
+        split_pts.push(a);
+        split_pts.push(b);
+    }
+    let final_root_wires = split_orthogonal_wires(&root_wire_segs, &split_pts);
+
+    // Emit Root Sheet `.kicad_sch`
     let root_uuid = det_uuid("root", &ir.project.name);
     let mut root = String::new();
     let _ = writeln!(root, "(kicad_sch");
     let _ = writeln!(root, "  (version 20231120)");
     let _ = writeln!(root, "  (generator \"edl\")");
-    let _ = writeln!(root, "  (generator_version \"3.5.0\")");
+    let _ = writeln!(root, "  (generator_version \"3.6.0\")");
     let _ = writeln!(root, "  (uuid \"{root_uuid}\")");
-    let _ = writeln!(root, "  (paper \"A4\")");
+    let _ = writeln!(root, "  (paper \"{paper_str}\")");
     let _ = writeln!(root, "  (title_block");
     let _ = writeln!(root, "    (title \"{} - Root Hierarchy\")", escape_sexpr(&ir.project.name));
-    let _ = writeln!(root, "    (comment 1 \"Generated by EDL v3.5.0 ({} sheets)\")", ir.views.len());
+    let _ = writeln!(
+        root,
+        "    (comment 1 \"Generated by EDL v3.6.0 ({} sheets, {} inter-sheet signals)\")",
+        ir.views.len(),
+        hier_signal_nets.len()
+    );
     let _ = writeln!(root, "  )");
     let _ = writeln!(root, "  (lib_symbols)");
 
-    let cols_per_row = if ir.views.len() <= 4 { 2 } else { 3 };
+    // Top System Hierarchy Banner
+    let banner_u = det_uuid("root_banner", &ir.project.name);
+    let _ = writeln!(
+        root,
+        "  (text \"{} — SYSTEM HIERARCHY\" (exclude_from_sim no) (at {:.2} {:.2} 0) (effects (font (size 3.048 3.048) (bold yes) (color 30 58 138 1))) (uuid \"{banner_u}\"))",
+        escape_sexpr(&ir.project.name.replace('_', " ").to_ascii_uppercase()),
+        snap254(sheet_w * 0.5),
+        snap254(top_y - 15.24)
+    );
+
+    // Optional Power & Galvanic Isolation Domain Legend Box (cleanly below Sheet 3, clear of title block!)
+    if !global_power_rails.is_empty() || !global_gnd_rails.is_empty() {
+        let pwr_list: Vec<&str> = global_power_rails.iter().map(|s| s.as_str()).take(10).collect();
+        let gnd_list: Vec<&str> = global_gnd_rails.iter().map(|s| s.as_str()).take(6).collect();
+        let legend_x = margin_x;
+        let legend_y = snap254(sheet_h - 43.18);
+        let legend_w = snap254(if use_a2 { 279.40 } else { 203.20 });
+        let legend_h = 25.40_f64;
+        let lru = det_uuid("root_legend_rect", &ir.project.name);
+        let ltu = det_uuid("root_legend_txt", &ir.project.name);
+        let _ = writeln!(
+            root,
+            "  (rectangle (start {:.2} {:.2}) (end {:.2} {:.2}) (stroke (width 0.25) (type solid) (color 153 27 27 0.85)) (fill (type color) (color 254 242 242 0.7)) (uuid \"{lru}\"))",
+            legend_x, legend_y, legend_x + legend_w, legend_y + legend_h
+        );
+        let legend_body = format!(
+            "GLOBAL POWER & ISOLATION DOMAINS\nPower Rails: {}\nGround Domains ({}): {}",
+            if pwr_list.is_empty() { "None".to_string() } else { pwr_list.join(", ") },
+            gnd_list.len(),
+            if gnd_list.is_empty() { "None".to_string() } else { gnd_list.join("  |  ") },
+        );
+        let _ = writeln!(
+            root,
+            "  (text \"{}\" (exclude_from_sim no) (at {:.2} {:.2} 0) (effects (font (size 1.524 1.524) (color 127 29 29 1)) (justify left top)) (uuid \"{ltu}\"))",
+            escape_sexpr(&legend_body),
+            legend_x + 5.08,
+            legend_y + 3.81
+        );
+    }
+
+    // Emit root inter-sheet wires and junctions
+    for (wi, &(p0, p1)) in final_root_wires.iter().enumerate() {
+        let wu = det_uuid("root_wire", &format!("{wi}_{:.2}_{:.2}_{:.2}_{:.2}", p0.0, p0.1, p1.0, p1.1));
+        let _ = writeln!(
+            root,
+            "  (wire (pts (xy {:.2} {:.2}) (xy {:.2} {:.2})) (stroke (width 0) (type default)) (uuid \"{wu}\"))",
+            p0.0, p0.1, p1.0, p1.1
+        );
+    }
+    let mut seen_j: BTreeSet<(i64, i64)> = BTreeSet::new();
+    for (ji, &(jx, jy)) in root_junctions.iter().enumerate() {
+        let key = ((jx * 100.0).round() as i64, (jy * 100.0).round() as i64);
+        if !seen_j.insert(key) {
+            continue;
+        }
+        let ju = det_uuid("root_junc", &format!("{ji}_{jx:.2}_{jy:.2}"));
+        let _ = writeln!(
+            root,
+            "  (junction (at {:.2} {:.2}) (diameter 0) (color 0 0 0 0) (uuid \"{ju}\"))",
+            jx, jy
+        );
+    }
+
+    // Emit sheet blocks (with explicit hierarchical pins!) and child `.kicad_sch` files
+    let mut sheet_instance_entries: Vec<(String, usize)> = Vec::new();
     for (idx, view) in ir.views.iter().enumerate() {
         let sheet_uuid = det_uuid("sheet_box", &view.id);
         let fname = format!("{}.kicad_sch", sanitize_filename(&view.id));
-        let col = idx % cols_per_row;
-        let row = idx / cols_per_row;
-        let sx = 30.48 + (col as f64) * 114.30;
-        let sy = 35.56 + (row as f64) * 63.50;
-        let box_w = 96.52_f64;
-        let box_h = 40.64_f64;
+        let (sx, sy, bw, bh) = sheet_rect(idx);
         let n_comps = ir
             .entities
             .iter()
@@ -152,55 +455,268 @@ pub fn export_kicad_project(ir: &CanonicalIr) -> BTreeMap<String, String> {
             .count();
         let _ = writeln!(root, "  (sheet");
         let _ = writeln!(root, "    (at {sx:.2} {sy:.2})");
-        let _ = writeln!(root, "    (size {box_w:.2} {box_h:.2})");
+        let _ = writeln!(root, "    (size {bw:.2} {bh:.2})");
         let _ = writeln!(root, "    (fields_autoplaced yes)");
-        let _ = writeln!(root, "    (stroke (width 0.25) (type solid) (color 37 99 235 1))");
+        let _ = writeln!(root, "    (stroke (width 0.30) (type solid) (color 37 99 235 1))");
         let _ = writeln!(root, "    (fill (color 239 246 255 0.65))");
         let _ = writeln!(root, "    (uuid \"{sheet_uuid}\")");
+        // Place Sheetname & Sheetfile on edges FREE of hierarchical pins so labels never overlap wires!
+        let row = idx / cols_per_row;
+        let (name_x, name_y, name_just, file_x, file_y, file_just) = if row == 0 {
+            // Top-row sheets have pins on bottom edge -> put BOTH Sheetname (left) & Sheetfile (right) cleanly ABOVE top edge!
+            (sx, sy - 1.52, "left bottom", sx + bw, sy - 1.52, "right bottom")
+        } else {
+            // Bottom-row sheets have pins on top edge -> put BOTH Sheetname (left) & Sheetfile (right) cleanly BELOW bottom edge!
+            (sx, sy + bh + 1.52, "left top", sx + bw, sy + bh + 1.52, "right top")
+        };
         let _ = writeln!(
             root,
-            "    (property \"Sheetname\" \"{}\" (at {sx:.2} {:.2} 0) (effects (font (size 1.524 1.524) (bold yes)) (justify left bottom)))",
+            "    (property \"Sheetname\" \"{}\" (at {name_x:.2} {name_y:.2} 0) (effects (font (size 2.032 2.032) (bold yes) (color 29 78 216 1)) (justify {name_just})))",
             escape_sexpr(&view.id),
-            sy - 1.27
         );
         let _ = writeln!(
             root,
-            "    (property \"Sheetfile\" \"{}\" (at {sx:.2} {:.2} 0) (effects (font (size 1.27 1.27)) (justify left top)))",
+            "    (property \"Sheetfile\" \"{}\" (at {file_x:.2} {file_y:.2} 0) (effects (font (size 1.27 1.27) (color 71 85 105 1)) (justify {file_just})))",
             escape_sexpr(&fname),
-            sy + box_h + 1.27
         );
+        for (p_idx, (pname, px, py, pang)) in sheet_pins[idx].iter().enumerate() {
+            let spu = det_uuid("root_spin", &format!("{}_{p_idx}_{pname}", view.id));
+            let just = match pang {
+                0 => "right",
+                180 => "left",
+                90 => "left",
+                270 => "right",
+                _ => "left",
+            };
+            let _ = writeln!(
+                root,
+                "    (pin \"{}\" bidirectional (at {px:.2} {py:.2} {pang}) (effects (font (size 1.27 1.27)) (justify {just})) (uuid \"{spu}\"))",
+                escape_sexpr(pname)
+            );
+        }
         let _ = writeln!(root, "    (instances");
         let _ = writeln!(root, "      (project \"{}\"", escape_sexpr(&ir.project.name));
         let _ = writeln!(root, "        (path \"/{root_uuid}\" (page \"{}\"))", idx + 2);
         let _ = writeln!(root, "      )");
         let _ = writeln!(root, "    )");
         let _ = writeln!(root, "  )");
+
+        // Rich inside-box summary card (sheet title, component/net count, paper size, zone names)
         let info_title = view.title.as_deref().unwrap_or(&view.id);
+        let zone_names: Vec<&str> = ir
+            .schematic_groups
+            .iter()
+            .filter(|g| g.sheet.as_deref() == Some(view.id.as_str()))
+            .map(|g| g.name.as_str())
+            .take(5)
+            .collect();
+        let summary_text = if zone_names.is_empty() {
+            format!("{info_title}\n{n_comps} components | {n_nets} nets | {}", view.sheet)
+        } else {
+            format!(
+                "{info_title}\n{n_comps} components | {n_nets} nets | {}\nZones: {}",
+                view.sheet,
+                zone_names.join(", ")
+            )
+        };
         let itu = det_uuid("root_sheet_info", &view.id);
+        let text_y = if row == 0 {
+            sy + 6.35
+        } else {
+            sy + 22.86
+        };
         let _ = writeln!(
             root,
-            "  (text \"{}\\n{} components | {} nets | {}\" (exclude_from_sim no) (at {:.2} {:.2} 0) (effects (font (size 1.27 1.27) (color 30 41 59 1)) (justify left top)) (uuid \"{itu}\"))",
-            escape_sexpr(info_title),
-            n_comps,
-            n_nets,
-            escape_sexpr(&view.sheet),
-            sx + 3.81,
-            sy + 5.08
+            "  (text \"{}\" (exclude_from_sim no) (at {:.2} {:.2} 0) (effects (font (size 1.524 1.524) (color 30 41 59 1)) (justify left top)) (uuid \"{itu}\"))",
+            escape_sexpr(&summary_text),
+            sx + 5.08,
+            text_y
         );
 
         let hier_path = format!("/{root_uuid}/{sheet_uuid}");
+        sheet_instance_entries.push((format!("/{sheet_uuid}"), idx + 2));
         files.insert(
             fname,
-            export_kicad_sheet(ir, Some(&view.id), Some(&hier_path), idx + 2),
+            export_kicad_sheet_inner(
+                ir,
+                Some(&view.id),
+                Some(&hier_path),
+                idx + 2,
+                &hier_signal_nets,
+                Some(&mut custom_power_syms),
+            ),
         );
     }
 
     let _ = writeln!(root, "  (sheet_instances");
     let _ = writeln!(root, "    (path \"/\" (page \"1\"))");
+    for (spath, pnum) in &sheet_instance_entries {
+        let _ = writeln!(root, "    (path \"{spath}\" (page \"{pnum}\"))");
+    }
     let _ = writeln!(root, "  )");
     let _ = writeln!(root, ")");
     files.insert(root_file, root);
+    attach_custom_power_project_files(&proj_slug, &custom_power_syms, &mut files);
     files
+}
+
+fn attach_custom_power_project_files(
+    proj_slug: &str,
+    custom_power_syms: &BTreeMap<String, (String, bool)>,
+    files: &mut BTreeMap<String, String>,
+) {
+    if custom_power_syms.is_empty() {
+        return;
+    }
+    // Emit minimal KiCad 9 `.kicad_pro` so `${KIPRJMOD}` resolves cleanly in kicad-cli & KiCad GUI
+    let pro_name = format!("{proj_slug}.kicad_pro");
+    let pro_content = format!(
+        "{{\n  \"meta\": {{\n    \"filename\": \"{pro_name}\",\n    \"version\": 1\n  }},\n  \"schematic\": {{\n    \"drawing\": {{\n      \"default_line_thickness\": 6.0\n    }}\n  }}\n}}\n"
+    );
+    files.insert(pro_name, pro_content);
+    let mut lib = String::new();
+    let _ = writeln!(lib, "(kicad_symbol_lib");
+    let _ = writeln!(lib, "  (version 20231120)");
+    let _ = writeln!(lib, "  (generator \"edl\")");
+    let _ = writeln!(lib, "  (generator_version \"3.6.0\")");
+    for (sym_id, (net_label, is_gnd)) in custom_power_syms {
+        lib.push_str(&format_custom_power_symbol(None, sym_id, net_label, *is_gnd, "  "));
+    }
+    let _ = writeln!(lib, ")");
+    files.insert("edl_power.kicad_sym".to_string(), lib);
+
+    let sym_table = "(sym_lib_table\n  (version 7)\n  (lib (name \"edl_power\")(type \"KiCad\")(uri \"${KIPRJMOD}/edl_power.kicad_sym\")(options \"\")(descr \"EDL custom and isolated power symbols\"))\n)\n";
+    files.insert("sym-lib-table".to_string(), sym_table.to_string());
+}
+
+fn format_custom_power_symbol(
+    lib_prefix: Option<&str>,
+    sym_id_raw: &str,
+    net_label: &str,
+    is_gnd: bool,
+    indent: &str,
+) -> String {
+    let esc = escape_sexpr(net_label);
+    let sym_id = escape_sexpr(sym_id_raw);
+    let full_name = match lib_prefix {
+        Some(lp) => format!("{lp}:{sym_id}"),
+        None => sym_id.clone(),
+    };
+    let mut s = String::new();
+    let _ = writeln!(s, "{indent}(symbol \"{full_name}\"");
+    let _ = writeln!(s, "{indent}  (power)");
+    let _ = writeln!(s, "{indent}  (pin_numbers hide)");
+    let _ = writeln!(s, "{indent}  (pin_names (offset 0) hide)");
+    let _ = writeln!(s, "{indent}  (exclude_from_sim no)");
+    let _ = writeln!(s, "{indent}  (in_bom no)");
+    let _ = writeln!(s, "{indent}  (on_board no)");
+    if is_gnd {
+        let _ = writeln!(
+            s,
+            "{indent}  (property \"Reference\" \"#PWR\" (at 0 -6.35 0) (effects (font (size 1.27 1.27)) (hide yes)))"
+        );
+        let _ = writeln!(
+            s,
+            "{indent}  (property \"Value\" \"{esc}\" (at 0 -3.81 0) (effects (font (size 1.27 1.27))))"
+        );
+    } else {
+        let _ = writeln!(
+            s,
+            "{indent}  (property \"Reference\" \"#PWR\" (at 0 -3.81 0) (effects (font (size 1.27 1.27)) (hide yes)))"
+        );
+        let _ = writeln!(
+            s,
+            "{indent}  (property \"Value\" \"{esc}\" (at 0 3.556 0) (effects (font (size 1.27 1.27))))"
+        );
+    }
+    let _ = writeln!(
+        s,
+        "{indent}  (property \"Footprint\" \"\" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))"
+    );
+    let _ = writeln!(
+        s,
+        "{indent}  (property \"Datasheet\" \"\" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))"
+    );
+    let _ = writeln!(s, "{indent}  (symbol \"{sym_id}_0_1\"");
+    if is_gnd {
+        let _ = writeln!(
+            s,
+            "{indent}    (polyline (pts (xy 0 0) (xy 0 -1.27) (xy 1.27 -1.27) (xy 0 -2.54) (xy -1.27 -1.27) (xy 0 -1.27)) (stroke (width 0) (type default)) (fill (type none)))"
+        );
+    } else {
+        let _ = writeln!(
+            s,
+            "{indent}    (polyline (pts (xy -0.762 1.27) (xy 0 2.54)) (stroke (width 0) (type default)) (fill (type none)))"
+        );
+        let _ = writeln!(
+            s,
+            "{indent}    (polyline (pts (xy 0 2.54) (xy 0.762 1.27)) (stroke (width 0) (type default)) (fill (type none)))"
+        );
+        let _ = writeln!(
+            s,
+            "{indent}    (polyline (pts (xy 0 0) (xy 0 2.54)) (stroke (width 0) (type default)) (fill (type none)))"
+        );
+    }
+    let _ = writeln!(s, "{indent}  )");
+    let _ = writeln!(s, "{indent}  (symbol \"{sym_id}_1_1\"");
+    let pin_rot = if is_gnd { 270 } else { 90 };
+    let _ = writeln!(
+        s,
+        "{indent}    (pin power_in line (at 0 0 {pin_rot}) (length 0) (name \"{esc}\" (effects (font (size 1.27 1.27)))) (number \"1\" (effects (font (size 1.27 1.27)))))"
+    );
+    let _ = writeln!(s, "{indent}  )");
+    let _ = writeln!(s, "{indent})");
+    s
+}
+
+/// Split horizontal/vertical orthogonal wires at every interior split point (pin/junction)
+/// so KiCad 9's strict segment-endpoint connectivity engine connects every tap cleanly.
+fn split_orthogonal_wires(
+    segs: &[((f64, f64), (f64, f64))],
+    pts: &[(f64, f64)],
+) -> Vec<((f64, f64), (f64, f64))> {
+    const EPS: f64 = 0.02;
+    let mut out = Vec::new();
+    for &(a, b) in segs {
+        if (a.1 - b.1).abs() < EPS {
+            let y = a.1;
+            let (x0, x1) = (a.0.min(b.0), a.0.max(b.0));
+            if x1 - x0 < EPS {
+                continue;
+            }
+            let mut xs = vec![x0, x1];
+            for &(px, py) in pts {
+                if (py - y).abs() < EPS && px > x0 + EPS && px < x1 - EPS {
+                    xs.push(px);
+                }
+            }
+            xs.sort_by(|u, v| u.partial_cmp(v).unwrap());
+            xs.dedup_by(|u, v| (*u - *v).abs() < EPS);
+            for w in xs.windows(2) {
+                out.push(((w[0], y), (w[1], y)));
+            }
+        } else if (a.0 - b.0).abs() < EPS {
+            let x = a.0;
+            let (y0, y1) = (a.1.min(b.1), a.1.max(b.1));
+            if y1 - y0 < EPS {
+                continue;
+            }
+            let mut ys = vec![y0, y1];
+            for &(px, py) in pts {
+                if (px - x).abs() < EPS && py > y0 + EPS && py < y1 - EPS {
+                    ys.push(py);
+                }
+            }
+            ys.sort_by(|u, v| u.partial_cmp(v).unwrap());
+            ys.dedup_by(|u, v| (*u - *v).abs() < EPS);
+            for w in ys.windows(2) {
+                out.push(((x, w[0]), (x, w[1])));
+            }
+        } else {
+            out.push((a, b));
+        }
+    }
+    out
 }
 
 fn sanitize_filename(s: &str) -> String {
@@ -214,6 +730,18 @@ pub fn export_kicad_sheet(
     sheet_name: Option<&str>,
     hier_path: Option<&str>,
     page_num: usize,
+) -> String {
+    let empty_hier = BTreeSet::new();
+    export_kicad_sheet_inner(ir, sheet_name, hier_path, page_num, &empty_hier, None)
+}
+
+fn export_kicad_sheet_inner(
+    ir: &CanonicalIr,
+    sheet_name: Option<&str>,
+    hier_path: Option<&str>,
+    page_num: usize,
+    hier_signal_nets: &BTreeSet<String>,
+    mut custom_power_collector: Option<&mut BTreeMap<String, (String, bool)>>,
 ) -> String {
     // Option-A Explicit Geometric Mode: emit 100% lossless KiCad 9 schematic preserving
     // verbatim `lib_symbols`, exact coordinates/rotations/mirrors, multi-unit ICs, buses & wires!
@@ -327,12 +855,12 @@ pub fn export_kicad_sheet(
     let _ = writeln!(out, "(kicad_sch");
     let _ = writeln!(out, "  (version 20231120)");
     let _ = writeln!(out, "  (generator \"edl\")");
-    let _ = writeln!(out, "  (generator_version \"3.5.0\")");
+    let _ = writeln!(out, "  (generator_version \"3.6.0\")");
     let _ = writeln!(out, "  (uuid \"{root_uuid}\")");
     let _ = writeln!(out, "  (paper \"{paper}\")");
     let _ = writeln!(out, "  (title_block");
     let _ = writeln!(out, "    (title \"{}\")", escape_sexpr(sheet_title));
-    let _ = writeln!(out, "    (comment 1 \"Generated by EDL v3.5.0\")");
+    let _ = writeln!(out, "    (comment 1 \"Generated by EDL v3.6.0\")");
     let _ = writeln!(out, "  )");
 
     // Identify all nets using native KiCad `(power)` symbols anywhere in the schematic project
@@ -615,8 +1143,8 @@ pub fn export_kicad_sheet(
             }
         }
     }
+    let mut sheet_custom_power_ids: BTreeSet<String> = BTreeSet::new();
     for (pnet, &is_gnd) in &sheet_power_syms {
-        let esc = escape_sexpr(pnet);
         // KiCad 9 symbol names cannot contain '/' (hierarchical net paths); sanitize symbol ID
         // while keeping the exact electrical net path on the pin name and Value property!
         let sym_id_raw = if pnet.contains('/') {
@@ -624,7 +1152,6 @@ pub fn export_kicad_sheet(
         } else {
             pnet.clone()
         };
-        let sym_id = escape_sexpr(&sym_id_raw);
         let full_pwr_id = format!("power:{sym_id_raw}");
         if !pnet.contains('/') {
             if let Some(raw_pwr) = crate::domains::elec::kicad_sym::load_raw_symbol_sexpr(&full_pwr_id, &[]) {
@@ -635,72 +1162,28 @@ pub fn export_kicad_sheet(
                 continue;
             }
         }
-        emitted_lib_ids.insert(full_pwr_id);
-        let _ = writeln!(out, "    (symbol \"power:{sym_id}\"");
-        let _ = writeln!(out, "      (power)");
-        let _ = writeln!(out, "      (pin_numbers hide)");
-        let _ = writeln!(out, "      (pin_names (offset 0) hide)");
-        let _ = writeln!(out, "      (exclude_from_sim no)");
-        let _ = writeln!(out, "      (in_bom no)");
-        let _ = writeln!(out, "      (on_board no)");
-        if is_gnd {
-            let _ = writeln!(
-                out,
-                "      (property \"Reference\" \"#PWR\" (at 0 -6.35 0) (effects (font (size 1.27 1.27)) (hide yes)))"
-            );
-            let _ = writeln!(
-                out,
-                "      (property \"Value\" \"{esc}\" (at 0 -3.81 0) (effects (font (size 1.27 1.27))))"
-            );
+        if let Some(coll) = custom_power_collector.as_deref_mut() {
+            // Project-dir export: emit into dedicated local `edl_power.kicad_sym` library (0 ERC warnings!)
+            coll.insert(sym_id_raw.clone(), (pnet.clone(), is_gnd));
+            sheet_custom_power_ids.insert(sym_id_raw.clone());
+            emitted_lib_ids.insert(format!("edl_power:{sym_id_raw}"));
+            out.push_str(&format_custom_power_symbol(
+                Some("edl_power"),
+                &sym_id_raw,
+                pnet,
+                is_gnd,
+                "    ",
+            ));
         } else {
-            let _ = writeln!(
-                out,
-                "      (property \"Reference\" \"#PWR\" (at 0 -3.81 0) (effects (font (size 1.27 1.27)) (hide yes)))"
-            );
-            let _ = writeln!(
-                out,
-                "      (property \"Value\" \"{esc}\" (at 0 3.556 0) (effects (font (size 1.27 1.27))))"
-            );
+            emitted_lib_ids.insert(full_pwr_id);
+            out.push_str(&format_custom_power_symbol(
+                Some("power"),
+                &sym_id_raw,
+                pnet,
+                is_gnd,
+                "    ",
+            ));
         }
-        let _ = writeln!(
-            out,
-            "      (property \"Footprint\" \"\" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))"
-        );
-        let _ = writeln!(
-            out,
-            "      (property \"Datasheet\" \"\" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))"
-        );
-        let _ = writeln!(out, "      (symbol \"{sym_id}_0_1\"");
-        if is_gnd {
-            // Official KiCad 9 GND downward triangle graphic
-            let _ = writeln!(
-                out,
-                "        (polyline (pts (xy 0 0) (xy 0 -1.27) (xy 1.27 -1.27) (xy 0 -2.54) (xy -1.27 -1.27) (xy 0 -1.27)) (stroke (width 0) (type default)) (fill (type none)))"
-            );
-        } else {
-            // Official KiCad 9 upward power supply arrow graphic
-            let _ = writeln!(
-                out,
-                "        (polyline (pts (xy -0.762 1.27) (xy 0 2.54)) (stroke (width 0) (type default)) (fill (type none)))"
-            );
-            let _ = writeln!(
-                out,
-                "        (polyline (pts (xy 0 2.54) (xy 0.762 1.27)) (stroke (width 0) (type default)) (fill (type none)))"
-            );
-            let _ = writeln!(
-                out,
-                "        (polyline (pts (xy 0 0) (xy 0 2.54)) (stroke (width 0) (type default)) (fill (type none)))"
-            );
-        }
-        let _ = writeln!(out, "      )");
-        let _ = writeln!(out, "      (symbol \"{sym_id}_1_1\"");
-        let pin_rot = if is_gnd { 270 } else { 90 };
-        let _ = writeln!(
-            out,
-            "        (pin power_in line (at 0 0 {pin_rot}) (length 0) (name \"{esc}\" (effects (font (size 1.27 1.27)))) (number \"1\" (effects (font (size 1.27 1.27)))))"
-        );
-        let _ = writeln!(out, "      )");
-        let _ = writeln!(out, "    )");
     }
     for ent in &sheet_entities {
         let EntityGeometryIr::Component {
@@ -1219,8 +1702,13 @@ pub fn export_kicad_sheet(
                 } else {
                     term.pos.y + 3.81
                 };
+                let lib_prefix = if sheet_custom_power_ids.contains(&sym_id_raw) {
+                    "edl_power"
+                } else {
+                    "power"
+                };
                 let _ = writeln!(out, "  (symbol");
-                let _ = writeln!(out, "    (lib_id \"power:{sym_id}\")");
+                let _ = writeln!(out, "    (lib_id \"{lib_prefix}:{sym_id}\")");
                 let _ = writeln!(out, "    (at {:.2} {:.2} 0)", term.pos.x, term.pos.y);
                 let _ = writeln!(out, "    (unit 1)");
                 let _ = writeln!(out, "    (exclude_from_sim no)");
@@ -1261,9 +1749,24 @@ pub fn export_kicad_sheet(
                 continue;
             }
             let lu = det_uuid("term_lbl", &format!("{sheet_key}_{r_idx}_{t_idx}_{}", term.label));
+            let use_hier = term.kind == "global_flag" && hier_signal_nets.contains(&route.net_id);
             let use_global =
                 term.kind == "global_flag" || (multi_sheet && (route.is_power || route.is_ground));
-            if use_global {
+            if use_hier {
+                let (rot, justify) = match term.dir {
+                    Side::West => (180, "right"),
+                    Side::East => (0, "left"),
+                    Side::North => (90, "left"),
+                    Side::South => (270, "right"),
+                };
+                let _ = writeln!(
+                    out,
+                    "  (hierarchical_label \"{}\" (shape bidirectional) (at {:.2} {:.2} {rot}) (fields_autoplaced yes) (effects (font (size 1.27 1.27)) (justify {justify})) (uuid \"{lu}\"))",
+                    escape_sexpr(&term.label),
+                    term.pos.x,
+                    term.pos.y
+                );
+            } else if use_global {
                 let (rot, justify) = match term.dir {
                     Side::West => (180, "right"),
                     Side::East => (0, "left"),

@@ -2116,7 +2116,18 @@ impl Parser {
                     power_rating_w = Some(w);
                 }
                 "pin" => {
-                    let (pin_name, _) = self.expect_ident("pin name")?;
+                    let (pin_name, _) = match self.peek().kind.clone() {
+                        TokenKind::Number(n, u) => {
+                            let num_s = if (n - n.round()).abs() < 1e-9 {
+                                format!("{}{u}", n.round() as i64)
+                            } else {
+                                format!("{n}{u}")
+                            };
+                            let sp = self.bump().span(&self.file);
+                            (num_s, sp)
+                        }
+                        _ => self.expect_ident_or_str("pin name")?,
+                    };
                     self.expect(TokenKind::Colon, "':'")?;
                     let (role_s, rspan) = self.expect_ident("pin role")?;
                     let role = match role_s.as_str() {

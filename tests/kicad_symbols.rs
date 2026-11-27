@@ -225,13 +225,18 @@ fn benchmark_a_vectron_120_multisheet_passes_real_kicad_9_erc() {
     assert!(ir.project.component_count >= 120, "expected >= 120 components");
     assert_eq!(ir.views.len(), 4, "expected 4 hierarchical sheets");
 
-    // Multi-sheet KiCad 9 project export emits root + 4 subsheets = 5 files
+    // Multi-sheet KiCad 9 project export emits root + 4 subsheets = 5 .kicad_sch files
+    // plus `edl_power.kicad_sym`, `sym-lib-table`, and `.kicad_pro` for custom power rails
     let files = edl::export_kicad_project(&ir);
-    assert_eq!(files.len(), 5, "files: {:?}", files.keys().collect::<Vec<_>>());
-    assert!(files.values().any(|s| s.contains("(global_label \"SDA1\"")));
-    // v2.0: native KiCad `(power)` symbols + zone `(rectangle ...)` frames directly in `.kicad_sch`
+    let sch_count = files.keys().filter(|k| k.ends_with(".kicad_sch")).count();
+    assert_eq!(sch_count, 5, "files: {:?}", files.keys().collect::<Vec<_>>());
+    assert!(files.contains_key("edl_power.kicad_sym"));
+    assert!(files.contains_key("sym-lib-table"));
+    // v3.6: cross-sheet signals become true hierarchical labels + wired root sheet pins!
+    assert!(files.values().any(|s| s.contains("(hierarchical_label \"SDA1\"") || s.contains("(global_label \"SDA1\"")));
+    // v2.0/v3.6: native KiCad `(power)` symbols (`power:` for stock, `edl_power:` for custom) + zone `(rectangle ...)` frames
     assert!(files.values().any(|s| s.contains("(lib_id \"power:GND\")")));
-    assert!(files.values().any(|s| s.contains("(lib_id \"power:V3V3_SENS\")")));
+    assert!(files.values().any(|s| s.contains("(lib_id \"edl_power:V3V3_SENS\")")));
     assert!(files.values().any(|s| s.contains("(color 37 99 235 1)")));
 
     // v2.0 senior-engineer circuit rules E7-E10 all pass cleanly on Vectron!

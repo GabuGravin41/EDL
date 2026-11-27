@@ -13,7 +13,7 @@ use std::process;
 #[command(
     name = "edl",
     version,
-    about = "Engineering Description Language (EDL) v3.2 — AI-native multi-domain intent compiler, simulator, sync, plugin registry & MCP server"
+    about = "Engineering Description Language (EDL) v3.6 — AI-native multi-domain intent compiler, simulator, sync, plugin registry & MCP server"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -103,7 +103,7 @@ enum Commands {
         #[arg(long)]
         nets: bool,
     },
-    /// Print a concise, copy-paste-ready EDL v3.5.0 domain reference guide (elec | arch | plumbing | mep_elec | sld | all)
+    /// Print a concise, copy-paste-ready EDL v3.6.0 domain reference guide (elec | arch | plumbing | mep_elec | sld | all)
     Guide {
         /// Optional domain filter (elec, arch, plumbing, mep_elec, sld, or all)
         domain: Option<String>,

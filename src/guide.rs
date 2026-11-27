@@ -4,7 +4,7 @@
 use crate::core::ir::{CanonicalIr, EntityGeometryIr};
 use std::fmt::Write;
 
-/// Return a compact, idiomatic EDL v3.5.0 reference guide for the requested domain
+/// Return a compact, idiomatic EDL v3.6.0 reference guide for the requested domain
 /// (`elec`, `arch`, `plumbing`, `mep_elec`, `sld`, or `all`).
 pub fn domain_guide(domain: Option<&str>) -> String {
     match domain.map(|s| s.to_lowercase()).as_deref() {
@@ -179,7 +179,7 @@ pub fn format_layout_inspection(
     out
 }
 
-const GUIDE_OVERVIEW: &str = r#"# EDL v3.5.0 Quick Guide (Engineering Description Language)
+const GUIDE_OVERVIEW: &str = r#"# EDL v3.6.0 Quick Guide (Engineering Description Language)
 CLI workflow:
   edl guide <elec|arch|plumbing|mep_elec|sld>  # Domain cheat sheet
   edl symbols search "<query>"                 # Search real KiCad 9 symbols

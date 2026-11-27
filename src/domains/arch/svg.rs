@@ -153,7 +153,15 @@ pub fn render_svg_with_mode(
       .fx-clear-err {{ fill: #ef4444; fill-opacity: 0.16; stroke: #dc2626; stroke-width: 1.4; stroke-dasharray: 3 3; }}
       .fx-label {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 8.2px; font-weight: 600; fill: #334155; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.4px; stroke-linejoin: round; }}
       .dim-line {{ stroke: #64748b; stroke-width: 0.9; }}
-      .dim-text {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10.5px; fill: #475569; text-anchor: middle; }}
+      .dim-tick {{ stroke: #334155; stroke-width: 1.5; stroke-linecap: round; }}
+      .dim-text {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 10px; font-weight: 600; fill: #334155; text-anchor: middle; }}
+      .tag-door-bg {{ fill: #f0fdf4; stroke: #16a34a; stroke-width: 0.85; }}
+      .tag-door-txt {{ font-family: monospace; font-size: 7.4px; font-weight: 700; fill: #15803d; text-anchor: middle; }}
+      .tag-win-bg {{ fill: #eff6ff; stroke: #2563eb; stroke-width: 0.85; }}
+      .tag-win-txt {{ font-family: monospace; font-size: 7.4px; font-weight: 700; fill: #1d4ed8; text-anchor: middle; }}
+      .ckt-tag-bg {{ fill: #ffffff; fill-opacity: 0.92; stroke: #94a3b8; stroke-width: 0.7; }}
+      .ckt-tag-l {{ font-family: monospace; font-size: 7.2px; font-weight: 700; fill: #0369a1; text-anchor: middle; }}
+      .ckt-tag-p {{ font-family: monospace; font-size: 7.2px; font-weight: 700; fill: #c2410c; text-anchor: middle; }}
       .room-dim {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9px; fill: #64748b; text-anchor: middle; }}
       .room-title {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 12px; font-weight: 700; fill: {room_title_col}; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.5px; stroke-linejoin: round; }}
       .room-sub {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 9.5px; fill: #64748b; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 2.0px; stroke-linejoin: round; }}
@@ -513,6 +521,8 @@ pub fn render_svg_with_mode(
 
     // 4. Openings (windows, passages, and doors with exact analytical SVG arcs)
     let _ = writeln!(out, r#"  <g id="openings">"#);
+    let mut door_seq = 0usize;
+    let mut win_seq = 0usize;
     for e in &ir.entities {
         let is_violated = violated_entities.contains(e.id.as_str());
         match &e.geometry {
@@ -520,6 +530,7 @@ pub fn render_svg_with_mode(
                 cutout_rect,
                 opening_segment,
             } => {
+                win_seq += 1;
                 let x = sx(cutout_rect.min_x);
                 let y = sy(cutout_rect.max_y);
                 let w = sl(cutout_rect.width());
@@ -537,16 +548,44 @@ pub fn render_svg_with_mode(
                     sx(opening_segment.p1.x),
                     sy(opening_segment.p1.y)
                 );
-                if (annotated && !mep_underlay) || is_violated {
+                if !mep_underlay || is_violated {
                     let is_horiz = cutout_rect.width() >= cutout_rect.depth();
-                    let (lx, ly) = if is_horiz {
-                        (sx(cutout_rect.center().x), sy(cutout_rect.max_y) - 6.0)
+                    let wtag = if annotated || is_violated {
+                        e.id.clone()
                     } else {
-                        // Place vertical window badge cleanly inside the room side to avoid outer dim line
-                        (sx(cutout_rect.min_x) - 28.0, sy(cutout_rect.center().y) + 3.0)
+                        format!("W{win_seq:02}")
                     };
-                    let cls = if is_violated { "badge-err" } else { "badge" };
-                    let _ = writeln!(out, r#"    <text class="{cls}" x="{lx:.2}" y="{ly:.2}">{}</text>"#, e.id);
+                    let (lx, ly) = if is_horiz {
+                        let on_top = (cutout_rect.center().y - bounds.max_y).abs()
+                            < (cutout_rect.center().y - bounds.min_y).abs();
+                        (
+                            sx(cutout_rect.center().x),
+                            if on_top { sy(cutout_rect.max_y) - 9.0 } else { sy(cutout_rect.min_y) + 11.0 },
+                        )
+                    } else {
+                        let on_right = (cutout_rect.center().x - bounds.max_x).abs()
+                            < (cutout_rect.center().x - bounds.min_x).abs();
+                        (
+                            if on_right { sx(cutout_rect.max_x) + 14.0 } else { sx(cutout_rect.min_x) - 14.0 },
+                            sy(cutout_rect.center().y) + 2.5,
+                        )
+                    };
+                    if is_violated {
+                        let _ = writeln!(out, r#"    <text class="badge-err" x="{lx:.2}" y="{ly:.2}">{wtag}</text>"#);
+                    } else {
+                        let bw = (wtag.len() as f64) * 4.8 + 7.0;
+                        let _ = writeln!(
+                            out,
+                            r#"    <polygon class="tag-win-bg" points="{:.1},{:.1} {:.1},{:.1} {:.1},{:.1} {:.1},{:.1} {:.1},{:.1} {:.1},{:.1}"/>"#,
+                            lx - bw * 0.5, ly - 2.5,
+                            lx - bw * 0.5 + 3.0, ly - 7.5,
+                            lx + bw * 0.5 - 3.0, ly - 7.5,
+                            lx + bw * 0.5, ly - 2.5,
+                            lx + bw * 0.5 - 3.0, ly + 2.5,
+                            lx - bw * 0.5 + 3.0, ly + 2.5,
+                        );
+                        let _ = writeln!(out, r#"    <text class="tag-win-txt" x="{lx:.2}" y="{ly:.2}">{wtag}</text>"#);
+                    }
                 }
             }
             EntityGeometryIr::Passage {
@@ -604,6 +643,7 @@ pub fn render_svg_with_mode(
                 swing_arc,
                 ..
             } => {
+                door_seq += 1;
                 let c = swing_arc.center;
                 let p_start = swing_arc.start_point();
                 let p_end = swing_arc.end_point();
@@ -642,23 +682,41 @@ pub fn render_svg_with_mode(
                         sl(cutout_rect.depth())
                     );
                 }
-                if (annotated && !mep_underlay) || is_violated {
+                if !mep_underlay || is_violated {
                     let mid_angle = (swing_arc.start_deg + 0.5 * swing_arc.sweep_deg).to_radians();
-                    let mx = c.x + 0.52 * swing_arc.radius * mid_angle.cos();
-                    let my = c.y + 0.52 * swing_arc.radius * mid_angle.sin();
-                    let cls = if is_violated { "badge-err" } else { "badge" };
-                    // Compact door tag in tight utility rooms to prevent overlapping room titles
-                    let short_door = if !is_violated && e.id.len() > 12 {
-                        e.id.strip_prefix("Door").unwrap_or(&e.id)
+                    let mx = c.x + 0.55 * swing_arc.radius * mid_angle.cos();
+                    let my = c.y + 0.55 * swing_arc.radius * mid_angle.sin();
+                    let dtag = if annotated || is_violated {
+                        if !is_violated && e.id.len() > 12 {
+                            e.id.strip_prefix("Door").unwrap_or(&e.id).to_string()
+                        } else {
+                            e.id.clone()
+                        }
                     } else {
-                        e.id.as_str()
+                        format!("D{door_seq:02}")
                     };
-                    let _ = writeln!(
-                        out,
-                        r#"    <text class="{cls}" x="{:.2}" y="{:.2}">{short_door}</text>"#,
-                        sx(mx),
-                        sy(my) + 3.0,
-                    );
+                    if is_violated {
+                        let _ = writeln!(
+                            out,
+                            r#"    <text class="badge-err" x="{:.2}" y="{:.2}">{dtag}</text>"#,
+                            sx(mx),
+                            sy(my) + 3.0,
+                        );
+                    } else {
+                        let px = sx(mx);
+                        let py = sy(my) + 2.5;
+                        let bw = (dtag.len() as f64) * 4.6 + 6.0;
+                        let _ = writeln!(
+                            out,
+                            r#"    <rect class="tag-door-bg" x="{:.1}" y="{:.1}" width="{bw:.1}" height="10" rx="4.5"/>"#,
+                            px - bw * 0.5,
+                            py - 7.5
+                        );
+                        let _ = writeln!(
+                            out,
+                            r#"    <text class="tag-door-txt" x="{px:.2}" y="{py:.2}">{dtag}</text>"#,
+                        );
+                    }
                 }
             }
             _ => {}
@@ -791,13 +849,18 @@ pub fn render_svg_with_mode(
                 .any(|e| matches!(e.geometry, EntityGeometryIr::MepDevice { .. })));
     if has_mep {
         let _ = writeln!(out, r#"  <g id="mep-electrical">"#);
-        // Conduit / circuit runs & switch legs
+        // Conduit / circuit runs & switch legs + crisp home-run arrowheads & circuit tags!
+        let mut ckt_longest_seg: std::collections::BTreeMap<String, (f64, f64, f64, f64, f64, bool)> =
+            std::collections::BTreeMap::new();
+        let mut ckt_homerun_drawn: std::collections::BTreeSet<String> =
+            std::collections::BTreeSet::new();
         for w in &ir.mep_wires {
             let cls = match w.run_kind.as_str() {
                 "lighting" => "mep-wire-light",
                 "switch_leg" => "mep-wire-swleg",
                 _ => "mep-wire-power",
             };
+            let is_light = w.run_kind == "lighting";
             for seg in &w.segments {
                 if w.run_kind == "switch_leg" {
                     // Drafting convention: switch legs are drawn as shallow arcs, never straight diagonals,
@@ -813,15 +876,84 @@ pub fn render_svg_with_mode(
                     );
                     continue;
                 }
+                let (x0, y0, x1, y1) = (sx(seg.p0.x), sy(seg.p0.y), sx(seg.p1.x), sy(seg.p1.y));
                 let _ = writeln!(
                     out,
-                    r#"    <line class="{cls}" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#,
-                    sx(seg.p0.x),
-                    sy(seg.p0.y),
-                    sx(seg.p1.x),
-                    sy(seg.p1.y)
+                    r#"    <line class="{cls}" x1="{x0:.2}" y1="{y0:.2}" x2="{x1:.2}" y2="{y1:.2}"/>"#
                 );
+                let len = (x1 - x0).hypot(y1 - y0);
+                // Home-run arrow pointing back toward DB on first meaningful segment leaving the panel
+                if len >= 24.0 && !w.circuit_id.is_empty() && ckt_homerun_drawn.insert(w.circuit_id.clone()) {
+                    let (ux, uy) = ((x0 - x1) / len, (y0 - y1) / len); // points toward DB (p0)
+                    let (ax, ay) = (x0 + (x1 - x0) * 0.25, y0 + (y1 - y0) * 0.25);
+                    let (bx, by) = (ax - ux * 6.5 - uy * 3.0, ay - uy * 6.5 + ux * 3.0);
+                    let (cx, cy) = (ax - ux * 6.5 + uy * 3.0, ay - uy * 6.5 - ux * 3.0);
+                    let fill = if is_light { "#0284c7" } else { "#ea580c" };
+                    let _ = writeln!(
+                        out,
+                        r#"    <polygon fill="{fill}" points="{ax:.1},{ay:.1} {bx:.1},{by:.1} {cx:.1},{cy:.1}"/>"#
+                    );
+                }
+                if !w.circuit_id.is_empty() {
+                    let entry = ckt_longest_seg
+                        .entry(w.circuit_id.clone())
+                        .or_insert((0.0, 0.0, 0.0, 0.0, 0.0, is_light));
+                    if len > entry.0 {
+                        *entry = (len, x0, y0, x1, y1, is_light);
+                    }
+                }
             }
+        }
+        // Inline circuit-ID tag pills along each circuit's longest run (one collision-free pill per circuit)
+        let mut placed_pills: Vec<(f64, f64, f64, f64)> = Vec::new();
+        for (idx, (cid, (len, x0, y0, x1, y1, is_light))) in ckt_longest_seg.iter().enumerate() {
+            if *len < 36.0 {
+                continue;
+            }
+            let short_cid = if cid.len() > 14 { &cid[..14] } else { cid.as_str() };
+            let bw = (short_cid.len() as f64) * 4.5 + 6.0;
+            let bh = 10.5_f64;
+            let base_t = match idx % 3 {
+                0 => 0.42,
+                1 => 0.58,
+                _ => 0.50,
+            };
+            let candidates = [
+                (base_t, 0.0_f64),
+                (0.28, 0.0),
+                (0.72, 0.0),
+                (base_t, -11.5),
+                (base_t, 11.5),
+                (0.22, -11.5),
+                (0.78, 11.5),
+            ];
+            let mut chosen = (x0 + (x1 - x0) * base_t, y0 + (y1 - y0) * base_t);
+            for (t, dy_off) in candidates {
+                let cx = x0 + (x1 - x0) * t;
+                let cy = y0 + (y1 - y0) * t + dy_off;
+                let (rx0, ry0, rx1, ry1) = (cx - bw * 0.5 - 2.0, cy - bh * 0.5 - 1.5, cx + bw * 0.5 + 2.0, cy + bh * 0.5 + 1.5);
+                let hits = placed_pills
+                    .iter()
+                    .any(|&(ax0, ay0, ax1, ay1)| rx0 < ax1 && rx1 > ax0 && ry0 < ay1 && ry1 > ay0);
+                if !hits {
+                    chosen = (cx, cy);
+                    break;
+                }
+            }
+            let (mx, my) = chosen;
+            placed_pills.push((mx - bw * 0.5, my - bh * 0.5, mx + bw * 0.5, my + bh * 0.5));
+            let tcls = if *is_light { "ckt-tag-l" } else { "ckt-tag-p" };
+            let _ = writeln!(
+                out,
+                r#"    <rect class="ckt-tag-bg" x="{:.1}" y="{:.1}" width="{bw:.1}" height="10" rx="2"/>"#,
+                mx - bw * 0.5,
+                my - 5.2
+            );
+            let _ = writeln!(
+                out,
+                r#"    <text class="{tcls}" x="{mx:.1}" y="{:.1}">{short_cid}</text>"#,
+                my + 2.3
+            );
         }
         // Standard IEC/AutoCAD electrical symbols
         for e in &ir.entities {
@@ -1101,6 +1233,14 @@ pub fn render_svg_with_mode(
         let dim_off = (36.0 / scale_px_per_mm).max(560.0);
         let chain_off = (16.0 / scale_px_per_mm).max(250.0);
 
+        let draw_arch_tick = |out: &mut String, tx: f64, ty: f64| {
+            let _ = writeln!(
+                out,
+                r#"    <line class="dim-tick" x1="{:.2}" y1="{:.2}" x2="{:.2}" y2="{:.2}"/>"#,
+                tx - 3.5, ty + 3.5, tx + 3.5, ty - 3.5
+            );
+        };
+
         // Overall Top dimension
         let y_dim = sy(bounds.max_y + dim_off);
         let x_l = sx(bounds.min_x);
@@ -1108,6 +1248,8 @@ pub fn render_svg_with_mode(
         let _ = writeln!(out, r#"    <line class="dim-line" x1="{x_l:.2}" y1="{y_dim:.2}" x2="{x_r:.2}" y2="{y_dim:.2}"/>"#);
         let _ = writeln!(out, r#"    <line class="dim-line" x1="{x_l:.2}" y1="{:.2}" x2="{x_l:.2}" y2="{:.2}"/>"#, y_dim - 6.0, sy(bounds.max_y) - 4.0);
         let _ = writeln!(out, r#"    <line class="dim-line" x1="{x_r:.2}" y1="{:.2}" x2="{x_r:.2}" y2="{:.2}"/>"#, y_dim - 6.0, sy(bounds.max_y) - 4.0);
+        draw_arch_tick(&mut out, x_l, y_dim);
+        draw_arch_tick(&mut out, x_r, y_dim);
         let _ = writeln!(
             out,
             r#"    <text class="dim-text" x="{:.2}" y="{:.2}">{:.0} mm ({:.2} m)</text>"#,
@@ -1124,6 +1266,8 @@ pub fn render_svg_with_mode(
         let _ = writeln!(out, r#"    <line class="dim-line" x1="{x_dim:.2}" y1="{y_t:.2}" x2="{x_dim:.2}" y2="{y_b:.2}"/>"#);
         let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{y_t:.2}" x2="{:.2}" y2="{y_t:.2}"/>"#, sx(bounds.max_x) + 4.0, x_dim + 6.0);
         let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{y_b:.2}" x2="{:.2}" y2="{y_b:.2}"/>"#, sx(bounds.max_x) + 4.0, x_dim + 6.0);
+        draw_arch_tick(&mut out, x_dim, y_t);
+        draw_arch_tick(&mut out, x_dim, y_b);
         let mid_y = 0.5 * (y_t + y_b);
         let _ = writeln!(
             out,
@@ -1175,14 +1319,14 @@ pub fn render_svg_with_mode(
                     let xa = sx(a);
                     let xb = sx(b);
                     let _ = writeln!(out, r#"    <line class="dim-line" x1="{xa:.2}" y1="{yc:.2}" x2="{xb:.2}" y2="{yc:.2}"/>"#);
-                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{xa:.2}" y1="{:.2}" x2="{xa:.2}" y2="{:.2}"/>"#, yc - 4.0, yc + 4.0);
-                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{xb:.2}" y1="{:.2}" x2="{xb:.2}" y2="{:.2}"/>"#, yc - 4.0, yc + 4.0);
+                    draw_arch_tick(&mut out, xa, yc);
+                    draw_arch_tick(&mut out, xb, yc);
                     let _ = writeln!(
                         out,
-                        r#"    <text class="dim-text" x="{:.2}" y="{:.2}">{:.2} m</text>"#,
+                        r#"    <text class="dim-text" x="{:.2}" y="{:.2}">{:.0}</text>"#,
                         0.5 * (xa + xb),
                         yc - 5.0,
-                        (b - a) / 1000.0
+                        b - a
                     );
                 }
             }
@@ -1193,14 +1337,14 @@ pub fn render_svg_with_mode(
                     let xa = sx(a);
                     let xb = sx(b);
                     let _ = writeln!(out, r#"    <line class="dim-line" x1="{xa:.2}" y1="{yc:.2}" x2="{xb:.2}" y2="{yc:.2}"/>"#);
-                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{xa:.2}" y1="{:.2}" x2="{xa:.2}" y2="{:.2}"/>"#, yc - 4.0, yc + 4.0);
-                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{xb:.2}" y1="{:.2}" x2="{xb:.2}" y2="{:.2}"/>"#, yc - 4.0, yc + 4.0);
+                    draw_arch_tick(&mut out, xa, yc);
+                    draw_arch_tick(&mut out, xb, yc);
                     let _ = writeln!(
                         out,
-                        r#"    <text class="dim-text" x="{:.2}" y="{:.2}">{:.2} m</text>"#,
+                        r#"    <text class="dim-text" x="{:.2}" y="{:.2}">{:.0}</text>"#,
                         0.5 * (xa + xb),
                         yc + 12.0,
-                        (b - a) / 1000.0
+                        b - a
                     );
                 }
             }
@@ -1212,14 +1356,14 @@ pub fn render_svg_with_mode(
                     let yb = sy(b);
                     let my = 0.5 * (ya + yb);
                     let _ = writeln!(out, r#"    <line class="dim-line" x1="{xc:.2}" y1="{ya:.2}" x2="{xc:.2}" y2="{yb:.2}"/>"#);
-                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{ya:.2}" x2="{:.2}" y2="{ya:.2}"/>"#, xc - 4.0, xc + 4.0);
-                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{yb:.2}" x2="{:.2}" y2="{yb:.2}"/>"#, xc - 4.0, xc + 4.0);
+                    draw_arch_tick(&mut out, xc, ya);
+                    draw_arch_tick(&mut out, xc, yb);
                     let _ = writeln!(
                         out,
-                        r#"    <text class="dim-text" x="{:.2}" y="{my:.2}" transform="rotate(90 {:.2} {my:.2})">{:.2} m</text>"#,
+                        r#"    <text class="dim-text" x="{:.2}" y="{my:.2}" transform="rotate(90 {:.2} {my:.2})">{:.0}</text>"#,
                         xc + 11.0,
                         xc + 11.0,
-                        (b - a) / 1000.0
+                        b - a
                     );
                 }
             }
@@ -1231,14 +1375,14 @@ pub fn render_svg_with_mode(
                     let yb = sy(b);
                     let my = 0.5 * (ya + yb);
                     let _ = writeln!(out, r#"    <line class="dim-line" x1="{xc:.2}" y1="{ya:.2}" x2="{xc:.2}" y2="{yb:.2}"/>"#);
-                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{ya:.2}" x2="{:.2}" y2="{ya:.2}"/>"#, xc - 4.0, xc + 4.0);
-                    let _ = writeln!(out, r#"    <line class="dim-line" x1="{:.2}" y1="{yb:.2}" x2="{:.2}" y2="{yb:.2}"/>"#, xc - 4.0, xc + 4.0);
+                    draw_arch_tick(&mut out, xc, ya);
+                    draw_arch_tick(&mut out, xc, yb);
                     let _ = writeln!(
                         out,
-                        r#"    <text class="dim-text" x="{:.2}" y="{my:.2}" transform="rotate(-90 {:.2} {my:.2})">{:.2} m</text>"#,
+                        r#"    <text class="dim-text" x="{:.2}" y="{my:.2}" transform="rotate(-90 {:.2} {my:.2})">{:.0}</text>"#,
                         xc - 11.0,
                         xc - 11.0,
-                        (b - a) / 1000.0
+                        b - a
                     );
                 }
             }
@@ -1246,19 +1390,93 @@ pub fn render_svg_with_mode(
     }
     let _ = writeln!(out, r#"  </g>"#);
 
-    // 7. Title block & verification status bar
-    let footer_y = svg_h - 68.0;
+    // 7. Construction-Document Title Block, Calibrated Graphic Scale Bar, North Arrow & Verification Seal
+    let tb_y = svg_h - 82.0;
+    let tb_h = 56.0;
+    let _ = writeln!(out, r#"  <g id="cd-title-block">"#);
+    // Outer title-block frame
     let _ = writeln!(
         out,
-        r##"  <line x1="28" y1="{:.1}" x2="{:.1}" y2="{:.1}" stroke="#e2e8f0" stroke-width="1"/>"##,
-        footer_y - 16.0,
-        svg_w - 28.0,
-        footer_y - 16.0
+        r##"    <rect x="26" y="{tb_y:.1}" width="{:.1}" height="{tb_h:.1}" rx="3" fill="#f8fafc" stroke="#334155" stroke-width="1.2"/>"##,
+        svg_w - 52.0
+    );
+
+    // 7a. Calibrated Graphic Scale Bar (left cell: x=26..210)
+    let sb_x = 40.0;
+    let sb_y = tb_y + 26.0;
+    // Choose a round total meters span (2m, 4m, 8m, or 16m) that draws cleanly at 90..155 px wide
+    let total_m = [2.0_f64, 4.0, 8.0, 16.0]
+        .into_iter()
+        .find(|&m| m * 1000.0 * scale_px_per_mm >= 85.0 && m * 1000.0 * scale_px_per_mm <= 165.0)
+        .unwrap_or(4.0);
+    let seg_w = (total_m * 0.25 * 1000.0 * scale_px_per_mm).clamp(18.0, 42.0);
+    let _ = writeln!(
+        out,
+        r##"    <text x="{:.1}" y="{:.1}" font-family="sans-serif" font-size="8.0" font-weight="700" fill="#475569">GRAPHIC SCALE (m)</text>"##,
+        sb_x, sb_y - 8.0
+    );
+    for seg_i in 0..4 {
+        let sx_i = sb_x + (seg_i as f64) * seg_w;
+        let fill = if seg_i % 2 == 0 { "#0f172a" } else { "#ffffff" };
+        let _ = writeln!(
+            out,
+            r##"    <rect x="{sx_i:.1}" y="{sb_y:.1}" width="{seg_w:.1}" height="6" fill="{fill}" stroke="#0f172a" stroke-width="0.9"/>"##
+        );
+    }
+    for (ti, mult) in [0.0_f64, 0.25, 0.5, 1.0].iter().enumerate() {
+        let tx = sb_x + (if ti == 3 { 4.0 } else { ti as f64 }) * seg_w;
+        let val_m = total_m * mult;
+        let lbl = if (val_m - val_m.round()).abs() < 0.01 {
+            format!("{:.0}m", val_m)
+        } else {
+            format!("{:.1}m", val_m)
+        };
+        let _ = writeln!(
+            out,
+            r##"    <text x="{tx:.1}" y="{:.1}" font-family="monospace" font-size="7.5" font-weight="600" fill="#334155" text-anchor="middle">{lbl}</text>"##,
+            sb_y + 16.0
+        );
+    }
+
+    // 7b. Crisp Compass North Arrow (x=222)
+    let na_x = (sb_x + 4.0 * seg_w + 30.0).max(205.0);
+    let na_cy = tb_y + tb_h * 0.5 + 3.0;
+    let _ = writeln!(
+        out,
+        r##"    <circle cx="{na_x:.1}" cy="{na_cy:.1}" r="14" fill="#ffffff" stroke="#334155" stroke-width="1.0"/>
+    <polygon points="{na_x:.1},{:.1} {:.1},{:.1} {na_x:.1},{:.1}" fill="#0f172a"/>
+    <polygon points="{na_x:.1},{:.1} {:.1},{:.1} {na_x:.1},{:.1}" fill="#ffffff" stroke="#0f172a" stroke-width="0.8"/>
+    <text x="{na_x:.1}" y="{:.1}" font-family="sans-serif" font-size="8.5" font-weight="800" fill="#0f172a" text-anchor="middle">N</text>"##,
+        na_cy - 11.0, na_x - 5.5, na_cy + 9.0, na_cy + 4.5,
+        na_cy - 11.0, na_x + 5.5, na_cy + 9.0, na_cy + 4.5,
+        na_cy - 16.5,
+    );
+
+    // 7c. Vertical divider & Structured Project/Discipline Title Cell
+    let info_x = na_x + 28.0;
+    let _ = writeln!(
+        out,
+        r##"    <line x1="{:.1}" y1="{tb_y:.1}" x2="{:.1}" y2="{:.1}" stroke="#94a3b8" stroke-width="1.0"/>"##,
+        info_x - 10.0, info_x - 10.0, tb_y + tb_h
+    );
+    let has_plumb = !crate::domains::mep_plumbing::render::extract_plumbing_models(ir).is_empty();
+    let discipline = match (has_mep, has_plumb) {
+        (true, true) => "COMBINED MEP COORDINATION (ARCH + ELEC + PLUMBING)",
+        (true, false) => "ELECTRICAL INSTALLATION PLAN (IEC 60364)",
+        (false, true) => "PLUMBING & DRAINAGE PLAN (EN 806 / IPC)",
+        (false, false) => "ARCHITECTURAL & STRUCTURAL FLOOR PLAN",
+    };
+    let _ = writeln!(
+        out,
+        r#"    <text class="title-text" x="{info_x:.1}" y="{:.1}">{}</text>"#,
+        tb_y + 20.0,
+        escape_xml(&ir.project.name)
     );
     let _ = writeln!(
         out,
-        r#"  <text class="title-text" x="34" y="{footer_y:.1}">EDL Plan: {}</text>"#,
-        ir.project.name
+        r##"    <text x="{info_x:.1}" y="{:.1}" font-family="sans-serif" font-size="9.2" font-weight="700" fill="#1d4ed8">{}</text>"##,
+        tb_y + 34.0,
+        escape_xml(discipline)
     );
     let scale_txt = ir
         .views
@@ -1267,8 +1485,8 @@ pub fn render_svg_with_mode(
         .unwrap_or_else(|| "A3 landscape | Scale 1:50".to_string());
     let _ = writeln!(
         out,
-        r#"  <text class="meta-text" x="34" y="{:.1}">{} | Rooms: {} | Clear Area: {:.2} m² | Openings: {} | Fixtures: {} | DOF: {}</text>"#,
-        footer_y + 18.0,
+        r#"    <text class="meta-text" style="font-size:9.5px;" x="{info_x:.1}" y="{:.1}">{} | Rooms: {} | Clear Area: {:.2} m² | Openings: {} | Fixtures: {} | DOF: {}</text>"#,
+        tb_y + 48.0,
         scale_txt,
         ir.project.room_count,
         ir.project.total_clear_area_m2,
@@ -1277,6 +1495,15 @@ pub fn render_svg_with_mode(
         ir.project.remaining_dof.len()
     );
 
+    // 7d. Verification Seal Cell (right)
+    let seal_div_x = (svg_w - 320.0).max(info_x + 360.0);
+    if seal_div_x < svg_w - 60.0 {
+        let _ = writeln!(
+            out,
+            r##"    <line x1="{seal_div_x:.1}" y1="{tb_y:.1}" x2="{seal_div_x:.1}" y2="{:.1}" stroke="#94a3b8" stroke-width="1.0"/>"##,
+            tb_y + tb_h
+        );
+    }
     if ir.project.has_errors {
         let err_count = ir
             .diagnostics
@@ -1285,31 +1512,40 @@ pub fn render_svg_with_mode(
             .count();
         let _ = writeln!(
             out,
-            r#"  <text class="status-err" x="{:.1}" y="{footer_y:.1}">VERIFICATION FAILED ({err_count} error(s))</text>"#,
-            svg_w - 34.0
+            r#"    <text class="status-err" x="{:.1}" y="{:.1}">VERIFICATION FAILED ({err_count} error(s))</text>"#,
+            svg_w - 38.0,
+            tb_y + 24.0
         );
         if let Some(first_err) = ir.diagnostics.iter().find(|d| d.severity == Severity::Error) {
             let mut msg = first_err.message.clone();
-            if msg.len() > 82 {
-                msg.truncate(79);
+            if msg.len() > 54 {
+                msg.truncate(51);
                 msg.push_str("...");
             }
             let _ = writeln!(
                 out,
-                r#"  <text class="status-err-sub" x="{:.1}" y="{:.1}">{}</text>"#,
-                svg_w - 34.0,
-                footer_y + 18.0,
+                r#"    <text class="status-err-sub" x="{:.1}" y="{:.1}">{}</text>"#,
+                svg_w - 38.0,
+                tb_y + 42.0,
                 escape_xml(&msg)
             );
         }
     } else {
         let _ = writeln!(
             out,
-            r#"  <text class="status-ok" x="{:.1}" y="{footer_y:.1}">ALL CHECKS EXACTLY_CHECKED ({} rules)</text>"#,
-            svg_w - 34.0,
+            r#"    <text class="status-ok" x="{:.1}" y="{:.1}">ALL CHECKS EXACTLY_CHECKED ({} rules)</text>"#,
+            svg_w - 38.0,
+            tb_y + 24.0,
             ir.evidence.len()
         );
+        let _ = writeln!(
+            out,
+            r##"    <text x="{:.1}" y="{:.1}" font-family="monospace" font-size="8.5" fill="#475569" text-anchor="end">EDL v3.6.0 | Units: mm | All Dims Verified</text>"##,
+            svg_w - 38.0,
+            tb_y + 42.0
+        );
     }
+    let _ = writeln!(out, r#"  </g>"#);
 
     let _ = writeln!(out, "</svg>");
     out

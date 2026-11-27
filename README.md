@@ -1,4 +1,4 @@
-# EDL — Engineering Description Language (`v3.5.0`)
+# EDL — Engineering Description Language (`v3.6.0`)
 
 An AI-native, typed, declarative language, Rust compiler, and MCP server for expressing engineering intent, enforcing hard physical/electrical/code non-negotiables (**"Rust for Engineering Schematics & MEP Plans"**), and compiling directly to native industry tools (**KiCad 9 `.kicad_sch`**, **AutoCAD R12 DXF**, **SPICE3**, **CSV Schedules/BOM**, and **layered SVG**).
 

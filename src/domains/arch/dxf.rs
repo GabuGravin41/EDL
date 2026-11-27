@@ -22,7 +22,7 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
     let _ = writeln!(out, "0\nSECTION\n2\nTABLES");
     // Registered XDATA application so AutoCAD preserves the EDL_ID tags through edits.
     let _ = writeln!(out, "0\nTABLE\n2\nAPPID\n70\n1\n0\nAPPID\n2\nEDL\n70\n0\n0\nENDTAB");
-    let _ = writeln!(out, "0\nTABLE\n2\nLAYER\n70\n22");
+    let _ = writeln!(out, "0\nTABLE\n2\nLAYER\n70\n23");
     for (name, color) in [
         ("WALLS_EXT", 7),
         ("WALLS_INT", 8),
@@ -32,6 +32,7 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
         ("PASSAGES", 9),
         ("FIXTURES", 6),
         ("ANNOTATIONS", 2),
+        ("A-ANNO-DIMS", 2),
         ("GRID_AXES", 8),
         ("GRID_BUBBLES", 7),
         ("COLUMNS", 1),
@@ -53,6 +54,11 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
         );
     }
     let _ = writeln!(out, "0\nENDTAB\n0\nENDSEC");
+
+    // Reusable AutoCAD R12 BLOCK definitions for MEP symbols & structural grid bubbles
+    let _ = writeln!(out, "0\nSECTION\n2\nBLOCKS");
+    write_dxf_symbol_blocks(&mut out);
+    let _ = writeln!(out, "0\nENDSEC");
 
     let _ = writeln!(out, "0\nSECTION\n2\nENTITIES");
 
@@ -161,25 +167,13 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
             EntityGeometryIr::MepDevice {
                 device_kind, pos, ..
             } => {
-                let layer = match device_kind.as_str() {
-                    "panel" => "ELEC_PANEL",
-                    "light" => "ELEC_LIGHTING",
-                    "switch" => "ELEC_SWITCHES",
-                    _ => "ELEC_POWER",
+                let (layer, blk) = match device_kind.as_str() {
+                    "panel" => ("ELEC_PANEL", "EDL_PANEL"),
+                    "light" => ("ELEC_LIGHTING", "EDL_LIGHT"),
+                    "switch" => ("ELEC_SWITCHES", "EDL_SWITCH"),
+                    _ => ("ELEC_POWER", "EDL_SOCKET"),
                 };
-                if device_kind == "panel" {
-                    write_rect_lines(
-                        &mut out,
-                        layer,
-                        Rect2::new(pos.x - 150.0, pos.y - 75.0, pos.x + 150.0, pos.y + 75.0),
-                    );
-                } else {
-                    write_arc(&mut out, layer, pos.x, pos.y, 85.0, 0.0, 359.9);
-                    if device_kind == "light" {
-                        write_line(&mut out, layer, pos.x - 60.0, pos.y - 60.0, pos.x + 60.0, pos.y + 60.0);
-                        write_line(&mut out, layer, pos.x - 60.0, pos.y + 60.0, pos.x + 60.0, pos.y - 60.0);
-                    }
-                }
+                write_insert(&mut out, layer, blk, pos.x, pos.y);
                 write_text(&mut out, layer, pos.x, pos.y + 110.0, 75.0, &e.id);
             }
             _ => {}
@@ -219,12 +213,12 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
         let pad = 1200.0;
         for xa in &grid.x_axes {
             write_line(&mut out, "GRID_AXES", xa.coord_mm, bounds.min_y - pad, xa.coord_mm, bounds.max_y + pad);
-            write_arc(&mut out, "GRID_BUBBLES", xa.coord_mm, bounds.min_y - pad - 250.0, 220.0, 0.0, 359.9);
+            write_insert(&mut out, "GRID_BUBBLES", "EDL_GRID_BUBBLE", xa.coord_mm, bounds.min_y - pad - 250.0);
             write_text(&mut out, "GRID_BUBBLES", xa.coord_mm - 70.0, bounds.min_y - pad - 320.0, 160.0, &xa.label);
         }
         for ya in &grid.y_axes {
             write_line(&mut out, "GRID_AXES", bounds.min_x - pad, ya.coord_mm, bounds.max_x + pad, ya.coord_mm);
-            write_arc(&mut out, "GRID_BUBBLES", bounds.min_x - pad - 250.0, ya.coord_mm, 220.0, 0.0, 359.9);
+            write_insert(&mut out, "GRID_BUBBLES", "EDL_GRID_BUBBLE", bounds.min_x - pad - 250.0, ya.coord_mm);
             write_text(&mut out, "GRID_BUBBLES", bounds.min_x - pad - 320.0, ya.coord_mm - 70.0, 160.0, &ya.label);
         }
         for col in &grid.columns {
@@ -232,10 +226,84 @@ pub fn export_dxf(ir: &CanonicalIr) -> String {
         }
     }
 
+    // Overall exterior dimension chains with 45-degree architectural ticks on `A-ANNO-DIMS`
+    if let Some(bounds) = ir.project.exterior_bounds {
+        let dim_off = 900.0;
+        let y_top = bounds.max_y + dim_off;
+        write_line(&mut out, "A-ANNO-DIMS", bounds.min_x, y_top, bounds.max_x, y_top);
+        write_line(&mut out, "A-ANNO-DIMS", bounds.min_x, bounds.max_y + 150.0, bounds.min_x, y_top + 150.0);
+        write_line(&mut out, "A-ANNO-DIMS", bounds.max_x, bounds.max_y + 150.0, bounds.max_x, y_top + 150.0);
+        write_line(&mut out, "A-ANNO-DIMS", bounds.min_x - 80.0, y_top - 80.0, bounds.min_x + 80.0, y_top + 80.0);
+        write_line(&mut out, "A-ANNO-DIMS", bounds.max_x - 80.0, y_top - 80.0, bounds.max_x + 80.0, y_top + 80.0);
+        write_text(
+            &mut out,
+            "A-ANNO-DIMS",
+            0.5 * (bounds.min_x + bounds.max_x) - 300.0,
+            y_top + 120.0,
+            160.0,
+            &format!("{:.0} mm", bounds.width()),
+        );
+        let x_right = bounds.max_x + dim_off;
+        write_line(&mut out, "A-ANNO-DIMS", x_right, bounds.min_y, x_right, bounds.max_y);
+        write_line(&mut out, "A-ANNO-DIMS", bounds.max_x + 150.0, bounds.min_y, x_right + 150.0, bounds.min_y);
+        write_line(&mut out, "A-ANNO-DIMS", bounds.max_x + 150.0, bounds.max_y, x_right + 150.0, bounds.max_y);
+        write_line(&mut out, "A-ANNO-DIMS", x_right - 80.0, bounds.min_y - 80.0, x_right + 80.0, bounds.min_y + 80.0);
+        write_line(&mut out, "A-ANNO-DIMS", x_right - 80.0, bounds.max_y - 80.0, x_right + 80.0, bounds.max_y + 80.0);
+        write_text(
+            &mut out,
+            "A-ANNO-DIMS",
+            x_right + 140.0,
+            0.5 * (bounds.min_y + bounds.max_y),
+            160.0,
+            &format!("{:.0} mm", bounds.depth()),
+        );
+    }
+
     crate::domains::mep_plumbing::render::append_plumbing_dxf(ir, &mut out);
 
     let _ = writeln!(out, "0\nENDSEC\n0\nEOF");
     out
+}
+
+fn write_dxf_symbol_blocks(out: &mut String) {
+    // 1. EDL_LIGHT (luminaire circle + X)
+    let _ = writeln!(out, "0\nBLOCK\n8\n0\n2\nEDL_LIGHT\n70\n0\n10\n0.0\n20\n0.0\n30\n0.0");
+    write_arc(out, "0", 0.0, 0.0, 85.0, 0.0, 359.9);
+    write_line(out, "0", -60.0, -60.0, 60.0, 60.0);
+    write_line(out, "0", -60.0, 60.0, 60.0, -60.0);
+    let _ = writeln!(out, "0\nENDBLK");
+
+    // 2. EDL_SOCKET (duplex outlet circle + twin prongs)
+    let _ = writeln!(out, "0\nBLOCK\n8\n0\n2\nEDL_SOCKET\n70\n0\n10\n0.0\n20\n0.0\n30\n0.0");
+    write_arc(out, "0", 0.0, 0.0, 70.0, 0.0, 359.9);
+    write_line(out, "0", -25.0, 0.0, -25.0, 95.0);
+    write_line(out, "0", 25.0, 0.0, 25.0, 95.0);
+    let _ = writeln!(out, "0\nENDBLK");
+
+    // 3. EDL_SWITCH (IEC switch circle + flag)
+    let _ = writeln!(out, "0\nBLOCK\n8\n0\n2\nEDL_SWITCH\n70\n0\n10\n0.0\n20\n0.0\n30\n0.0");
+    write_arc(out, "0", 0.0, 0.0, 55.0, 0.0, 359.9);
+    write_line(out, "0", 0.0, 0.0, 95.0, 95.0);
+    write_line(out, "0", 95.0, 95.0, 125.0, 65.0);
+    let _ = writeln!(out, "0\nENDBLK");
+
+    // 4. EDL_PANEL (distribution board rectangle + diagonal)
+    let _ = writeln!(out, "0\nBLOCK\n8\n0\n2\nEDL_PANEL\n70\n0\n10\n0.0\n20\n0.0\n30\n0.0");
+    write_rect_lines(out, "0", Rect2::new(-150.0, -75.0, 150.0, 75.0));
+    write_line(out, "0", -150.0, -75.0, 150.0, 75.0);
+    let _ = writeln!(out, "0\nENDBLK");
+
+    // 5. EDL_GRID_BUBBLE (structural grid axis circle)
+    let _ = writeln!(out, "0\nBLOCK\n8\n0\n2\nEDL_GRID_BUBBLE\n70\n0\n10\n0.0\n20\n0.0\n30\n0.0");
+    write_arc(out, "0", 0.0, 0.0, 220.0, 0.0, 359.9);
+    let _ = writeln!(out, "0\nENDBLK");
+}
+
+fn write_insert(out: &mut String, layer: &str, block_name: &str, x: f64, y: f64) {
+    let _ = writeln!(
+        out,
+        "0\nINSERT\n8\n{layer}\n2\n{block_name}\n10\n{x:.4}\n20\n{y:.4}\n30\n0.0\n41\n1.0\n42\n1.0\n43\n1.0\n50\n0.0"
+    );
 }
 
 fn write_line(out: &mut String, layer: &str, x1: f64, y1: f64, x2: f64, y2: f64) {

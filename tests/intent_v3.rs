@@ -162,7 +162,12 @@ fn v3_semantic_lifter_stickhub_and_smps_compress_50x_and_roundtrip_100_percent_w
         for (fname, content) in &files {
             fs::write(rt_dir.join(fname), content).unwrap();
         }
-        let rt_root = rt_dir.join(files.keys().next().unwrap());
+        let rt_root = rt_dir.join(
+            files
+                .keys()
+                .find(|k| k.ends_with(".kicad_sch"))
+                .expect("at least one .kicad_sch file"),
+        );
         let cmp = compare_kicad_netlists(&orig, &rt_root).expect("compare_kicad_netlists");
         assert!(
             cmp.exact_match,
@@ -524,4 +529,166 @@ project "BarrierTestV35" {
     assert!(txt.contains("ISOLATION BARRIER"));
     assert!(txt.contains("R1 (Device:R)"));
     assert!(txt.contains("CROSS"));
+}
+
+#[test]
+fn v36_tier1_kicad_hierarchy_custom_power_ergonomics_and_tier2_cd_arch_mep_dxf() {
+    if !std::path::Path::new("/usr/share/kicad/symbols/Device.kicad_sym").exists() {
+        return;
+    }
+    // 1. Tier 1: EE shorthand units (4.7k, 100R, 1M), quoted/numeric pin overrides (`pin "V-": ground`,
+    //    `pin 2: ground`), custom isolated power library (`edl_power.kicad_sym` + `sym-lib-table`),
+    //    adjacent-zone direct A* wiring, wired hierarchical root sheet, and 0/0 KiCad 9 CLI ERC!
+    let src = r#"
+project Tier1_V36_Test {
+    circuit Main {
+        component J1: conn {
+            symbol: "Connector:Conn_01x02_Pin"
+            value: "PWR_IN"
+            footprint: "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+            pin 1: power_out(5V)
+            pin 2: ground
+        }
+        component R1: resistor {
+            symbol: "Device:R"
+            value: 4.7k
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+        }
+        component R2: resistor {
+            symbol: "Device:R"
+            value: 100R
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+        }
+        component U1: ic {
+            symbol: "Amplifier_Operational:LM321"
+            value: "LM321"
+            footprint: "Package_TO_SOT_SMD:SOT-23-5"
+            pin "V-": ground
+        }
+        component R3: resistor {
+            symbol: "Device:R"
+            value: 1M
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+        }
+        component J2: conn {
+            symbol: "Connector:Conn_01x02_Pin"
+            value: "ISO_PORT"
+            footprint: "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+            pin 1: power_out(24V)
+            pin 2: ground
+        }
+        component R4: resistor {
+            symbol: "Device:R"
+            value: 4.7k
+            footprint: "Resistor_SMD:R_0603_1608Metric"
+        }
+
+        net "+5V" { J1.1, R1.1, U1."V+" }
+        net GND { J1.2, U1."V-", R2.2, R3.2 }
+        net SIG_MID { R1.2, R2.1, U1."+" }
+        net SIG_OUT { U1.1, U1."-", R3.1 }
+        net ISO_24V { J2.1, R4.1 }
+        net ISO_GND { J2.2, R4.2 }
+    }
+
+    schematic Sheet1_AFE {
+        sheet: A4 landscape
+        title: "Sheet 1: Analog Front End"
+        routing { power: symbol  ground: symbol  signals: zone_local }
+        group Input {
+            rect: (25.4mm, 25.4mm, 114.3mm, 127.0mm)
+            color: blue
+            members: [J1, R1, R2]
+        }
+        group Buffer {
+            rect: (127.0mm, 25.4mm, 215.9mm, 127.0mm)
+            color: green
+            members: [U1]
+        }
+        place J1 center (50.8mm, 76.2mm) orient: 180
+        place R1 center (88.9mm, 63.5mm)
+        place R2 center (88.9mm, 91.44mm)
+        place U1 center (165.1mm, 76.2mm)
+    }
+
+    schematic Sheet2_Output {
+        sheet: A4 landscape
+        title: "Sheet 2: Output & Isolated Rail"
+        routing { power: symbol  ground: symbol  signals: zone_local }
+        group OutZone {
+            rect: (25.4mm, 25.4mm, 114.3mm, 127.0mm)
+            color: blue
+            members: [R3]
+        }
+        group IsoZone {
+            rect: (139.7mm, 25.4mm, 228.6mm, 127.0mm)
+            color: red
+            members: [J2, R4]
+        }
+        place R3 center (63.5mm, 76.2mm)
+        place J2 center (165.1mm, 76.2mm) orient: 180
+        place R4 center (203.2mm, 76.2mm)
+    }
+}
+"#;
+    let ir = edl::compile_source("tier1_v36.edl", src).expect("compiles cleanly");
+    assert!(!ir.project.has_errors, "diagnostics: {:?}", ir.diagnostics);
+    // Adjacent-zone signal SIG_MID should route directly via A* wire (no floating label_stub)!
+    let sig_mid = ir.schematic_routes.iter().find(|r| r.net_id == "SIG_MID").expect("SIG_MID route");
+    assert!(!sig_mid.segments.is_empty(), "SIG_MID should have direct orthogonal wire segments");
+    assert!(sig_mid.terminals.is_empty(), "SIG_MID should route directly across adjacent zones without label stubs");
+
+    // Project export creates wired hierarchical root sheet + custom edl_power.kicad_sym + sym-lib-table + .kicad_pro
+    let files = edl::export_kicad_project(&ir);
+    assert!(files.contains_key("edl_power.kicad_sym"));
+    assert!(files.contains_key("sym-lib-table"));
+    assert!(files.contains_key("Tier1_V36_Test.kicad_pro"));
+    let root = files.get("Tier1_V36_Test.kicad_sch").expect("root sheet");
+    assert!(root.contains("(pin \"SIG_OUT\" bidirectional"), "root sheet must have explicit SIG_OUT sheet pin");
+    assert!(root.contains("(wire "), "root sheet must wire inter-sheet signals");
+    assert!(root.contains("GLOBAL POWER & ISOLATION DOMAINS"));
+
+    // Verify 0 KiCad 9 ERC errors AND 0 warnings under --severity-all!
+    let tmp_dir = std::env::temp_dir().join("edl_v36_tier1_erc");
+    let _ = std::fs::remove_dir_all(&tmp_dir);
+    std::fs::create_dir_all(&tmp_dir).unwrap();
+    for (fname, content) in &files {
+        std::fs::write(tmp_dir.join(fname), content).unwrap();
+    }
+    let erc_out = std::process::Command::new("kicad-cli")
+        .args([
+            "sch",
+            "erc",
+            "--exit-code-violations",
+            "--severity-all",
+            "-o",
+            tmp_dir.join("erc.rpt").to_str().unwrap(),
+            tmp_dir.join("Tier1_V36_Test.kicad_sch").to_str().unwrap(),
+        ])
+        .output();
+    if let Ok(out) = erc_out {
+        let rpt = std::fs::read_to_string(tmp_dir.join("erc.rpt")).unwrap_or_default();
+        assert!(out.status.success(), "KiCad 9 ERC --severity-all failed:\n{rpt}");
+    }
+    let _ = std::fs::remove_dir_all(&tmp_dir);
+
+    // 2. Tier 2: Construction-Document Arch/MEP SVG & Native DXF BLOCKS/INSERT + A-ANNO-DIMS
+    let clinic_ir = edl::compile_file(std::path::Path::new("examples/villa_3br_arch_elec_plumbing.edl"))
+        .expect("compile multi-discipline villa");
+    assert!(!clinic_ir.project.has_errors);
+    let arch_svg = edl::render_arch_svg_layers(&clinic_ir, false, false, false);
+    assert!(arch_svg.contains("class=\"dim-tick\""), "45-deg architectural dim ticks");
+    assert!(arch_svg.contains("class=\"tag-door-bg\""), "CAD door badges");
+    assert!(arch_svg.contains("class=\"tag-win-bg\""), "CAD window badges");
+    assert!(arch_svg.contains("id=\"cd-title-block\""), "boxed CD title block");
+    assert!(arch_svg.contains("GRAPHIC SCALE (m)"), "calibrated scale bar");
+
+    let all_svg = edl::render_arch_svg_layers(&clinic_ir, false, true, true);
+    assert!(all_svg.contains("class=\"ckt-tag-bg\""), "inline electrical circuit tags");
+
+    let dxf = edl::export_dxf(&clinic_ir);
+    assert!(dxf.contains("SECTION\n2\nBLOCKS\n"), "DXF BLOCKS section");
+    assert!(dxf.contains("EDL_LIGHT\n") && dxf.contains("EDL_PANEL\n"), "DXF MEP symbol blocks");
+    assert!(dxf.contains("\nINSERT\n"), "DXF INSERT block references");
+    assert!(dxf.contains("A-ANNO-DIMS\n"), "DXF A-ANNO-DIMS dimension layer");
 }

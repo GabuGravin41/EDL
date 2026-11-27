@@ -56,6 +56,9 @@ pub fn render_plumbing_overlay(ir: &CanonicalIr, view: &ViewTransform) -> Option
       .pl-lbl {{ font-family: monospace; font-size: 7.8px; font-weight: 700; fill: #1e293b; text-anchor: middle; }}
       .pl-lbl-bg {{ fill: #ffffff; fill-opacity: 0.86; stroke: none; }}
       .pl-callout {{ font-family: monospace; font-size: 7.4px; font-weight: 700; fill: #7c2d12; text-anchor: middle; }}
+      .pl-callout-c {{ font-family: monospace; font-size: 7.2px; font-weight: 700; fill: #0369a1; text-anchor: middle; }}
+      .pl-callout-h {{ font-family: monospace; font-size: 7.2px; font-weight: 700; fill: #b91c1c; text-anchor: middle; }}
+      .pl-callout-v {{ font-family: monospace; font-size: 7.2px; font-weight: 700; fill: #15803d; text-anchor: middle; }}
       .pl-leg-txt {{ font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 8.5px; font-weight: 600; fill: #334155; }}
     </style>"##
     );
@@ -113,10 +116,11 @@ pub fn render_plumbing_overlay(ir: &CanonicalIr, view: &ViewTransform) -> Option
                                 r#"    <polygon class="{acls}" points="{ax:.1},{ay:.1} {bx:.1},{by:.1} {cx:.1},{cy:.1}"/>"#
                             );
                             if seg_len > 48.0 {
+                                let sys_tag = if pipe.system == "soil" { "SAN" } else { "WST" };
                                 let base_lbl = if let Some(ref sl) = pipe.slope_ratio {
-                                    format!("Ø{:.0} {sl}", pipe.dia_mm)
+                                    format!("{sys_tag} Ø{:.0} @ {sl}", pipe.dia_mm)
                                 } else {
-                                    format!("Ø{:.0}", pipe.dia_mm)
+                                    format!("{sys_tag} Ø{:.0}", pipe.dia_mm)
                                 };
                                 let label = if pipe.is_header && pipe.dfu > 0.0 {
                                     format!("{base_lbl} ({:.0} DFU)", pipe.dfu)
@@ -140,7 +144,7 @@ pub fn render_plumbing_overlay(ir: &CanonicalIr, view: &ViewTransform) -> Option
                                 };
                                 let lx = mx + nx;
                                 let ly = my + ny;
-                                let bw = (label.len() as f64) * 4.6 + 6.0;
+                                let bw = (label.len() as f64) * 4.5 + 6.0;
                                 let _ = writeln!(
                                     out,
                                     r#"    <rect class="pl-lbl-bg" x="{:.1}" y="{:.1}" width="{bw:.1}" height="10" rx="2"/>"#,
@@ -152,6 +156,35 @@ pub fn render_plumbing_overlay(ir: &CanonicalIr, view: &ViewTransform) -> Option
                                     r#"    <text class="pl-callout" x="{lx:.1}" y="{ly:.1}">{label}</text>"#
                                 );
                             }
+                        }
+                    }
+                } else if pipe.is_header || pipe.length_mm >= 3500.0 {
+                    // Inline callouts on supply (CW/HW) and vent (VP) collector headers / main trunks,
+                    // staggered along the run so parallel corridor pipes never stack labels!
+                    if let Some((p0, p1)) = longest_segment(&pipe.points) {
+                        let (x0, y0) = view.map(p0[0], p0[1]);
+                        let (x1, y1) = view.map(p1[0], p1[1]);
+                        let (dx, dy) = (x1 - x0, y1 - y0);
+                        let seg_len = (dx * dx + dy * dy).sqrt();
+                        if seg_len > 62.0 {
+                            let (t_frac, tag, tcls, off_y) = match pipe.system.as_str() {
+                                "cold" => (0.32_f64, format!("CW Ø{:.0}", pipe.dia_mm), "pl-callout-c", -7.0),
+                                "hot" => (0.68_f64, format!("HW Ø{:.0}", pipe.dia_mm), "pl-callout-h", 11.0),
+                                _ => (0.50_f64, format!("VP Ø{:.0}", pipe.dia_mm), "pl-callout-v", -7.0),
+                            };
+                            let lx = x0 + dx * t_frac;
+                            let ly = y0 + dy * t_frac + if dx.abs() >= dy.abs() { off_y } else { 0.0 };
+                            let bw = (tag.len() as f64) * 4.5 + 6.0;
+                            let _ = writeln!(
+                                out,
+                                r#"    <rect class="pl-lbl-bg" x="{:.1}" y="{:.1}" width="{bw:.1}" height="9.5" rx="2"/>"#,
+                                lx - bw * 0.5,
+                                ly - 7.2
+                            );
+                            let _ = writeln!(
+                                out,
+                                r#"    <text class="{tcls}" x="{lx:.1}" y="{ly:.1}">{tag}</text>"#
+                            );
                         }
                     }
                 }

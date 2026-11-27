@@ -2,6 +2,18 @@
 
 All notable releases of **EDL (Engineering Description Language)** are documented here.
 
+## [3.6.0] — 2026-11-27
+### Added
+- **Tier 1 — Reference-Design KiCad 9 Electronics Engine (`src/domains/elec/`):**
+  - **Direct Cross-Zone Signal Wiring & Cross-Sheet Local Clustering:** Compact adjacent-zone nets (`<= 5` pins, `<= 180×90 mm`) and multi-pin cross-sheet clusters now route via obstacle-aware orthogonal A* wires instead of breaking into disconnected `label_stub` islands, attaching a single clean hierarchical label per cross-sheet cluster while automatically avoiding declared galvanic isolation dividers.
+  - **Custom & Isolated Power Symbol Library (`edl_power.kicad_sym` + `sym-lib-table` + `.kicad_pro`):** Multi-domain/isolated power and ground rails not in KiCad's stock `power.kicad_sym` (`ISO_IO_GND`, `ISO_BUS_GND`, `ISO_IO_24V`, `ISO_BUS_5V`, `GND_HOT`, etc.) automatically receive real downward GND triangles and upward supply arrows via a local `edl_power` library with **0 KiCad 9 ERC errors AND 0 warnings** under `--severity-all`.
+  - **True Wired Hierarchical Root Sheet (`--kicad-dir`):** Emits explicit `(sheet (pin ...))` ports, matching child `(hierarchical_label ...)` flags, even/odd 2.54 mm grid-parity orthogonal inter-sheet bus wiring (mathematically preventing vertical drop collisions, auto-split at every tap), a system hierarchy banner, a Global Power & Isolation Domains legend box, and complete `(sheet_instances ...)`.
+  - **EE Ergonomics & Pre-Flight Polish:** Resistor shorthand units (`4.7k`, `100R`, `1M`), quoted/numeric pin overrides (`pin "V-": ground`, `pin 8: ground`), automatic hidden stacked-pin aliasing (e.g. STM32F407 `VSS` pins `27/74/99`), and `E12b` zone-to-zone overlap warning (`W_ZONE_OVERLAP`).
+- **Tier 2 — Construction-Document Arch & MEP Drafting (`src/domains/arch/`, `src/domains/mep_plumbing/`):**
+  - **Architectural Construction-Document SVG:** 45° architectural dimension ticks, rounded CAD door tags (`D01`..`Dnn`), hexagonal CAD window tags (`W01`..`Wnn`), calibrated Graphic Scale Bar (`0 — 1m — 2m — 4m`), compass North Arrow, and structured boxed Title Block with discipline header & verification seal.
+  - **Plumbing & Electrical Inline Callouts:** Staggered color-coded inline pipe tags (`CW Ø32`, `HW Ø25`, `VP Ø50`, `SAN Ø110 @ 1:50 (DFU)`) preventing corridor stacking, electrical conduit home-run arrowheads pointing back to DBs, and collision-free inline circuit-ID tag pills.
+  - **True Native AutoCAD R12 DXF (`BLOCKS`/`INSERT` + `A-ANNO-DIMS`):** Emits reusable `EDL_LIGHT`, `EDL_SOCKET`, `EDL_SWITCH`, `EDL_PANEL`, and `EDL_GRID_BUBBLE` `BLOCK` definitions referenced via `INSERT`, plus exterior dimension chains with 45° ticks on `A-ANNO-DIMS`.
+
 ## [3.5.0] — 2026-11-27
 ### Added
 - **Pre-Flight Safety & Manufacturability Diagnostics (`E15` & `E16`):**
