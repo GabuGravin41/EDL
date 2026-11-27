@@ -2,6 +2,44 @@
 
 All notable releases of **EDL (Engineering Description Language)** are documented here.
 
+## [3.5.0] — 2026-11-27
+### Added
+- **Pre-Flight Safety & Manufacturability Diagnostics (`E15` & `E16`):**
+  - **`E15_divider_isolation_barrier_{sheet}` (`E_DIVIDER_WIRE_CROSSING`):** Exact 2D geometric segment-vs-segment intersection proof verifying zero routed schematic wires cross any declared `divider { from: ... to: ... }` galvanic isolation barrier line, with exact `(x, y)` crossing coordinates and `RepairSuggestion`.
+  - **`E16_footprint_library` (`W_FOOTPRINT_NOT_FOUND`):** Pre-flight validation of component `footprint:` strings against installed `/usr/share/kicad/footprints/<Lib>.pretty/<Name>.kicad_mod` libraries with top-3 closest real KiCad 9 footprint suggestions.
+- **Zero-Guess Layout Introspection & Built-In Reference (`edl inspect` / `edl guide`):**
+  - `edl inspect <FILE> [--pins] [--zones] [--nets]` (`format_layout_inspection`) + MCP tool **`edl_inspect_layout`**: prints exact solved component bounding boxes, pin coordinates/sides, zone bounding boxes, sheet utilization, and net-route summaries in <50 ms.
+  - `edl guide [elec|arch|plumbing|mep_elec|sld|all]` + MCP tool **`edl_guide`** (now **16 MCP tools** total): prints the exact compact v3.5.0 syntax & best-practice guide on demand.
+- **KiCad 9 Visual & Hierarchy Polish (`src/domains/elec/kicad.rs`):**
+  - Fixed KiCad 9 effective-rotation text justification (`(at_rot + prop_rot) % 360 == 180` auto-flip compensation) so all rotated vertical diodes, LEDs, TVS, and passives (`90°`/`180°`/`270°`) keep horizontal Reference/Value labels cleanly extending rightward with zero body collisions.
+  - Enhanced multi-sheet hierarchical root sheet (`--kicad-dir`) with clean 2×2 / 3×N blue-bordered sheet summary cards (title, component count, net count, paper size).
+- **Industry "Collapse Point" A/B Benchmarks (`benchmarks/v3_5_collapse_ab/`):**
+  - **Benchmark 6 (Multi-Discipline Medical Clinic Revision B ECO — Arch + Plumbing + Electrical):** EDL `v3.5.0` completed in **`374 s` (2.85× faster)** with **`184` lines changed (8.27× less churn; 17 lines on Plumbing via `overlay`)** vs Baseline No-EDL Python (`1,066 s`, `1,522` lines churn across 3,609 LOC).
+  - **Benchmark 7 (4-Sheet Hierarchical Industrial PLC Controller — 3 Galvanic Isolation Domains, 0/0 KiCad 9 ERC):** EDL `v3.5.0` completed in **`891 s` (1.94× faster)** in **`1,099` declarative LOC** (`210` real components, `144` multi-pin nets, `0` KiCad 9 ERC errors / `0` warnings, `24/24` formal proofs `E1`–`E16`) vs Baseline No-EDL Python (`1,729 s`, `3,331` LOC across 3 scripts + custom power lib, hit 233 ERC violations & 6 silent coordinate-rotation shorts during development).
+- **Docs & Plugin Refresh:** Updated `README.md` and `plugins/antigravity-edl/` (`plugin.json`, `SKILL.md`) to `v3.5.0`.
+
+## [3.4.0] — 2026-11-26
+### Added
+- **Total Spatial Freedom for Electronics Schematics (`src/domains/elec/`):**
+  - Explicit `group ... { rect: (x0, y0, x1, y1)  color: blue|red|green|amber|slate  border: dash|solid }` zone boundaries, `place Comp center (x, y) [orient: ...]`, `divider { from: ... to: ... }`, and `layout { pack: order }`.
+  - Shared horizontal power/ground trunk rails for decoupling capacitor banks, horizontal rotated passive labels, red-outlined `global_label` flags, and `orient: 180` opposite-stub guard.
+  - Blind B1 IoT Gateway re-test achieved 72 components, 43 nets, 0 KiCad 9 ERC errors / 0 warnings, and 14/14 formal proofs while matching/exceeding Baseline visual layout clarity.
+
+## [3.3.0] — 2026-11-26
+### Added
+- **Zero-Warning KiCad 9 Engine & Multi-Discipline MEP Overhaul:**
+  - Verbatim KiCad 9 `(lib_symbols ...)` + `power:` extraction achieving **0 ERC errors AND 0 ERC warnings** under `kicad-cli sch erc --severity-all`.
+  - Multi-discipline `overlay "<base>.edl"` inheritance with deduplicated verification reports, dimmed architectural underlays on MEP drawings, red hatched `NO PLUMBING ZONE` + 900 mm DB working clearance boxes, and widened panel schedule tables.
+  - Added plumbing rules `P8`/`P9`, electrical rules `M7`/`M8`, and native `mv_intake` IEC 60909 SLD primitives.
+
+## [3.2.0] — 2026-11-26
+### Added
+- Unquoted hierarchical net paths (`/Sheet/NET`), cross-circuit links, MNA capacitor voltage derating (`E13`) & resistor thermal derating (`E14`), and `--markdown` verification reports.
+
+## [3.1.0] — 2026-11-25
+### Added
+- Rust-style hard non-negotiables (`E11` sheet fit & `E12` component overlap promoted to hard build errors), structured `RepairSuggestion`s, hierarchical nets, and CI workflow.
+
 ## [2.1.0] — 2026-11-25
 ### Added
 - **Lossless Two-Layer Option-A EDL (`circuit {}` + Exact Geometric `schematic {}`) & `edl import-kicad`:**

@@ -86,13 +86,27 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
-    /// Emit a compact AI-friendly structural inspection summary (bounds, provenance, nets, evidence)
+    /// Emit a compact AI-friendly structural inspection summary (use --pins/--zones/--nets for exact layout coordinates)
     Inspect {
         /// Path to .edl project file
         file: PathBuf,
         /// Also invoke kicad-cli sch erc for electronics projects
         #[arg(long)]
         kicad_erc: bool,
+        /// Print exact placed component centers, body rects, and pin tip coordinates
+        #[arg(long)]
+        pins: bool,
+        /// Print declared zone rectangles and barrier dividers
+        #[arg(long)]
+        zones: bool,
+        /// Print routed net bounding boxes, segment counts, and terminal counts
+        #[arg(long)]
+        nets: bool,
+    },
+    /// Print a concise, copy-paste-ready EDL v3.5.0 domain reference guide (elec | arch | plumbing | mep_elec | sld | all)
+    Guide {
+        /// Optional domain filter (elec, arch, plumbing, mep_elec, sld, or all)
+        domain: Option<String>,
     },
     /// Run a targeted semantic query (summary | entity | net | room | module | violations)
     Query {
@@ -522,13 +536,26 @@ fn main() {
                 }
             }
         }
-        Commands::Inspect { file, kicad_erc } => {
+        Commands::Inspect {
+            file,
+            kicad_erc,
+            pins,
+            zones,
+            nets,
+        } => {
             let mut ir = load_and_compile(&file);
             if kicad_erc {
                 edl::domains::elec::kicad_erc::run_and_ingest_kicad_erc(&mut ir);
             }
-            let summary = inspect_summary(&ir);
-            println!("{}", serde_json::to_string_pretty(&summary).unwrap());
+            if pins || zones || nets {
+                print!("{}", edl::guide::format_layout_inspection(&ir, pins, zones, nets));
+            } else {
+                let summary = inspect_summary(&ir);
+                println!("{}", serde_json::to_string_pretty(&summary).unwrap());
+            }
+        }
+        Commands::Guide { domain } => {
+            println!("{}", edl::guide::domain_guide(domain.as_deref()));
         }
         Commands::Query {
             file,

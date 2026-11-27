@@ -3730,6 +3730,108 @@ pub fn compile_electronics(project: &ProjectAst) -> CanonicalIr {
         }
     }
 
+    // 5c. E15: Isolation Barrier / Divider Wire-Crossing Proof (v3.5)
+    //     Proves NO routed wire segment crosses any declared `divider { from: ... to: ... }` line!
+    if !local_dividers.is_empty() {
+        let mut crossings: Vec<String> = Vec::new();
+        let mut crossing_nets: Vec<String> = Vec::new();
+        let segs_cross = |a0: Point2, a1: Point2, b0: Point2, b1: Point2| -> Option<Point2> {
+            let rx = a1.x - a0.x;
+            let ry = a1.y - a0.y;
+            let sx = b1.x - b0.x;
+            let sy = b1.y - b0.y;
+            let denom = rx * sy - ry * sx;
+            if denom.abs() < 1e-9 {
+                return None;
+            }
+            let qpx = b0.x - a0.x;
+            let qpy = b0.y - a0.y;
+            let t = (qpx * sy - qpy * sx) / denom;
+            let u = (qpx * ry - qpy * rx) / denom;
+            if t > 1e-4 && t < 1.0 - 1e-4 && u > 1e-4 && u < 1.0 - 1e-4 {
+                Some(Point2::new(a0.x + t * rx, a0.y + t * ry))
+            } else {
+                None
+            }
+        };
+        for dv in &local_dividers {
+            let dlabel = dv.label.as_deref().unwrap_or("divider");
+            for rt in &local_routes {
+                for seg in &rt.segments {
+                    if let Some(pt) = segs_cross(seg.p0, seg.p1, dv.from, dv.to) {
+                        crossings.push(format!(
+                            "net '{}' crosses '{}' at ({:.1}mm, {:.1}mm)",
+                            rt.net_id, dlabel, pt.x, pt.y
+                        ));
+                        if !crossing_nets.contains(&rt.net_id) {
+                            crossing_nets.push(rt.net_id.clone());
+                        }
+                        diagnostics.push(
+                            Diagnostic::error(
+                                "E_DIVIDER_WIRE_CROSSING",
+                                "layout",
+                                format!(
+                                    "Routed wire on net '{}' crosses divider '{}' at ({:.1}mm, {:.1}mm)",
+                                    rt.net_id, dlabel, pt.x, pt.y
+                                ),
+                                schem.map(|s| s.span.clone()),
+                            )
+                            .with_entities(vec![rt.net_id.clone()])
+                            .with_suggestion(format!(
+                                "Keep all endpoints of '{}' on the same side of '{}', or add `net {}: label_stub` inside `routing {{ ... }}`",
+                                rt.net_id, dlabel, rt.net_id
+                            )),
+                        );
+                        break;
+                    }
+                }
+            }
+        }
+        evidence.push(EvidenceRecord {
+            check_id: format!("E15_divider_isolation_barrier_{sheet_name_str}"),
+            status: if crossings.is_empty() {
+                VerificationStatus::ExactlyChecked
+            } else {
+                VerificationStatus::Violated
+            },
+            method: "exact_2d_segment_divider_intersection_v3.5".to_string(),
+            tolerance_mm: Some(0.01),
+            subjects: if crossing_nets.is_empty() {
+                local_dividers
+                    .iter()
+                    .enumerate()
+                    .map(|(i, d)| d.label.clone().unwrap_or_else(|| format!("divider_{i}")))
+                    .collect()
+            } else {
+                crossing_nets.clone()
+            },
+            details: if crossings.is_empty() {
+                format!(
+                    "All {} routed net(s) respect {} declared barrier divider(s) with 0 wire crossings",
+                    local_routes.len(),
+                    local_dividers.len()
+                )
+            } else {
+                format!("{} barrier crossing(s): {}", crossings.len(), crossings.join("; "))
+            },
+            repair_suggestions: if crossings.is_empty() {
+                Vec::new()
+            } else {
+                crossing_nets
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, n)| RepairSuggestion {
+                        fix_id: idx + 1,
+                        description: format!(
+                            "Keep net '{n}' on one side of the barrier or add `net {n}: label_stub` in `routing {{ ... }}`."
+                        ),
+                        auto_fixable: true,
+                    })
+                    .collect()
+            },
+        });
+    }
+
     views.push(ViewIr {
         id: sheet_name_str,
         kind: "SchematicView".to_string(),
@@ -4753,6 +4855,87 @@ fn run_senior_erc_checks(
                 } else {
                     format!("BOM rating violation(s): {}", violations.join("; "))
                 },
+                repair_suggestions: Vec::new(),
+            });
+        }
+    }
+
+    // E16: KiCad 9 Footprint Library Existence Check (when system KiCad footprints are installed)
+    let kicad_fp_root = std::path::Path::new("/usr/share/kicad/footprints");
+    if kicad_fp_root.is_dir() {
+        let mut checked_fps = 0usize;
+        let mut missing_fps: Vec<String> = Vec::new();
+        for cid in comp_order {
+            let comp = comp_map[cid];
+            let Some(fp) = comp.footprint.as_deref() else {
+                continue;
+            };
+            let Some((lib, name)) = fp.split_once(':') else {
+                continue;
+            };
+            let lib_dir = kicad_fp_root.join(format!("{lib}.pretty"));
+            if !lib_dir.is_dir() {
+                continue; // custom / project-local footprint library
+            }
+            checked_fps += 1;
+            let mod_path = lib_dir.join(format!("{name}.kicad_mod"));
+            if !mod_path.is_file() {
+                let mut candidates: Vec<(usize, String)> = Vec::new();
+                if let Ok(entries) = std::fs::read_dir(&lib_dir) {
+                    let nl = name.to_lowercase();
+                    for ent in entries.flatten() {
+                        if let Some(stem) = ent
+                            .path()
+                            .file_stem()
+                            .and_then(|s| s.to_str())
+                            .map(|s| s.to_string())
+                        {
+                            let sl = stem.to_lowercase();
+                            let score = if sl.contains(&nl) || nl.contains(&sl) {
+                                0
+                            } else {
+                                // Count shared prefix/tokens
+                                let toks: Vec<&str> = nl.split(['_', '-']).filter(|t| t.len() >= 2).collect();
+                                let hits = toks.iter().filter(|t| sl.contains(**t)).count();
+                                100usize.saturating_sub(hits * 15) + sl.len().abs_diff(nl.len())
+                            };
+                            candidates.push((score, format!("{lib}:{stem}")));
+                        }
+                    }
+                }
+                candidates.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)));
+                let top3: Vec<String> = candidates.into_iter().take(3).map(|(_, s)| s).collect();
+                let sug = if top3.is_empty() {
+                    format!("Verify footprint '{fp}' exists in KiCad library '{lib}.pretty'")
+                } else {
+                    format!("Replace '{fp}' with a valid KiCad 9 footprint such as: {}", top3.join(", "))
+                };
+                missing_fps.push(format!("{cid} ({fp})"));
+                ir.diagnostics.push(
+                    Diagnostic::warning(
+                        "W_FOOTPRINT_NOT_FOUND",
+                        "bom",
+                        format!("Component '{cid}' references footprint '{fp}' which does not exist in KiCad 9 library '{lib}.pretty'"),
+                        Some(comp.span.clone()),
+                    )
+                    .with_entities(vec![cid.clone()])
+                    .with_suggestion(sug),
+                );
+            }
+        }
+        if checked_fps > 0 && !missing_fps.is_empty() {
+            ir.evidence.push(EvidenceRecord {
+                check_id: "E16_footprint_library".to_string(),
+                status: VerificationStatus::Violated,
+                method: "kicad9_system_footprint_library_check_v3.5".to_string(),
+                tolerance_mm: None,
+                subjects: missing_fps.clone(),
+                details: format!(
+                    "{} of {} KiCad footprint(s) not found in /usr/share/kicad/footprints: {}",
+                    missing_fps.len(),
+                    checked_fps,
+                    missing_fps.join(", ")
+                ),
                 repair_suggestions: Vec::new(),
             });
         }

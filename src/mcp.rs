@@ -264,6 +264,30 @@ fn mcp_tool_schemas() -> Value {
                     "after_source": { "type": "string" }
                 }
             }
+        },
+        {
+            "name": "edl_guide",
+            "description": "Return a concise, copy-paste-ready EDL v3.5.0 reference guide for a domain ('elec', 'arch', 'plumbing', 'mep_elec', 'sld', or 'all'). Call this FIRST before writing an .edl file so syntax is idiomatic on turn 1.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "domain": { "type": "string", "description": "Optional domain: elec, arch, plumbing, mep_elec, sld, or all" }
+                }
+            }
+        },
+        {
+            "name": "edl_inspect_layout",
+            "description": "Return exact computed layout coordinates (placed component centers, pin tip coordinates, zone rects, dividers, and routed net bounding boxes) in < 50ms for fast visual polish without waiting for PNG renders.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "file_path": { "type": "string" },
+                    "source": { "type": "string" },
+                    "pins": { "type": "boolean", "default": true },
+                    "zones": { "type": "boolean", "default": true },
+                    "nets": { "type": "boolean", "default": true }
+                }
+            }
         }
     ])
 }
@@ -446,6 +470,19 @@ fn call_mcp_tool(name: &str, args: &Value) -> Result<Value, String> {
             let after = compile_from_args(args, "after_path", "after_source")?;
             let d = diff_ir(&before, &after);
             serde_json::to_value(&d).map_err(|e| e.to_string())
+        }
+        "edl_guide" => {
+            let domain = args.get("domain").and_then(|v| v.as_str());
+            Ok(json!({ "guide": crate::guide::domain_guide(domain) }))
+        }
+        "edl_inspect_layout" => {
+            let ir = compile_from_args(args, "file_path", "source")?;
+            let pins = args.get("pins").and_then(|v| v.as_bool()).unwrap_or(true);
+            let zones = args.get("zones").and_then(|v| v.as_bool()).unwrap_or(true);
+            let nets = args.get("nets").and_then(|v| v.as_bool()).unwrap_or(true);
+            Ok(json!({
+                "layout": crate::guide::format_layout_inspection(&ir, pins, zones, nets)
+            }))
         }
         other => Err(format!("Unknown MCP tool '{other}'")),
     }

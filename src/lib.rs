@@ -1,5 +1,6 @@
 pub mod core;
 pub mod domains;
+pub mod guide;
 pub mod mcp;
 pub mod syntax;
 pub mod watch;
@@ -782,7 +783,23 @@ project "BadNotch" {
         }))
         .unwrap();
         let tools = list["result"]["tools"].as_array().unwrap();
-        assert_eq!(tools.len(), 14);
+        assert_eq!(tools.len(), 16);
+
+        let gcall = crate::mcp::handle_jsonrpc_request(&json!({
+            "jsonrpc": "2.0",
+            "id": 20,
+            "method": "tools/call",
+            "params": {
+                "name": "edl_guide",
+                "arguments": { "domain": "elec" }
+            }
+        }))
+        .unwrap();
+        assert_eq!(gcall["result"]["isError"], false);
+        assert!(gcall["result"]["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("E15"));
 
         let call = crate::mcp::handle_jsonrpc_request(&json!({
             "jsonrpc": "2.0",

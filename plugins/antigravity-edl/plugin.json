@@ -1,11 +1,11 @@
 {
   "name": "edl-engineering",
   "displayName": "EDL — Engineering Description Language",
-  "description": "Design, verify, simulate, and bidirectionally sync architecture floor plans, building electrical (IEC 60364), and electronics schematics with KiCad 9, AutoCAD DXF, and FreeCAD.",
+  "description": "Design, verify, simulate, and bidirectionally sync KiCad 9 electronics schematics (single & multi-sheet), architectural floor plans, building plumbing, building electrical (IEC 60364), and power SLDs (IEC 60909).",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
-    "Design a 2-bedroom apartment floor plan with IEC 60364 electrical circuits and DB panel schedule",
-    "Create a 3.3V MCU board schematic, run MNA DC simulation and KiCad 9 ERC, and export BOM + SPICE",
-    "Sync my latest KiCad schematic edits back into the .edl source and verify zero new errors"
+    "Design a 24V industrial IoT gateway schematic in KiCad 9 with galvanic isolation, 0 ERC errors/warnings, and full E1-E16 proofs",
+    "Design a medical clinic floor plan with overlaid plumbing (P1-P9) and IEC 60364 electrical (M1-M8) sheets + DXF & CSV schedules",
+    "Design an 11 kV / 400 V hospital dual-transformer + standby generator power SLD with IEC 60909 short-circuit & N-1 proofs"
   ]
 }

@@ -408,8 +408,8 @@ project "FreeLayoutV34" {
             note: "Free placement with zero auto-pack hijacking"
         }
         divider {
-            from: (127.0mm, 25.4mm)
-            to: (127.0mm, 127.0mm)
+            from: (177.8mm, 25.4mm)
+            to: (177.8mm, 127.0mm)
             label: "ISOLATION BARRIER"
             color: red
         }
@@ -454,4 +454,74 @@ project "FreeLayoutV34" {
         let _ = std::fs::remove_dir_all(&dir);
         assert!(st.success(), "orient:180 J_PWR + free layout failed KiCad 9 ERC:\n{txt}");
     }
+}
+
+#[test]
+fn v35_e15_divider_crossing_e16_footprint_check_layout_inspect_and_guide() {
+    // 1. Guide covers all 5 domains concisely
+    for dom in ["elec", "arch", "plumbing", "mep_elec", "sld"] {
+        let g = edl::guide::domain_guide(Some(dom));
+        assert!(g.len() > 200 && g.len() < 8000, "guide {dom} length={}", g.len());
+    }
+
+    // 2. E15 catches a routed wire crossing an isolation barrier divider + E16 catches nonexistent KiCad footprint
+    let bad_src = r#"
+project "BarrierTestV35" {
+    units: mm
+    circuit Main {
+        component R1: "Device:R" { value: 1kohm  footprint: "Resistor_SMD:R_0603_1608Metric" }
+        component D1: "Device:D" { value: "BAT54" footprint: "Diode_SMD:D_SOT-23_NONEXISTENT_XYZ" }
+        component J1: "Connector:Conn_01x02_Pin" { value: "PWR" }
+        net "+5V" { connect: [J1.1, R1.1] power_flag: true }
+        net CROSS { connect: [R1.2, D1.A] }
+        net GND   { connect: [J1.2, D1.K] }
+    }
+    schematic Main {
+        sheet: A3 landscape
+        routing { default: zone_local  power: symbol  ground: symbol }
+        group G {
+            title: "STAGE 5: ISOLATED"
+            rect: (20mm, 20mm, 220mm, 140mm)
+            members: [J1, R1, D1]
+        }
+        divider {
+            from: (114.3mm, 25.4mm)
+            to: (114.3mm, 134.62mm)
+            label: "ISOLATION BARRIER"
+            color: red
+        }
+        place J1 center (50.8mm, 76.2mm) orient: 180
+        place R1 center (88.9mm, 76.2mm) orient: 90
+        place D1 center (139.7mm, 76.2mm) orient: 180
+    }
+}
+"#;
+    let ir = edl::compile_source("barrier_v35.edl", bad_src).expect("compiles");
+    assert!(
+        ir.diagnostics.iter().any(|d| d.code == "E_DIVIDER_WIRE_CROSSING"),
+        "expected E_DIVIDER_WIRE_CROSSING for CROSS wire crossing divider at x=114.3mm, got: {:?}",
+        ir.diagnostics
+    );
+    let e15 = ir
+        .evidence
+        .iter()
+        .find(|e| e.check_id == "E15_divider_isolation_barrier_Main")
+        .expect("E15 evidence");
+    assert_eq!(e15.status, VerificationStatus::Violated);
+
+    if std::path::Path::new("/usr/share/kicad/footprints/Diode_SMD.pretty").is_dir() {
+        assert!(
+            ir.diagnostics.iter().any(|d| d.code == "W_FOOTPRINT_NOT_FOUND" && d.message.contains("D_SOT-23_NONEXISTENT_XYZ")),
+            "expected W_FOOTPRINT_NOT_FOUND for bogus footprint, got: {:?}",
+            ir.diagnostics
+        );
+    }
+
+    // 3. Layout inspection reports exact component centers, pin tips, zones & dividers
+    let txt = edl::guide::format_layout_inspection(&ir, true, true, true);
+    assert!(txt.contains("=== ZONES (1) ==="));
+    assert!(txt.contains("=== DIVIDERS (1) ==="));
+    assert!(txt.contains("ISOLATION BARRIER"));
+    assert!(txt.contains("R1 (Device:R)"));
+    assert!(txt.contains("CROSS"));
 }
